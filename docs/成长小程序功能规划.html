@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>成长星球 · 儿童生活与学习小程序功能规划</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2733; --sub:#5b6776;
+    --brand:#3b82f6; --brand2:#22c55e; --brand3:#f59e0b; --brand4:#a855f7;
+    --line:#e6ebf2; --soft:#eef3fb;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 28px 80px;}
+  h1{font-size:30px;margin:0 0 6px;}
+  h2{font-size:22px;margin:42px 0 14px;padding-left:12px;border-left:5px solid var(--brand);}
+  h3{font-size:17px;margin:26px 0 10px;color:var(--brand);}
+  p{margin:8px 0;color:var(--sub);}
+  .lead{font-size:16px;color:var(--ink);}
+  .tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;
+       background:var(--soft);color:var(--brand);margin-right:6px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+        padding:20px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,80,.04);}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top;}
+  th{background:var(--soft);color:var(--ink);font-weight:600;}
+  .ph{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0;}
+  .pill{padding:5px 12px;border-radius:10px;color:#fff;font-weight:600;font-size:13px;}
+  .p0{background:#64748b;} .p1{background:var(--brand);} .p2{background:var(--brand2);}
+  .p3{background:var(--brand3);} .p4{background:var(--brand4);}
+  .arch{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0;}
+  .arch .col{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;}
+  .arch .col h4{margin:0 0 8px;font-size:14px;}
+  .arch .col ul{margin:0;padding-left:18px;color:var(--sub);font-size:13px;}
+  .layer{background:linear-gradient(90deg,#eef3fb,#f6f8fb);border:1px dashed var(--brand);
+         border-radius:12px;padding:14px 18px;margin:10px 0;color:var(--sub);font-size:13px;}
+  .road{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:14px 0;}
+  .road .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;}
+  .road .step b{display:block;font-size:13px;color:var(--ink);}
+  .road .step span{font-size:12px;color:var(--sub);}
+  .ok{color:var(--brand2);font-weight:600;}
+  .warn{color:var(--brand3);font-weight:600;}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;
+        font-size:13px;color:#7c5e10;margin:12px 0;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:760px){.arch,.road,.grid2{grid-template-columns:1fr;}}
+  code{background:var(--soft);padding:1px 6px;border-radius:6px;font-size:13px;color:#b45309;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>「成长星球」儿童生活与学习小程序 · 功能规划</h1>
+  <p class="lead">面向 11 岁、六年级孩子，从「孩子自主点餐」起步，逐步扩展到生活自主与学习成长两大版图。本文档含整体功能架构、分阶段核心功能清单与演进优先级安排。</p>
+  <p>
+    <span class="tag">微信小程序</span>
+    <span class="tag">Java + MySQL</span>
+    <span class="tag">儿童 / 家长 / 后台 三角色</span>
+    <span class="tag">分阶段演进</span>
+  </p>
+
+  <div class="note">
+    <b>命名说明：</b>「成长星球」为产品暂定名（Umbrella），首期上线的点餐模块命名为「小当家·点餐」。名称可按品牌诉求调整，不影响架构。
+  </div>
+
+  <h2>一、目标用户与关键设计原则</h2>
+  <div class="card">
+    <p><b>主角：</b>11 岁六年级小学生。认知与操作能力：能独立阅读图文、点按操作；不擅长长表单与复杂设置；对游戏化、勋章、动画敏感；自我保护意识弱（需家长护栏）。</p>
+    <p><b>关键设计原则：</b></p>
+    <ul>
+      <li><b>家长护栏优先：</b>不做真实支付，消费走"虚拟零花钱"记账；对外联系、位置、内容发布经过家长授权或审批流；儿童端不做裸露的聊天/社交/定位。</li>
+      <li><b>大字号 + 强图标 + 语音辅助：</b>降低识字与输入门槛；关键操作支持语音与图片。</li>
+      <li><b>即时正反馈：</b>每完成一件事给予勋章/动画/进度，强化自主感与成就感。</li>
+      <li><b>本地化与个性化：</b>学校食堂/家庭餐厅、口味忌口偏好、适龄理财观念引导、多语言可选、可对接本地生活服务（不限定城市）。</li>
+      <li><b>隐私合规：</b>遵循儿童个人信息保护相关法规，最小化采集、家长明示同意、可撤回。</li>
+    </ul>
+  </div>
+
+  <h2>二、整体功能架构（三角色 + 三层模块）</h2>
+  <div class="arch">
+    <div class="col">
+      <h4 style="color:var(--brand)">① 儿童端（主角）</h4>
+      <ul>
+        <li>小当家·点餐</li>
+        <li>我的零花钱</li>
+        <li>家务小任务</li>
+        <li>健康打卡</li>
+        <li>我的课表/作业</li>
+        <li>错题本 / 阅读</li>
+        <li>成长树 / 勋章</li>
+        <li>AI 小问号</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4 style="color:var(--brand2)">② 家长端（监护人）</h4>
+      <ul>
+        <li>家庭与孩子绑定</li>
+        <li>支付与额度设置</li>
+        <li>审批流（点餐/任务）</li>
+        <li>消费与成长看板</li>
+        <li>内容白名单</li>
+        <li>安全与权限</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4 style="color:var(--brand3)">③ 后台（运营）</h4>
+      <ul>
+        <li>菜单管理（当日菜单配置 / 展示）</li>
+        <li>任务 / 书单库</li>
+        <li>勋章 / 活动配置</li>
+        <li>内容审核</li>
+        <li>数据与风控</li>
+      </ul>
+    </div>
+    <div class="col">
+      <h4 style="color:var(--brand4)">能力中台</h4>
+      <ul>
+        <li>账号 / 家庭关系</li>
+        <li>支付网关</li>
+        <li>通知（订阅消息 + 站内通知中心 + 家长短信兜底）</li>
+        <li>AI 服务</li>
+        <li>数据看板</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="layer">
+    <b>模块版图（按演进）：</b> 生活侧 = 点餐 → 零花钱 → 家务 → 健康/日程 → 购物/出行；
+    学习侧 = 课表 → 作业 → 错题本 → 阅读 → 知识百科；
+    收敛层 = 成长档案 + 勋章激励 + AI 小助手（贯穿全部阶段）。
+  </div>
+
+  <h2>三、分阶段演进路线（Roadmap）</h2>
+  <div class="road">
+    <div class="step"><b>P0 地基</b><span>第 1–2 月</span><br/>账号/登录/家庭绑定/框架 + 虚拟钱包地基/通知中台/合规同意</div>
+    <div class="step"><b>P1 点餐起步</b><span>第 2–4 月</span><br/>小当家·菜单展示与确认 MVP（额度护栏+站内通知）</div>
+    <div class="step"><b>P2 生活自主</b><span>第 5–8 月</span><br/>零花钱/家务/健康/日程 + 奖励兑换/二级监护人</div>
+    <div class="step"><b>P3 学习成长</b><span>第 9–12 月</span><br/>课表/作业/错题/阅读 + 教师角色与家校互通</div>
+    <div class="step"><b>P4 智能激励</b><span>第 13–18 月</span><br/>AI/成长树/多孩 + 成长洞察/数据删除导出</div>
+  </div>
+
+  <h3>为什么从「点餐」起步？</h3>
+  <p>① 高频刚需、每天可用，能快速养成使用习惯；② 天然需要「孩子决策 + 家长额度护栏（虚拟零花钱）」的护栏结构，正好验证三角色模型；③ 顺带建立消费记录与偏好，为后续零花钱、营养健康打地基；④ 正向反馈明显（孩子确认菜单 → 家长确认 → 完成），孩子成就感强，家长接受度高。</p>
+
+  <h2>四、各阶段核心功能清单</h2>
+
+  <h3><span class="pill p0">P0</span> 基础平台（点餐前的必经地基）</h3>
+  <div class="note"><b>本次修订：</b>将"虚拟钱包地基""通知中台""合规同意留痕"前移至 P0，消除原 P1 点餐依赖 P2 钱包的时序矛盾；并把"订阅消息单通道"升级为"订阅消息 + 站内通知中心 + 家长短信兜底"。</div>
+  <table>
+    <tr><th>功能</th><th>说明</th><th>负责端</th></tr>
+    <tr><td>微信登录 + 儿童档案</td><td>wx.login 拿 code→code2Session；建儿童档案（昵称、年级、学校、忌口、口味偏好）</td><td>儿童/家长</td></tr>
+    <tr><td>家庭创建与成员绑定</td><td>家长建家庭，邀请/绑定孩子（邀请码/扫码）；一对多（家长可管多孩）</td><td>家长</td></tr>
+    <tr><td>家长身份确认 + 授权</td><td>家长微信绑定、监护关系明示同意；<b>可验证监护人同意</b>（家长实名/运营商三要素）+ 年龄识别</td><td>家长</td></tr>
+    <tr><td>虚拟钱包地基（前移）</td><td>虚拟余额 / 额度规则 / 扣减流水（点餐与任务共用）；原 P2 的"零花钱管理 UI"保留在 P2</td><td>双方</td></tr>
+    <tr><td>通知中台 + 站内通知中心</td><td>订阅消息 + 站内信 + 家长短信兜底（审批/提醒不依赖单一通道）</td><td>双方</td></tr>
+    <tr><td>合规同意留痕</td><td>监护人同意留痕、数据留存期限、儿童数据可导出/可删除入口</td><td>家长/后台</td></tr>
+    <tr><td>基础框架与导航</td><td>底部 Tab、成长树入口、站内通知中心、儿童安全规范</td><td>儿童</td></tr>
+  </table>
+
+  <h3><span class="pill p1">P1</span> 小当家·菜单展示与确认（首期核心）</h3>
+  <div class="note"><b>本期明确：</b>食堂<b>非真实营运</b>——学校端仅<b>展示当日菜单</b>，家庭端由孩子向父母<b>确认/提报当日菜单</b>，<b>无商户接单履约、无真实支付</b>。消费走"虚拟零花钱"记账（确认即扣减，任务/奖励即增加）；家长通过额度护栏（单笔/每日/每周上限）与超额异步复核进行监护。整个体系为纯模拟记账。</div>
+  <table>
+    <tr><th>功能</th><th>说明</th><th>负责端</th></tr>
+    <tr><td>当日菜单展示（学校）</td><td>后台配置并展示当日菜单（图文、价格、热量/营养标签、忌口标识）；孩子浏览、可标记"今天想吃"供家长可见</td><td>儿童</td></tr>
+    <tr><td>菜品 / 菜单浏览</td><td>大图卡片、营养标签、辣度/忌口标识；支持筛选与语音辅助</td><td>儿童</td></tr>
+    <tr><td>菜单确认 / 提报（家庭）</td><td>孩子向父母确认或提报当日菜单（选菜、份量、备注如"少糖少葱"）；生成待确认菜单</td><td>儿童</td></tr>
+    <tr><td>家长额度护栏</td><td>额度内自动从虚拟零花钱扣减；超额/敏感动作推家长<b>异步复核</b>（非实时拦截），儿童端仅见状态</td><td>家长</td></tr>
+    <tr><td>菜单确认状态追踪</td><td>待家长确认 → 已确认 → 已完成；站内通知 + 订阅消息提醒（不再用"备餐中"等营运态）</td><td>儿童</td></tr>
+    <tr><td>就餐偏好 & 忌口</td><td>持久化孩子口味/过敏/忌口，确认菜单时自动带入</td><td>儿童/家长</td></tr>
+    <tr><td>消费记录（基础）</td><td>每笔虚拟扣减金额、时间、场景；家长端汇总</td><td>双方</td></tr>
+  </table>
+
+  <h3><span class="pill p2">P2</span> 生活自主</h3>
+  <table>
+    <tr><th>功能</th><th>说明</th><th>负责端</th></tr>
+    <tr><td>零花钱 / 预算（管理 UI）</td><td>家长设周/月额度并可视化（余额基础已在 P0 地基）；点餐/任务自动增减</td><td>家长/儿童</td></tr>
+    <tr><td>家务小任务</td><td>任务库（倒垃圾/整理书桌）；完成→家长确认→得零花钱/勋章</td><td>双方</td></tr>
+    <tr><td>健康打卡</td><td>喝水、运动、睡眠打卡；连菜单做"营养均衡"提示</td><td>儿童</td></tr>
+    <tr><td>日程与提醒</td><td>上学、兴趣班、考试；到点站内通知 + 订阅消息提醒</td><td>儿童/家长</td></tr>
+    <tr><td>购物清单</td><td>孩子加想买物品，家长采购或审批后购买（异步复核）</td><td>双方</td></tr>
+    <tr><td>奖励兑换中心（新增）</td><td>孩子用虚拟零花钱/勋章兑换屏幕时间、兴趣班课时、家长确认的真实小奖励，补上"赚钱→花"动机闭环</td><td>双方</td></tr>
+    <tr><td>二级监护人 / 审批委托（新增）</td><td>祖辈代确认、双亲分工、委托时段，覆盖隔代教养等常见家庭结构</td><td>家长</td></tr>
+  </table>
+
+  <h3><span class="pill p3">P3</span> 学习成长</h3>
+  <table>
+    <tr><th>功能</th><th>说明</th><th>负责端</th></tr>
+    <tr><td>课程表</td><td>周课表，按学校通用节奏；课前提醒</td><td>儿童</td></tr>
+    <tr><td>作业清单</td><td>记作业、设截止、完成打勾；家长可查看进度</td><td>双方</td></tr>
+    <tr><td>错题本</td><td>拍照录入→OCR/分类→按学科归集；复习提醒</td><td>儿童</td></tr>
+    <tr><td>阅读计划</td><td>书单、每日阅读时长、读后感语音/文字（UGC 经审核）</td><td>儿童</td></tr>
+    <tr><td>知识百科 / 每日一题</td><td>轻量科普、通识趣味知识；趣味问答</td><td>儿童</td></tr>
+    <tr><td>教师角色与家校互通（新增，由 P4 提升）</td><td>老师发布作业/通知/课表（学校侧接入）；家长、老师、孩子三方协同</td><td>三方</td></tr>
+  </table>
+
+  <h3><span class="pill p4">P4</span> 智能与激励（收敛层）</h3>
+  <table>
+    <tr><th>功能</th><th>说明</th><th>负责端</th></tr>
+    <tr><td>AI 小问号</td><td>解答学习/生活问题，适龄化引导；家长可设使用边界</td><td>儿童</td></tr>
+    <tr><td>成长档案 & 看板</td><td>消费、任务、学习、健康多维数据；家长端一览</td><td>家长</td></tr>
+    <tr><td>勋章 / 成长树</td><td>跨模块成就体系；养成类可视化激励</td><td>儿童</td></tr>
+    <tr><td>个性化推荐</td><td>按偏好推菜品、书单、任务</td><td>双方</td></tr>
+    <tr><td>成长洞察与告警（新增）</td><td>营养失衡、消费异常、学习趋势提示（家长端），由数据看板衍生</td><td>家长</td></tr>
+    <tr><td>数据导出与账号注销（新增，合规）</td><td>儿童数据可导出、账号可删除（留存期限到期自动清理）</td><td>家长/后台</td></tr>
+    <tr><td>多孩 / 家庭扩展</td><td>一个家庭多孩子独立档案与额度</td><td>家长</td></tr>
+  </table>
+
+  <h2>五、演进优先级安排（Priority Matrix）</h2>
+  <p>评分维度：儿童价值（对孩子有用）、家长意愿（家长愿用/愿付费）、技术可行性、依赖前置。综合优先级 = 价值×意愿 / 依赖，越高越先上。</p>
+  <table>
+    <tr><th>候选功能</th><th>儿童价值</th><th>家长意愿</th><th>技术可行</th><th>依赖前置</th><th>综合优先级</th></tr>
+    <tr><td>虚拟钱包地基</td><td>高</td><td>高</td><td>高</td><td>P0 账号/家庭</td><td class="ok">P0 地基（前移）</td></tr>
+    <tr><td>通知中台 + 站内通知</td><td>中</td><td>高</td><td>高</td><td>P0 账号</td><td class="ok">P0 地基（前移）</td></tr>
+    <tr><td>合规同意留痕</td><td>高</td><td>高</td><td>中</td><td>P0 账号</td><td class="ok">P0 地基（前移）</td></tr>
+    <tr><td>点餐/菜单确认（含家长护栏）</td><td>高</td><td>高</td><td>中</td><td>P0 钱包/通知</td><td class="ok">P1 → 首期</td></tr>
+    <tr><td>零花钱 / 预算（管理 UI）</td><td>高</td><td>高</td><td>高</td><td>钱包地基(P0)</td><td class="ok">P2 优先</td></tr>
+    <tr><td>奖励兑换中心</td><td>高</td><td>中</td><td>高</td><td>钱包/勋章</td><td class="ok">P2</td></tr>
+    <tr><td>二级监护人 / 审批委托</td><td>中</td><td>高</td><td>高</td><td>家庭/额度</td><td class="ok">P2</td></tr>
+    <tr><td>家务任务 + 奖励</td><td>中</td><td>高</td><td>高</td><td>家庭/额度</td><td class="ok">P2</td></tr>
+    <tr><td>健康打卡</td><td>中</td><td>中</td><td>高</td><td>无</td><td class="ok">P2</td></tr>
+    <tr><td>课程表 / 作业</td><td>高</td><td>高</td><td>高</td><td>无</td><td class="ok">P3 优先</td></tr>
+    <tr><td>教师角色 / 家校互通</td><td>中</td><td>高</td><td>低</td><td>学校接入</td><td class="warn">P3（由 P4 提升）</td></tr>
+    <tr><td>错题本（OCR）</td><td>高</td><td>高</td><td>中</td><td>无</td><td class="warn">P3</td></tr>
+    <tr><td>阅读计划</td><td>中</td><td>中</td><td>高</td><td>无</td><td class="warn">P3</td></tr>
+    <tr><td>成长洞察与告警</td><td>中</td><td>高</td><td>中</td><td>数据看板</td><td class="warn">P4</td></tr>
+    <tr><td>AI 小问号</td><td>高</td><td>中</td><td>中</td><td>账号/内容护栏</td><td class="warn">P4</td></tr>
+    <tr><td>数据导出与注销</td><td>中</td><td>中</td><td>中</td><td>合规</td><td class="warn">P4（合规）</td></tr>
+  </table>
+
+  <h2>六、技术架构建议（Java + MySQL）</h2>
+  <div class="card">
+    <p><b>后端：</b>Java 21 LTS + Spring Boot 4.1.1（Spring Framework 7、Jakarta EE 11、jakarta.* 命名空间、虚拟线程；与你 KidCode 的 Java 11 / 2.7.18 属不同代际，本新项目直接采用 21/4.1.1）；ORM 用 <code>MyBatis-Plus</code>（复杂报表/统计友好）；API 风格 RESTful + JWT（家长/儿童分权）。</p>
+    <p><b>数据库：</b>MySQL 8.0；通用字段 <code>create_time / update_time / deleted</code>；枚举用 VARCHAR 在 Java 控制。缓存/会话用 Redis；订单通知用微信订阅消息 + 可选 MQ 解耦。</p>
+    <p><b>小程序端：</b>微信小程序原生 或 <code>Taro/uni-app</code>（Vue/React 跨端）。前端非 Java，属独立工程。</p>
+    <p><b>支付与安全：</b>不做真实支付，结算走虚拟零花钱记账 + 额度护栏；儿童所有对外动作走审批流；内容经后台审核；隐私最小化采集 + 家长明示同意。</p>
+  </div>
+
+  <h3>核心数据模型（MySQL 关键实体）</h3>
+  <p style="margin:6px 0 14px;color:#666;font-size:13px">采用<b>业务域前缀（合并为 3 个主域，避免前缀过多）</b>：<code>usr_</code> 账户/家庭/成长基础（用户、家庭、成员、儿童档案、勋章、成长流水） · <code>life_</code> 生活域（菜单、菜单确认、钱包零花钱、家务、健康） · <code>edu_</code> 学习域（作业、错题、阅读）。</p>
+  <table>
+    <tr><th>实体</th><th>关键字段（摘要）</th></tr>
+    <tr><td>usr_user / usr_family / usr_family_member</td><td>角色(child/parent/admin)、家庭关系、监护状态</td></tr>
+    <tr><td>usr_child_profile</td><td>年级、学校、忌口、口味偏好、头像</td></tr>
+    <tr><td>life_restaurant / life_dish / life_dish_category</td><td>名称、价格、热量、图片、标签</td></tr>
+    <tr><td>life_wallet / life_allowance_rule / life_menu_confirm / life_menu_item / life_confirm_approval</td><td>虚拟余额、额度规则、菜单确认单与明细、扣减记录、家长确认状态（非营运、无真实支付）</td></tr>
+    <tr><td>life_chore_task / life_allowance_log</td><td>家务任务、零花钱发放流水（任务完成→增加）</td></tr>
+    <tr><td>life_health_checkin / life_schedule</td><td>打卡类型、数值、提醒时间</td></tr>
+    <tr><td>edu_homework / edu_mistake_note / edu_reading_plan</td><td>科目、截止、错题图片、书单</td></tr>
+    <tr><td>usr_badge / usr_growth_record</td><td>勋章、跨模块成长事件流水</td></tr>
+  </table>
+
+  <h2>七、关键风险与合规</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--brand3)">风险</h3>
+      <ul>
+        <li>虚拟消费合规：仅虚拟零花钱记账 + 额度护栏，儿童端无任何真实支付能力；超额动作由家长异步复核（非实时拦截）。</li>
+        <li>隐私采集红线：位置/人脸/OCR 需家长同意，可撤回。</li>
+        <li>内容安全：AI 与 UGC 需审核，防不良信息。</li>
+        <li>沉迷：游戏化适度，设使用时长提醒。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--brand2)">应对</h3>
+      <ul>
+        <li>审批流 + 额度双控（额度内自动、超额异步复核），家长全可见。</li>
+        <li>可验证监护人同意（家长实名/运营商三要素）+ 年龄识别；儿童数据单独存储。</li>
+        <li>最小化采集 + 明示同意留痕 + 数据可导出/可删除（留存期限到期清理）。</li>
+        <li>后台内容审核 + 敏感词/图像风控（覆盖 AI 与 UGC）。</li>
+        <li>成长类激励替代纯消耗型玩法；兑换中心补上动机闭环。</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>八、假设与下一步</h2>
+  <div class="card">
+    <p><b>已做假设：</b>微信小程序（<b>非原生 App，无需一键联系/SOS/异常告警</b>）；三角色；Java 21/Spring Boot 4.1.1；通用场景（不限定城市）；<b>不做真实支付、食堂非真实营运</b>——学校端仅展示当日菜单、家庭端由孩子向父母确认/提报当日菜单，点餐与任务均为虚拟零花钱记账（扣减/增加）。</b></p>
+    <p><b>建议下一步（你拍板后我继续）：</b></p>
+    <ul>
+      <li>确认平台与命名 → 我可产出 <b>P0+P1 的数据库表设计 DDL</b> 与 Java 工程骨架（含虚拟钱包地基 / 通知中台 / 合规同意）。</li>
+      <li>确认菜单范围（学校展示菜单 / 家庭确认菜单 / 二者）→ 我细化 P1 原型流程。</li>
+      <li>如需可视化，我可把 P1 儿童端"菜单展示与确认"界面做成可交互设计稿。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>
