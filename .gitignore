@@ -1,0 +1,5 @@
+# WorkBuddy 项目内部数据（非交付物，不纳入版本控制）
+.workbuddy/
+
+# 日志
+*.log
