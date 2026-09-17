@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>成长星球 · 全局规划设计文档</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2733; --sub:#5b6776; --muted:#8a94a6;
+    --brand:#3b82f6; --brand2:#22c55e; --brand3:#f59e0b; --brand4:#a855f7;
+    --line:#e6ebf2; --soft:#eef3fb; --radius:16px;
+    --p0:#64748b; --p1:#3b82f6; --p2:#22c55e; --p3:#f59e0b; --p4:#a855f7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.75;font-size:15.5px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 90px;}
+  h1{font-size:30px;margin:0 0 6px;}
+  h2{font-size:22px;margin:46px 0 14px;padding-left:12px;border-left:5px solid var(--brand);}
+  h3{font-size:17px;margin:26px 0 10px;color:var(--brand);}
+  h4{font-size:15px;margin:18px 0 8px;color:var(--ink);}
+  p{margin:8px 0;color:var(--sub);}
+  .lead{font-size:16px;color:var(--ink);}
+  .tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;
+       background:var(--soft);color:var(--brand);margin-right:6px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+        padding:20px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,80,.04);}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top;}
+  th{background:var(--soft);color:var(--ink);font-weight:600;}
+  .pill{padding:3px 10px;border-radius:10px;color:#fff;font-weight:600;font-size:12.5px;}
+  .p0{background:var(--p0);} .p1{background:var(--p1);} .p2{background:var(--p2);}
+  .p3{background:var(--p3);} .p4{background:var(--p4);}
+  .ph{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;flex:1;min-width:150px;}
+  .step b{display:block;font-size:13px;color:var(--ink);}
+  .step span{font-size:12px;color:var(--sub);}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;
+        font-size:13.5px;color:#7c5e10;margin:12px 0;}
+  .note.b{background:#eff6ff;border-color:#bfdbfe;color:#1e40af;}
+  .note.g{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
+  .note.r{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .arch{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0;}
+  .arch .col{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;}
+  .arch .col h4{margin:0 0 8px;font-size:14px;}
+  .arch .col ul{margin:0;padding-left:18px;color:var(--sub);font-size:13px;}
+  .ok{color:var(--brand2);font-weight:600;}
+  .warn{color:var(--brand3);font-weight:600;}
+  code{background:var(--soft);padding:1px 6px;border-radius:6px;font-size:13px;color:#b45309;}
+  .mtx{font-size:13.5px;}
+  .fig{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0;text-align:center;}
+  .fig svg{max-width:100%;height:auto;}
+  .fig figcaption{font-size:13px;color:var(--muted);margin-top:10px;}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 22px;margin:0 0 30px;}
+  .toc a{color:var(--sub);text-decoration:none;font-size:13.5px;display:inline-block;margin:2px 14px 2px 0;}
+  .toc a:hover{color:var(--brand);}
+  .hero{background:linear-gradient(120deg,#eff6ff,#eef6ff 60%,#f0fdf4);
+        border:1px solid var(--line);border-radius:20px;padding:28px 32px;margin-bottom:24px;}
+  .hero h1{font-size:30px;margin:0 0 6px;letter-spacing:.5px;}
+  .hero p{margin:6px 0;color:var(--sub);font-size:15px;}
+  ul{color:var(--sub);}
+  li{margin:3px 0;}
+  .domain-usr{color:var(--brand);font-weight:600;}
+  .domain-life{color:var(--brand2);font-weight:600;}
+  .domain-edu{color:var(--brand3);font-weight:600;}
+  @media(max-width:780px){.arch,.grid2,.grid3,.ph{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>「成长星球」全局规划设计文档</h1>
+    <p class="lead">面向 6–12 岁儿童（首期聚焦 11 岁六年级）的微信小程序 —— 生活与学习自主力养成平台。本文件为产品/架构层面的<span style="color:var(--brand);font-weight:700">全局总纲</span>，定义定位、架构、模块边界、技术选型、演进路线与合规基线，并与既有五份文档形成可追溯闭环。</p>
+    <p>
+      <span class="tag">微信小程序</span>
+      <span class="tag">三角色 · 能力中台</span>
+      <span class="tag">虚拟零花钱记账 · 零真实支付</span>
+      <span class="tag">分阶段 P0–P4 演进</span>
+      <span class="tag">首阶段 = V0.0.1（P0+P1）</span>
+      <span class="tag">配套：产品规划 / PRD / 交互 / UI / 功能规划</span>
+    </p>
+    <p class="lead" style="font-size:13.5px;color:var(--muted)">文档版本 V1.0 ｜ 编写日期 2026-09-16 ｜ 评审状态：待评审 ｜ 衔接下游：《V0.0.1 详细分析设计文档》（需求/功能/数据结构/接口/流程）</p>
+  </div>
+
+  <nav class="toc">
+    <b>目录：</b>
+    <a href="#s1">1 文档信息 & 可追溯矩阵</a><a href="#s2">2 产品定位与愿景</a>
+    <a href="#s3">3 整体架构</a><a href="#s4">4 模块划分（业务域 + 中台）</a>
+    <a href="#s5">5 技术选型</a><a href="#s6">6 演进路线 Roadmap</a>
+    <a href="#s7">7 关键设计原则</a><a href="#s8">8 风险与合规</a>
+    <a href="#s9">9 假设与待确认（6 项裁定）</a><a href="#s10">10 附录：术语表 & 衔接说明</a>
+  </nav>
+
+  <!-- ============ 1 ============ -->
+  <h2 id="s1">一、文档信息 & 与现有文档关系 / 可追溯矩阵</h2>
+  <div class="card">
+    <table>
+      <tr><th style="width:140px">项目</th><th>内容</th></tr>
+      <tr><td>文档名称</td><td>成长星球 · 全局规划设计文档（Umbrella Architecture & Roadmap）</td></tr>
+      <tr><td>文档版本</td><td>V1.0</td></tr>
+      <tr><td>编写日期</td><td>2026-09-16</td></tr>
+      <tr><td>文档定位</td><td><b>全局总纲</b>：承接并统合下方五份文档的口径，定义架构、模块、技术、演进与合规基线；不展开业务代码与详细接口</td></tr>
+      <tr><td>配套上游文档</td><td>《成长小程序功能规划》《成长星球_产品规划方案》《成长星球_V0.0.1_PRD》《成长星球_交互设计文档》《成长星球_高保真UI设计方案》</td></tr>
+      <tr><td>下游衔接文档</td><td>《V0.0.1 详细分析设计文档》（由架构师在全局文档基础上细化：需求/功能/数据结构/接口/流程，见第十章）</td></tr>
+      <tr><td>评审状态</td><td>待评审</td></tr>
+    </table>
+  </div>
+
+  <h3>1.1 文档关系与可追溯矩阵</h3>
+  <div class="card">
+    <p>六份文档构成「<b>功能规划 → 产品规划 → 需求(PRD) → 交互 → 视觉 → 全局架构</b>」的闭环，章节相互对应、口径一致。本全局文档为总纲，向下游详细设计提供约束。</p>
+    <table class="mtx">
+      <tr><th>本全局文档章节</th><th>对应功能规划</th><th>对应产品规划</th><th>对应 PRD</th><th>对应交互/UI</th></tr>
+      <tr><td>二、产品定位与愿景</td><td>一、目标用户与原则</td><td>三、产品定位</td><td>二、版本目标</td><td>一、主题与用户</td></tr>
+      <tr><td>三、整体架构</td><td>二、整体功能架构</td><td>六、功能架构</td><td>十、权限设计</td><td>二、信息架构</td></tr>
+      <tr><td>四、模块划分</td><td>四、各阶段功能清单</td><td>七、核心功能清单</td><td>五、功能需求列表</td><td>三、核心模块交互</td></tr>
+      <tr><td>五、技术选型</td><td>六、技术架构建议</td><td>十、技术架构概览</td><td>十一、非功能需求</td><td>四、落地建议</td></tr>
+      <tr><td>六、演进路线</td><td>三、Roadmap</td><td>八、Roadmap</td><td>三、范围 In/Out</td><td>一、审查采纳对照</td></tr>
+      <tr><td>七、关键设计原则</td><td>一、关键设计原则</td><td>五、核心设计原则</td><td>十一、非功能需求</td><td>九、未成年人模式</td></tr>
+      <tr><td>八、风险与合规</td><td>七、风险与合规</td><td>十一、风险与合规</td><td>十、权限 / 八、异常</td><td>九、合规强化</td></tr>
+      <tr><td>九、假设与待确认</td><td>八、假设与下一步</td><td>十二、待确认项</td><td>十五、待确认项</td><td>〇、审查采纳对照</td></tr>
+    </table>
+    <p class="lead" style="font-size:13px;color:var(--muted)">功能编号规则：PRD 中每个功能点赋予唯一 <code>F-XXX</code>（F-001…F-023），本全局文档在模块划分章节标注其归属阶段与域前缀，实现「全局 → 规划 → 需求 → 交互 → UI」双向追溯。</p>
+  </div>
+
+  <!-- ============ 2 ============ -->
+  <h2 id="s2">二、产品定位与愿景</h2>
+  <h3>2.1 一句话定位</h3>
+  <div class="card">
+    <p class="lead">「成长星球」是陪伴 6–12 岁儿童的<b>生活与学习自主力养成平台</b>：以「孩子自主决策 + 家长虚拟额度护栏」的模拟记账模式，在<b>零真实支付风险</b>的前提下，培养孩子自我管理、理财意识与学习习惯。</p>
+  </div>
+
+  <h3>2.2 愿景 · 使命 · 首期 Mission</h3>
+  <table>
+    <tr><th style="width:150px">维度</th><th>内容</th></tr>
+    <tr><td>愿景</td><td>让每个孩子在"安全的试错空间"里，长出自驱力与责任感。</td></tr>
+    <tr><td>使命</td><td>用游戏化激励 + 家长护栏，把"吃饭/家务/作业"等日常小事，变成孩子可感知的成长里程碑。</td></tr>
+    <tr><td>首期 Mission（V0.0.1）</td><td>跑通"孩子确认今日菜单 → 家长额度护栏 → 虚拟记账 → 正向反馈"的最小闭环，验证三角色模型。<span class="note g" style="display:inline-block;padding:2px 10px;margin:0 0 0 8px">引用产品规划方案 · 3.2</span></td></tr>
+  </table>
+
+  <h3>2.3 价值主张（三方）</h3>
+  <table>
+    <tr><th>角色</th><th>核心价值</th></tr>
+    <tr><td>儿童（主角 · 11 岁）</td><td>能自己做主（选菜/任务），每完成一件事获得勋章与动画正反馈，成就感强、操作门槛低（大字号 + 强图标 + 语音）。</td></tr>
+    <tr><td>家长（监护人）</td><td>零真实资金风险地了解孩子偏好与消费；额度护栏 + 异步复核掌握全局；成长看板一目了然。</td></tr>
+    <tr><td>后台运营</td><td>配置菜单/任务/勋章、内容审核与风控，支撑多家庭规模化运营。</td></tr>
+  </table>
+
+  <div class="note b"><b>首阶段锚定（关键结论）：</b>全局规划的首个可落地实现阶段被定义为 <b>第一阶段 = V0.0.1 = P0 地基 + P1 小当家·点餐 MVP</b>。本文档所有模块、架构、技术选型、风险合规均以"支撑 V0.0.1 落地，并预留 P2–P4 演进空间"为约束（采纳 PRD 三、范围与产品规划八、路线图）。</div>
+
+  <!-- ============ 3 ============ -->
+  <h2 id="s3">三、整体架构</h2>
+  <p>系统采用「<b>表现层 → 网关与鉴权 → 业务服务层 + 能力中台 → 数据层 → 基础设施</b>」五层分层架构。三角色入口共享同一技术底座，<b>能力中台下沉</b>为各业务域复用（账号家庭、虚拟钱包、通知、数据看板、AI），避免重复建设。家长端与儿童端为<b>同一微信小程序</b>，登录后按 JWT 角色路由（<code>child / parent / admin</code>），数据按 <code>family_id</code> 隔离。</p>
+
+  <h3>3.1 分层架构图（含三角色与中台下沉）</h3>
+  <div class="fig">
+    <svg viewBox="0 0 1000 660" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,PingFang SC,sans-serif">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#94a3b8"/></marker>
+        <marker id="arP" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#a855f7"/></marker>
+      </defs>
+
+      <!-- 表现层 -->
+      <rect x="20" y="20" width="960" height="92" rx="14" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="34" y="40" font-size="13" font-weight="700" fill="#64748b">① 表现层（Presentation）</text>
+      <rect x="40" y="50" width="300" height="48" rx="10" fill="#eff6ff" stroke="#3b82f6"/>
+      <text x="190" y="74" font-size="13" font-weight="700" fill="#1d4ed8" text-anchor="middle">儿童端小程序（主角）</text>
+      <text x="190" y="90" font-size="10.5" fill="#5b6776" text-anchor="middle">点餐 / 成长 / 我的 · 5 Tab</text>
+      <rect x="350" y="50" width="300" height="48" rx="10" fill="#f0fdf4" stroke="#22c55e"/>
+      <text x="500" y="74" font-size="13" font-weight="700" fill="#15803d" text-anchor="middle">家长端小程序（监护人）</text>
+      <text x="500" y="90" font-size="10.5" fill="#5b6776" text-anchor="middle">同程序 · JWT 角色路由 · 首页/审批/看板/设置</text>
+      <rect x="660" y="50" width="300" height="48" rx="10" fill="#fffbeb" stroke="#f59e0b"/>
+      <text x="810" y="74" font-size="13" font-weight="700" fill="#b45309" text-anchor="middle">Web 后台运营台</text>
+      <text x="810" y="90" font-size="10.5" fill="#5b6776" text-anchor="middle">菜单/任务/勋章/审核/风控</text>
+
+      <!-- 网关与鉴权 -->
+      <rect x="20" y="132" width="960" height="48" rx="12" fill="#ede9fe" stroke="#a855f7"/>
+      <text x="34" y="162" font-size="13" font-weight="700" fill="#7c3aed">② 网关与鉴权（API Gateway &amp; Auth）</text>
+      <text x="966" y="162" font-size="11.5" fill="#5b6776" text-anchor="end">JWT 分权路由 · child / parent / admin · 防重放/签名 · 越权统一 401/403</text>
+
+      <!-- 业务服务层 + 能力中台 -->
+      <rect x="20" y="200" width="960" height="270" rx="14" fill="#f8fafc" stroke="#cbd5e1"/>
+      <text x="34" y="220" font-size="13" font-weight="700" fill="#64748b">③ 业务服务层（Business Services） + 能力中台（下沉复用）</text>
+
+      <!-- 业务域服务 -->
+      <text x="40" y="244" font-size="12" font-weight="700" fill="#334155">业务域服务（按 usr_ / life_ / edu_ 划分）</text>
+      <rect x="40" y="252" width="430" height="40" rx="9" fill="#fff" stroke="#e2e8f0"/>
+      <text x="255" y="277" font-size="12.5" fill="#1f2733" text-anchor="middle">账户/家庭服务 · 儿童档案 · 绑定审批（usr_ · P0）</text>
+      <rect x="40" y="300" width="430" height="40" rx="9" fill="#fff" stroke="#e2e8f0"/>
+      <text x="255" y="325" font-size="12.5" fill="#1f2733" text-anchor="middle">点餐服务 · 菜单确认状态机 · 审批流（life_ · P1）</text>
+      <rect x="40" y="348" width="430" height="40" rx="9" fill="#fff" stroke="#e2e8f0"/>
+      <text x="255" y="373" font-size="12.5" fill="#1f2733" text-anchor="middle">钱包/任务/健康服务（life_ · P0 地基 / P2 业务）</text>
+      <rect x="40" y="396" width="430" height="40" rx="9" fill="#fff" stroke="#e2e8f0"/>
+      <text x="255" y="421" font-size="12.5" fill="#1f2733" text-anchor="middle">学习域服务 · 课表/作业/错题（edu_ · P3）</text>
+
+      <!-- 能力中台 -->
+      <rect x="490" y="244" width="470" height="192" rx="10" fill="#faf5ff" stroke="#a855f7" stroke-dasharray="5 3"/>
+      <text x="510" y="264" font-size="12.5" font-weight="800" fill="#7c3aed">能力中台（Capability Middle Platform · 共享下沉）</text>
+      <g font-size="12" fill="#1f2733">
+        <rect x="510" y="274" width="200" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="610" y="294" text-anchor="middle">账号 · 家庭关系中心</text>
+        <rect x="722" y="274" width="220" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="832" y="294" text-anchor="middle">虚拟钱包（记账/额度）</text>
+        <rect x="510" y="312" width="200" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="610" y="332" text-anchor="middle">通知中台（三通道）</text>
+        <rect x="722" y="312" width="220" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="832" y="332" text-anchor="middle">数据看板 / 统计</text>
+        <rect x="510" y="350" width="200" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="610" y="370" text-anchor="middle">内容审核（AI 助审）</text>
+        <rect x="722" y="350" width="220" height="32" rx="8" fill="#fff" stroke="#d6bcfa"/><text x="832" y="370" text-anchor="middle">AI 服务（P4 启用）</text>
+        <rect x="510" y="388" width="432" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="726" y="408" text-anchor="middle">合规与审计中心（同意留痕 / 导出删除 / 操作日志）</text>
+      </g>
+
+      <!-- 中台下沉虚线 -->
+      <line x1="470" y1="290" x2="488" y2="290" stroke="#a855f7" stroke-dasharray="4 3" marker-end="url(#arP)"/>
+      <line x1="470" y1="360" x2="488" y2="330" stroke="#a855f7" stroke-dasharray="4 3" marker-end="url(#arP)"/>
+      <text x="476" y="485" font-size="10.5" fill="#a855f7" text-anchor="middle">能力中台下沉</text>
+
+      <!-- 数据层 -->
+      <rect x="20" y="490" width="960" height="58" rx="12" fill="#ecfeff" stroke="#0ea5e9"/>
+      <text x="34" y="512" font-size="13" font-weight="700" fill="#0369a1">④ 数据层（Data）</text>
+      <rect x="250" y="500" width="340" height="38" rx="9" fill="#fff" stroke="#bae6fd"/>
+      <text x="420" y="524" font-size="12.5" fill="#0369a1" text-anchor="middle">MySQL 8.0 · 业务库（usr_ / life_ / edu_ 三主域）</text>
+      <rect x="610" y="500" width="350" height="38" rx="9" fill="#fff" stroke="#bae6fd"/>
+      <text x="785" y="524" font-size="12.5" fill="#0369a1" text-anchor="middle">Redis · 会话/缓存/限流/并发锁（version 乐观锁）</text>
+
+      <!-- 基础设施 -->
+      <rect x="20" y="560" width="960" height="78" rx="12" fill="#f1f5f9" stroke="#94a3b8"/>
+      <text x="34" y="580" font-size="13" font-weight="700" fill="#475569">⑤ 基础设施（Infrastructure）</text>
+      <g font-size="12" fill="#1f2733">
+        <rect x="40" y="588" width="290" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="185" y="611" text-anchor="middle">微信生态（开放平台 / 订阅消息 / code2Session）</text>
+        <rect x="350" y="588" width="290" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="495" y="611" text-anchor="middle">MQ（可选解耦：通知/记账异步，R-04 后置）</text>
+        <rect x="660" y="588" width="300" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="810" y="611" text-anchor="middle">短信网关（仅关键安全/审批超时兜底）</text>
+      </g>
+
+      <!-- 纵向箭头 表现->网关->业务->数据 -->
+      <line x1="500" y1="112" x2="500" y2="130" stroke="#94a3b8" marker-end="url(#ar)"/>
+      <line x1="500" y1="180" x2="500" y2="198" stroke="#94a3b8" marker-end="url(#ar)"/>
+      <line x1="500" y1="470" x2="500" y2="488" stroke="#94a3b8" marker-end="url(#ar)"/>
+      <line x1="500" y1="548" x2="500" y2="558" stroke="#94a3b8" marker-end="url(#ar)"/>
+    </svg>
+    <figcaption>图 1　成长星球分层架构（三角色入口共享底座 · 能力中台下沉为业务域复用）</figcaption>
+  </div>
+
+  <h3>3.2 三角色与鉴权模型</h3>
+  <div class="grid3">
+    <div class="card" style="margin:0;border-top:4px solid var(--brand)">
+      <h4 style="margin-top:0;color:var(--brand)">儿童（ROLE_CHILD）</h4>
+      <ul style="font-size:13.5px">
+        <li>建档、加入家庭、浏览菜单、确认菜单、看本人状态/流水</li>
+        <li>数据可见：仅本人档案、本人确认单与流水</li>
+        <li>端：小程序儿童视图（5 Tab）</li>
+      </ul>
+    </div>
+    <div class="card" style="margin:0;border-top:4px solid var(--brand2)">
+      <h4 style="margin-top:0;color:var(--brand2)">家长（ROLE_PARENT）</h4>
+      <ul style="font-size:13.5px">
+        <li>建家庭、邀绑定、设额度、审批确认单、看消费看板、撤回同意/数据出口</li>
+        <li>数据可见：所绑定家庭成员及其数据</li>
+        <li>端：<b>同一小程序</b>按角色路由 + 代操作切换</li>
+      </ul>
+    </div>
+    <div class="card" style="margin:0;border-top:4px solid var(--brand3)">
+      <h4 style="margin-top:0;color:var(--brand3)">后台运营（ROLE_ADMIN）</h4>
+      <ul style="font-size:13.5px">
+        <li>菜品库、当日菜单配置、内容/风控（P1 起）</li>
+        <li>数据可见：全量运营数据（脱敏）+ 审计日志</li>
+        <li>端：Web 管理台（不在小程序内）</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note b"><b>鉴权要点（引用 PRD 十、权限设计）：</b>JWT 区分 <code>child / parent / admin</code>；所有接口按 <code>family_id</code> + <code>child_id</code> 做数据隔离，禁止越权访问他人家庭数据；儿童端不做裸露聊天/社交/定位；敏感动作统一走家长授权或审批流。</div>
+
+  <!-- ============ 4 ============ -->
+  <h2 id="s4">四、模块划分（按业务域 usr_ / life_ / edu_ + 能力中台）</h2>
+  <p>模块归属遵循功能规划的数据域前缀约定：<span class="domain-usr">usr_</span>（账户/家庭/成长基础）· <span class="domain-life">life_</span>（生活域：菜单/钱包/任务/健康）· <span class="domain-edu">edu_</span>（学习域）。能力中台横向贯穿，不绑定单一业务域。</p>
+
+  <h3>4.1 业务域模块归属与演进（P0–P4）</h3>
+  <table>
+    <tr><th style="width:120px">数据域</th><th>P0 地基（含 V0.0.1）</th><th>P1 点餐（V0.0.1 核心）</th><th>P2 生活自主</th><th>P3 学习成长</th><th>P4 智能激励</th></tr>
+    <tr>
+      <td class="domain-usr"><b>usr_</b><br/>账户/家庭/成长</td>
+      <td>usr_user · usr_family · usr_family_member · usr_child_profile · 监护人同意留痕 · 合规数据出口</td>
+      <td>儿童档案忌口/口味持久化（F-022）</td>
+      <td>二级监护人委托（置灰占位）</td>
+      <td>教师角色关系接入</td>
+      <td>usr_badge 勋章墙 · usr_growth_record 成长树养成 · 多孩扩展</td>
+    </tr>
+    <tr>
+      <td class="domain-life"><b>life_</b><br/>生活域</td>
+      <td>life_wallet 虚拟余额 · life_allowance_rule 额度规则 · life_allowance_log 流水地基（F-008/009）</td>
+      <td>life_dish · life_dish_category · life_menu_daily（替代 restaurant，R-07）· life_menu_confirm · life_menu_item · life_confirm_approval（F-014~F-023）</td>
+      <td>life_chore_task 家务 · life_health_checkin 健康 · life_schedule 日程 · 购物清单 · 奖励兑换中心</td>
+      <td>（学习域为主）</td>
+      <td>成长洞察/营养告警（数据看板衍生）</td>
+    </tr>
+    <tr>
+      <td class="domain-edu"><b>edu_</b><br/>学习域</td>
+      <td>—</td>
+      <td>—</td>
+      <td>—</td>
+      <td>edu_homework 作业 · edu_mistake_note 错题(OCR) · edu_reading_plan 阅读 · 课表</td>
+      <td>知识百科 · 个性化推荐</td>
+    </tr>
+  </table>
+
+  <h3>4.2 能力中台模块（共享下沉，P0 预建 · P4 增强）</h3>
+  <div class="arch">
+    <div class="col"><h4 style="color:var(--brand4)">账号 · 家庭关系中心</h4><ul>
+      <li>微信登录 code2Session</li><li>角色路由</li><li>家庭/成员关系</li><li>监护状态</li></ul></div>
+    <div class="col"><h4 style="color:var(--brand4)">虚拟钱包</h4><ul>
+      <li>虚拟余额</li><li>额度规则引擎</li><li>扣减/发放流水</li><li>并发乐观锁</li></ul></div>
+    <div class="col"><h4 style="color:var(--brand4)">通知中台</h4><ul>
+      <li>站内通知中心</li><li>微信订阅消息</li><li>家长短信兜底</li><li>三通道降级</li></ul></div>
+    <div class="col"><h4 style="color:var(--brand4)">数据看板</h4><ul>
+      <li>消费/营养统计</li><li>成长多维聚合</li><li>趋势分析</li></ul></div>
+    <div class="col"><h4 style="color:var(--brand4)">内容审核</h4><ul>
+      <li>机审+人审</li><li>敏感词/图像风控</li><li>未成年人保护词库</li></ul></div>
+    <div class="col"><h4 style="color:var(--brand4)">合规与审计</h4><ul>
+      <li>监护人同意留痕</li><li>数据导出/删除</li><li>操作/越权日志</li></ul></div>
+    <div class="col"><h4 style="color:var(--brand4)">AI 服务（P4）</h4><ul>
+      <li>AI 小问号</li><li>适龄化引导</li><li>个性化推荐</li></ul></div>
+    <div class="col"><h4 style="color:var(--brand4)">基础框架</h4><ul>
+      <li>未成年人模式</li><li>无障碍 WCAG</li><li>配置开关/灰度</li></ul></div>
+  </div>
+  <div class="note"><b>中台下沉原则：</b>P0 即预建「账号家庭 / 虚拟钱包 / 通知中台 / 合规审计」四项底座，使 P1 点餐与 P2 业务无需重复造轮子；P2 业务仅定义「提交→待确认→确认/驳回」与对应激励即可复用审批流卡片、异步复核、通知中台、勋章动画（引用交互文档 3.9）。</div>
+
+  <!-- ============ 5 ============ -->
+  <h2 id="s5">五、技术选型</h2>
+  <div class="card">
+    <table>
+      <tr><th style="width:170px">层 / 域</th><th>选型</th><th>说明与口径</th></tr>
+      <tr><td>后端框架</td><td><b>Java 21 LTS + Spring Boot 4.1.1</b></td><td>Spring Framework 7 · Jakarta EE 11（<code>jakarta.*</code> 命名空间）· 虚拟线程。属全新代际，与旧 Java 11 / 2.7.18 工程隔离（引用功能规划六）。</td></tr>
+      <tr><td>ORM</td><td><b>MyBatis-Plus</b></td><td>复杂报表/统计友好；通用字段 <code>create_time / update_time / delete_at</code>（<code>delete_at</code> 为 BIGINT 删除时间戳，默认 0，替代布尔 deleted，支撑"删了还能重建"）；枚举用 VARCHAR 在 Java 控制。</td></tr>
+      <tr><td>数据库</td><td><b>MySQL 8.0</b></td><td>业务库按 <span class="domain-usr">usr_</span> / <span class="domain-life">life_</span> / <span class="domain-edu">edu_</span> 三主域组织。</td></tr>
+      <tr><td>缓存 / 会话</td><td><b>Redis</b></td><td>会话、热点缓存、限流、虚拟钱包并发扣减乐观锁（<code>version</code> 字段，防 E-007 并发超扣）。</td></tr>
+      <tr><td>鉴权</td><td><b>JWT 分权</b></td><td>child / parent / admin 三角色；token 失效与刷新；敏感接口签名/防重放。</td></tr>
+      <tr><td>通知</td><td>微信订阅消息 + 站内通知中心 + 短信兜底（后置）</td><td>三通道兜底，站内保底（F-010/F-011 · 采纳 R-04）。</td></tr>
+      <tr><td>解耦</td><td>可选 MQ</td><td>通知/记账异步解耦；V0.0.1 可先同步，MQ 作为 R-04 后置增强（引用功能规划六）。</td></tr>
+      <tr><td>小程序端</td><td>微信小程序原生 或 Taro / uni-app（Vue/React 跨端）</td><td>前端独立工程，非 Java；家长端/儿童端同一小程序按角色路由。</td></tr>
+      <tr><td>后台</td><td>Web 管理台（独立工程）</td><td>不在小程序内；菜单/任务/勋章/审核/风控。</td></tr>
+    </table>
+  </div>
+
+  <div class="note r"><b>Q-06 技术栈版本闸门（关键裁定）：</b>默认采用 <b>Java 21 LTS + Spring Boot 4.1.1</b>，但须在<b>发布前设置「GA 与 MyBatis-Plus 兼容性」验收闸门（引用 R-10）</b>。若 GA 版本或 MyBatis-Plus 适配未就绪，则<b>锁定稳定版</b>（如 Spring Boot 3.x 稳定线）以保证交付，待生态成熟再升级。架构层面通过分层与接口契约降低对具体版本的耦合。</div>
+
+  <!-- ============ 6 ============ -->
+  <h2 id="s6">六、演进路线 Roadmap（P0–P4）</h2>
+  <div class="ph">
+    <div class="step"><b style="color:var(--p0)">P0 地基</b><span>第 1–2 月</span><br/>账号/登录/家庭绑定/框架 + 虚拟钱包地基/通知中台/合规同意/额度设置</div>
+    <div class="step"><b style="color:var(--p1)">P1 点餐起步 = V0.0.1</b><span>第 2–4 月</span><br/>小当家·菜单展示与确认 MVP（额度护栏+站内通知+审批）</div>
+    <div class="step"><b style="color:var(--p2)">P2 生活自主</b><span>第 5–8 月</span><br/>零花钱/家务/健康/日程 + 奖励兑换/二级监护人</div>
+    <div class="step"><b style="color:var(--p3)">P3 学习成长</b><span>第 9–12 月</span><br/>课表/作业/错题/阅读 + 教师角色与家校互通</div>
+    <div class="step"><b style="color:var(--p4)">P4 智能激励</b><span>第 13–18 月</span><br/>AI/成长树/多孩 + 成长洞察/数据删除导出</div>
+  </div>
+
+  <div class="note b"><b>阶段一锚定：</b>全局规划的<b>第一阶段即 V0.0.1 = P0 地基 + P1 小当家·点餐 MVP</b>。它是首个可上线版本，本文档的架构/技术/合规均以其为落地校验点；P2–P4 为后续演进，本期仅规划边界与接口预留。</div>
+
+  <h3>6.1 各阶段目标、关键交付与退出标准</h3>
+  <table>
+    <tr><th style="width:70px">阶段</th><th>目标</th><th>关键交付（含 V0.0.1 对齐）</th><th>退出标准（示例）</th></tr>
+    <tr><td><b>P0</b></td><td>建成三角色可运行地基与护栏底座</td><td>登录/档案/家庭绑定/虚拟钱包/通知中台/合规同意/额度设置（F-001~F-013）</td><td>儿童可建档并绑定家庭；家长可设额度；通知三通道可用</td></tr>
+    <tr><td><b>P1</b><br/><span class="pill p0">阶段一·V0.0.1</span></td><td>跑通首个用户价值闭环</td><td>菜单配置+展示+确认+家长审批+虚拟记账+状态追踪（F-014~F-023）</td><td>端到端"确认→审批→记账→正反馈"跑通，<b>零真实支付</b></td></tr>
+    <tr><td><b>P2</b></td><td>生活自主闭环</td><td>零花钱UI/家务/健康/日程/购物/奖励兑换/二级监护人</td><td>"赚→花"动机闭环成立</td></tr>
+    <tr><td><b>P3</b></td><td>学习成长闭环</td><td>课表/作业/错题/OCR/阅读/百科/教师家校互通</td><td>学习模块可用，家校三方协同</td></tr>
+    <tr><td><b>P4</b></td><td>智能激励收敛</td><td>AI/成长树/多孩/洞察告警/数据导出注销</td><td>跨模块激励体系成型，合规闭环</td></tr>
+  </table>
+
+  <h3>6.2 为何从「点餐」起步（引用产品规划 8.2）</h3>
+  <p>① 高频刚需、每天可用，快速养成习惯；② 天然需要"孩子决策 + 家长额度护栏"结构，验证三角色模型；③ 顺带建立消费记录与偏好，为零花钱、营养健康打地基；④ 正向反馈明显（孩子确认→家长确认→完成），孩子成就感强、家长接受度高。</p>
+
+  <!-- ============ 7 ============ -->
+  <h2 id="s7">七、关键设计原则</h2>
+  <div class="card">
+    <ol>
+      <li><b>家长护栏优先：</b>不做真实支付，消费走"虚拟零花钱"记账；对外联系/位置/内容发布经家长授权或审批流；儿童端不做裸露的聊天/社交/定位（引用产品规划五）。</li>
+      <li><b>零真实支付：</b>结算统一走虚拟零花钱记账 + 额度护栏；儿童端<b>无任何真实资金能力</b>；超额动作由家长异步复核（非实时拦截）。</li>
+      <li><b>大字号 + 强图标 + 语音辅助：</b>正文基准 16px（高于常规 14px），关键操作支持语音与图片，降低识字与输入门槛。</li>
+      <li><b>即时正反馈：</b>每完成一件事给予勋章/动画/进度，强化自主感与成就感。</li>
+      <li><b>儿童情绪保护：</b>儿童端仅见状态（"已告诉爸妈，等确认"），不显示"被拦截/拒绝"等负面词；驳回原因由家长以温和语言说明（引用交互 5 / R-03）。</li>
+      <li><b>隐私合规：</b>遵循儿童个人信息保护法规，最小化采集、家长明示同意、可撤回、可导出/可删除（引用交互 9）。</li>
+      <li><b>无障碍 WCAG 2.2 AA：</b>对比度 ≥4.5:1、UI 组件 ≥3:1；状态配图标+文字不纯靠颜色；触控目标 ≥44×44px；动效仅 <code>transform/opacity</code>，尊重系统「减少动态效果」（引用交互 8 / PRD 11.4）。</li>
+      <li><b>能力中台复用：</b>底座前置、业务轻量，避免重复造轮子，支撑快速演进（见 4.2）。</li>
+    </ol>
+  </div>
+
+  <!-- ============ 8 ============ -->
+  <h2 id="s8">八、风险与合规</h2>
+  <div class="grid2">
+    <div class="card">
+      <h4 style="margin-top:0;color:var(--brand3)">风险</h4>
+      <ul style="font-size:13.5px">
+        <li><b>虚拟消费合规：</b>仅虚拟记账 + 额度护栏，儿童端无真实支付能力；超额异步复核（非实时拦截）。</li>
+        <li><b>儿童个人信息保护：</b>位置/人脸/OCR 需家长同意，可撤回；儿童数据单独存储、加密。</li>
+        <li><b>未成年人模式：</b>须满足《移动互联网未成年人模式建设指南》与微信平台口径（时长/时段/内容分级/消费约束）。</li>
+        <li><b>内容安全：</b>AI 与 UGC（读后感/对话）需机审+人审，防不良信息。</li>
+        <li><b>沉迷防控：</b>游戏化适度，设使用时长提醒；22:00–8:00 禁服务或仅家长授权时段开放。</li>
+        <li><b>越权与审计：</b>跨家庭数据访问须拒绝并留安全日志（E-009）。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0;color:var(--brand2)">应对</h4>
+      <ul style="font-size:13.5px">
+        <li>审批流 + 额度双控，家长全可见；扣减统一发生在家长「同意」之后（F-019 状态机）。</li>
+        <li>可验证监护人同意 + 年龄识别；儿童数据最小化采集 + 明示同意留痕 + 可导出/可删除（F-007/F-012）。</li>
+        <li>未成年人模式常驻入口，与额度护栏打通（交互 9）。</li>
+        <li>后台内容审核 + 敏感词/图像风控 + 未成年人保护词库。</li>
+        <li>成长类激励替代纯消耗型玩法；兑换中心 P2 仅限虚拟权益，规避经营资质风险。</li>
+        <li>操作日志与审计：同意/记账/审批/越权均写入可追溯日志（采纳 R-12）。</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>合规红线（引用交互 9 / PRD 11.3）：</b>不采集儿童真实位置/人脸（V0.0.1）；OCR/位置待 P2+ 且需同意；监护人同意书独立勾选、不与登录合并；可验证监护人核验（实名/运营商三要素）作 P1+ 增强（见 9、Q-01）。未成年人模式为 P0 合规硬约束，非可选项。</div>
+
+  <!-- ============ 9 ============ -->
+  <h2 id="s9">九、假设与待确认（含 6 项裁定）</h2>
+  <div class="card">
+    <p><b>已做基础假设：</b>微信小程序（非原生 App）；三角色；通用场景（不限定城市）；不做真实支付、食堂非真实营运——学校端仅展示当日菜单、家庭端由孩子向父母确认/提报，点餐与任务均为虚拟零花钱记账。下述 6 项待确认已由本全局文档<b>按推荐默认裁定并推进</b>，避免再次留悬空（引用 PRD 十五、产品规划十二）。</p>
+  </div>
+
+  <h3>9.1 六项待确认裁定（落点）</h3>
+  <table>
+    <tr><th style="width:60px">编号</th><th>问题</th><th>本全局文档裁定（默认推进）</th><th>依据</th></tr>
+    <tr><td><b>Q-01</b></td><td>监护人可验证核验（实名/运营商三要素）是否纳入 V0.0.1？</td><td><b>V0.0.1 MVP 用「微信绑定 + 明示《同意书》勾选 + 家长自报年龄 attestation」</b>建立监护关系；可验证核验（实名/运营商三要素之一）<b>作 P1+ 增强</b>，不阻塞 MVP。</td><td>采纳 R-05</td></tr>
+    <tr><td><b>Q-02</b></td><td>家长短信兜底是否 V0.0.1 实现？</td><td>V0.0.1 默认<b>「站内通知中心 + 微信订阅消息」双通道</b>；<b>短信仅作关键安全/审批超时兜底，整体后置</b>（启用须补手机号采集+明示同意+服务商选型）。</td><td>采纳 R-04</td></tr>
+    <tr><td><b>Q-03</b></td><td>儿童端 5 Tab 在 P0 的渐进显隐规则？</td><td>V0.0.1 <b>仅「点餐」可用</b>；任务/学习占位"敬请期待"；成长仅静态幼苗（P4 养成）。</td><td>采纳 R-02</td></tr>
+    <tr><td><b>Q-04</b></td><td>额度默认值？</td><td><b>单笔 ¥30 / 每日 ¥30 / 每周 ¥150</b>（虚拟消耗额，可配置）。</td><td>PRD F-009 裁定</td></tr>
+    <tr><td><b>Q-05</b></td><td>虚拟余额初始值？家长是否"充值"虚拟币？</td><td><b>初始 0</b>；家长可<b>手动增（P0 简单入口）</b> / 任务发放（P2）。</td><td>PRD F-008 裁定</td></tr>
+    <tr><td><b>Q-06</b></td><td>技术栈版本（Spring Boot 4.1.1 是否 GA）？</td><td>默认 <b>Java 21 LTS + Spring Boot 4.1.1</b>；设置发布前<b>「GA 与 MyBatis-Plus 兼容性」验收闸门（R-10）</b>，若不兼容则锁稳定版。</td><td>功能规划六 · R-10</td></tr>
+  </table>
+
+  <h3>9.2 补充合理假设（架构师补充）</h3>
+  <ul style="font-size:13.5px">
+    <li><b>A-单孩优先：</b>V0.0.1 限制为单孩以简化链路；若支持多孩，家长端/看板顶部提供「孩子选择器」，数据按 <code>child_id</code> 隔离（引用交互 R-14 / U-Q-03）。</li>
+    <li><b>A-虚拟消耗额符号：</b>全稿金额符号 <code>¥</code> 表示<b>虚拟消耗额（非真实货币）</b>；关键卡显式标注"虚拟"，满足 R-15 去货币化目标（引用 UI 2.7 / U-Q-05）。</li>
+    <li><b>A-扣减口径：</b>严格遵循 F-019 权威状态机——<b>扣减统一发生在家长「同意」之后</b>，提交时不扣减；超额不实时拦截，转异步复核（引用 PRD F-018/F-019、交互 3.8、采纳 R-01）。</li>
+    <li><b>A-数据模型去冗余：</b>V0.0.1 以 <code>life_menu_daily</code>（按学校+日期+餐段）替代 <code>life_restaurant</code>，避免过度设计（引用 R-07）。</li>
+    <li><b>A-二级监护人：</b>V0.0.1 <b>不做</b>，入口置灰标"即将推出"（引用 U-Q-01 / U-G-02）。</li>
+  </ul>
+
+  <!-- ============ 10 ============ -->
+  <h2 id="s10">十、附录</h2>
+  <h3>10.1 术语表</h3>
+  <table>
+    <tr><th style="width:180px">术语</th><th>含义</th></tr>
+    <tr><td>成长星球（Umbrella）</td><td>产品暂定名；首期模块昵称「小当家·点餐」。</td></tr>
+    <tr><td>V0.0.1 / 第一阶段</td><td>首个可上线版本 = P0 地基 + P1 小当家·点餐 MVP。</td></tr>
+    <tr><td>三角色</td><td>儿童(ROLE_CHILD) / 家长(ROLE_PARENT) / 后台运营(ROLE_ADMIN)。</td></tr>
+    <tr><td>虚拟零花钱 / 虚拟消耗额</td><td>模拟记账单位（非真实货币），¥ 符号统一标注"虚拟"（R-15）。</td></tr>
+    <tr><td>额度护栏</td><td>单笔/每日/每周上限 + 超额异步复核（家长显式放行）。</td></tr>
+    <tr><td>确认单状态机(F-019)</td><td>DRAFT→PENDING(待家长确认)→APPROVED(家长同意)→COMPLETED(扣减成功)；REJECTED→DRAFT(改后重提)。扣减统一在"同意"之后。</td></tr>
+    <tr><td>能力中台</td><td>账号家庭 / 虚拟钱包 / 通知 / 数据看板 / 内容审核 / 合规审计 / AI(P4) 等共享下沉能力。</td></tr>
+    <tr><td>数据域前缀</td><td><span class="domain-usr">usr_</span> 账户/家庭/成长基础 · <span class="domain-life">life_</span> 生活域 · <span class="domain-edu">edu_</span> 学习域。</td></tr>
+    <tr><td>未成年人模式</td><td>P0 合规硬约束：时长/时段/内容分级/消费约束（交互 9）。</td></tr>
+    <tr><td>R-XX 审查建议</td><td>《文档审查与修改建议》编号（如 R-01 扣减口径、R-04 短信后置、R-05 核验分层、R-07 数据模型、R-10 版本闸门）。</td></tr>
+  </table>
+
+  <h3>10.2 与《V0.0.1 详细分析设计文档》的衔接说明</h3>
+  <div class="card">
+    <p>本全局规划设计文档为<b>总纲</b>，定义了架构、模块边界、技术选型、演进与合规基线。下游《V0.0.1 详细分析设计文档》将在本总纲约束下展开以下细化，并与之严格对齐：</p>
+    <ul style="font-size:13.5px">
+      <li><b>需求细化：</b>将 F-001~F-023 拆解为详细用例、验收标准与异常分支（承接 PRD 六、八）。</li>
+      <li><b>数据结构：</b>给出 <span class="domain-usr">usr_</span> / <span class="domain-life">life_</span> 各实体完整 DDL、索引、通用字段与 <code>version</code> 乐观锁设计（承接功能规划六、PRD 十）。</li>
+      <li><b>接口契约：</b>RESTful + JWT 分权接口清单、状态码、错误码（E-001~E-010）与并发扣减事务设计。</li>
+      <li><b>流程细化：</b>F-019 状态机落到服务编排（提交预校验不扣减 → 家长同意 → 扣减 → 通知），含撤回/防刷（交互 3.8）。</li>
+      <li><b>技术闸门落地：</b>在详细设计阶段执行 Q-06 的 GA/MyBatis-Plus 兼容性验收，确定最终依赖版本。</li>
+      <li><b>边界守约：</b>严格遵循 Q-01~Q-05 裁定与零真实支付、儿童情绪保护、未成年人模式等红线。</li>
+    </ul>
+    <div class="note b" style="margin-bottom:0">衔接校验点：详细设计文档须能回溯到本全局文档的架构分层（第三章）、模块边界（第四章）、技术选型（第五章）与合规基线（第八章）；任何偏离须在详细设计文档中显式标注并说明理由。</div>
+  </div>
+
+  <footer style="margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;">
+    成长星球 · 全局规划设计文档 V1.0 ｜ 基于《功能规划》《产品规划方案》《V0.0.1 PRD》《交互设计文档》《高保真UI设计方案》统合提炼 ｜ 衔接下游《V0.0.1 详细分析设计文档》｜ 口径一致、F 编号与 R 建议可追溯。
+  </footer>
+
+</div>
+</body>
+</html>
