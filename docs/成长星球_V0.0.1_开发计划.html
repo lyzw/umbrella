@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>成长星球 · V0.0.1 开发计划</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:"default"});});</script>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2733; --sub:#5b6776; --muted:#8a94a6;
+    --brand:#3b82f6; --brand2:#22c55e; --brand3:#f59e0b; --brand4:#a855f7;
+    --line:#e6ebf2; --soft:#eef3fb; --radius:16px;
+    --p0:#64748b; --p1:#3b82f6; --p2:#22c55e; --p3:#f59e0b; --p4:#a855f7;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.75;font-size:15.5px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 90px;}
+  h1{font-size:30px;margin:0 0 6px;}
+  h2{font-size:22px;margin:46px 0 14px;padding-left:12px;border-left:5px solid var(--brand);}
+  h3{font-size:17px;margin:26px 0 10px;color:var(--brand);}
+  h4{font-size:15px;margin:18px 0 8px;color:var(--ink);}
+  p{margin:8px 0;color:var(--sub);}
+  .lead{font-size:16px;color:var(--ink);}
+  .tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;
+       background:var(--soft);color:var(--brand);margin-right:6px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+        padding:20px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,80,.04);}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--soft);color:var(--ink);font-weight:600;}
+  .pill{padding:3px 10px;border-radius:10px;color:#fff;font-weight:600;font-size:12.5px;}
+  .p0{background:var(--p0);} .p1{background:var(--p1);} .p2{background:var(--p2);}
+  .p3{background:var(--p3);} .p4{background:var(--p4);}
+  .ph{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;flex:1;min-width:150px;}
+  .step b{display:block;font-size:13px;color:var(--ink);}
+  .step span{font-size:12px;color:var(--sub);}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;
+        font-size:13.5px;color:#7c5e10;margin:12px 0;}
+  .note.b{background:#eff6ff;border-color:#bfdbfe;color:#1e40af;}
+  .note.g{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
+  .note.r{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .ok{color:var(--brand2);font-weight:600;}
+  .warn{color:var(--brand3);font-weight:600;}
+  code{background:var(--soft);padding:1px 6px;border-radius:6px;font-size:13px;color:#b45309;}
+  .fcode{font-family:ui-monospace,Menlo,monospace;background:var(--soft);padding:1px 6px;border-radius:6px;color:#b45309;font-size:12.5px;}
+  .mtx{font-size:13.5px;}
+  .fig{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0;text-align:center;}
+  .fig figcaption{font-size:13px;color:var(--muted);margin-top:10px;}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 22px;margin:0 0 30px;}
+  .toc a{color:var(--sub);text-decoration:none;font-size:13.5px;display:inline-block;margin:2px 14px 2px 0;}
+  .toc a:hover{color:var(--brand);}
+  .hero{background:linear-gradient(120deg,#eff6ff,#eef6ff 60%,#f0fdf4);
+        border:1px solid var(--line);border-radius:20px;padding:28px 32px;margin-bottom:24px;}
+  .hero h1{font-size:30px;margin:0 0 6px;letter-spacing:.5px;}
+  .hero p{margin:6px 0;color:var(--sub);font-size:15px;}
+  ul{color:var(--sub);}
+  li{margin:3px 0;}
+  pre{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px 16px;overflow:auto;
+      font-size:12.5px;line-height:1.6;font-family:ui-monospace,Menlo,monospace;}
+  .mermaid{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;text-align:center;}
+  .domain-usr{color:var(--brand);font-weight:600;}
+  .domain-life{color:var(--brand2);font-weight:600;}
+  .domain-edu{color:var(--brand3);font-weight:600;}
+  .state{display:inline-block;padding:2px 9px;border-radius:8px;font-size:12px;font-weight:600;}
+  .s-todo{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;}
+  .s-doing{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+  .s-done{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
+  .s-reject{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
+  .milestone{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--line);
+             border-left:4px solid var(--brand4);border-radius:12px;padding:14px 18px;margin:12px 0;}
+  .milestone .mno{font-weight:700;color:var(--brand4);font-size:15px;min-width:64px;}
+  .milestone .mbody{flex:1;}
+  .milestone b{color:var(--ink);}
+  .sprint-head{background:linear-gradient(120deg,#eff6ff,#f0fdf4);border:1px solid var(--line);
+               border-radius:14px;padding:16px 20px;margin:18px 0 10px;}
+  .sprint-head h3{margin:0 0 4px;}
+  @media(max-width:780px){.grid2,.grid3,.ph{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>「成长星球」V0.0.1 开发计划</h1>
+    <p class="lead">把《V0.0.1 详细分析设计文档》落地为可执行的实施计划：分阶段迭代、里程碑、依赖顺序、交付清单与测试策略。本文件是<b>规划文档，不含代码</b>，可直接指导研发排期、测试设计与灰度上线。</p>
+    <p>
+      <span class="tag">阶段一 = V0.0.1</span>
+      <span class="tag">P0 + P1（23 个 F）</span>
+      <span class="tag">4 个 Sprint · 7 个核心里程碑</span>
+      <span class="tag">Java 21 / Spring Boot 4.1.1</span>
+      <span class="tag">配套：全局规划 / 详细设计 / PRD / 交互</span>
+    </p>
+    <p class="lead" style="font-size:13.5px;color:var(--muted)">文档版本 V1.0 ｜ 编写日期 2026-09-16 ｜ 上游：《成长星球·全局规划设计文档》《V0.0.1 详细分析设计文档》《V0.0.1 PRD》</p>
+  </div>
+
+  <nav class="toc">
+    <b>目录：</b>
+    <a href="#A">A 开篇与目标</a><a href="#B">B 阶段迭代划分</a>
+    <a href="#C">C 端到端核心链路里程碑</a><a href="#D">D 依赖关系图</a>
+    <a href="#E">E 测试策略</a><a href="#F">F 风险与待办</a>
+    <a href="#G">G 交付总览矩阵</a>
+  </nav>
+
+  <!-- ============ A ============ -->
+  <h2 id="A">A. 开篇与目标</h2>
+  <div class="card">
+    <p><b>目标：</b>本计划将详细分析设计文档（16 张表 DDL 就绪、8 组 REST 接口、5 张核心流程图）转换为研发可执行的 4 个 Sprint，明确每个阶段的目标、功能清单、数据表、接口组、交付物与进出准则（DoD），并给出端到端里程碑、依赖图、测试策略、风险回滚与交付矩阵。</p>
+    <p><b>范围：</b>严格 = V0.0.1 = P0 地基 + P1 点餐 MVP，覆盖 F-001~F-023（共 23 个 F）；不含 P2–P4（真实支付、课表作业、AI、成长树、多孩 UI 等仅占位或置灰）。</p>
+    <p><b>衔接：</b>本计划不新增架构决策，全部沿用《全局规划设计文档》与《详细分析设计文档》的裁定与口径；术语、视觉风格、功能编号、表名、接口路径与上文一致，便于回溯。</p>
+  </div>
+
+  <h3>A.1 已裁定约束（必须沿用，不得推翻）</h3>
+  <div class="grid2">
+    <div class="card" style="margin:0;border-left:4px solid var(--brand2)">
+      <h4 style="margin-top:0;color:var(--brand2)">数据 / 状态机</h4>
+      <ul style="font-size:13.5px">
+        <li><b>逻辑删除：</b><code>delete_at BIGINT DEFAULT 0</code>（非布尔 <code>deleted</code>）；业务唯一键设计成 <code>UNIQUE(biz_col, delete_at)</code>，实现"删了还能重建"。</li>
+        <li><b>扣减时机：</b>统一在家长<b>同意后</b>（APPROVED→COMPLETED）发生；提交只做预校验 + 置 PENDING，<b>提交不扣减</b>。</li>
+        <li><b>钱包并发：</b><code>life_wallet.version</code> 乐观锁 + 事务，防并发超扣（E-007）。</li>
+      </ul>
+    </div>
+    <div class="card" style="margin:0;border-left:4px solid var(--brand)">
+      <h4 style="margin-top:0;color:var(--brand)">技术 / 合规</h4>
+      <ul style="font-size:13.5px">
+        <li><b>技术栈：</b>Java 21 LTS + Spring Boot 4.1.1 + MyBatis-Plus + MySQL 8.0 + Redis + JWT；三角色（CHILD/PARENT/ADMIN）。</li>
+        <li><b>分层 + 域前缀：</b>接入/网关鉴权/业务+中台/数据/基础设施；表前缀 <code>usr_</code>/<code>life_</code>/<code>sys_</code>（<code>edu_</code> 仅占位）。</li>
+        <li><b>零真实支付：</b>全为虚拟消耗额（¥ 非真实货币）；短信仅兜底后置（Q-02）。</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ B ============ -->
+  <h2 id="B">B. 阶段 / 迭代划分（4 个 Sprint）</h2>
+  <p>按"地基可运行 → 钱包额度护栏 → 点餐核心闭环 → 通知与收尾验收"推进。每个 Sprint 标注：目标、F 清单、涉及表、接口组、交付物、进入/退出准则（DoD）、依赖。</p>
+
+  <!-- Sprint 1 -->
+  <div class="sprint-head">
+    <h3>Sprint 1 · 地基可运行（P0 账号 / 家庭 / 合规 / 框架）</h3>
+    <p style="margin:0;color:var(--sub)">目标：打通"登录 → 角色 → 档案 → 家庭 → 绑定 → 监护人同意"全链路，搭建分层工程脚手架与数据层。</p>
+  </div>
+  <div class="card">
+    <table class="mtx">
+      <tr><th style="width:120px">维度</th><th>内容</th></tr>
+      <tr><td>功能清单</td><td><span class="fcode">F-001</span> 微信登录 · <span class="fcode">F-002</span> 角色选择 · <span class="fcode">F-003</span> 儿童档案 · <span class="fcode">F-004</span> 家庭创建/邀请码 · <span class="fcode">F-005</span> 儿童加入 · <span class="fcode">F-006</span> 绑定审批 · <span class="fcode">F-007</span> 监护人同意+核验 · <span class="fcode">F-012</span> 同意留痕/出口入口 · <span class="fcode">F-013</span> 基础框架 5 Tab（Q-03）</td></tr>
+      <tr><td>涉及数据表</td><td><span class="domain-usr">usr_user</span> · <span class="domain-usr">usr_family</span> · <span class="domain-usr">usr_family_member</span> · <span class="domain-usr">usr_child_profile</span> · <span class="domain-usr">usr_consent_log</span> · <span class="domain-">sys_audit_log</span></td></tr>
+      <tr><td>接口组</td><td><b>AUTH</b>（wx-login / select-role / child-profile）· <b>FAMILY</b>（create / invite-code / join / bind-approve）· <b>COMPLIANCE</b>（consent GET/POST / revoke / data-export 入口）</td></tr>
+      <tr><td>交付物</td><td>① 工程脚手架（Spring Boot 4.1.1 + MyBatis-Plus + JWT 网关鉴权）② 16 表 DDL 中 usr_ 5 张 + sys_audit_log 落地（含 <code>delete_at</code> 与唯一键）③ 微信登录与三角色 JWT 分权 ④ 家庭创建/邀请码(24h)/绑定审批 ⑤《同意书》独立勾选+自报年龄留痕 ⑥ 5 Tab 框架（点餐可用，余占位）</td></tr>
+      <tr><td>进入准则</td><td>详细设计评审通过；开发/测试环境就绪（MySQL 8.0 + Redis）；技术栈版本闸门 Q-06 预检通过。</td></tr>
+      <tr><td>退出准则 DoD</td><td>微信登录→角色→档案→家庭→绑定→同意全链路可跑通；越权访问返回 403(E-009)；同意撤回即时降级(E-010)；单元/集成测试覆盖 AUTH/FAMILY/COMPLIANCE 关键路径；代码评审通过。</td></tr>
+      <tr><td>依赖</td><td>无（首 Sprint，含脚手架）。</td></tr>
+    </table>
+  </div>
+
+  <!-- Sprint 2 -->
+  <div class="sprint-head">
+    <h3>Sprint 2 · 钱包与额度护栏（P0 钱包地基 + P1 业务底座）</h3>
+    <p style="margin:0;color:var(--sub)">目标：建立虚拟钱包、额度规则、消费流水与站内通知中心，为点餐扣减提供护栏与记账底座。</p>
+  </div>
+  <div class="card">
+    <table class="mtx">
+      <tr><th style="width:120px">维度</th><th>内容</th></tr>
+      <tr><td>功能清单</td><td><span class="fcode">F-008</span> 虚拟钱包地基 · <span class="fcode">F-009</span> 家长额度设置(前移) · <span class="fcode">F-010</span> 站内通知中心 · <span class="fcode">F-023</span> 消费记录(流水底座)</td></tr>
+      <tr><td>涉及数据表</td><td><span class="domain-life">life_wallet</span>(含 version 乐观锁) · <span class="domain-life">life_allowance_rule</span>(默认 30/30/150, Q-04) · <span class="domain-life">life_allowance_log</span> · <span class="domain-">sys_notice</span></td></tr>
+      <tr><td>接口组</td><td><b>WALLET</b>（balance / allowance-rule PUT / allowance-log）· <b>NOTICE</b>（notices GET / read，站内中心 F-010）</td></tr>
+      <tr><td>交付物</td><td>① 钱包与额度规则建表 + 默认值 ② 余额查询/额度设置/流水查询 ③ 站内通知中心（聚合/已读/红点，触达保底）④ 家长额度变更对下一张确认单即时生效</td></tr>
+      <tr><td>进入准则</td><td>Sprint 1 退出（usr_ 域与 JWT 鉴权可用）。</td></tr>
+      <tr><td>退出准则 DoD</td><td>钱包余额初始 0(Q-05)；额度默认与可改生效；流水写入含 balance_before/after 快照；站内通知红点逻辑正确；乐观锁字段就位（并发用例 Sprint 4 验证）。</td></tr>
+      <tr><td>依赖</td><td>依赖 Sprint 1（child_id / family_id / JWT / sys_notice 表）。</td></tr>
+    </table>
+  </div>
+
+  <!-- Sprint 3 -->
+  <div class="sprint-head">
+    <h3>Sprint 3 · 点餐核心闭环（P1 后台 / 儿童点餐 / 家长审批）</h3>
+    <p style="margin:0;color:var(--sub)">目标：跑通"后台配菜单 → 儿童浏览/确认 → 家长审批 → 同意后扣减 → 状态追踪"，即 G1 最小闭环。</p>
+  </div>
+  <div class="card">
+    <table class="mtx">
+      <tr><th style="width:120px">维度</th><th>内容</th></tr>
+      <tr><td>功能清单</td><td><span class="fcode">F-014</span> 菜品库 · <span class="fcode">F-015</span> 当日菜单配置 · <span class="fcode">F-016</span> 菜单展示 · <span class="fcode">F-017</span> 语音辅助(<span class="pill p2">P2 置灰</span>) · <span class="fcode">F-018</span> 菜单确认 · <span class="fcode">F-019</span> 额度状态机 · <span class="fcode">F-020</span> 审批流 · <span class="fcode">F-021</span> 状态追踪 · <span class="fcode">F-022</span> 偏好持久化</td></tr>
+      <tr><td>涉及数据表</td><td><span class="domain-life">life_dish_category</span> · <span class="domain-life">life_dish</span> · <span class="domain-life">life_menu_daily</span> · <span class="domain-life">life_menu_confirm</span>(状态机) · <span class="domain-life">life_menu_item</span> · <span class="domain-life">life_confirm_approval</span> · <span class="domain-usr">usr_child_profile</span>(偏好)</td></tr>
+      <tr><td>接口组</td><td><b>MENU</b>（admin/dish · admin/menu-daily · menu/daily · mark-favorite）· <b>CONFIRM</b>（menu/confirm · confirm GET · status · withdraw）· <b>APPROVE</b>（approvals · approve/modify/reject）</td></tr>
+      <tr><td>交付物</td><td>① 菜品库 CRUD + 当日菜单按校/日期/餐段配置(uk_school_date_meal) ② 儿童端菜单展示(餐段折叠/大图卡/忌口过敏灰显/筛选) ③ 确认单提报(份量±1/备注/自动带入忌口) ④ F-019 状态机(DRAFT→PENDING→APPROVED→COMPLETED；REJECTED→DRAFT) ⑤ 家长审批卡(同意/改一改/拒绝，超额显式放行) ⑥ 审批同意后触发钱包扣减 + 儿童端状态追踪(仅状态,情绪保护)</td></tr>
+      <tr><td>进入准则</td><td>Sprint 1（家庭/绑定/同意）与 Sprint 2（钱包/额度/流水/站内通知）退出。</td></tr>
+      <tr><td>退出准则 DoD</td><td>G1 端到端成功率 ≥ 95%；扣减确在同意后(E-006/E-007)；超额强制显式放行；儿童端不现负面词(R-03);忌口过敏灰显;偏好"沿用昨天"可用;撤回仅 PENDING 期间。</td></tr>
+      <tr><td>依赖</td><td>依赖 Sprint 1（家庭/同意/偏好表）、Sprint 2（钱包扣减/额度/流水/通知）。</td></tr>
+    </table>
+  </div>
+
+  <!-- Sprint 4 -->
+  <div class="sprint-head">
+    <h3>Sprint 4 · 通知三通道与收尾验收（P1 通知 + 合规加固 + 灰度）</h3>
+    <p style="margin:0;color:var(--sub)">目标：补齐三通道通知，落实未成年人模式/WCAG/审计合规，完成并发安全验证与灰度上线验收。</p>
+  </div>
+  <div class="card">
+    <table class="mtx">
+      <tr><th style="width:120px">维度</th><th>内容</th></tr>
+      <tr><td>功能清单</td><td><span class="fcode">F-011</span> 三通道通知(订阅+站内+短信兜底) · <span class="fcode">F-012</span> 数据出口入口(基础导出) · 合规加固(未成年人模式 / WCAG 2.2 AA / 儿童情绪保护) · 并发与安全验证 · 灰度上线</td></tr>
+      <tr><td>涉及数据表</td><td><span class="domain-">sys_notice</span>(channel 三态) · <span class="domain-">sys_audit_log</span> · <span class="domain-usr">usr_consent_log</span> · <span class="domain-life">life_wallet</span>(并发验证)</td></tr>
+      <tr><td>接口组</td><td><b>NOTICE</b>（三通道下发与降级，F-011）· <b>COMPLIANCE</b>（data-export 落地，F-012）</td></tr>
+      <tr><td>交付物</td><td>① 三通道：订阅消息(须提交页引导授权)+站内保底+短信仅安全/超时兜底(Q-02) ② 未成年人模式常驻入口/时长锁屏/22:00–8:00 禁服务 ③ WCAG 对比度/触控44px/动效降级 ④ 关键操作全量 sys_audit_log ⑤ 钱包并发扣减压测(E-007) ⑥ 灰度(白名单)放量 + 验收清单通过 + 版本闸门 Q-06 收口</td></tr>
+      <tr><td>进入准则</td><td>Sprint 1–3 退出；订阅消息模板已在微信平台申请。</td></tr>
+      <tr><td>退出准则 DoD</td><td>三通道触达 ≥ 99%(站内保底);非功能(首屏≤1s/对比度/触控)达标;并发不超扣;越权/E-009 覆盖;验收清单全部通过;灰度无阻断问题。</td></tr>
+      <tr><td>依赖</td><td>依赖 Sprint 1（合规/审计）、Sprint 2（sys_notice 表）、Sprint 3（业务触发通知点）。</td></tr>
+    </table>
+  </div>
+
+  <!-- ============ C ============ -->
+  <h2 id="C">C. 端到端核心链路里程碑</h2>
+  <p>沿"儿童确认今日菜单 → 家长额度护栏 → 虚拟记账 → 正向反馈"最小闭环（G1）拆解为 7 个核心里程碑，每个里程碑给出进入/退出口径与归属 Sprint。里程碑是 Sprint 内的关键验收节点，也是跨 Sprint 的衔接闸门。</p>
+
+  <div class="milestone"><div class="mno">M1</div><div class="mbody"><b>地基贯通</b>（Sprint 1）— 微信登录→角色→档案→家庭→绑定→监护人同意全链路跑通。退出：AUTH/FAMILY/COMPLIANCE 关键路径集成测试通过，越权/E-009 覆盖。</div></div>
+  <div class="milestone"><div class="mno">M2</div><div class="mbody"><b>钱包就绪</b>（Sprint 2）— 虚拟钱包+额度规则+流水+站内通知中心可用。退出：余额初始0、额度默认/可改、流水快照、红点逻辑正确。</div></div>
+  <div class="milestone"><div class="mno">M3</div><div class="mbody"><b>菜单上线</b>（Sprint 3 前半）— 后台菜品库+当日菜单配置，儿童端可按校/餐段浏览（忌口过敏灰显）。退出：MENU 接口与 life_menu_daily 配置联调通过。</div></div>
+  <div class="milestone"><div class="mno">M4</div><div class="mbody"><b>确认闭环</b>（Sprint 3 后半）— 儿童确认→家长审批→<b>同意后扣减</b>→状态追踪端到端。退出：G1 闭环成功率 ≥ 95%，扣减时机正确(E-006/E-007)，超额显式放行。</div></div>
+  <div class="milestone"><div class="mno">M5</div><div class="mbody"><b>三通道通知</b>（Sprint 4 前半）— 订阅+站内+短信兜底三通道与降级。退出：触达 ≥ 99%(站内保底)，订阅授权引导就位，短信仅兜底(Q-02)。</div></div>
+  <div class="milestone"><div class="mno">M6</div><div class="mbody"><b>合规与安全加固</b>（Sprint 4 中）— 未成年人模式/WCAG/情绪保护/审计全量。退出：非功能与合规清单达标，sys_audit_log 覆盖关键操作。</div></div>
+  <div class="milestone"><div class="mno">M7</div><div class="mbody"><b>灰度上线验收</b>（Sprint 4 末）— 白名单灰度放量→全量，验收清单全通过，版本闸门 Q-06 收口。退出：无阻断问题，可正式上线。</div></div>
+
+  <div class="note b"><b>里程碑总览：</b>共 <b>4 个 Sprint</b>、<b>7 个核心里程碑（M1–M7）</b>。其中 M1–M2 为地基与钱包底座，M3–M4 为点餐核心闭环（G1），M5–M7 为通知/合规/上线收尾。</div>
+
+  <!-- ============ D ============ -->
+  <h2 id="D">D. 依赖关系图</h2>
+  <p>下图给出 Sprint 内部功能依赖与跨 Sprint 衔接（F 编号间箭头表示"先于"）。节点与边均避免括号/等号等 Mermaid 语法红线字符。</p>
+  <div class="mermaid">
+graph TD
+  subgraph S1[Sprint1 地基可运行]
+    A1[F-001 微信登录]
+    A2[F-002 角色选择]
+    A3[F-003 儿童档案]
+    A4[F-004 家庭创建]
+    A5[F-005 儿童加入]
+    A6[F-006 绑定审批]
+    A7[F-007 监护人同意]
+    A8[F-012 同意留痕]
+    A9[F-013 基础框架]
+  end
+  subgraph S2[Sprint2 钱包与额度]
+    B1[F-008 虚拟钱包]
+    B2[F-009 额度设置]
+    B3[F-010 站内通知]
+    B4[F-023 消费流水]
+  end
+  subgraph S3[Sprint3 点餐闭环]
+    C1[F-014 菜品库]
+    C2[F-015 菜单配置]
+    C3[F-016 菜单展示]
+    C4[F-018 菜单确认]
+    C5[F-019 状态机]
+    C6[F-020 审批流]
+    C7[F-021 状态追踪]
+    C8[F-022 偏好持久化]
+  end
+  subgraph S4[Sprint4 通知与验收]
+    D1[F-011 三通道通知]
+    D2[合规加固]
+    D3[灰度上线]
+  end
+  A1 --> A2 --> A3
+  A3 --> A4 --> A5 --> A6
+  A7 --> A6
+  A8 --> A7
+  A9 --> A1
+  B1 --> B2
+  B3 --> B1
+  B4 --> B1
+  A6 --> B1
+  C1 --> C2 --> C3
+  C3 --> C4 --> C5
+  C5 --> C6 --> C7
+  B1 --> C5
+  B2 --> C5
+  C8 --> C4
+  C6 --> B4
+  C7 --> B3
+  D1 --> B3
+  D2 --> A7
+  D1 --> D3
+  D2 --> D3
+  </div>
+
+  <h3>D.1 关键路径与版本闸门依赖（Q-06）</h3>
+  <p>发布前必须做技术栈兼容闸门；下图用 <code>alt/else</code> 分支表达，分支标签仅用中文且无括号/等号/分号/问号，规避 Mermaid 10.9.8 语法红线。</p>
+  <div class="mermaid">
+sequenceDiagram
+  participant L as 发布闸门
+  participant T as 技术栈校验
+  participant D as 部署
+  L->>T: 验收 Java21 与 SpringBoot4.1.1
+  alt 版本兼容
+    T-->>L: GA 与 MyBatisPlus 兼容通过
+    L->>D: 按原计划发布
+  else 锁稳定版
+    T-->>L: 存在不兼容风险
+    L->>D: 锁定已验证稳定版后发布
+  end
+  </div>
+  <div class="note"><b>语法红线声明：</b>本文件所有 Mermaid 块（含上方 <code>alt 版本兼容 / else 锁稳定版</code>）均不含 <code>()</code>、<code>=</code>、<code>;</code>、<code>?</code> 等禁止字符，可在 Mermaid 10.9.8 解析。历史教训（详细设计 7.4 曾用 <code>else affected=0 (并发版本冲突)</code> 触发 Syntax error）已规避。</div>
+
+  <!-- ============ E ============ -->
+  <h2 id="E">E. 测试策略</h2>
+  <div class="grid2">
+    <div class="card" style="margin:0">
+      <h4 style="margin-top:0;color:var(--brand)">单元测试</h4>
+      <ul style="font-size:13.5px">
+        <li>额度校验逻辑（单笔/日/周，默认 30/30/150，Q-04）。</li>
+        <li>F-019 状态机流转（DRAFT/PENDING/APPROVED/REJECTED/COMPLETED）边界。</li>
+        <li>逻辑删除 <code>delete_at</code> 唯一键重建语义（删后可再建）。</li>
+        <li>JWT 三角色分权与 token 失效/刷新。</li>
+      </ul>
+    </div>
+    <div class="card" style="margin:0">
+      <h4 style="margin-top:0;color:var(--brand2)">集成测试</h4>
+      <ul style="font-size:13.5px">
+        <li>全链路：登录→家庭→同意→菜单→确认→审批→扣减→通知（覆盖 M1–M4）。</li>
+        <li>通知三通道降级：订阅未授权→站内保底；关键安全→短信兜底(Q-02)。</li>
+        <li>数据隔离：跨家庭访问返回 403(E-009)。</li>
+        <li>同意撤回即时降级(E-010)与留痕。</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>E.1 并发安全用例：虚拟钱包扣减（乐观锁 + 事务）</h3>
+  <div class="card">
+    <table class="mtx">
+      <tr><th style="width:160px">用例</th><th>场景</th><th>预期</th><th>对应错误码</th></tr>
+      <tr><td>CONC-01 乐观锁串行</td><td>同一儿童两笔家长审批并发触发扣减</td><td>事务 + <code>version</code> 条件更新，串行化成功，余额绝不超扣</td><td>—</td></tr>
+      <tr><td>CONC-02 版本冲突重试</td><td>两笔扣减同时读到同一 version，后者更新 0 行</td><td>后者返回并发冲突，提示重试（不超扣）</td><td>E-007</td></tr>
+      <tr><td>CONC-03 余额不足</td><td>扣减金额 &gt; 余额</td><td>标记异常、不扣减、通知家长</td><td>E-006</td></tr>
+      <tr><td>CONC-04 提交不扣减</td><td>儿童提交确认单</td><td>仅 PENDING + 预校验，余额不变（扣减在同意后）</td><td>—</td></tr>
+    </table>
+    <pre><span class="c">// 伪代码：扣减核心（事务内）</span>
+<span class="k">begin</span> transaction
+  wallet = selectForUpdate(childId)   <span class="c">// 取 balance 与 version=v0</span>
+  <span class="k">if</span> wallet.balance &gt;= amount:
+     rows = update wallet
+            set balance = balance - amount,
+                version = version + 1
+            where id = wallet.id <span class="k">and</span> version = v0
+     <span class="k">if</span> rows == 0: <span class="k">throw</span> E007_CONFLICT   <span class="c">// 并发版本冲突</span>
+     insert life_allowance_log(DEDUCT, snapshot)
+     update confirm.status = COMPLETED
+     <span class="k">commit</span>
+  <span class="k">else</span>:
+     <span class="k">rollback</span>; notifyParent(E006_INSUFFICIENT)
+</pre>
+  </div>
+
+  <h3>E.2 错误码覆盖矩阵（E-001 ~ E-010）</h3>
+  <table class="mtx">
+    <tr><th>错误码</th><th>含义</th><th>测试归属</th></tr>
+    <tr><td>E-001 无微信授权</td><td>未登录访问写操作</td><td>UT 鉴权 / IT 登录链路</td></tr>
+    <tr><td>E-002 档案未补全</td><td>写操作灰显引导</td><td>IT 档案流</td></tr>
+    <tr><td>E-003 邀请码过期</td><td>24h 失效</td><td>UT 邀请码生成/校验</td></tr>
+    <tr><td>E-004 监护人核验失败</td><td>非监护人/年龄不符</td><td>UT 自报年龄 &lt;18 拒绝</td></tr>
+    <tr><td>E-005 提交超时</td><td>网络失败/重试</td><td>IT 确认提交幂等</td></tr>
+    <tr><td>E-006 虚拟余额不足</td><td>扣减时不足</td><td>CONC-03</td></tr>
+    <tr><td>E-007 并发扣减冲突</td><td>乐观锁版本冲突</td><td>CONC-01/02</td></tr>
+    <tr><td>E-008 通知发送失败</td><td>三通道降级站内保底</td><td>IT 通知降级</td></tr>
+    <tr><td>E-009 越权访问</td><td>跨家庭数据</td><td>IT 数据隔离</td></tr>
+    <tr><td>E-010 家长撤回同意</td><td>能力降级</td><td>IT 撤回即时降级</td></tr>
+  </table>
+
+  <h3>E.3 验收检查清单（引用详细设计 9.2）</h3>
+  <div class="grid3">
+    <div class="card" style="margin:0"><h4 style="margin-top:0;color:var(--brand)">功能</h4><ul style="font-size:13px"><li>F-001~F-006 全链路</li><li>F-007 同意+留痕+撤回</li><li>F-008/009/023 钱包护栏</li><li>F-014~F-022 点餐闭环</li><li>F-010/011 通知</li></ul></div>
+    <div class="card" style="margin:0"><h4 style="margin-top:0;color:var(--brand2)">安全</h4><ul style="font-size:13px"><li>越权拒绝 E-009</li><li>并发不超扣 E-007</li><li>儿童端无真实支付</li><li>审计覆盖 sys_audit_log</li><li>JWT 分权</li></ul></div>
+    <div class="card" style="margin:0"><h4 style="margin-top:0;color:var(--brand3)">非功能</h4><ul style="font-size:13px"><li>首屏≤1s</li><li>对比度≥4.5:1</li><li>触控≥44px</li><li>未成年人模式</li><li>埋点/审计覆盖</li></ul></div>
+  </div>
+
+  <!-- ============ F ============ -->
+  <h2 id="F">F. 风险与待办</h2>
+  <h3>F.1 六项已收口裁定落点回顾（Q-01 ~ Q-06）</h3>
+  <table class="mtx">
+    <tr><th style="width:60px">编号</th><th>裁定</th><th>本计划落点</th></tr>
+    <tr><td><b>Q-01</b></td><td>监护人核验：微信绑定+同意书+自报年龄；可验证核验 P1+</td><td>Sprint 1（F-007/US-3）写 usr_consent_log；REALNAME 留 P1+</td></tr>
+    <tr><td><b>Q-02</b></td><td>短信仅安全/超时兜底，默认站内+订阅</td><td>Sprint 4（F-011）三通道，短信后置兜底</td></tr>
+    <tr><td><b>Q-03</b></td><td>5 Tab 仅点餐可用，余占位</td><td>Sprint 1（F-013）框架显隐</td></tr>
+    <tr><td><b>Q-04</b></td><td>额度默认 单笔30/每日30/每周150</td><td>Sprint 2（F-009）默认值写入 + 可改</td></tr>
+    <tr><td><b>Q-05</b></td><td>虚拟余额初始0；手动增(P0)/任务发(P2)</td><td>Sprint 2（life_wallet 默认0；MANUAL 场景）</td></tr>
+    <tr><td><b>Q-06</b></td><td>Java21+SB4.1.1 版本闸门</td><td>Sprint 1 预检 + Sprint 4 发布闸门（D.1 图）</td></tr>
+  </table>
+
+  <h3>F.2 回滚计划（引用详细设计 9.1）</h3>
+  <div class="card">
+    <ul style="font-size:13.5px;margin:0">
+      <li><b>阶段划分：</b>内部灰度（运营+种子家庭）→ 小范围家长 → 全量；按家庭/学校白名单放量。</li>
+      <li><b>回滚策略：</b>前后端独立可回滚；数据库变更走<b>可逆 DDL</b>（新增列/表优先，避免破坏式变更）；配置开关降级（如短信通道、未成年人模式阈值）。</li>
+      <li><b>Q-06 版本闸门：</b>发布前验收 Java 21 + Spring Boot 4.1.1 GA 与 MyBatis-Plus 兼容；不兼容则锁稳定版（R-10），不阻塞业务发布。</li>
+      <li><b>监控：</b>确认转化率、通知触达率、钱包扣减异常率（E-006/E-007）为灰度核心指标，超阈值自动触发回滚。</li>
+    </ul>
+  </div>
+
+  <h3>F.3 待办与假设</h3>
+  <div class="note"><b>实现层假设（与详细设计 10.1 一致）：</b>① 邀请码 6 位大写字母数字 24h 有效；② 确认单仅 PENDING 期间可撤回；③ 超额单设当日复核次数上限防骚扰；④ 订阅消息模板须提前在微信平台申请；⑤ 数据导出 V0.0.1 仅入口+基础导出，完整 P4；⑥ 单孩优先，多孩按 child_id 隔离（R-14）；⑦ 金额全标"虚拟"，¥ 非真实货币（R-15）。</div>
+
+  <!-- ============ G ============ -->
+  <h2 id="G">G. 交付总览矩阵（F × 阶段 × 接口组 × 数据表）</h2>
+  <div class="card">
+    <table class="mtx">
+      <tr><th style="width:80px">F 编号</th><th>优先级</th><th>归属阶段</th><th>接口组</th><th>涉及数据表</th><th>一句话定义</th></tr>
+      <tr><td><span class="fcode">F-001</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>AUTH</td><td>usr_user</td><td>微信登录换 openid 建匿名会话</td></tr>
+      <tr><td><span class="fcode">F-002</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>AUTH</td><td>usr_user</td><td>角色选择写 role</td></tr>
+      <tr><td><span class="fcode">F-003</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>AUTH</td><td>usr_child_profile</td><td>儿童分步档案引导</td></tr>
+      <tr><td><span class="fcode">F-004</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>FAMILY</td><td>usr_family</td><td>家庭创建+6位邀请码24h</td></tr>
+      <tr><td><span class="fcode">F-005</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>FAMILY</td><td>usr_family_member</td><td>儿童输入码发起绑定</td></tr>
+      <tr><td><span class="fcode">F-006</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>FAMILY</td><td>usr_family_member</td><td>家长审批绑定关系</td></tr>
+      <tr><td><span class="fcode">F-007</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>COMPLIANCE</td><td>usr_consent_log</td><td>《同意书》勾选+自报年龄核验</td></tr>
+      <tr><td><span class="fcode">F-012</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1(基础) / Sprint 4(导出)</td><td>COMPLIANCE</td><td>usr_consent_log / sys_audit_log</td><td>同意留痕/出口入口</td></tr>
+      <tr><td><span class="fcode">F-013</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>框架</td><td>—</td><td>5 Tab 框架(点餐可用,余占位)</td></tr>
+      <tr><td><span class="fcode">F-008</span></td><td><span class="pill p0">P0</span></td><td>Sprint 2</td><td>WALLET</td><td>life_wallet</td><td>虚拟钱包地基(乐观锁)</td></tr>
+      <tr><td><span class="fcode">F-009</span></td><td><span class="pill p0">P0</span></td><td>Sprint 2</td><td>WALLET</td><td>life_allowance_rule</td><td>家长额度设置(默认30/30/150)</td></tr>
+      <tr><td><span class="fcode">F-010</span></td><td><span class="pill p0">P0</span></td><td>Sprint 2</td><td>NOTICE</td><td>sys_notice</td><td>站内通知中心</td></tr>
+      <tr><td><span class="fcode">F-023</span></td><td><span class="pill p1">P1</span></td><td>Sprint 2(底座) / Sprint 3(集成)</td><td>WALLET</td><td>life_allowance_log</td><td>虚拟消费流水</td></tr>
+      <tr><td><span class="fcode">F-014</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>MENU</td><td>life_dish_category / life_dish</td><td>菜品库 CRUD</td></tr>
+      <tr><td><span class="fcode">F-015</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>MENU</td><td>life_menu_daily</td><td>当日菜单配置</td></tr>
+      <tr><td><span class="fcode">F-016</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>MENU</td><td>life_menu_daily</td><td>菜单展示(忌口过敏灰显)</td></tr>
+      <tr><td><span class="fcode">F-017</span></td><td><span class="pill p2">P2</span></td><td>Sprint 3(置灰)</td><td>MENU</td><td>life_menu_daily</td><td>语音朗读(本期置灰)</td></tr>
+      <tr><td><span class="fcode">F-018</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>CONFIRM</td><td>life_menu_confirm / life_menu_item</td><td>菜单确认提报</td></tr>
+      <tr><td><span class="fcode">F-019</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>CONFIRM/系统</td><td>life_menu_confirm</td><td>额度状态机(扣减在同意后)</td></tr>
+      <tr><td><span class="fcode">F-020</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>APPROVE</td><td>life_confirm_approval</td><td>家长审批流</td></tr>
+      <tr><td><span class="fcode">F-021</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>CONFIRM</td><td>life_menu_confirm</td><td>儿童端状态追踪(仅状态)</td></tr>
+      <tr><td><span class="fcode">F-022</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>—</td><td>usr_child_profile</td><td>就餐偏好持久化</td></tr>
+      <tr><td><span class="fcode">F-011</span></td><td><span class="pill p1">P1</span></td><td>Sprint 4</td><td>NOTICE</td><td>sys_notice</td><td>三通道通知(短信兜底)</td></tr>
+    </table>
+  </div>
+  <div class="note b"><b>矩阵说明：</b>23 个 F 全部映射到 4 个 Sprint 与 8 组接口、16 张表；其中 F-012/F-023 跨 Sprint（底座在前、集成在后），F-017 为 P2 置灰项；<code>edu_</code> 学习域本期不建表（仅占位），与全局裁定一致。</div>
+
+  <footer style="margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;">
+    成长星球 · V0.0.1 开发计划 V1.0 ｜ 将详细分析设计落地为 4 Sprint / 7 里程碑 ｜ 沿用全局规划与详细设计全部裁定（delete_at 逻辑删除、扣减在家长同意后、Java21+SB4.1.1、零真实支付、短信后置）｜ Mermaid 10.9.8 可解析（已规避括号/等号/分号/问号语法红线）。
+  </footer>
+
+</div>
+</body>
+</html>
