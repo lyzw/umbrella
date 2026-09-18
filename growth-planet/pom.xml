@@ -11,7 +11,7 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.growthplanet</groupId>
+    <groupId>cn.studykid.growthplanet</groupId>
     <artifactId>growth-planet</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>growth-planet</name>

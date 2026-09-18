@@ -50,7 +50,7 @@ class InfrastructureRegressionTest {
     void childJsonFieldsHaveResultMap() {
         var configuration = new MybatisConfiguration();
         var assistant = new MapperBuilderAssistant(configuration, "regression");
-        assistant.setCurrentNamespace("com.growthplanet.mapper.ChildProfileMapper");
+        assistant.setCurrentNamespace("cn.studykid.growthplanet.mapper.ChildProfileMapper");
         var table = TableInfoHelper.initTableInfo(assistant, ChildProfile.class);
         assertTrue(table.isAutoInitResultMap());
         assertNotNull(table.getResultMap());

@@ -7,7 +7,7 @@ spring:
 
 logging:
   level:
-    com.growthplanet: INFO
+    cn.studykid.growthplanet: INFO
 
 jwt:
   secret: synthetic-only-test-secret-01234567890123456789012345
