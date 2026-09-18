@@ -2,7 +2,12 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:sprint1_schema.sql
+      schema-locations:
+        - classpath:sprint1_schema.sql
+        - classpath:sprint2_schema.sql
+        - classpath:sprint3_catalog.sql
+        - classpath:sprint3_confirmation.sql
+        - classpath:sprint4_schema.sql
   # datasource / redis 由 @ServiceConnection（Testcontainers）在集成测试中注入
 
 logging:

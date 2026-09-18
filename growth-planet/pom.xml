@@ -124,7 +124,7 @@
             <testResource>
                 <directory>sql</directory>
                 <includes>
-                    <include>sprint1_schema.sql</include>
+                    <include>sprint*.sql</include>
                 </includes>
             </testResource>
         </testResources>

@@ -158,7 +158,8 @@
     </table>
   </div>
 
-  <h4>Sprint 1 任务状态（2026-09-18复核）</h4>
+  <h4>Sprint 1 任务状态（2026-09-18阶段复核，保留历史证据）</h4>
+  <p>下表保留Sprint 1收口时的范围；收藏、通知中心及有限隐私办理的后续实现以本节Sprint 2–4当前状态为准，不覆盖历史测试计数。</p>
   <table class="mtx">
     <tr><th>任务</th><th>当前状态</th><th>证据及待办</th></tr>
     <tr><td>F-001 登录</td><td>后端已实现，隔离测试通过</td><td>AuthFlowIT / SecurityRegressionIT；真实微信联调及前置处理依据审批待完成。</td></tr>
@@ -187,6 +188,7 @@
       <tr><td>进入准则</td><td>Sprint 1 退出（usr_ 域与 JWT 鉴权可用）。</td></tr>
       <tr><td>退出准则 DoD</td><td>钱包余额初始 0(Q-05)；额度默认与可改生效；流水写入含 balance_before/after 快照；站内通知红点逻辑正确；行锁及版本校验字段就位（并发用例 Sprint 4 验证）。</td></tr>
       <tr><td>依赖</td><td>依赖 Sprint 1（child_id / family_id / JWT / sys_notice 表）。</td></tr>
+      <tr><td>当前状态<br>2026-09-18</td><td><b>后端已实现并通过隔离回归；Sprint 2整体未退出。</b>已实现零余额钱包、幂等发放、版本化额度、独立日周累计、流水分页、本人站内通知分页/已读/未读数。接口与测试范围见<a href="../growth-planet/docs/sprint2-4-api.md">API补充</a>和<a href="../growth-planet/docs/sprint2-4-verification.md">后端验证记录</a>；前端页面、汇总体验、端到端与性能验收仍待办。</td></tr>
     </table>
   </div>
 
@@ -205,6 +207,7 @@
       <tr><td>进入准则</td><td>Sprint 1（家庭/绑定/同意）与 Sprint 2（钱包/额度/流水/站内通知）退出。</td></tr>
       <tr><td>退出准则 DoD</td><td>G1 端到端成功率 ≥ 95%；扣减确在同意后(E-006/E-007)；超额强制显式放行；儿童端不现负面词(R-03);忌口过敏灰显;偏好"沿用昨天"可用;撤回仅 PENDING 期间。</td></tr>
       <tr><td>依赖</td><td>依赖 Sprint 1（家庭/同意/偏好表）、Sprint 2（钱包扣减/额度/流水/通知）。</td></tr>
+      <tr><td>当前状态<br>2026-09-18</td><td><b>后端已实现并通过隔离回归；Sprint 3整体未退出。</b>已实现菜品管理、SCHOOL展示/FAMILY提报菜单、安全校验、F-022收藏、价格快照及幂等提报、审批/拒绝/建议/撤回/新单重提、状态查询。前端、端到端成功率和实机体验未验收；审查修复后的最终全量回归与打包结果统一登记在<a href="../growth-planet/docs/sprint2-4-verification.md">后端验证记录</a>。</td></tr>
     </table>
   </div>
 
@@ -223,8 +226,11 @@
       <tr><td>进入准则</td><td>Sprint 1–3 退出；订阅消息模板已在微信平台申请。</td></tr>
       <tr><td>退出准则 DoD</td><td>每日已提交事件中5秒内站内可查询≥99%，不等于触达；按基线第6节验证性能/可访问性；AC-01至AC-10及灰度演练通过，所有发布闸门有责任人签核。</td></tr>
       <tr><td>依赖</td><td>依赖 Sprint 1（同意/审计/sys_notice事件基础）、Sprint 2（通知中心/钱包）、Sprint 3（业务触发点）。</td></tr>
+      <tr><td>当前状态<br>2026-09-18</td><td><b>部分实现，对应隔离回归通过；Sprint 4整体未退出。</b>已实现逐事件本人授权声明、受限扫描、1/5/30分钟最多3次重试及撤回停发；隐私请求重新验证账号、显式白名单操作员、版本/期限/证据流转和24小时鉴权有限下载。真实微信发送适配器未实现且默认禁发，授权声明不是平台授权证明；全量权利导出、真正删除、备份恢复与保留清理仍待办。详见<a href="../growth-planet/docs/sprint4-sidecar-handoff.md">通知与隐私交付边界</a>。</td></tr>
     </table>
   </div>
+
+  <div class="note b"><b>Sprint 2–4实现映射边界：</b>2026-09-18最终全量100项通过（14单元+86隔离集成），打包成功，证据见验证记录。有限下载动态生成当前档案/偏好（含字符串favoriteDishIds）和最多500条本人同意元数据，不是历史或全量导出；DELETE完成只记录人工外部证据，不执行数据销毁。五Tab前端、Q-01/Q-06/Q-07、办理人员与保留策略、正式模板、真实微信、性能/实机/生产迁移恢复及灰度验收均未关闭。进入/退出准则仍是计划要求，后端实现不代表前置Sprint或M2–M7里程碑已退出。</div>
 
   <!-- ============ C ============ -->
   <h2 id="C">C. 端到端核心链路里程碑</h2>
@@ -447,7 +453,7 @@ sequenceDiagram
       <tr><td><span class="fcode">F-011</span></td><td><span class="pill p1">P1</span></td><td>Sprint 4</td><td>NOTICE</td><td>sys_notice</td><td>站内+订阅通知，短信后置</td></tr>
     </table>
   </div>
-  <div class="note b"><b>矩阵说明：</b>23个F映射至4个Sprint；原16表增加sys_privacy_request形成17个逻辑对象，完整迁移仍待交付。F-010/F-012/F-023跨Sprint，F-017为P2占位；edu_本期不建表。Q-07独立账号/只读预览和Q-08菜单来源须一起评审。</div>
+  <div class="note b"><b>矩阵说明：</b>23个F映射至4个Sprint；原16表加sys_privacy_request的17个逻辑对象属于设计统计，当前后端含通知授权及隐私复核支撑表共19张物理表，增量SQL及隔离迁移测试已交付，实际存量迁移恢复仍待验收。F-010/F-012/F-023跨Sprint，F-017为P2占位；edu_本期不建表。Q-07独立账号/只读预览和Q-08菜单来源须一起评审。</div>
 
   <footer style="margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;">
     成长星球 · V0.0.1 开发计划审计修订稿 ｜ 4 Sprint / 7里程碑为待批准计划；具体人员、产能和日期尚待确认 ｜ Mermaid固定10.9.8，静态依赖检查不等于完整解析或浏览器渲染验证。

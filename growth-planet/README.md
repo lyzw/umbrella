@@ -1,6 +1,6 @@
-# 成长星球 Sprint 1 后端
+# 成长星球 V0.0.1 后端
 
-以 `../docs/成长星球_V0.0.1_审计修订基线.md` 为需求基线。2026-09-18 在审计修复基础上补齐家庭查询、档案回显和儿童非安全偏好；基础包为 `cn.studykid.growthplanet`。后端代码收口不代表 Sprint 1 整体或真实儿童数据上线验收通过。
+以 `../docs/成长星球_V0.0.1_审计修订基线.md` 为需求基线。2026-09-18 在 Sprint 1 收口基础上实现钱包、菜单、确认审批、通知中心及隐私办理基础；基础包为 `cn.studykid.growthplanet`。后端交付不代表各 Sprint 整体退出或真实儿童数据上线验收通过。
 
 ## 构建与测试
 
@@ -12,7 +12,7 @@ export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk-21.jdk/Contents/Home
 /opt/homebrew/bin/mvn -s mvn-settings.xml test -Pintegration
 ```
 
-默认测试无需数据库。`integration` 使用 Testcontainers 隔离 MySQL 8.0.36 和 Redis 7.2，直接复用 `sql/sprint1_schema.sql`，不连接本地业务库；首次运行需下载容器镜像。已有 Maven 依赖可加 `-o` 离线构建。
+默认测试无需数据库。`integration` 使用 Testcontainers 隔离 MySQL 8.0.36 和 Redis 7.2，按序加载 Sprint 1–4 的5个 SQL；迁移专用测试独立从 Sprint 1 开始。不连接本地业务库；首次运行需下载容器镜像。已有 Maven 依赖可加 `-o` 离线构建。
 
 本机 Colima / Docker 29 的测试进程参数：
 
@@ -26,8 +26,8 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 ## 本地运行
 
-1. 仅用合成数据，准备独立空库和 Redis；人工审查后执行 `sql/sprint1_schema.sql`。
-2. 存量库禁止执行初始化脚本，先阅读 `sql/migrations/README.md`。本次未操作现有数据库。
+1. 仅用合成数据，准备独立空库和 Redis；人工审查后依次执行 `sql/sprint1_schema.sql`、`sql/sprint2_schema.sql`、`sql/sprint3_catalog.sql`、`sql/sprint3_confirmation.sql`、`sql/sprint4_schema.sql`。
+2. 存量库禁止执行初始化脚本，先阅读 [Sprint 1迁移说明](sql/migrations/README.md)和[Sprint 2–4迁移说明](docs/sprint2-4-migration.md)。本次未操作现有数据库。
 3. 配置 `application-dev.yml` 中的数据库与 Redis 地址，明确启用 `dev`：
 
 ```bash
@@ -58,10 +58,12 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 | GET | /child/preferences | 本人 CHILD / 所属 PARENT；childId 必填，BOUND、有效同意及 COMPLETE 档案 |
 | PUT | /child/preferences | CHILD 本人；仅 dislikes/tastes，拒绝所有额外字段 |
 | POST | /compliance/consent/revoke | PARENT；childId、consentType、version；成功200 |
-| POST | /compliance/data-export | PARENT；已绑定儿童；可带 Idempotency-Key |
-| GET | /compliance/requests/{id} | 仅发起家长；其他账号404 |
+| POST | /compliance/data-export | PARENT；已绑定儿童；Idempotency-Key 必填 |
+| GET | /compliance/requests/{id} | 发起家长或显式获授权隐私管理员；审计查询 |
 
-错误 HTTP：参数400、未登录401、越权403、不可见404、方法405、状态/版本409、内容类型415、系统500、依赖不可用503。统一响应 `{code,data,message,requestId}`；成功码为数字0，错误码为 `"E-xxx"`。业务 ID 为十进制字符串，时间戳/秒数为数字，整数参数不接受小数截断。
+Sprint 2–4 的钱包及审批契约见[接口补充](docs/sprint2-4-api.md)，菜单接口见[菜单模块说明](docs/sprint3-catalog.md)，通知和隐私接口见[通知与隐私说明](docs/sprint4-sidecar-handoff.md)。
+
+错误 HTTP：参数400、未登录401、越权403、不可见404、方法405、状态/版本409、下载过期410、内容类型415、系统500、依赖不可用503。统一响应 `{code,data,message,requestId}`；成功码为数字0，错误码为 `"E-xxx"`。业务 ID 为十进制字符串，金额为两位小数字符串，时间戳/秒数为数字，整数参数不接受小数截断。
 
 ## 调用示例
 
@@ -124,12 +126,12 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 ```
 
 ```json
-{"code":0,"data":{"childId":"12","dislikes":["芹菜"],"tastes":["清淡"]},"message":"success","requestId":"example-preferences"}
+{"code":0,"data":{"childId":"12","dislikes":["芹菜"],"tastes":["清淡"],"favoriteDishIds":[]},"message":"success","requestId":"example-preferences"}
 ```
 
 `GET /api/child/preferences?childId=12` 返回相同 data；允许本人儿童或所属家长查询，不暴露安全字段。两个数组均必填，各最多20项，元素非空且最多64字符；空数组清空对应偏好。注入 allergies、childId、familyId、role 或任意额外字段均400/E-400，不做静默忽略。家长需继续通过完整档案接口修改安全字段。
 
-未绑定403；未建档/档案不完整时偏好接口409/E-002；同意失效或撤回后档案/偏好读写409/E-010；采集闸门关闭403。儿童使用绑定家庭创建家长的有效同意，家长停用或关系无效时儿童不可操作。当前不返回 favoriteDishIds；收藏持久化及该字段扩展按 Sprint 3 F-022 实现，本期没有收藏功能或数据库迁移。
+未绑定403；未建档/档案不完整时偏好接口409/E-002；同意失效或撤回后档案/偏好读写409/E-010；采集闸门关闭403。儿童使用绑定家庭创建家长的有效同意，家长停用或关系无效时儿童不可操作。Sprint 3 新增持久化 `favoriteDishIds`，通过 `POST /api/menu/mark-favorite` 增删，不能通过偏好 PUT 注入收藏或安全字段；需先执行收藏字段迁移。
 
 `POST /api/compliance/data-export`，请求头 `Idempotency-Key: export_12_1`：
 
@@ -138,10 +140,10 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 ```
 
 ```json
-{"code":0,"data":{"taskId":"80","status":"RECEIVED","dueAt":null,"errorCode":null,"downloadAvailable":false},"message":"success","requestId":"example-request-3"}
+{"code":0,"data":{"taskId":"80","status":"RECEIVED","requestType":"EXPORT","dueAt":null,"errorCode":null,"expiresAt":null,"version":0,"downloadAvailable":false},"message":"success","requestId":"example-request-3"}
 ```
 
-这是持久化申请，不是导出文件。工作日历、办理人员、身份复核及期限由后续权利流程确认，当前 `dueAt=null`，不虚构完成时间。同键同参返回原任务，同键不同参返回409/E-012；客户端超时必须同键重试。
+这是持久化申请，不是导出文件。受理时 `dueAt=null`；获授权隐私管理员转为 PROCESSING 时必须填写未来期限和凭证编号。工作日历、人员和正式时限仍待批准。同键同参返回原任务，同键不同参返回409/E-012；客户端超时必须同键重试。READY 后提供24小时鉴权下载，但目前仅生成当前档案/偏好及最近至多500条本人同意元数据，不是全量历史数据包。
 
 `POST /api/compliance/consent/revoke`：
 
@@ -161,4 +163,4 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 ## 边界
 
-详见 `docs/sprint1-architecture.md` 和 `docs/sprint1-verification.md`。本仓库只有后端，五 Tab 不在本次后端修复范围。钱包/菜单、完整通知中心、订阅实际投递、导出下载/删除办理、性能和实机验收仍按后续 Sprint 推进。Q-01/Q-07 和数据保留策略等审批仍未关闭。
+历史证据见 [Sprint 1验证](docs/sprint1-verification.md)，本轮见 [Sprint 2–4验证](docs/sprint2-4-verification.md)。本仓库只有后端，五 Tab、页面交互与真实微信授权未交付。真实订阅发送适配器尚未实现且默认关闭；重试框架不能替代平台联调。全量导出、实际删除和恢复演练、性能与实机验收仍待完成。Q-01/Q-06/Q-07 和数据保留策略等审批未关闭，禁止将合成测试结果视为上线批准。

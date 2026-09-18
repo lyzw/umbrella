@@ -6,6 +6,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.test.context.TestPropertySource;
 
 import javax.sql.DataSource;
 import java.util.List;
@@ -16,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** 仅在 BaseIT 创建的隔离容器中重建旧六表结构，不能用于业务库。 */
+@TestPropertySource(properties = "spring.sql.init.schema-locations=classpath:sprint1_schema.sql")
 class MigrationIT extends BaseIT {
     @Autowired DataSource dataSource;
     @Autowired JdbcTemplate jdbc;
