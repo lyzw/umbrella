@@ -9,4 +9,6 @@ import org.apache.ibatis.annotations.Mapper;
  */
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
+    @org.apache.ibatis.annotations.Select("SELECT * FROM usr_user WHERE openid = #{openid}")
+    User findIdentityIncludingDeleted(String openid);
 }

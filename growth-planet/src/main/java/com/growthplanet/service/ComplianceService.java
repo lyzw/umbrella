@@ -12,7 +12,7 @@ import com.growthplanet.dto.response.DataExportResp;
 public interface ComplianceService {
 
     /** 查询同意书（PARENT）。 */
-    ConsentResp getConsent(Long childId);
+    ConsentResp getConsent(Long childId, String consentType);
 
     /** 提交同意书（PARENT）。 */
     ConsentResp submitConsent(ConsentReq req);
@@ -21,5 +21,7 @@ public interface ComplianceService {
     String revokeConsent(RevokeConsentReq req);
 
     /** 数据导出（PARENT）。 */
-    DataExportResp dataExport(DataExportReq req);
+    DataExportResp dataExport(DataExportReq req, String idempotencyKey);
+
+    DataExportResp getRequest(Long id);
 }

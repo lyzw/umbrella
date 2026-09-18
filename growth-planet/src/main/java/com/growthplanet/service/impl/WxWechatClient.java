@@ -14,7 +14,14 @@ import org.springframework.web.client.RestTemplate;
 @Profile("prod")
 public class WxWechatClient implements WechatClient {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
+
+    public WxWechatClient() {
+        var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(3000);
+        factory.setReadTimeout(5000);
+        restTemplate = new RestTemplate(factory);
+    }
 
     @Value("${wx.appid:}")
     private String appid;
@@ -24,16 +31,25 @@ public class WxWechatClient implements WechatClient {
 
     @Override
     public WxSession code2Session(String code) {
-        String url = "https://api.weixin.qq.com/sns/jscode2session"
-                + "?appid=" + appid
-                + "&secret=" + secret
-                + "&js_code=" + code
-                + "&grant_type=authorization_code";
-        ResponseEntity<WxSession> resp = restTemplate.getForEntity(url, WxSession.class);
-        WxSession session = resp.getBody();
-        if (session == null || session.getOpenid() == null) {
-            throw new RuntimeException("微信 code2Session 失败");
+        if (appid.isBlank() || secret.isBlank()) {
+            throw new com.growthplanet.common.exception.BizException(
+                    com.growthplanet.common.result.ResultCode.E503_UNAVAILABLE);
         }
-        return session;
+        var uri = org.springframework.web.util.UriComponentsBuilder
+                .fromUriString("https://api.weixin.qq.com/sns/jscode2session")
+                .queryParam("appid", "{appid}").queryParam("secret", "{secret}")
+                .queryParam("js_code", "{code}").queryParam("grant_type", "authorization_code")
+                .buildAndExpand(appid, secret, code).encode().toUri();
+        try {
+            WxSession session = restTemplate.getForObject(uri, WxSession.class);
+            if (session == null || session.getOpenid() == null || session.getOpenid().isBlank()) {
+                throw new com.growthplanet.common.exception.BizException(
+                        com.growthplanet.common.result.ResultCode.E001_NO_WX_AUTH);
+            }
+            return session;
+        } catch (org.springframework.web.client.RestClientException ex) {
+            throw new com.growthplanet.common.exception.BizException(
+                    com.growthplanet.common.result.ResultCode.E503_UNAVAILABLE);
+        }
     }
 }

@@ -7,7 +7,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 /**
- * Redis 配置：提供 {@code RedisTemplate<String, String>}，用于 JWT 黑名单等。
+ * Redis 配置：保留现有基础连接；不参与会话或同意授权判断。
  */
 @Configuration
 public class RedisConfig {

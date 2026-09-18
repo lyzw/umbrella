@@ -17,8 +17,8 @@ public class ConsentResp {
     private String agreementText;
     /** 协议版本。 */
     private String version;
-    /** GET：当前状态（NONE/PENDING/APPROVED/REVOKED）。 */
+    /** 当前同意状态：NONE/GRANTED/REVOKED/EXPIRED/VERSION_CHANGED。 */
     private String currentStatus;
-    /** POST：提交后的监护人状态。 */
+    /** 声明/核验状态，与同意是否有效分离。 */
     private String guardianStatus;
 }

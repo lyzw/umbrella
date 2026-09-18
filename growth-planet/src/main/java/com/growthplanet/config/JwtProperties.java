@@ -14,10 +14,10 @@ import lombok.Setter;
 public class JwtProperties {
 
     /** HS256 密钥，长度需 >= 32 字节（256 bit）。生产环境请放入配置中心。 */
-    private String secret = "growth-planet-default-secret-key-please-change-in-prod-0123456789";
+    private String secret;
 
-    /** access token 有效期（毫秒）。默认 24h。 */
-    private long accessTtl = 86_400_000L;
+    /** access token 有效期（毫秒）。默认 30 分钟。 */
+    private long accessTtl = 1_800_000L;
 
     /** 签发方标识。 */
     private String issuer = "growth-planet";

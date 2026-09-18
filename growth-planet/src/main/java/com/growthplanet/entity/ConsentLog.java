@@ -26,6 +26,10 @@ public class ConsentLog {
 
     private Long familyId;
 
+    private Long applyId;
+
+    private Integer applicationVersion;
+
     /** 同意书类型，如 ORDER/PROFILE。 */
     private String consentType;
 
@@ -35,10 +39,10 @@ public class ConsentLog {
     /** 同意书版本。 */
     private String version;
 
-    /** 自报年龄核验。 */
+    /** 自报年龄，不等于已核验身份。 */
     private Integer selfReportedAge;
 
-    /** 监护人状态：PENDING/APPROVED/REVOKED。 */
+    /** 声明/核验状态：UNVERIFIED/SELF_ATTESTED/VERIFIED，撤回由 action 表达。 */
     private String guardianStatus;
 
     private Long signedAt;

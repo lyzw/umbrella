@@ -6,11 +6,9 @@ import com.growthplanet.common.context.UserContext;
 import com.growthplanet.common.enums.RoleEnum;
 import com.growthplanet.common.exception.BizException;
 import com.growthplanet.common.result.ResultCode;
-import com.growthplanet.util.JwtUtil;
-import io.jsonwebtoken.Claims;
+import com.growthplanet.service.SessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -19,7 +17,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * JWT 鉴权拦截器：
  * <ol>
  *   <li>解析 Authorization: Bearer &lt;token&gt;，失败抛 E-001(401)</li>
- *   <li>查 Redis 黑名单，命中抛 E-001（撤回即时降级；Redis 不可用时 fail-open）</li>
+ *   <li>校验数据库账号、角色及会话版本，依赖不可用时拒绝处理</li>
  *   <li>注入 {@link UserContext}</li>
  *   <li>校验 {@link RequireRole}，不符抛 E-009(403)</li>
  *   <li>afterCompletion 清除上下文</li>
@@ -30,14 +28,10 @@ public class JwtInterceptor implements HandlerInterceptor {
 
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final String BLACKLIST_PREFIX = "jwt:blacklist:";
+    private final SessionService sessions;
 
-    private final JwtUtil jwtUtil;
-    private final RedisTemplate<String, String> redisTemplate;
-
-    public JwtInterceptor(JwtUtil jwtUtil, RedisTemplate<String, String> redisTemplate) {
-        this.jwtUtil = jwtUtil;
-        this.redisTemplate = redisTemplate;
+    public JwtInterceptor(SessionService sessions) {
+        this.sessions = sessions;
     }
 
     @Override
@@ -52,18 +46,8 @@ public class JwtInterceptor implements HandlerInterceptor {
         }
         String token = authHeader.substring(BEARER_PREFIX.length()).trim();
 
-        Claims claims = jwtUtil.parse(token);
-
-        String jti = jwtUtil.getJti(claims);
-        if (jti != null && isBlacklisted(jti)) {
-            throw new BizException(ResultCode.E001_NO_WX_AUTH, "token 已被撤回");
-        }
-
-        LoginUser loginUser = new LoginUser();
-        loginUser.setUserId(jwtUtil.getUserId(claims));
-        loginUser.setRole(jwtUtil.getRole(claims));
-        loginUser.setFamilyIds(jwtUtil.getFamilyIds(claims));
-        loginUser.setJti(jti);
+        LoginUser loginUser = sessions.authenticate(token);
+        // 已完成认证后保留操作者，角色拒绝也可审计；最外层过滤器负责最终清理。
         UserContext.set(loginUser);
         UserContext.setToken(token);
 
@@ -88,13 +72,4 @@ public class JwtInterceptor implements HandlerInterceptor {
         UserContext.clear();
     }
 
-    private boolean isBlacklisted(String jti) {
-        try {
-            Boolean has = redisTemplate.hasKey(BLACKLIST_PREFIX + jti);
-            return Boolean.TRUE.equals(has);
-        } catch (Exception e) {
-            // fail-open：Redis 不可用时不阻断链路
-            return false;
-        }
-    }
 }

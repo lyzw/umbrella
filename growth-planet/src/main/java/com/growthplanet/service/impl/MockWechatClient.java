@@ -14,6 +14,10 @@ public class MockWechatClient implements WechatClient {
 
     @Override
     public WxSession code2Session(String code) {
+        if (code == null || code.isBlank() || code.length() > 51) {
+            throw new com.growthplanet.common.exception.BizException(
+                    com.growthplanet.common.result.ResultCode.E400_INVALID_ARGUMENT, "演示 code 长度须为1至51");
+        }
         WxSession session = new WxSession();
         // openid 由 code 派生，保证不同 code -> 不同用户
         session.setOpenid("mock_openid_" + (code == null ? "null" : code));

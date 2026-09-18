@@ -29,6 +29,7 @@ public class JwtUtil {
     private final String issuer;
     private final SecretKey key;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public JwtUtil(JwtProperties props) {
         this(props.getSecret(), props.getAccessTtl(), props.getIssuer());
     }
@@ -43,12 +44,12 @@ public class JwtUtil {
 
     /** 基于登录用户签发 token；若 user 已显式设置 jti 则沿用，否则生成新 jti。 */
     public String generateToken(LoginUser user) {
-        return generateToken(user.getUserId(), user.getRole(), user.getFamilyIds(), accessTtl, user.getJti());
+        return issue(user, accessTtl);
     }
 
     /** 基于登录用户签发 token，指定有效期（用于测试过期场景）。沿用 user 的 jti（若有）。 */
     public String generateToken(LoginUser user, long ttlMillis) {
-        return generateToken(user.getUserId(), user.getRole(), user.getFamilyIds(), ttlMillis, user.getJti());
+        return issue(user, ttlMillis);
     }
 
     public String generateToken(Long userId, String role, List<Long> familyIds, long ttlMillis) {
@@ -59,14 +60,24 @@ public class JwtUtil {
      * 底层签发方法。jti 为 null 或空时自动生成 UUID；否则沿用传入值（用于测试与特定场景）。
      */
     public String generateToken(Long userId, String role, List<Long> familyIds, long ttlMillis, String jti) {
+        return issue(new LoginUser(userId, role, familyIds, jti), ttlMillis);
+    }
+
+    public long getExpiresIn() {
+        return accessTtl / 1000;
+    }
+
+    private String issue(LoginUser user, long ttlMillis) {
         long now = System.currentTimeMillis();
+        String jti = user.getJti();
         String effectiveJti = (jti != null && !jti.isEmpty()) ? jti : UUID.randomUUID().toString();
         return Jwts.builder()
                 .issuer(issuer)
-                .subject(String.valueOf(userId))
-                .claim("user_id", userId)
-                .claim("role", role)
-                .claim("family_ids", familyIds == null ? List.of() : familyIds)
+                .subject(String.valueOf(user.getUserId()))
+                .claim("user_id", user.getUserId())
+                .claim("role", user.getRole())
+                .claim("family_ids", user.getFamilyIds() == null ? List.of() : user.getFamilyIds())
+                .claim("token_version", user.getTokenVersion())
                 .claim("jti", effectiveJti)
                 .issuedAt(new Date(now))
                 .expiration(new Date(now + ttlMillis))

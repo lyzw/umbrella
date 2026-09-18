@@ -37,12 +37,12 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
  * MySQLContainer / GenericContainer(Redis) 经 @DynamicPropertySource 注入数据源与 Redis 连接信息。
  * 使用 MockMvc 走完整 DispatcherServlet（含 JwtInterceptor）。
  * <p>
- * 适配说明：Spring Boot 4 已移除 @AutoConfigureMockMvc，故改由 WebApplicationContext 手动构建 MockMvc；
- * Testcontainers 1.20.4 的 core 已不再提供 RedisContainer，故改用 GenericContainer 承载 Redis。
+ * 本项目由 WebApplicationContext 手动构建 MockMvc，GenericContainer 承载 Redis。
  */
 @SpringBootTest
 @Testcontainers
 @ActiveProfiles("test")
+@org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class BaseIT {
 
     @Container
@@ -73,7 +73,8 @@ public abstract class BaseIT {
 
     @BeforeEach
     void setupMockMvc() {
-        this.mockMvc = webAppContextSetup(webApplicationContext).build();
+        this.mockMvc = webAppContextSetup(webApplicationContext)
+                .addFilters(webApplicationContext.getBean(com.growthplanet.config.RequestContextFilter.class)).build();
     }
 
     @Autowired
@@ -113,7 +114,7 @@ public abstract class BaseIT {
         return srResp.getToken();
     }
 
-    /** 构建带指定 jti 的 token（用于黑名单测试）。 */
+    /** 构建带指定 jti 的测试 token。 */
     protected String tokenWithJti(Long userId, RoleEnum role, List<Long> familyIds, String jti) {
         LoginUser u = LoginUser.builder()
                 .userId(userId)
@@ -152,6 +153,40 @@ public abstract class BaseIT {
                 .andReturn();
         JoinFamilyResp jf = dataOf(join, JoinFamilyResp.class);
 
-        return new FamilyContext(parentToken, childToken, cf.getFamilyId(), cf.getInviteCode(), jf.getApplyId());
+        return new FamilyContext(cf.getToken(), childToken, cf.getFamilyId(), cf.getInviteCode(), jf.getApplyId());
+    }
+
+    protected Long childUserId(FamilyContext ctx) {
+        return jwtUtil.getUserId(jwtUtil.parse(ctx.childToken()));
+    }
+
+    protected String consentJson(FamilyContext ctx) {
+        return "{\"childId\":\"" + childUserId(ctx) + "\",\"applyId\":\"" + ctx.applyId()
+                + "\",\"consentType\":\"PROFILE\",\"version\":\"v1\",\"selfReportedAge\":25,\"agreed\":true}";
+    }
+
+    protected void grant(FamilyContext ctx) throws Exception {
+        mockMvc.perform(post("/api/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content(consentJson(ctx)))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+    }
+
+    protected void approve(FamilyContext ctx) throws Exception {
+        mockMvc.perform(post("/api/family/bind-approve").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content("{\"applyId\":\"" + ctx.applyId() + "\",\"approve\":true}"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+    }
+
+    protected String profileJson(FamilyContext ctx) {
+        return "{\"childId\":\"" + childUserId(ctx)
+                + "\",\"nickname\":\"测试儿童\",\"grade\":\"三年级\",\"school\":\"合成学校\","
+                + "\"allergies\":[\"PEANUT\"],\"dislikes\":[\"胡萝卜\"],\"tastes\":[\"清淡\"]}";
+    }
+
+    protected void revoke(FamilyContext ctx) throws Exception {
+        mockMvc.perform(post("/api/compliance/consent/revoke").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content("{\"childId\":\"" + childUserId(ctx)
+                        + "\",\"consentType\":\"PROFILE\",\"version\":\"v1\"}"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
     }
 }

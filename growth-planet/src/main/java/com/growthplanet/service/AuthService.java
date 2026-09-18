@@ -11,6 +11,7 @@ import com.growthplanet.dto.response.WxLoginResp;
  * AUTH 模块业务接口：微信登录 / 角色选择 / 儿童档案。
  */
 public interface AuthService {
+    void logout();
 
     /** 微信登录（公开）。 */
     WxLoginResp wxLogin(WxLoginReq req);

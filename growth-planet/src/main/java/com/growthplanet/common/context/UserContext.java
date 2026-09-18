@@ -29,7 +29,7 @@ public final class UserContext {
         CURRENT_TOKEN.remove();
     }
 
-    /** 设置当前请求原始 token（由拦截器注入，供撤回时计算黑名单 TTL）。 */
+    /** 设置当前请求原始 token；仅在请求生命周期内保存，不写日志。 */
     public static void setToken(String token) {
         CURRENT_TOKEN.set(token);
     }

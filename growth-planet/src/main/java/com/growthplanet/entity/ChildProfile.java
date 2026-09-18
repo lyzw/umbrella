@@ -14,7 +14,7 @@ import lombok.Data;
  * 儿童档案表 usr_child_profile（allergies/dislikes/tastes 为 JSON 列，映射 List&lt;String&gt;）。
  */
 @Data
-@TableName("usr_child_profile")
+@TableName(value = "usr_child_profile", autoResultMap = true)
 public class ChildProfile {
 
     @TableId(type = IdType.AUTO)
@@ -40,7 +40,7 @@ public class ChildProfile {
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> tastes;
 
-    /** 档案状态：INCOMPLETE/COMPLETED。 */
+    /** 档案状态：INCOMPLETE/COMPLETE。 */
     private String profileStatus;
 
     @TableField(fill = FieldFill.INSERT)

@@ -10,3 +10,16 @@ spring:
 
 wx:
   mock: true
+
+jwt:
+  secret: synthetic-only-development-secret-01234567890123456789
+
+# 合成演示数据目录，不代表已获 Q-01 或正式字典审批。
+compliance:
+  collection-enabled: true
+  self-attestation-accepted: true
+  approval-reference: SYNTHETIC-DEMO-ONLY
+  catalog-reference: SYNTHETIC-DEMO-ONLY
+  agreement-text: "合成演示协议，仅用于测试 PROFILE 同意及撤回，不可采集真实儿童资料。"
+  grades: [一年级, 二年级, 三年级, 四年级, 五年级, 六年级]
+  allergens: [PEANUT, MILK, EGG]

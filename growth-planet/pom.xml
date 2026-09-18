@@ -51,7 +51,7 @@
             <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
-        <!-- Redis（JWT 黑名单 / refresh 预留；Lettuce） -->
+        <!-- Redis 基础连接（Lettuce），不作为授权判断依据 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
@@ -117,6 +117,17 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+            </testResource>
+            <testResource>
+                <directory>sql</directory>
+                <includes>
+                    <include>sprint1_schema.sql</include>
+                </includes>
+            </testResource>
+        </testResources>
         <finalName>growth-planet</finalName>
         <plugins>
             <plugin>

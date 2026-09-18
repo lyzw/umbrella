@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
- * 选择角色请求（UNSET -> CHILD / PARENT）。
+ * 选择角色请求（UNSELECTED -> CHILD / PARENT）。
  */
 @Data
 public class SelectRoleReq {

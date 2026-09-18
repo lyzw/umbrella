@@ -47,6 +47,7 @@ class FamilyFlowIT extends BaseIT {
         InviteCodeResp invResp = dataOf(inv, InviteCodeResp.class);
         assertEquals(ctx.inviteCode(), invResp.getInviteCode());
 
+        grant(ctx);
         // 审批通过
         MvcResult approve = mockMvc.perform(post("/api/family/bind-approve")
                         .header("Authorization", "Bearer " + ctx.parentToken())
@@ -55,7 +56,7 @@ class FamilyFlowIT extends BaseIT {
                 .andExpect(status().isOk())
                 .andReturn();
         BindApproveResp apResp = dataOf(approve, BindApproveResp.class);
-        assertEquals("APPROVED", apResp.getBindStatus());
+        assertEquals("BOUND", apResp.getBindStatus());
     }
 
     @Test

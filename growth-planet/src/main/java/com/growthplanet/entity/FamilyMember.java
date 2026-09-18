@@ -28,11 +28,13 @@ public class FamilyMember {
     /** 角色：CHILD/PARENT。 */
     private String role;
 
-    /** 绑定状态：PENDING/APPROVED/REJECTED。 */
+    /** 绑定状态：PENDING/BOUND/REJECTED。 */
     private String bindStatus;
 
-    /** 监护人状态：NOT_REQUIRED/PENDING/APPROVED/REVOKED。 */
+    /** 审批时声明/核验状态快照，实时授权须查询同意历史。 */
     private String guardianStatus;
+
+    private Integer applicationVersion = 1;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

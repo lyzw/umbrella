@@ -9,5 +9,6 @@ import lombok.Data;
 @Data
 public class JoinFamilyReq {
     @NotBlank(message = "inviteCode 不能为空")
+    @jakarta.validation.constraints.Pattern(regexp = "[A-Z0-9]{6}")
     private String inviteCode;
 }

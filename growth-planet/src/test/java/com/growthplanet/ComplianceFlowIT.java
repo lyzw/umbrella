@@ -1,121 +1,188 @@
 package com.growthplanet;
 
-import tools.jackson.databind.JsonNode;
-import com.growthplanet.common.enums.RoleEnum;
-import com.growthplanet.dto.response.ConsentResp;
-import com.growthplanet.dto.response.DataExportResp;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.growthplanet.entity.ChildProfile;
+import com.growthplanet.entity.ConsentLog;
+import com.growthplanet.mapper.ChildProfileMapper;
+import com.growthplanet.mapper.ConsentLogMapper;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.beans.factory.annotation.Autowired;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-/**
- * 合规链路集成测试：同意书查询/提交/撤回降级 + 数据导出 + 越权/年龄校验。
- */
 class ComplianceFlowIT extends BaseIT {
+    @Autowired ChildProfileMapper profiles;
+    @Autowired ConsentLogMapper consents;
+    @Autowired com.growthplanet.config.ComplianceProperties policy;
+    @Autowired com.growthplanet.mapper.NoticeMapper notices;
 
-    private Long childUserId(FamilyContext ctx) {
-        return jwtUtil.getUserId(jwtUtil.parse(ctx.childToken()));
+    @Test
+    void expiredVersionChangedAndInsufficientVerificationBlockProcessing() throws Exception {
+        var ctx = setupFamily();
+        grant(ctx);
+        policy.setSelfAttestationAccepted(false);
+        try {
+            mockMvc.perform(post("/api/family/bind-approve").header("Authorization", "Bearer " + ctx.parentToken())
+                    .contentType(JSON).content("{\"applyId\":\"" + ctx.applyId() + "\",\"approve\":true}"))
+                    .andExpect(status().isConflict());
+        } finally {
+            policy.setSelfAttestationAccepted(true);
+        }
+        approve(ctx);
+        policy.setAgreementVersion("v2");
+        try {
+            mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                    .contentType(JSON).content(profileJson(ctx))).andExpect(status().isConflict());
+            mockMvc.perform(get("/api/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
+                    .param("childId", childUserId(ctx).toString()).param("consentType", "PROFILE"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.data.currentStatus").value("VERSION_CHANGED"));
+        } finally {
+            policy.setAgreementVersion("v1");
+        }
+        for (String invalid : new String[]{profileJson(ctx).replace("三年级", "未发布年级"),
+                profileJson(ctx).replace("PEANUT", "UNKNOWN_CODE")}) {
+            mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                    .contentType(JSON).content(invalid)).andExpect(status().isBadRequest());
+        }
+        consents.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<ConsentLog>()
+                .eq("child_id", childUserId(ctx)).set("expire_at", 1));
+        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content(profileJson(ctx))).andExpect(status().isConflict());
+        assertEquals(0, profiles.selectCount(new QueryWrapper<ChildProfile>().eq("user_id", childUserId(ctx))));
     }
 
     @Test
-    void submitConsentAndQuery() throws Exception {
-        FamilyContext ctx = setupFamily();
-        // 提交（年龄>=18 且同意）
-        MvcResult submit = mockMvc.perform(post("/api/compliance/consent")
-                        .header("Authorization", "Bearer " + ctx.parentToken())
-                        .contentType(JSON)
-                        .content("{\"version\":\"v1\",\"selfReportedAge\":20,\"agreed\":true}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        ConsentResp sr = dataOf(submit, ConsentResp.class);
-        assertEquals("APPROVED", sr.getGuardianStatus());
-
-        // 查询当前状态
-        MvcResult query = mockMvc.perform(get("/api/compliance/consent")
-                        .header("Authorization", "Bearer " + ctx.parentToken()))
-                .andExpect(status().isOk())
-                .andReturn();
-        ConsentResp qr = dataOf(query, ConsentResp.class);
-        assertEquals("APPROVED", qr.getCurrentStatus());
+    void exportKeyCannotBeReusedForAnotherChild() throws Exception {
+        var first = setupFamily();
+        grant(first);
+        approve(first);
+        String childToken = loginAndSelectRole(java.util.UUID.randomUUID().toString(),
+                com.growthplanet.common.enums.RoleEnum.CHILD);
+        var join = mockMvc.perform(post("/api/family/join").header("Authorization", "Bearer " + childToken)
+                .contentType(JSON).content("{\"inviteCode\":\"" + first.inviteCode() + "\"}"))
+                .andExpect(status().isOk()).andReturn();
+        var second = new FamilyContext(first.parentToken(), childToken, first.familyId(), first.inviteCode(),
+                dataOf(join, com.growthplanet.dto.response.JoinFamilyResp.class).getApplyId());
+        grant(second);
+        approve(second);
+        mockMvc.perform(post("/api/compliance/data-export").header("Authorization", "Bearer " + first.parentToken())
+                .header("Idempotency-Key", "shared-key").contentType(JSON)
+                .content("{\"childId\":\"" + childUserId(first) + "\"}")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/compliance/data-export").header("Authorization", "Bearer " + first.parentToken())
+                .header("Idempotency-Key", "shared-key").contentType(JSON)
+                .content("{\"childId\":\"" + childUserId(second) + "\"}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("E-012"));
     }
 
     @Test
-    void submitConsentUnder18Rejected_400() throws Exception {
-        FamilyContext ctx = setupFamily();
-        mockMvc.perform(post("/api/compliance/consent")
-                        .header("Authorization", "Bearer " + ctx.parentToken())
-                        .contentType(JSON)
-                        .content("{\"version\":\"v1\",\"selfReportedAge\":10,\"agreed\":true}"))
-                .andExpect(status().isBadRequest());
+    void consentIsScopedAndSelfAttestationIsNotVerification() throws Exception {
+        var ctx = setupFamily();
+        mockMvc.perform(post("/api/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content(consentJson(ctx)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.guardianStatus").value("SELF_ATTESTED"));
+        mockMvc.perform(get("/api/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
+                .param("childId", childUserId(ctx).toString()).param("consentType", "PROFILE"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.currentStatus").value("GRANTED"));
+        grant(ctx);
+        assertEquals(1, consents.selectCount(new QueryWrapper<ConsentLog>().eq("child_id", childUserId(ctx))));
     }
 
     @Test
-    void revokeReturns409WithRevokedStatus() throws Exception {
-        FamilyContext ctx = setupFamily();
-        // 先同意
-        mockMvc.perform(post("/api/compliance/consent")
-                        .header("Authorization", "Bearer " + ctx.parentToken())
-                        .contentType(JSON)
-                        .content("{\"version\":\"v1\",\"selfReportedAge\":25,\"agreed\":true}"))
-                .andExpect(status().isOk());
-
-        // 撤回 -> 409 + data.status=REVOKED
-        MvcResult revoke = mockMvc.perform(post("/api/compliance/consent/revoke")
-                        .header("Authorization", "Bearer " + ctx.parentToken())
-                        .contentType(JSON)
-                        .content("{\"consentType\":\"ORDER\",\"childId\":" + childUserId(ctx) + "}"))
-                .andExpect(status().isConflict())
-                .andReturn();
-        JsonNode root = objectMapper.readTree(revoke.getResponse().getContentAsString());
-        assertEquals(1010, root.get("code").asInt());
-        assertEquals("REVOKED", root.get("data").get("status").asText());
-    }
-
-    @Test
-    void blacklistBlocksTokenAfterRevoke_401() throws Exception {
-        FamilyContext ctx = setupFamily();
-        mockMvc.perform(post("/api/compliance/consent")
-                        .header("Authorization", "Bearer " + ctx.parentToken())
-                        .contentType(JSON)
-                        .content("{\"version\":\"v1\",\"selfReportedAge\":25,\"agreed\":true}"))
-                .andExpect(status().isOk());
-        // 撤回（将 parentToken 的 jti 拉黑）
-        mockMvc.perform(post("/api/compliance/consent/revoke")
-                        .header("Authorization", "Bearer " + ctx.parentToken())
-                        .contentType(JSON)
-                        .content("{\"consentType\":\"ORDER\",\"childId\":" + childUserId(ctx) + "}"))
+    void invalidAgeAgreementVersionOrOwnershipCannotGrant() throws Exception {
+        var ctx = setupFamily();
+        for (String invalid : new String[]{
+                consentJson(ctx).replace(":25", ":17"), consentJson(ctx).replace(":25", ":121"),
+                consentJson(ctx).replace(":25", ":25.5"),
+                consentJson(ctx).replace(":true", ":false"),
+                consentJson(ctx).replace("\"PROFILE\"", "\"ORDER\"")}) {
+            mockMvc.perform(post("/api/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
+                    .contentType(JSON).content(invalid)).andExpect(status().isBadRequest());
+        }
+        mockMvc.perform(post("/api/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content(consentJson(ctx).replace("\"v1\"", "\"old\"")))
                 .andExpect(status().isConflict());
-
-        // 同一 token 再次访问受保护接口 -> 命中黑名单 401
-        mockMvc.perform(get("/api/compliance/consent")
-                        .header("Authorization", "Bearer " + ctx.parentToken()))
-                .andExpect(status().isUnauthorized());
+        var other = setupFamily();
+        mockMvc.perform(post("/api/compliance/consent").header("Authorization", "Bearer " + other.parentToken())
+                .contentType(JSON).content(consentJson(ctx))).andExpect(status().isForbidden());
+        assertEquals(0, consents.selectCount(new QueryWrapper<ConsentLog>().eq("child_id", childUserId(ctx))));
     }
 
     @Test
-    void dataExportWorksAndCrossFamilyBlocked() throws Exception {
-        FamilyContext ctxA = setupFamily();
-        FamilyContext ctxB = setupFamily();
+    void approvalRequiresConsentAndProfileRequiresBoundParent() throws Exception {
+        var ctx = setupFamily();
+        mockMvc.perform(post("/api/family/bind-approve").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content("{\"applyId\":\"" + ctx.applyId() + "\",\"approve\":true}"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("E-010"));
+        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content(profileJson(ctx))).andExpect(status().isForbidden());
+        grant(ctx);
+        approve(ctx);
+        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.childToken())
+                .contentType(JSON).content(profileJson(ctx))).andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content("{}")).andExpect(status().isBadRequest());
+        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
+        ChildProfile profile = profiles.selectOne(new QueryWrapper<ChildProfile>().eq("user_id", childUserId(ctx)));
+        assertEquals(java.util.List.of("PEANUT"), profile.getAllergies());
+        assertEquals(java.util.List.of("胡萝卜"), profile.getDislikes());
+        assertEquals(java.util.List.of("清淡"), profile.getTastes());
+    }
 
-        // A 家长导出 A 家庭儿童数据 -> 200 DONE
-        MvcResult exp = mockMvc.perform(post("/api/compliance/data-export")
-                        .header("Authorization", "Bearer " + ctxA.parentToken())
-                        .contentType(JSON)
-                        .content("{\"childId\":" + childUserId(ctxA) + "}"))
-                .andExpect(status().isOk())
-                .andReturn();
-        DataExportResp der = dataOf(exp, DataExportResp.class);
-        assertEquals("DONE", der.getStatus());
+    @Test
+    void revokeAppendsHistoryBlocksWritesAndPreservesParentRights() throws Exception {
+        var ctx = setupFamily();
+        grant(ctx);
+        approve(ctx);
+        notices.update(null, new com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper<com.growthplanet.entity.Notice>()
+                .eq("child_id", childUserId(ctx)).eq("channel", "SUBSCRIBE").set("status", "PENDING"));
+        revoke(ctx);
+        revoke(ctx);
+        var logs = consents.selectList(new QueryWrapper<ConsentLog>()
+                .eq("child_id", childUserId(ctx)).orderByAsc("id"));
+        assertEquals(java.util.List.of("GRANT", "REVOKE"), logs.stream().map(ConsentLog::getAction).toList());
+        assertEquals(0, notices.selectCount(new QueryWrapper<com.growthplanet.entity.Notice>()
+                .eq("child_id", childUserId(ctx)).eq("channel", "SUBSCRIBE").eq("status", "PENDING")));
+        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content(profileJson(ctx)))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("E-010"));
+        mockMvc.perform(get("/api/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
+                .param("childId", childUserId(ctx).toString()).param("consentType", "PROFILE"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.currentStatus").value("REVOKED"));
+        mockMvc.perform(post("/api/compliance/data-export").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content("{\"childId\":\"" + childUserId(ctx) + "\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("RECEIVED"))
+                .andExpect(jsonPath("$.data.downloadAvailable").value(false)).andExpect(jsonPath("$.data.data").doesNotExist());
+        grant(ctx);
+        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
+        assertEquals(java.util.List.of("GRANT", "REVOKE", "GRANT"), consents.selectList(
+                new QueryWrapper<ConsentLog>().eq("child_id", childUserId(ctx)).orderByAsc("id"))
+                .stream().map(ConsentLog::getAction).toList());
+    }
 
-        // B 家长导出 A 家庭儿童 -> 越权 403
-        mockMvc.perform(post("/api/compliance/data-export")
-                        .header("Authorization", "Bearer " + ctxB.parentToken())
-                        .contentType(JSON)
-                        .content("{\"childId\":" + childUserId(ctxA) + "}"))
-                .andExpect(status().isForbidden());
+    @Test
+    void exportIsDurableIdempotentAndPrivate() throws Exception {
+        var ctx = setupFamily();
+        grant(ctx);
+        approve(ctx);
+        String taskId = null;
+        for (int i = 0; i < 2; i++) {
+            var result = mockMvc.perform(post("/api/compliance/data-export")
+                    .header("Authorization", "Bearer " + ctx.parentToken()).header("Idempotency-Key", "export_1")
+                    .contentType(JSON).content("{\"childId\":\"" + childUserId(ctx) + "\"}"))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.data.taskId").isString()).andReturn();
+            String currentId = objectMapper.readTree(result.getResponse().getContentAsString()).get("data").get("taskId").asText();
+            if (taskId != null) assertEquals(taskId, currentId);
+            taskId = currentId;
+        }
+        mockMvc.perform(get("/api/compliance/requests/" + taskId)
+                .header("Authorization", "Bearer " + ctx.parentToken())).andExpect(status().isOk());
+        var other = setupFamily();
+        mockMvc.perform(get("/api/compliance/requests/" + taskId)
+                .header("Authorization", "Bearer " + other.parentToken())).andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/compliance/data-export").header("Authorization", "Bearer " + other.parentToken())
+                .contentType(JSON).content("{\"childId\":\"" + childUserId(ctx) + "\"}")).andExpect(status().isForbidden());
     }
 }

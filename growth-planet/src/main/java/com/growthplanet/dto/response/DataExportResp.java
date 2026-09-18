@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 数据导出响应（内联返回 JSON 字符串）。
+ * 导出申请受理/查询响应，不包含导出文件或儿童资料。
  */
 @Data
 @Builder
@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class DataExportResp {
     private String taskId;
     private String status;
-    /** 导出的数据（JSON 字符串）。 */
-    private String data;
+    private Long dueAt;
+    private String errorCode;
+    private boolean downloadAvailable;
 }

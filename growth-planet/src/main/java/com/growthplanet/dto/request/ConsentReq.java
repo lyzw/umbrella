@@ -1,6 +1,6 @@
 package com.growthplanet.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 /**
@@ -9,14 +9,24 @@ import lombok.Data;
 @Data
 public class ConsentReq {
     @NotBlank(message = "version 不能为空")
+    @Size(max = 16)
     private String version;
 
     /** 自报年龄。 */
+    @NotNull @Min(18) @Max(120)
     private Integer selfReportedAge;
 
     /** 是否同意。 */
-    private boolean agreed;
+    @NotNull @AssertTrue
+    private Boolean agreed;
 
-    /** 关联儿童 ID（可选，缺省时取家庭内首个儿童）。 */
+    /** 必须显式指定申请关联的儿童 ID。 */
+    @NotNull @Positive
     private Long childId;
+
+    @NotNull @Positive
+    private Long applyId;
+
+    @NotBlank @Pattern(regexp = "PROFILE")
+    private String consentType;
 }

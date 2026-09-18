@@ -5,5 +5,5 @@ package com.growthplanet.common.enums;
  */
 public enum ProfileStatusEnum {
     INCOMPLETE,
-    COMPLETED
+    COMPLETE
 }

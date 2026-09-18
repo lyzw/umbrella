@@ -3,7 +3,6 @@ package com.growthplanet.controller;
 import com.growthplanet.common.annotation.RequireRole;
 import com.growthplanet.common.enums.RoleEnum;
 import com.growthplanet.common.result.Result;
-import com.growthplanet.common.result.ResultCode;
 import com.growthplanet.dto.request.ConsentReq;
 import com.growthplanet.dto.request.DataExportReq;
 import com.growthplanet.dto.request.RevokeConsentReq;
@@ -11,14 +10,14 @@ import com.growthplanet.dto.response.ConsentResp;
 import com.growthplanet.dto.response.DataExportResp;
 import com.growthplanet.service.ComplianceService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import jakarta.validation.constraints.Positive;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.LinkedHashMap;
@@ -26,7 +25,7 @@ import java.util.Map;
 
 /**
  * COMPLIANCE 组接口：consent(GET/POST) / consent/revoke / data-export。
- * 注意：revoke 业务上返回 E-010 业务码 + HTTP 409，并携带 {status:"REVOKED"}。
+ * revoke 成功返回 HTTP 200；撤回后的授权写入返回 E-010 / HTTP 409。
  */
 @RestController
 @RequestMapping("/api")
@@ -40,8 +39,8 @@ public class ComplianceController {
 
     @GetMapping("/compliance/consent")
     @RequireRole(RoleEnum.PARENT)
-    public Result<ConsentResp> getConsent(@RequestParam(required = false) Long childId) {
-        return Result.ok(complianceService.getConsent(childId));
+    public Result<ConsentResp> getConsent(@RequestParam @Positive Long childId, @RequestParam String consentType) {
+        return Result.ok(complianceService.getConsent(childId, consentType));
     }
 
     @PostMapping("/compliance/consent")
@@ -52,17 +51,23 @@ public class ComplianceController {
 
     @PostMapping("/compliance/consent/revoke")
     @RequireRole(RoleEnum.PARENT)
-    @ResponseStatus(HttpStatus.CONFLICT)
     public Result<Map<String, String>> revokeConsent(@RequestBody @Valid RevokeConsentReq req) {
         String status = complianceService.revokeConsent(req);
         Map<String, String> data = new LinkedHashMap<>();
         data.put("status", status);
-        return Result.of(ResultCode.E010_CONSENT_REVOKED, data);
+        return Result.ok(data);
     }
 
     @PostMapping("/compliance/data-export")
     @RequireRole(RoleEnum.PARENT)
-    public Result<DataExportResp> dataExport(@RequestBody @Valid DataExportReq req) {
-        return Result.ok(complianceService.dataExport(req));
+    public Result<DataExportResp> dataExport(@RequestBody @Valid DataExportReq req,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return Result.ok(complianceService.dataExport(req, key));
+    }
+
+    @GetMapping("/compliance/requests/{id}")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<DataExportResp> getRequest(@PathVariable @Positive Long id) {
+        return Result.ok(complianceService.getRequest(id));
     }
 }

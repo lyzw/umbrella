@@ -26,8 +26,10 @@ public class AuditServiceImpl implements AuditService {
         log.setFamilyId(familyId);
         log.setTargetType(targetType);
         log.setTargetId(targetId);
-        log.setIp(ip);
+        log.setIp(ip == null ? com.growthplanet.common.context.RequestContext.ip() : ip);
         log.setDetail(detail);
+        log.setRequestId(com.growthplanet.common.context.RequestContext.requestId());
+        log.setResult("SUCCESS");
         auditLogMapper.insert(log);
     }
 }

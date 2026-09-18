@@ -41,81 +41,104 @@ public class AuthServiceImpl implements AuthService {
     private final WechatClient wechatClient;
     private final JwtUtil jwtUtil;
     private final AuditService auditService;
+    private final com.growthplanet.service.SessionService sessions;
+    private final com.growthplanet.service.ChildAuthorizationService authorization;
+    private final com.growthplanet.config.ComplianceProperties policy;
 
     public AuthServiceImpl(UserMapper userMapper, ChildProfileMapper childProfileMapper,
                            FamilyMemberMapper familyMemberMapper, WechatClient wechatClient,
-                           JwtUtil jwtUtil, AuditService auditService) {
+                           JwtUtil jwtUtil, AuditService auditService,
+                           com.growthplanet.service.SessionService sessions,
+                           com.growthplanet.service.ChildAuthorizationService authorization,
+                           com.growthplanet.config.ComplianceProperties policy) {
         this.userMapper = userMapper;
         this.childProfileMapper = childProfileMapper;
         this.familyMemberMapper = familyMemberMapper;
         this.wechatClient = wechatClient;
         this.jwtUtil = jwtUtil;
         this.auditService = auditService;
+        this.sessions = sessions;
+        this.authorization = authorization;
+        this.policy = policy;
     }
 
     @Override
+    @Transactional
     public WxLoginResp wxLogin(WxLoginReq req) {
+        policy.requireCollection();
         if (req == null || req.getCode() == null || req.getCode().isBlank()) {
             throw new BizException(ResultCode.E001_NO_WX_AUTH, "缺少 code");
         }
         WechatClient.WxSession session = wechatClient.code2Session(req.getCode());
         String openid = session.getOpenid();
-        if (openid == null || openid.isBlank()) {
+        if (openid == null || openid.isBlank() || openid.length() > 64
+                || session.getUnionid() != null && session.getUnionid().length() > 64) {
             throw new BizException(ResultCode.E001_NO_WX_AUTH, "微信未返回 openid");
         }
 
-        User user = userMapper.selectOne(new QueryWrapper<User>().eq("openid", openid));
+        User user = userMapper.findIdentityIncludingDeleted(openid);
         boolean isNew = false;
         if (user == null) {
             user = new User();
             user.setOpenid(openid);
             user.setUnionid(session.getUnionid());
-            user.setRole(RoleEnum.UNSET.name());
+            user.setRole(RoleEnum.UNSELECTED.name());
             user.setStatus("NORMAL");
             userMapper.insert(user);
             isNew = true;
         }
+        if (!"NORMAL".equals(user.getStatus()) || user.getDeleteAt() != 0L) {
+            throw new BizException(ResultCode.E001_NO_WX_AUTH);
+        }
 
         auditService.record(AuditService.ACTION_LOGIN, user.getId(), null, "USER", user.getId(), null, "wx-login");
 
-        LoginUser loginUser = new LoginUser(user.getId(), user.getRole(), List.of(), UUID.randomUUID().toString());
+        LoginUser loginUser = sessions.current(user);
         String token = jwtUtil.generateToken(loginUser);
         return WxLoginResp.builder()
                 .token(token)
                 .openid(openid)
                 .role(user.getRole())
                 .isNew(isNew)
+                .expiresIn(jwtUtil.getExpiresIn())
                 .build();
     }
 
     @Override
     @Transactional
     public SelectRoleResp selectRole(SelectRoleReq req) {
+        policy.requireCollection();
         LoginUser ctx = requireLogin();
         RoleEnum role;
         try {
             role = RoleEnum.valueOf(req.getRole());
         } catch (IllegalArgumentException e) {
-            throw new BizException(ResultCode.E001_NO_WX_AUTH, "非法角色");
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "非法角色");
         }
         if (role != RoleEnum.CHILD && role != RoleEnum.PARENT) {
-            throw new BizException(ResultCode.E001_NO_WX_AUTH, "角色仅可由前端选择 CHILD/PARENT");
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "角色仅可选择 CHILD/PARENT");
         }
 
-        User user = userMapper.selectById(ctx.getUserId());
+        User user = userMapper.selectOne(new QueryWrapper<User>().eq("id", ctx.getUserId()).last("FOR UPDATE"));
         if (user == null) {
             throw new BizException(ResultCode.E001_NO_WX_AUTH, "用户不存在");
         }
-        user.setRole(role.name());
-        userMapper.updateById(user);
+        if (!RoleEnum.UNSELECTED.name().equals(user.getRole()) && !role.name().equals(user.getRole())) {
+            throw new BizException(ResultCode.E009_FORBIDDEN, "角色不可切换");
+        }
+        if (RoleEnum.UNSELECTED.name().equals(user.getRole())) {
+            user.setRole(role.name());
+            user.setTokenVersion(user.getTokenVersion() + 1);
+            userMapper.updateById(user);
+        }
 
         auditService.record(AuditService.ACTION_ROLE, user.getId(), null, "USER", user.getId(), null,
                 "select-role=" + role.name());
 
         // 重新签发 token（携带最新角色与既有 family_ids）
-        LoginUser updated = new LoginUser(user.getId(), role.name(), ctx.getFamilyIds(), UUID.randomUUID().toString());
+        LoginUser updated = sessions.current(user);
         String token = jwtUtil.generateToken(updated);
-        String nextStep = role == RoleEnum.CHILD ? "child-profile" : "create-family";
+        String nextStep = role == RoleEnum.CHILD ? "join-family" : "create-family";
         return SelectRoleResp.builder()
                 .role(role.name())
                 .token(token)
@@ -127,19 +150,18 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public ChildProfileResp saveChildProfile(ChildProfileReq req) {
         LoginUser ctx = requireLogin();
-        // 角色由 @RequireRole(CHILD) 保证；此处做数据归属校验：儿童必须已加入并审批通过某家庭
-        FamilyMember member = familyMemberMapper.selectOne(new QueryWrapper<FamilyMember>()
-                .eq("user_id", ctx.getUserId())
-                .eq("role", RoleEnum.CHILD.name())
-                .eq("bind_status", "APPROVED"));
-        if (member == null) {
-            throw new BizException(ResultCode.E009_FORBIDDEN, "儿童尚未加入已审批家庭");
+        FamilyMember member = authorization.lockChild(ctx.firstFamilyId(), req.getChildId());
+        if (!"BOUND".equals(member.getBindStatus())) {
+            throw new BizException(ResultCode.E009_FORBIDDEN, "儿童尚未完成绑定");
         }
+        var consent = authorization.requireConsent(member);
+        policy.validateProfile(req);
         Long familyId = member.getFamilyId();
 
-        ChildProfile existing = childProfileMapper.selectOne(new QueryWrapper<ChildProfile>().eq("user_id", ctx.getUserId()));
+        ChildProfile existing = childProfileMapper.selectOne(new QueryWrapper<ChildProfile>()
+                .eq("user_id", req.getChildId()).last("FOR UPDATE"));
         ChildProfile profile = new ChildProfile();
-        profile.setUserId(ctx.getUserId());
+        profile.setUserId(req.getChildId());
         profile.setFamilyId(familyId);
         profile.setNickname(req.getNickname());
         profile.setGrade(req.getGrade());
@@ -147,7 +169,7 @@ public class AuthServiceImpl implements AuthService {
         profile.setAllergies(req.getAllergies());
         profile.setDislikes(req.getDislikes());
         profile.setTastes(req.getTastes());
-        profile.setProfileStatus(ProfileStatusEnum.COMPLETED.name());
+        profile.setProfileStatus(ProfileStatusEnum.COMPLETE.name());
 
         if (existing == null) {
             childProfileMapper.insert(profile);
@@ -155,7 +177,22 @@ public class AuthServiceImpl implements AuthService {
             profile.setId(existing.getId());
             childProfileMapper.updateById(profile);
         }
-        return ChildProfileResp.builder().profileStatus(ProfileStatusEnum.COMPLETED.name()).build();
+        auditService.record("PROFILE", ctx.getUserId(), familyId, "CHILD", req.getChildId(), null,
+                "consentId=" + consent.getId() + ";version=" + consent.getVersion());
+        return ChildProfileResp.builder().profileStatus(ProfileStatusEnum.COMPLETE.name()).build();
+    }
+
+    @Override
+    @Transactional
+    public void logout() {
+        User user = userMapper.selectOne(new QueryWrapper<User>()
+                .eq("id", requireLogin().getUserId()).last("FOR UPDATE"));
+        if (user == null) {
+            throw new BizException(ResultCode.E001_NO_WX_AUTH);
+        }
+        user.setTokenVersion(user.getTokenVersion() + 1);
+        userMapper.updateById(user);
+        auditService.record("LOGOUT", user.getId(), null, "USER", user.getId(), null, "all sessions");
     }
 
     private LoginUser requireLogin() {

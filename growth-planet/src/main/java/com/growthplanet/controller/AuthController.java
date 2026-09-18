@@ -41,8 +41,14 @@ public class AuthController {
     }
 
     @PostMapping("/child/profile")
-    @RequireRole(RoleEnum.CHILD)
+    @RequireRole(RoleEnum.PARENT)
     public Result<ChildProfileResp> childProfile(@RequestBody @Valid ChildProfileReq req) {
         return Result.ok(authService.saveChildProfile(req));
+    }
+
+    @PostMapping("/auth/logout")
+    public Result<Void> logout() {
+        authService.logout();
+        return Result.ok();
     }
 }

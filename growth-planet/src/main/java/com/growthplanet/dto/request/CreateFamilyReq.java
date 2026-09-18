@@ -9,5 +9,6 @@ import lombok.Data;
 @Data
 public class CreateFamilyReq {
     @NotBlank(message = "familyName 不能为空")
+    @jakarta.validation.constraints.Size(max = 64)
     private String familyName;
 }

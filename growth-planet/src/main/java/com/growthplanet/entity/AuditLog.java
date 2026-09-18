@@ -33,6 +33,9 @@ public class AuditLog {
     private String ip;
 
     private String detail;
+    private String requestId;
+    private String result;
+    private String errorCode;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

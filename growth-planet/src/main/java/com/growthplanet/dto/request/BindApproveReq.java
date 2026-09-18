@@ -9,10 +9,13 @@ import lombok.Data;
 @Data
 public class BindApproveReq {
     @NotNull(message = "applyId 不能为空")
+    @jakarta.validation.constraints.Positive
     private Long applyId;
 
+    @jakarta.validation.constraints.Size(max = 32)
     private String relationLabel;
 
     /** true=通过，false=拒绝。 */
-    private boolean approve;
+    @NotNull
+    private Boolean approve;
 }

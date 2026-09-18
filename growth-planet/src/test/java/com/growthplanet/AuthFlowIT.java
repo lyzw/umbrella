@@ -25,7 +25,8 @@ class AuthFlowIT extends BaseIT {
                 .andReturn();
         WxLoginResp resp = dataOf(wx, WxLoginResp.class);
         assertEquals("mock_openid_auth_flow_code_1", resp.getOpenid());
-        assertEquals("UNSET", resp.getRole());
+        assertEquals("UNSELECTED", resp.getRole());
+        assertEquals(1800, resp.getExpiresIn());
         // 再次登录同一 code -> 同一 openid，isNew=false
         MvcResult wx2 = mockMvc.perform(post("/api/auth/wx-login")
                         .contentType(JSON)
@@ -50,21 +51,22 @@ class AuthFlowIT extends BaseIT {
                 .andReturn();
         SelectRoleResp resp = dataOf(sr, SelectRoleResp.class);
         assertEquals("CHILD", resp.getRole());
-        assertEquals("child-profile", resp.getNextStep());
+        assertEquals("join-family", resp.getNextStep());
     }
 
     @Test
     void childProfileFullFlow() throws Exception {
         FamilyContext ctx = setupFamily();
+        grant(ctx);
+        approve(ctx);
         MvcResult profile = mockMvc.perform(post("/api/child/profile")
-                        .header("Authorization", "Bearer " + ctx.childToken())
+                        .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
-                        .content("{\"nickname\":\"小明\",\"grade\":\"三年级\",\"school\":\"实验小学\","
-                                + "\"allergies\":[\"花生\"],\"dislikes\":[\"胡萝卜\"],\"tastes\":[\"清淡\"]}"))
+                        .content(profileJson(ctx)))
                 .andExpect(status().isOk())
                 .andReturn();
         ChildProfileResp resp = dataOf(profile, ChildProfileResp.class);
-        assertEquals("COMPLETED", resp.getProfileStatus());
+        assertEquals("COMPLETE", resp.getProfileStatus());
     }
 
     @Test

@@ -17,7 +17,9 @@ public class Result<T> implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /** 业务码：0=成功，其余见 ResultCode。 */
-    private int code;
+    private Object code;
+
+    private String requestId;
 
     /** 提示信息。 */
     private String message;
@@ -42,11 +44,12 @@ public class Result<T> implements Serializable {
         return of(resultCode.getCode(), resultCode.getMessage(), data);
     }
 
-    private static <T> Result<T> of(int code, String message, T data) {
+    private static <T> Result<T> of(Object code, String message, T data) {
         Result<T> result = new Result<>();
         result.code = code;
         result.message = message;
         result.data = data;
+        result.requestId = com.growthplanet.common.context.RequestContext.requestId();
         return result;
     }
 }

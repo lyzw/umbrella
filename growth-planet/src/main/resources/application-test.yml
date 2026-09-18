@@ -2,9 +2,21 @@ spring:
   sql:
     init:
       mode: always
-      schema-locations: classpath:schema-test.sql
+      schema-locations: classpath:sprint1_schema.sql
   # datasource / redis 由 @ServiceConnection（Testcontainers）在集成测试中注入
 
 logging:
   level:
     com.growthplanet: INFO
+
+jwt:
+  secret: synthetic-only-test-secret-01234567890123456789012345
+
+compliance:
+  collection-enabled: true
+  self-attestation-accepted: true
+  approval-reference: SYNTHETIC-TEST-ONLY
+  catalog-reference: SYNTHETIC-TEST-ONLY
+  agreement-text: "合成测试协议，不适用于真实儿童数据。"
+  grades: [一年级, 二年级, 三年级, 四年级, 五年级, 六年级]
+  allergens: [PEANUT, MILK, EGG]

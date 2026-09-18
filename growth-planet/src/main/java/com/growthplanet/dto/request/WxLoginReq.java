@@ -9,5 +9,6 @@ import lombok.Data;
 @Data
 public class WxLoginReq {
     @NotBlank(message = "code 不能为空")
+    @jakarta.validation.constraints.Size(max = 128)
     private String code;
 }

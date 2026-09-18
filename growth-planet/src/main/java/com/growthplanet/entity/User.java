@@ -23,7 +23,7 @@ public class User {
 
     private String unionid;
 
-    /** 角色：CHILD/PARENT/ADMIN/UNSET。 */
+    /** 角色：CHILD/PARENT/ADMIN/UNSELECTED。 */
     private String role;
 
     private String nickname;
@@ -34,6 +34,8 @@ public class User {
 
     /** 状态：NORMAL/DISABLED。 */
     private String status;
+
+    private Long tokenVersion = 0L;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

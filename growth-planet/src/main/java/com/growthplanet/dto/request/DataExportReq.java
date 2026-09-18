@@ -9,5 +9,6 @@ import lombok.Data;
 @Data
 public class DataExportReq {
     @NotNull(message = "childId 不能为空")
+    @jakarta.validation.constraints.Positive
     private Long childId;
 }

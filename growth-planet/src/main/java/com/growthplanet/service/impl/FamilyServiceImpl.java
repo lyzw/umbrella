@@ -8,6 +8,7 @@ import com.growthplanet.common.enums.GuardianStatusEnum;
 import com.growthplanet.common.enums.RoleEnum;
 import com.growthplanet.common.exception.BizException;
 import com.growthplanet.common.result.ResultCode;
+import com.growthplanet.config.ComplianceProperties;
 import com.growthplanet.dto.request.BindApproveReq;
 import com.growthplanet.dto.request.CreateFamilyReq;
 import com.growthplanet.dto.request.JoinFamilyReq;
@@ -41,20 +42,41 @@ public class FamilyServiceImpl implements FamilyService {
     private final FamilyMemberMapper familyMemberMapper;
     private final JwtUtil jwtUtil;
     private final AuditService auditService;
+    private final com.growthplanet.service.ChildAuthorizationService authorization;
+    private final com.growthplanet.service.NoticeService notices;
+    private final com.growthplanet.mapper.UserMapper users;
+    private final com.growthplanet.service.SessionService sessions;
+    private final ComplianceProperties policy;
 
     public FamilyServiceImpl(FamilyMapper familyMapper, FamilyMemberMapper familyMemberMapper,
-                             JwtUtil jwtUtil, AuditService auditService) {
+                             JwtUtil jwtUtil, AuditService auditService,
+                             com.growthplanet.service.ChildAuthorizationService authorization,
+                             com.growthplanet.service.NoticeService notices,
+                             com.growthplanet.mapper.UserMapper users,
+                             com.growthplanet.service.SessionService sessions, ComplianceProperties policy) {
         this.familyMapper = familyMapper;
         this.familyMemberMapper = familyMemberMapper;
         this.jwtUtil = jwtUtil;
         this.auditService = auditService;
+        this.authorization = authorization;
+        this.notices = notices;
+        this.users = users;
+        this.sessions = sessions;
+        this.policy = policy;
     }
 
     @Override
     @Transactional
     public CreateFamilyResp createFamily(CreateFamilyReq req) {
+        policy.requireCollection();
         LoginUser ctx = requireLogin();
         requireParent(ctx);
+
+        users.selectOne(new QueryWrapper<com.growthplanet.entity.User>().eq("id", ctx.getUserId()).last("FOR UPDATE"));
+        if (familyMemberMapper.selectCount(new QueryWrapper<FamilyMember>()
+                .eq("user_id", ctx.getUserId()).eq("bind_status", "BOUND")) > 0) {
+            throw new BizException(ResultCode.E007_CONCURRENCY_CONFLICT, "Sprint 1 仅支持一个家庭");
+        }
 
         String code = generateUniqueInviteCode();
         long expire = System.currentTimeMillis() + INVITE_CODE_TTL;
@@ -72,14 +94,14 @@ public class FamilyServiceImpl implements FamilyService {
         ownerMember.setUserId(ctx.getUserId());
         ownerMember.setRelationLabel("家长");
         ownerMember.setRole(RoleEnum.PARENT.name());
-        ownerMember.setBindStatus(BindStatusEnum.APPROVED.name());
-        ownerMember.setGuardianStatus(GuardianStatusEnum.NOT_REQUIRED.name());
+        ownerMember.setBindStatus(BindStatusEnum.BOUND.name());
+        ownerMember.setGuardianStatus(GuardianStatusEnum.UNVERIFIED.name());
         familyMemberMapper.insert(ownerMember);
 
         auditService.record(AuditService.ACTION_CREATE_FAMILY, ctx.getUserId(), familyId, "FAMILY", familyId, null, "create family");
 
         // 创建成功后重新签发 token，写入 family_ids 并返回
-        LoginUser updated = new LoginUser(ctx.getUserId(), ctx.getRole(), List.of(familyId), UUID.randomUUID().toString());
+        LoginUser updated = sessions.current(users.selectById(ctx.getUserId()));
         String token = jwtUtil.generateToken(updated);
         return CreateFamilyResp.builder()
                 .familyId(familyId)
@@ -90,6 +112,7 @@ public class FamilyServiceImpl implements FamilyService {
     }
 
     @Override
+    @Transactional
     public InviteCodeResp getInviteCode() {
         LoginUser ctx = requireLogin();
         requireParent(ctx);
@@ -97,7 +120,8 @@ public class FamilyServiceImpl implements FamilyService {
         if (familyId == null) {
             throw new BizException(ResultCode.E009_FORBIDDEN, "无家庭上下文");
         }
-        Family family = familyMapper.selectById(familyId);
+        Family family = familyMapper.selectOne(new QueryWrapper<Family>().eq("id", familyId).last("FOR UPDATE"));
+        authorization.requireParent(familyId);
         if (family == null) {
             throw new BizException(ResultCode.E009_FORBIDDEN, "家庭不存在");
         }
@@ -119,6 +143,7 @@ public class FamilyServiceImpl implements FamilyService {
     @Override
     @Transactional
     public JoinFamilyResp joinFamily(JoinFamilyReq req) {
+        policy.requireCollection();
         LoginUser ctx = requireLogin();
         requireChild(ctx);
 
@@ -126,27 +151,40 @@ public class FamilyServiceImpl implements FamilyService {
         if (family == null) {
             throw new BizException(ResultCode.E003_INVITE_CODE_EXPIRED, "邀请码不存在");
         }
+        family = authorization.lockScope(family.getId(), ctx.getUserId());
         long now = System.currentTimeMillis();
-        if (family.getInviteCodeExpire() == null || family.getInviteCodeExpire() < now) {
+        if (!req.getInviteCode().equals(family.getInviteCode())
+                || family.getInviteCodeExpire() == null || family.getInviteCodeExpire() <= now) {
             throw new BizException(ResultCode.E003_INVITE_CODE_EXPIRED);
         }
         // 防重复加入（同一家庭同一用户）
         FamilyMember existed = familyMemberMapper.selectOne(new QueryWrapper<FamilyMember>()
                 .eq("family_id", family.getId())
-                .eq("user_id", ctx.getUserId()));
-        if (existed != null) {
-            throw new BizException(ResultCode.E009_FORBIDDEN, "已在该家庭");
+                .eq("user_id", ctx.getUserId()).last("FOR UPDATE"));
+        if (existed != null && !"REJECTED".equals(existed.getBindStatus())) {
+            return JoinFamilyResp.builder().applyId(existed.getId()).status(existed.getBindStatus()).build();
+        }
+        if (familyMemberMapper.selectCount(new QueryWrapper<FamilyMember>()
+                .eq("user_id", ctx.getUserId()).in("bind_status", "PENDING", "BOUND")
+                .ne("family_id", family.getId())) > 0) {
+            throw new BizException(ResultCode.E007_CONCURRENCY_CONFLICT, "已有其他有效家庭申请或绑定");
         }
 
-        FamilyMember member = new FamilyMember();
+        FamilyMember member = existed == null ? new FamilyMember() : existed;
         member.setFamilyId(family.getId());
         member.setUserId(ctx.getUserId());
         member.setRole(RoleEnum.CHILD.name());
         member.setBindStatus(BindStatusEnum.PENDING.name());
-        member.setGuardianStatus(GuardianStatusEnum.PENDING.name());
-        familyMemberMapper.insert(member);
+        member.setGuardianStatus(GuardianStatusEnum.UNVERIFIED.name());
+        if (existed == null) {
+            familyMemberMapper.insert(member);
+        } else {
+            member.setApplicationVersion(member.getApplicationVersion() + 1);
+            familyMemberMapper.updateById(member);
+        }
 
         auditService.record(AuditService.ACTION_JOIN, ctx.getUserId(), family.getId(), "FAMILY_MEMBER", member.getId(), null, "join family");
+        notices.recordBinding(member, family.getOwnerUserId());
 
         return JoinFamilyResp.builder()
                 .applyId(member.getId())
@@ -170,16 +208,33 @@ public class FamilyServiceImpl implements FamilyService {
             throw new BizException(ResultCode.E009_FORBIDDEN, "越权访问他人家庭申请");
         }
 
-        BindStatusEnum status = req.isApprove() ? BindStatusEnum.APPROVED : BindStatusEnum.REJECTED;
+        member = authorization.lockChild(familyId, member.getUserId());
+        if (!member.getId().equals(req.getApplyId())) {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        BindStatusEnum status = Boolean.TRUE.equals(req.getApprove()) ? BindStatusEnum.BOUND : BindStatusEnum.REJECTED;
+        if (status.name().equals(member.getBindStatus())) {
+            return BindApproveResp.builder().bindStatus(status.name()).build();
+        }
+        if (!"PENDING".equals(member.getBindStatus())) {
+            throw new BizException(ResultCode.E007_CONCURRENCY_CONFLICT, "申请已处理");
+        }
+        if (status == BindStatusEnum.BOUND) {
+            var consent = authorization.requireConsent(member);
+            member.setGuardianStatus(consent.getGuardianStatus());
+            if (familyMemberMapper.selectCount(new QueryWrapper<FamilyMember>()
+                    .eq("user_id", member.getUserId()).eq("bind_status", "BOUND")
+                    .ne("family_id", familyId)) > 0) {
+                throw new BizException(ResultCode.E007_CONCURRENCY_CONFLICT, "儿童已绑定其他家庭");
+            }
+        }
         member.setBindStatus(status.name());
         member.setRelationLabel(req.getRelationLabel());
-        member.setGuardianStatus(req.isApprove()
-                ? GuardianStatusEnum.APPROVED.name()
-                : GuardianStatusEnum.NOT_REQUIRED.name());
         familyMemberMapper.updateById(member);
+        notices.recordBinding(member, member.getUserId());
 
         auditService.record(AuditService.ACTION_BIND, ctx.getUserId(), familyId, "FAMILY_MEMBER", member.getId(), null,
-                "bind approve=" + req.isApprove());
+                "bind approve=" + req.getApprove() + ";applicationVersion=" + member.getApplicationVersion());
 
         return BindApproveResp.builder().bindStatus(status.name()).build();
     }
