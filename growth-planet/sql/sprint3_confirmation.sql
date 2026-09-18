@@ -1,0 +1,65 @@
+-- Apply once after sprint3_catalog.sql. New tables; no legacy APPROVED conversion.
+CREATE TABLE life_menu_confirm (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  confirm_no VARCHAR(32) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  child_id BIGINT NOT NULL,
+  family_id BIGINT NOT NULL,
+  menu_id BIGINT NOT NULL,
+  menu_date DATE NOT NULL,
+  meal_type VARCHAR(20) NOT NULL,
+  total_amount DECIMAL(10,2) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+  version INT NOT NULL DEFAULT 0,
+  previous_confirm_id BIGINT DEFAULT NULL,
+  request_key VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  request_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  approval_request_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin DEFAULT NULL,
+  is_over_limit TINYINT NOT NULL DEFAULT 0,
+  remark VARCHAR(255) DEFAULT NULL,
+  parent_id BIGINT DEFAULT NULL,
+  completed_balance DECIMAL(10,2) DEFAULT NULL,
+  completed_wallet_version INT DEFAULT NULL,
+  estimated_balance DECIMAL(10,2) NOT NULL,
+  submit_time DATETIME NOT NULL,
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  delete_at BIGINT NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_confirm_no (confirm_no),
+  UNIQUE KEY uk_confirm_request (child_id, request_key),
+  KEY idx_confirm_scope (family_id, child_id, status, id),
+  KEY idx_confirm_menu (menu_id),
+  KEY idx_confirm_previous (previous_confirm_id),
+  CONSTRAINT ck_confirm_amount CHECK (total_amount >= 0),
+  CONSTRAINT ck_confirm_status CHECK (status IN ('PENDING','REJECTED','CANCELLED','COMPLETED'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE life_menu_item (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  confirm_id BIGINT NOT NULL,
+  dish_id BIGINT NOT NULL,
+  dish_name VARCHAR(64) NOT NULL,
+  quantity INT NOT NULL,
+  unit_price DECIMAL(10,2) NOT NULL,
+  subtotal DECIMAL(10,2) NOT NULL,
+  note VARCHAR(255) DEFAULT NULL,
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  delete_at BIGINT NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_confirm_dish (confirm_id, dish_id),
+  CONSTRAINT ck_item_quantity CHECK (quantity BETWEEN 1 AND 9),
+  CONSTRAINT ck_item_amount CHECK (unit_price >= 0 AND subtotal = unit_price * quantity)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE life_confirm_approval (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  confirm_id BIGINT NOT NULL,
+  parent_id BIGINT NOT NULL,
+  action VARCHAR(20) NOT NULL,
+  before_status VARCHAR(20) NOT NULL,
+  after_status VARCHAR(20) NOT NULL,
+  is_over_limit TINYINT NOT NULL,
+  reason VARCHAR(255) DEFAULT NULL,
+  suggested_items JSON DEFAULT NULL,
+  create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  delete_at BIGINT NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_approval_confirm (confirm_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
