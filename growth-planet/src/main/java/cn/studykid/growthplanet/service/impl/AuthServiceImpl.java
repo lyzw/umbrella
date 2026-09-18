@@ -11,6 +11,9 @@ import cn.studykid.growthplanet.common.enums.RoleEnum;
 import cn.studykid.growthplanet.common.exception.BizException;
 import cn.studykid.growthplanet.common.result.ResultCode;
 import cn.studykid.growthplanet.dto.request.ChildProfileReq;
+import cn.studykid.growthplanet.dto.request.ChildPreferencesReq;
+import cn.studykid.growthplanet.dto.response.ChildPreferencesResp;
+import cn.studykid.growthplanet.dto.response.ChildProfileDetailResp;
 import cn.studykid.growthplanet.dto.request.SelectRoleReq;
 import cn.studykid.growthplanet.dto.request.WxLoginReq;
 import cn.studykid.growthplanet.dto.response.ChildProfileResp;
@@ -180,6 +183,76 @@ public class AuthServiceImpl implements AuthService {
         auditService.record("PROFILE", ctx.getUserId(), familyId, "CHILD", req.getChildId(), null,
                 "consentId=" + consent.getId() + ";version=" + consent.getVersion());
         return ChildProfileResp.builder().profileStatus(ProfileStatusEnum.COMPLETE.name()).build();
+    }
+
+    @Override
+    @Transactional
+    public ChildProfileDetailResp getChildProfile(Long childId) {
+        authorization.requireParent(requireLogin().firstFamilyId());
+        FamilyMember member = authorization.lockBoundChild(childId);
+        var consent = authorization.requireConsent(member);
+        ChildProfile profile = findProfile(member);
+        if (profile == null) {
+            throw new BizException(ResultCode.E404_NOT_FOUND);
+        }
+        auditService.record("PROFILE_QUERY", UserContext.userId(), member.getFamilyId(), "CHILD", childId,
+                null, "consentId=" + consent.getId());
+        return ChildProfileDetailResp.builder().childId(childId).nickname(profile.getNickname())
+                .grade(profile.getGrade()).school(profile.getSchool()).allergies(profile.getAllergies())
+                .dislikes(profile.getDislikes()).tastes(profile.getTastes())
+                .profileStatus(profile.getProfileStatus()).build();
+    }
+
+    @Override
+    @Transactional
+    public ChildPreferencesResp getChildPreferences(Long childId) {
+        FamilyMember member = authorization.lockBoundChild(childId);
+        var consent = authorization.requireConsent(member);
+        ChildProfile profile = requireCompleteProfile(member);
+        auditService.record("PREFERENCES_QUERY", UserContext.userId(), member.getFamilyId(), "CHILD", childId,
+                null, "consentId=" + consent.getId());
+        return preferencesResponse(profile);
+    }
+
+    @Override
+    @Transactional
+    public ChildPreferencesResp saveChildPreferences(ChildPreferencesReq req) {
+        LoginUser ctx = requireLogin();
+        if (!RoleEnum.CHILD.name().equals(ctx.getRole())) {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        FamilyMember member = authorization.lockBoundChild(ctx.getUserId());
+        var consent = authorization.requireConsent(member);
+        ChildProfile profile = requireCompleteProfile(member);
+        // 不接受 childId 和安全字段；仅按已锁定的本人档案更新两个偏好列。
+        ChildProfile update = new ChildProfile();
+        update.setId(profile.getId());
+        update.setDislikes(req.getDislikes());
+        update.setTastes(req.getTastes());
+        childProfileMapper.updateById(update);
+        profile.setDislikes(req.getDislikes());
+        profile.setTastes(req.getTastes());
+        auditService.record("PREFERENCES", ctx.getUserId(), member.getFamilyId(), "CHILD", ctx.getUserId(),
+                null, "consentId=" + consent.getId() + ";version=" + consent.getVersion());
+        return preferencesResponse(profile);
+    }
+
+    private ChildProfile findProfile(FamilyMember member) {
+        return childProfileMapper.selectOne(new QueryWrapper<ChildProfile>()
+                .eq("user_id", member.getUserId()).eq("family_id", member.getFamilyId()).last("FOR UPDATE"));
+    }
+
+    private ChildProfile requireCompleteProfile(FamilyMember member) {
+        ChildProfile profile = findProfile(member);
+        if (profile == null || !ProfileStatusEnum.COMPLETE.name().equals(profile.getProfileStatus())) {
+            throw new BizException(ResultCode.E002_PROFILE_INCOMPLETE);
+        }
+        return profile;
+    }
+
+    private ChildPreferencesResp preferencesResponse(ChildProfile profile) {
+        return ChildPreferencesResp.builder().childId(profile.getUserId()).dislikes(profile.getDislikes())
+                .tastes(profile.getTastes()).build();
     }
 
     @Override

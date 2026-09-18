@@ -15,6 +15,7 @@ import cn.studykid.growthplanet.service.SessionService;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import cn.studykid.growthplanet.common.context.UserContext;
 import cn.studykid.growthplanet.dto.request.ChildProfileReq;
+import cn.studykid.growthplanet.dto.request.ChildPreferencesReq;
 import cn.studykid.growthplanet.dto.request.RevokeConsentReq;
 import cn.studykid.growthplanet.entity.*;
 import cn.studykid.growthplanet.mapper.*;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class TransactionRegressionIT extends BaseIT {
@@ -51,6 +53,36 @@ class TransactionRegressionIT extends BaseIT {
     AuditLogMapper audits;
     @MockitoSpyBean
     NoticeService notices;
+    @MockitoSpyBean
+    AuditService auditService;
+
+    @Test
+    void auditFailureRollsBackChildPreferencesAndSuccessAudit() throws Exception {
+        var ctx = setupFamily();
+        grant(ctx);
+        approve(ctx);
+        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
+        AuditService auditTarget = AopTestUtils.getUltimateTargetObject(auditService);
+        doAnswer(invocation -> {
+            invocation.callRealMethod();
+            throw new IllegalStateException("injected audit failure");
+        }).when(auditTarget).record(eq("PREFERENCES"), anyLong(), anyLong(), eq("CHILD"),
+                anyLong(), isNull(), anyString());
+        try {
+            mockMvc.perform(put("/api/child/preferences").header("Authorization", "Bearer " + ctx.childToken())
+                    .contentType(JSON).content("{\"dislikes\":[],\"tastes\":[]}"))
+                    .andExpect(status().isInternalServerError());
+        } finally {
+            reset(auditTarget);
+        }
+        var profile = profiles.selectOne(new QueryWrapper<ChildProfile>().eq("user_id", childUserId(ctx)));
+        assertEquals(java.util.List.of("胡萝卜"), profile.getDislikes());
+        assertEquals(0, audits.selectCount(new QueryWrapper<AuditLog>()
+                .eq("family_id", ctx.familyId()).eq("action", "PREFERENCES")));
+        assertEquals(1, audits.selectCount(new QueryWrapper<AuditLog>()
+                .eq("actor_user_id", childUserId(ctx)).eq("error_code", "E-500")));
+    }
 
     @Test
     void noticeFailureRollsBackBindingEventsAndSuccessAudit() throws Exception {
@@ -104,28 +136,46 @@ class TransactionRegressionIT extends BaseIT {
 
     @Test
     void revokeCommitBeforeWaitingWriterBlocksWrite() throws Exception {
-        assertLockOrdering(true);
+        assertLockOrdering(true, false);
     }
 
     @Test
     void writerCommitBeforeRevokePreservesHistoryButBlocksNextWrite() throws Exception {
-        assertLockOrdering(false);
+        assertLockOrdering(false, false);
     }
 
-    private void assertLockOrdering(boolean revokeFirst) throws Exception {
+    @Test
+    void revokeCommitBeforeChildPreferencesBlocksWrite() throws Exception {
+        assertLockOrdering(true, true);
+    }
+
+    @Test
+    void childPreferencesCommitBeforeRevokePreservesHistoryButBlocksNextWrite() throws Exception {
+        assertLockOrdering(false, true);
+    }
+
+    private void assertLockOrdering(boolean revokeFirst, boolean preferences) throws Exception {
         var ctx = setupFamily();
         grant(ctx);
         approve(ctx);
+        String preferenceJson = "{\"dislikes\":[\"芹菜\"],\"tastes\":[]}";
+        if (preferences) {
+            mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+                    .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
+        }
+        String writerToken = preferences ? ctx.childToken() : ctx.parentToken();
         var firstHasLock = new CountDownLatch(1);
         var releaseFirst = new CountDownLatch(1);
         var secondStarted = new CountDownLatch(1);
         try (var pool = Executors.newFixedThreadPool(2)) {
             Future<?> first = pool.submit(() -> {
-                UserContext.set(sessions.authenticate(ctx.parentToken()));
+                UserContext.set(sessions.authenticate(revokeFirst ? ctx.parentToken() : writerToken));
                 try {
                     new TransactionTemplate(transactionManager).executeWithoutResult(transaction -> {
                         if (revokeFirst) {
                             compliance.revokeConsent(revokeRequest(ctx));
+                        } else if (preferences) {
+                            auth.saveChildPreferences(objectMapper.readValue(preferenceJson, ChildPreferencesReq.class));
                         } else {
                             auth.saveChildProfile(objectMapper.readValue(profileJson(ctx), ChildProfileReq.class));
                         }
@@ -145,9 +195,13 @@ class TransactionRegressionIT extends BaseIT {
                 assertTrue(firstHasLock.await(10, TimeUnit.SECONDS));
                 Future<Integer> second = pool.submit(() -> {
                     secondStarted.countDown();
-                    String path = revokeFirst ? "/api/child/profile" : "/api/compliance/consent/revoke";
-                    String body = revokeFirst ? profileJson(ctx) : objectMapper.writeValueAsString(revokeRequest(ctx));
-                    return mockMvc.perform(post(path).header("Authorization", "Bearer " + ctx.parentToken())
+                    var request = revokeFirst
+                            ? preferences ? put("/api/child/preferences") : post("/api/child/profile")
+                            : post("/api/compliance/consent/revoke");
+                    String body = revokeFirst ? preferences ? preferenceJson : profileJson(ctx)
+                            : objectMapper.writeValueAsString(revokeRequest(ctx));
+                    return mockMvc.perform(request.header("Authorization", "Bearer "
+                                    + (revokeFirst ? writerToken : ctx.parentToken()))
                             .contentType(JSON).content(body)).andReturn().getResponse().getStatus();
                 });
                 assertTrue(secondStarted.await(5, TimeUnit.SECONDS));
@@ -159,10 +213,17 @@ class TransactionRegressionIT extends BaseIT {
                 releaseFirst.countDown();
             }
         }
-        assertEquals(revokeFirst ? 0 : 1, profiles.selectCount(
+        assertEquals(revokeFirst && !preferences ? 0 : 1, profiles.selectCount(
                 new QueryWrapper<ChildProfile>().eq("user_id", childUserId(ctx))));
-        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
-                .contentType(JSON).content(profileJson(ctx))).andExpect(status().isConflict());
+        if (preferences) {
+            var profile = profiles.selectOne(new QueryWrapper<ChildProfile>().eq("user_id", childUserId(ctx)));
+            assertEquals(java.util.List.of(revokeFirst ? "胡萝卜" : "芹菜"), profile.getDislikes());
+            assertEquals(java.util.List.of("PEANUT"), profile.getAllergies());
+        }
+        var request = preferences ? put("/api/child/preferences") : post("/api/child/profile");
+        mockMvc.perform(request.header("Authorization", "Bearer " + writerToken)
+                .contentType(JSON).content(preferences ? preferenceJson : profileJson(ctx)))
+                .andExpect(status().isConflict());
     }
 
     private RevokeConsentReq revokeRequest(FamilyContext ctx) {

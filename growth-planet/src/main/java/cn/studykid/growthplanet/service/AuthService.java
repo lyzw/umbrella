@@ -1,6 +1,9 @@
 package cn.studykid.growthplanet.service;
 
 import cn.studykid.growthplanet.dto.request.ChildProfileReq;
+import cn.studykid.growthplanet.dto.request.ChildPreferencesReq;
+import cn.studykid.growthplanet.dto.response.ChildPreferencesResp;
+import cn.studykid.growthplanet.dto.response.ChildProfileDetailResp;
 import cn.studykid.growthplanet.dto.request.SelectRoleReq;
 import cn.studykid.growthplanet.dto.request.WxLoginReq;
 import cn.studykid.growthplanet.dto.response.ChildProfileResp;
@@ -21,4 +24,10 @@ public interface AuthService {
 
     /** 提交/更新儿童档案。 */
     ChildProfileResp saveChildProfile(ChildProfileReq req);
+
+    ChildProfileDetailResp getChildProfile(Long childId);
+
+    ChildPreferencesResp getChildPreferences(Long childId);
+
+    ChildPreferencesResp saveChildPreferences(ChildPreferencesReq req);
 }

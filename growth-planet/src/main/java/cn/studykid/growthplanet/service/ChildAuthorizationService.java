@@ -68,17 +68,63 @@ public class ChildAuthorizationService {
         }
     }
 
+    public FamilyMember lockBoundChild(Long childId) {
+        var ctx = UserContext.get();
+        if (ctx == null || childId == null || childId <= 0) {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        FamilyMember member;
+        if ("PARENT".equals(ctx.getRole())) {
+            member = lockChild(ctx.firstFamilyId(), childId);
+        } else if ("CHILD".equals(ctx.getRole()) && childId.equals(ctx.getUserId())) {
+            // 仅用预查询定位锁范围；授权状态必须在取得家庭/儿童锁后重新读取。
+            member = members.selectOne(new QueryWrapper<FamilyMember>()
+                    .eq("user_id", childId).eq("role", "CHILD").eq("bind_status", "BOUND"));
+            if (member == null) {
+                throw new BizException(ResultCode.E009_FORBIDDEN);
+            }
+            lockScope(member.getFamilyId(), childId);
+            member = members.selectOne(new QueryWrapper<FamilyMember>()
+                    .eq("id", member.getId()).eq("user_id", childId).eq("role", "CHILD").last("FOR UPDATE"));
+        } else {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        if (member == null || !"BOUND".equals(member.getBindStatus())) {
+            throw new BizException(ResultCode.E009_FORBIDDEN, "儿童尚未完成绑定");
+        }
+        return member;
+    }
+
     public ConsentLog latest(FamilyMember member, String type) {
+        return latest(member, type, UserContext.userId());
+    }
+
+    private ConsentLog latest(FamilyMember member, String type, Long grantorId) {
         return consents.selectOne(new QueryWrapper<ConsentLog>()
                 .eq("family_id", member.getFamilyId()).eq("child_id", member.getUserId())
-                .eq("user_id", UserContext.userId()).eq("apply_id", member.getId())
+                .eq("user_id", grantorId).eq("apply_id", member.getId())
                 .eq("application_version", member.getApplicationVersion()).eq("consent_type", type)
                 .orderByDesc("id").last("LIMIT 1 FOR UPDATE"));
     }
 
     public ConsentLog requireConsent(FamilyMember member) {
         policy.requireCollection();
-        ConsentLog latest = latest(member, "PROFILE");
+        Long grantorId = UserContext.userId();
+        if ("CHILD".equals(UserContext.get().getRole())) {
+            if (!grantorId.equals(member.getUserId()) || !"BOUND".equals(member.getBindStatus())) {
+                throw new BizException(ResultCode.E009_FORBIDDEN);
+            }
+            // Sprint 1 仅家庭创建家长可授予同意；儿童不被视为同意人。
+            Family family = families.selectById(member.getFamilyId());
+            User guardian = family == null ? null : users.selectById(family.getOwnerUserId());
+            if (guardian == null || !"PARENT".equals(guardian.getRole()) || !"NORMAL".equals(guardian.getStatus())
+                    || members.selectCount(new QueryWrapper<FamilyMember>().eq("family_id", member.getFamilyId())
+                    .eq("user_id", guardian.getId()).eq("role", "PARENT").eq("bind_status", "BOUND")) != 1) {
+                throw new BizException(ResultCode.E009_FORBIDDEN);
+            }
+            grantorId = guardian.getId();
+        }
+        ConsentLog latest = latest(member, "PROFILE", grantorId);
         if (latest == null || !"GRANT".equals(latest.getAction())
                 || !policy.getAgreementVersion().equals(latest.getVersion())
                 || latest.getExpireAt() == null || latest.getExpireAt() <= System.currentTimeMillis()
