@@ -3,6 +3,8 @@ package cn.studykid.growthplanet.service;
 import cn.studykid.growthplanet.dto.request.ConsentReq;
 import cn.studykid.growthplanet.dto.request.DataExportReq;
 import cn.studykid.growthplanet.dto.request.RevokeConsentReq;
+import cn.studykid.growthplanet.dto.request.DataDeleteReq;
+import cn.studykid.growthplanet.dto.request.PrivacyTransitionReq;
 import cn.studykid.growthplanet.dto.response.ConsentResp;
 import cn.studykid.growthplanet.dto.response.DataExportResp;
 
@@ -24,4 +26,10 @@ public interface ComplianceService {
     DataExportResp dataExport(DataExportReq req, String idempotencyKey);
 
     DataExportResp getRequest(Long id);
+
+    DataExportResp dataDelete(DataDeleteReq req, String idempotencyKey);
+
+    DataExportResp transitionRequest(Long id, PrivacyTransitionReq req);
+
+    byte[] download(Long id);
 }

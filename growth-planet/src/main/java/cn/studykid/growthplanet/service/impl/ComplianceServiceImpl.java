@@ -28,7 +28,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import java.util.UUID;
+import cn.studykid.growthplanet.entity.User;
+import cn.studykid.growthplanet.entity.PrivacyVerification;
+import cn.studykid.growthplanet.mapper.UserMapper;
+import cn.studykid.growthplanet.mapper.PrivacyVerificationMapper;
 
 @Service
 @Transactional
@@ -39,16 +42,25 @@ public class ComplianceServiceImpl implements ComplianceService {
     private final ComplianceProperties policy;
     private final AuditService audit;
     private final NoticeService notices;
+    private final UserMapper users;
+    private final WechatClient wechat;
+    private final PrivacyVerificationMapper verifications;
+    private final PrivacyWorkflowService workflow;
 
     public ComplianceServiceImpl(ConsentLogMapper consents, PrivacyRequestMapper requests,
             ChildAuthorizationService authorization, ComplianceProperties policy,
-            AuditService audit, NoticeService notices) {
+            AuditService audit, NoticeService notices, UserMapper users, WechatClient wechat,
+            PrivacyVerificationMapper verifications, PrivacyWorkflowService workflow) {
         this.consents = consents;
         this.requests = requests;
         this.authorization = authorization;
         this.policy = policy;
         this.audit = audit;
         this.notices = notices;
+        this.users = users;
+        this.wechat = wechat;
+        this.verifications = verifications;
+        this.workflow = workflow;
     }
 
     @Override
@@ -125,54 +137,100 @@ public class ComplianceServiceImpl implements ComplianceService {
 
     @Override
     public DataExportResp dataExport(DataExportReq req, String idempotencyKey) {
-        if (idempotencyKey != null && !idempotencyKey.matches("[A-Za-z0-9_-]{1,128}")) {
+        if (req == null) throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        return intake(req.getChildId(), "EXPORT", idempotencyKey, null);
+    }
+
+    @Override
+    public DataExportResp dataDelete(DataDeleteReq req, String idempotencyKey) {
+        if (req == null || !Boolean.TRUE.equals(req.getConfirmed()) || req.getCode() == null
+                || req.getCode().isBlank() || req.getCode().length() > 128) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        }
+        return intake(req.getChildId(), "DELETE", idempotencyKey, req.getCode());
+    }
+
+    private DataExportResp intake(Long childId, String type, String idempotencyKey, String code) {
+        if (idempotencyKey == null || !idempotencyKey.matches("[A-Za-z0-9_-]{1,128}")
+                || childId == null || childId <= 0) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "Idempotency-Key 格式不合法");
         }
-        FamilyMember member = authorization.lockChild(UserContext.familyId(), req.getChildId());
+        FamilyMember member = authorization.lockChild(UserContext.familyId(), childId);
         if (!"BOUND".equals(member.getBindStatus())) {
             throw new BizException(ResultCode.E009_FORBIDDEN, "仅支持已绑定儿童");
         }
-        String key = idempotencyKey == null ? UUID.randomUUID().toString() : idempotencyKey;
-        String hash = hash("EXPORT:" + member.getFamilyId() + ":" + req.getChildId());
+        String key = idempotencyKey;
+        String hash = hash(type + ":" + member.getFamilyId() + ":" + childId);
         PrivacyRequest existing = requests.selectOne(new QueryWrapper<PrivacyRequest>()
-                .eq("requester_id", UserContext.userId()).eq("request_type", "EXPORT")
+                .eq("requester_id", UserContext.userId())
                 .eq("idempotency_key", key).last("FOR UPDATE"));
         if (existing != null) {
             if (!hash.equals(existing.getRequestHash())) {
                 throw new BizException(ResultCode.E012_IDEMPOTENCY_CONFLICT);
             }
-            return response(existing);
+            return workflow.response(existing);
+        }
+        Long verifiedAt = null;
+        String codeHash = null;
+        if ("DELETE".equals(type)) {
+            codeHash = hash(code);
+            if (verifications.selectCount(new QueryWrapper<PrivacyVerification>().eq("code_hash", codeHash)) != 0) {
+                throw new BizException(ResultCode.E004_GUARDIAN_VERIFY_FAILED);
+            }
+            User requester = users.selectById(UserContext.userId());
+            WechatClient.WxSession session;
+            try {
+                session = wechat.code2Session(code);
+            } catch (BizException ex) {
+                throw new BizException(ResultCode.E004_GUARDIAN_VERIFY_FAILED);
+            } catch (RuntimeException ex) {
+                throw new BizException(ResultCode.E503_UNAVAILABLE);
+            }
+            if (requester == null || requester.getOpenid() == null || session == null || session.getOpenid() == null
+                    || !MessageDigest.isEqual(requester.getOpenid().getBytes(StandardCharsets.UTF_8),
+                    session.getOpenid().getBytes(StandardCharsets.UTF_8))) {
+                throw new BizException(ResultCode.E004_GUARDIAN_VERIFY_FAILED);
+            }
+            verifiedAt = System.currentTimeMillis();
         }
         PrivacyRequest request = new PrivacyRequest();
         request.setRequesterId(UserContext.userId());
         request.setFamilyId(member.getFamilyId());
-        request.setChildId(req.getChildId());
-        request.setRequestType("EXPORT");
+        request.setChildId(childId);
+        request.setRequestType(type);
         request.setIdempotencyKey(key);
         request.setRequestHash(hash);
         request.setStatus("RECEIVED");
+        request.setVerifiedAt(verifiedAt);
         // 工作日历和办理人员在 Sprint 4 确认后填写 dueAt，不虚构已完成或期限承诺。
         requests.insert(request);
-        audit.record(AuditService.ACTION_EXPORT, UserContext.userId(), member.getFamilyId(),
+        if (codeHash != null) {
+            PrivacyVerification verification = new PrivacyVerification();
+            verification.setRequesterId(UserContext.userId());
+            verification.setRequestId(request.getId());
+            verification.setCodeHash(codeHash);
+            verification.setVerifiedAt(verifiedAt);
+            verifications.insert(verification);
+        }
+        audit.record("DELETE".equals(type) ? "DELETE_REQUEST" : AuditService.ACTION_EXPORT,
+                UserContext.userId(), member.getFamilyId(),
                 "PRIVACY_REQUEST", request.getId(), null, "RECEIVED");
-        return response(request);
+        return workflow.response(request);
     }
 
     @Override
     public DataExportResp getRequest(Long id) {
-        PrivacyRequest request = requests.selectOne(new QueryWrapper<PrivacyRequest>()
-                .eq("id", id).eq("requester_id", UserContext.userId()));
-        if (request == null) {
-            throw new BizException(ResultCode.E404_NOT_FOUND);
-        }
-        audit.record("PRIVACY_QUERY", UserContext.userId(), request.getFamilyId(),
-                "PRIVACY_REQUEST", id, null, "query");
-        return response(request);
+        return workflow.getRequest(id);
     }
 
-    private DataExportResp response(PrivacyRequest request) {
-        return DataExportResp.builder().taskId(String.valueOf(request.getId())).status(request.getStatus())
-                .dueAt(request.getDueAt()).errorCode(request.getErrorCode()).downloadAvailable(false).build();
+    @Override
+    public DataExportResp transitionRequest(Long id, PrivacyTransitionReq req) {
+        return workflow.transition(id, req);
+    }
+
+    @Override
+    public byte[] download(Long id) {
+        return workflow.download(id);
     }
 
     private ConsentLog newLog(FamilyMember member, String type, String version, String action) {

@@ -16,6 +16,11 @@ public class Notice {
     private String channel;
     private String status;
     private String eventType;
+    private Long readAt;
+    private Integer attemptCount = 0;
+    private Long lastAttemptAt;
+    private Long nextRetryAt;
+    private String lastError;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     private Long deleteAt = 0L;

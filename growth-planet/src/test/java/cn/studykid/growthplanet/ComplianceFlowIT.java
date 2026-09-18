@@ -158,6 +158,7 @@ class ComplianceFlowIT extends BaseIT {
                 .param("childId", childUserId(ctx).toString()).param("consentType", "PROFILE"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.currentStatus").value("REVOKED"));
         mockMvc.perform(post("/api/compliance/data-export").header("Authorization", "Bearer " + ctx.parentToken())
+                .header("Idempotency-Key", "revoked-rights-export")
                 .contentType(JSON).content("{\"childId\":\"" + childUserId(ctx) + "\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("RECEIVED"))
                 .andExpect(jsonPath("$.data.downloadAvailable").value(false)).andExpect(jsonPath("$.data.data").doesNotExist());
@@ -190,6 +191,7 @@ class ComplianceFlowIT extends BaseIT {
         mockMvc.perform(get("/api/compliance/requests/" + taskId)
                 .header("Authorization", "Bearer " + other.parentToken())).andExpect(status().isNotFound());
         mockMvc.perform(post("/api/compliance/data-export").header("Authorization", "Bearer " + other.parentToken())
+                .header("Idempotency-Key", "cross-family-export")
                 .contentType(JSON).content("{\"childId\":\"" + childUserId(ctx) + "\"}")).andExpect(status().isForbidden());
     }
 }

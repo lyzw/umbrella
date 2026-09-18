@@ -6,6 +6,8 @@ import cn.studykid.growthplanet.common.result.Result;
 import cn.studykid.growthplanet.dto.request.ConsentReq;
 import cn.studykid.growthplanet.dto.request.DataExportReq;
 import cn.studykid.growthplanet.dto.request.RevokeConsentReq;
+import cn.studykid.growthplanet.dto.request.DataDeleteReq;
+import cn.studykid.growthplanet.dto.request.PrivacyTransitionReq;
 import cn.studykid.growthplanet.dto.response.ConsentResp;
 import cn.studykid.growthplanet.dto.response.DataExportResp;
 import cn.studykid.growthplanet.service.ComplianceService;
@@ -19,6 +21,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -66,8 +71,33 @@ public class ComplianceController {
     }
 
     @GetMapping("/compliance/requests/{id}")
-    @RequireRole(RoleEnum.PARENT)
+    @RequireRole({RoleEnum.PARENT, RoleEnum.ADMIN})
     public Result<DataExportResp> getRequest(@PathVariable @Positive Long id) {
         return Result.ok(complianceService.getRequest(id));
+    }
+
+    @PostMapping("/compliance/data-delete")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<DataExportResp> dataDelete(@RequestBody @Valid DataDeleteReq req,
+            @RequestHeader(value = "Idempotency-Key", required = false) String key) {
+        return Result.ok(complianceService.dataDelete(req, key));
+    }
+
+    @PostMapping("/admin/compliance/requests/{id}/transition")
+    @RequireRole(RoleEnum.ADMIN)
+    public Result<DataExportResp> transition(@PathVariable @Positive Long id,
+            @RequestBody @Valid PrivacyTransitionReq req) {
+        return Result.ok(complianceService.transitionRequest(id, req));
+    }
+
+    @GetMapping("/compliance/requests/{id}/download")
+    @RequireRole(RoleEnum.PARENT)
+    public ResponseEntity<byte[]> download(@PathVariable @Positive Long id) {
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"privacy-" + id + ".json\"")
+                .header(HttpHeaders.CACHE_CONTROL, "no-store, private")
+                .header(HttpHeaders.PRAGMA, "no-cache")
+                .header("X-Content-Type-Options", "nosniff")
+                .body(complianceService.download(id));
     }
 }

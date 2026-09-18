@@ -18,4 +18,7 @@ public class DataExportResp {
     private Long dueAt;
     private String errorCode;
     private boolean downloadAvailable;
+    private String requestType;
+    private Long expiresAt;
+    private Integer version;
 }
