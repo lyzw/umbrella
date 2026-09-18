@@ -40,6 +40,9 @@ public class ChildProfile {
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> tastes;
 
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<Long> favoriteDishIds;
+
     /** 档案状态：INCOMPLETE/COMPLETE。 */
     private String profileStatus;
 

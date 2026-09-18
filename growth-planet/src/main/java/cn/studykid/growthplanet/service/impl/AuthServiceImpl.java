@@ -252,7 +252,9 @@ public class AuthServiceImpl implements AuthService {
 
     private ChildPreferencesResp preferencesResponse(ChildProfile profile) {
         return ChildPreferencesResp.builder().childId(profile.getUserId()).dislikes(profile.getDislikes())
-                .tastes(profile.getTastes()).build();
+                .tastes(profile.getTastes()).favoriteDishIds(profile.getFavoriteDishIds() == null
+                        ? java.util.List.of() : profile.getFavoriteDishIds().stream().map(String::valueOf).toList())
+                .build();
     }
 
     @Override

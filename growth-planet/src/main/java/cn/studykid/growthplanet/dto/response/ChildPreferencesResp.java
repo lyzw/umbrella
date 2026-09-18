@@ -17,4 +17,5 @@ public class ChildPreferencesResp {
     private Long childId;
     private List<String> dislikes;
     private List<String> tastes;
+    private List<String> favoriteDishIds;
 }
