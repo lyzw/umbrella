@@ -7,6 +7,8 @@ import cn.studykid.growthplanet.dto.response.BindApproveResp;
 import cn.studykid.growthplanet.dto.response.CreateFamilyResp;
 import cn.studykid.growthplanet.dto.response.InviteCodeResp;
 import cn.studykid.growthplanet.dto.response.JoinFamilyResp;
+import cn.studykid.growthplanet.dto.response.FamilyChildResp;
+import cn.studykid.growthplanet.dto.response.PageResp;
 
 /**
  * FAMILY 模块业务接口：创建 / 邀请码 / 加入 / 绑定审批。
@@ -24,4 +26,8 @@ public interface FamilyService {
 
     /** 绑定审批（PARENT）。 */
     BindApproveResp bindApprove(BindApproveReq req);
+
+    PageResp<FamilyChildResp> getChildren(int page, int pageSize, String bindStatus);
+
+    FamilyChildResp getBinding();
 }

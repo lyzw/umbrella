@@ -10,6 +10,8 @@ import cn.studykid.growthplanet.dto.response.BindApproveResp;
 import cn.studykid.growthplanet.dto.response.CreateFamilyResp;
 import cn.studykid.growthplanet.dto.response.InviteCodeResp;
 import cn.studykid.growthplanet.dto.response.JoinFamilyResp;
+import cn.studykid.growthplanet.dto.response.FamilyChildResp;
+import cn.studykid.growthplanet.dto.response.PageResp;
 import cn.studykid.growthplanet.service.FamilyService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * FAMILY 组接口：create / invite-code / join / bind-approve。
@@ -53,5 +56,20 @@ public class FamilyController {
     @RequireRole(RoleEnum.PARENT)
     public Result<BindApproveResp> bindApprove(@RequestBody @Valid BindApproveReq req) {
         return Result.ok(familyService.bindApprove(req));
+    }
+
+    @GetMapping("/family/children")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<PageResp<FamilyChildResp>> getChildren(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String bindStatus) {
+        return Result.ok(familyService.getChildren(page, pageSize, bindStatus));
+    }
+
+    @GetMapping("/family/binding")
+    @RequireRole(RoleEnum.CHILD)
+    public Result<FamilyChildResp> getBinding() {
+        return Result.ok(familyService.getBinding());
     }
 }

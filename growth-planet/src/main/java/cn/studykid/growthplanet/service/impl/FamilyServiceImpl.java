@@ -21,6 +21,8 @@ import cn.studykid.growthplanet.dto.response.BindApproveResp;
 import cn.studykid.growthplanet.dto.response.CreateFamilyResp;
 import cn.studykid.growthplanet.dto.response.InviteCodeResp;
 import cn.studykid.growthplanet.dto.response.JoinFamilyResp;
+import cn.studykid.growthplanet.dto.response.FamilyChildResp;
+import cn.studykid.growthplanet.dto.response.PageResp;
 import cn.studykid.growthplanet.entity.Family;
 import cn.studykid.growthplanet.entity.FamilyMember;
 import cn.studykid.growthplanet.mapper.FamilyMapper;
@@ -239,6 +241,55 @@ public class FamilyServiceImpl implements FamilyService {
                 "bind approve=" + req.getApprove() + ";applicationVersion=" + member.getApplicationVersion());
 
         return BindApproveResp.builder().bindStatus(status.name()).build();
+    }
+
+    @Override
+    @Transactional
+    public PageResp<FamilyChildResp> getChildren(int page, int pageSize, String bindStatus) {
+        if (page < 1 || pageSize < 1 || pageSize > 100
+                || bindStatus != null && !java.util.Set.of("PENDING", "BOUND", "REJECTED").contains(bindStatus)) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        }
+        Long familyId = requireLogin().firstFamilyId();
+        authorization.requireParent(familyId);
+        if (familyMapper.selectById(familyId) == null) {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        QueryWrapper<FamilyMember> query = new QueryWrapper<FamilyMember>()
+                .eq("family_id", familyId).eq("role", "CHILD")
+                .eq(bindStatus != null, "bind_status", bindStatus);
+        long total = familyMemberMapper.selectCount(query);
+        // LIMIT 仅拼接经过校验的数值；先转 long，防止页码乘法溢出。
+        long offset = ((long) page - 1) * pageSize;
+        var items = familyMemberMapper.selectList(query.orderByAsc("id")
+                .last("LIMIT " + pageSize + " OFFSET " + offset)).stream().map(this::childResponse).toList();
+        auditService.record("FAMILY_QUERY", UserContext.userId(), familyId, "FAMILY", familyId, null,
+                "page=" + page + ";pageSize=" + pageSize);
+        return PageResp.<FamilyChildResp>builder().items(items).total(total).page(page).pageSize(pageSize).build();
+    }
+
+    @Override
+    @Transactional
+    public FamilyChildResp getBinding() {
+        LoginUser ctx = requireLogin();
+        requireChild(ctx);
+        FamilyMember member = familyMemberMapper.selectOne(new QueryWrapper<FamilyMember>()
+                .eq("user_id", ctx.getUserId()).eq("role", "CHILD").in("bind_status", "PENDING", "BOUND"));
+        if (member == null) {
+            member = familyMemberMapper.selectOne(new QueryWrapper<FamilyMember>()
+                    .eq("user_id", ctx.getUserId()).eq("role", "CHILD").eq("bind_status", "REJECTED")
+                    .orderByDesc("update_time", "id").last("LIMIT 1"));
+        }
+        auditService.record("BIND_QUERY", ctx.getUserId(), member == null ? null : member.getFamilyId(),
+                "CHILD", ctx.getUserId(), null, "query own binding");
+        return member == null ? FamilyChildResp.builder().childId(ctx.getUserId()).bindStatus("NONE").build()
+                : childResponse(member);
+    }
+
+    private FamilyChildResp childResponse(FamilyMember member) {
+        return FamilyChildResp.builder().familyId(member.getFamilyId()).childId(member.getUserId())
+                .applyId(member.getId()).bindStatus(member.getBindStatus())
+                .applicationVersion(member.getApplicationVersion()).relationLabel(member.getRelationLabel()).build();
     }
 
     /** 生成全局唯一邀请码（最多重试 5 次）。 */
