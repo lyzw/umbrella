@@ -1,98 +1,37 @@
 sequenceDiagram
     autonumber
-    participant C as 客户端(儿童/家长)
-    participant AC as AuthController
-    participant FC as FamilyController
-    participant CC as ComplianceController
-    participant AS as AuthService
-    participant FS as FamilyService
-    participant CS as ComplianceService
-    participant WC as WechatClient
-    participant JWT as JwtUtil
-    participant MP as Mapper/DB
-    participant RDS as Redis(黑名单)
-    participant AUD as AuditService
-
-    Note over C,MP: === 全链路：登录 → 角色 → 档案 → 家庭 → 绑定 → 同意 ===
-
-    rect rgb(239,246,255)
-    Note over C,MP: ① 微信登录 (公开接口，过拦截器但无 token)
-    C->>AC: POST /api/auth/wx-login {code}
-    AC->>AS: wxLogin(code)
-    AS->>WC: code2Session(code)
-    WC-->>AS: openid
-    AS->>MP: 查/建 usr_user(role=UNSET)
-    AS->>JWT: issue(userId,UNSET,[])
-    JWT-->>AS: token
-    AS->>AUD: record(LOGIN)
-    AS-->>C: {token, openid, role:UNSET, isNew}
-    end
-
-    rect rgb(240,253,244)
-    Note over C,MP: ② 角色选择 (CHILD / PARENT)
-    C->>AC: POST /api/auth/select-role {role} + Bearer
-    AC->>AS: selectRole(role)
-    AS->>MP: UPDATE usr_user.role
-    AS->>JWT: reissue(userId,role,[])
-    JWT-->>AS: newToken
-    AS-->>C: {role, token:newToken, nextStep}
-    end
-
-    rect rgb(254,252,242)
-    Note over C,MP: ③ 儿童档案 (仅 CHILD)
-    C->>AC: POST /api/child/profile {...} + Bearer
-    AC->>AS: saveChildProfile(req)
-    AS->>MP: INSERT/UPDATE usr_child_profile(profile_status=COMPLETED)
-    AS-->>C: {profileStatus:COMPLETED}
-    end
-
-    rect rgb(239,246,255)
-    Note over C,MP: ④ 家庭创建 + 邀请码 (仅 PARENT)
-    C->>FC: POST /api/family/create {familyName} + Bearer
-    FC->>FS: createFamily(req)
-    FS->>MP: INSERT usr_family(invite_code,expire)
-    FS->>MP: INSERT usr_family_member(PARENT,APPROVED)
-    FS->>JWT: reissue(写入 family_ids=[familyId])
-    FS->>AUD: record(CREATE_FAMILY)
-    FS-->>C: {familyId, inviteCode, expireAt, token:newToken}
-    C->>FC: GET /api/family/invite-code + Bearer
-    FC->>FS: getInviteCode()
-    FS-->>C: {inviteCode, expireAt}
-    end
-
-    rect rgb(254,242,242)
-    Note over C,MP: ⑤ 儿童加入 + ⑥ 家长绑定审批
-    C->>FC: POST /api/family/join {inviteCode} + Bearer(CHILD)
-    FC->>FS: joinFamily(req)
-    FS->>MP: 校验 invite_code/expire → INSERT usr_family_member(CHILD,PENDING)
-    FS-->>C: {applyId, status:PENDING}
-    C->>FC: POST /api/family/bind-approve {applyId,approve} + Bearer(PARENT)
-    FC->>FS: bindApprove(req)
-    FS->>MP: UPDATE usr_family_member(APPROVED/REJECTED)
-    FS->>AUD: record(BIND)
-    FS-->>C: {bindStatus}
-    end
-
-    rect rgb(240,253,244)
-    Note over C,MP: ⑦ 监护人同意提交 (含自报年龄核验)
-    C->>CC: POST /api/compliance/consent {version, selfReportedAge, agreed} + Bearer(PARENT)
-    CC->>CS: submitConsent(req)
-    alt selfReportedAge < 18
-        CS-->>C: BizException(E004 监护人核验失败) 400
-    else 通过
-        CS->>MP: INSERT usr_consent_log(GRANT, APPROVED)
-        CS->>AUD: record(GRANT)
-        CS-->>C: {guardianStatus:APPROVED}
-    end
-    end
-
-    Note over C,RDS: === 撤回即时降级 (E-010) ===
-    rect rgb(254,242,242)
-    C->>CC: POST /api/compliance/consent/revoke {consentType,childId} + Bearer(PARENT)
-    CC->>CS: revokeConsent(req)
-    CS->>MP: UPDATE usr_consent_log(REVOKE, REVOKED)
-    CS->>RDS: SET jwt:blacklist:{jti} TTL=剩余有效期
-    CS->>AUD: record(REVOKE)
-    CS-->>C: BizException(E010 已撤回,能力降级) 409 / 或 {status:REVOKED}
-    Note right of RDS: 该家长后续请求被拦截器查黑名单 → 401(E001)，儿童端被降级
-    end
+    participant C as 儿童
+    participant P as 家长
+    participant A as AUTH
+    participant F as FAMILY
+    participant S as COMPLIANCE
+    participant L as ChildAuthorizationService
+    participant DB as MySQL
+    Note over C,DB: Q-01 未批准时仅允许合成演示；每个请求检查数据库会话版本和最新权限
+    C->>A: 登录并一次选择 CHILD
+    P->>A: 登录并一次选择 PARENT
+    A->>DB: 最小身份、角色、token_version
+    P->>F: 创建家庭
+    F->>DB: 家庭及家长 BOUND 关系
+    C->>F: 使用邀请码提交最小申请
+    F->>L: 锁家庭、儿童、关系
+    F->>DB: PENDING 申请、通知事件、审计一起提交
+    P->>S: 指定 childId/applyId/PROFILE/version 的同意
+    S->>L: 锁定申请并检查归属
+    S->>DB: 追加 GRANT/SELF_ATTESTED
+    P->>F: 审批申请
+    F->>L: 检查最新同意、协议与核验策略
+    F->>DB: BOUND、通知事件、审计一起提交
+    P->>A: 完整儿童档案
+    A->>L: 锁内检查 BOUND 和有效同意
+    A->>DB: 保存 COMPLETE 档案和审计
+    P->>S: 撤回指定版本的同意
+    S->>L: 同一授权锁顺序
+    S->>DB: 追加 REVOKE、取消待发订阅、审计一起提交
+    S-->>P: 200 / REVOKED，家长会话保留
+    P->>A: 再次写档案
+    A->>L: 锁内读取最新撤回
+    A-->>P: 409 / E-010
+    P->>S: 数据导出申请及 Idempotency-Key
+    S->>DB: 保存或读取已有隐私请求
+    S-->>P: RECEIVED / taskId，不生成虚假文件
