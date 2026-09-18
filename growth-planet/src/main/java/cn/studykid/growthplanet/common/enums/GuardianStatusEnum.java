@@ -1,0 +1,10 @@
+package cn.studykid.growthplanet.common.enums;
+
+/**
+ * 监护人状态（家庭关系 / 同意书通用）。
+ */
+public enum GuardianStatusEnum {
+    UNVERIFIED,
+    SELF_ATTESTED,
+    VERIFIED
+}

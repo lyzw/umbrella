@@ -1,0 +1,14 @@
+package cn.studykid.growthplanet.dto.request;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+/**
+ * 微信登录请求。
+ */
+@Data
+public class WxLoginReq {
+    @NotBlank(message = "code 不能为空")
+    @jakarta.validation.constraints.Size(max = 128)
+    private String code;
+}
