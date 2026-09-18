@@ -21,7 +21,7 @@
 
 ## Task 1: 启动、校验和响应
 
-**Files:** `growth-planet/src/main/java/com/growthplanet/{util/JwtUtil.java,entity/ChildProfile.java,common/result,common/exception,config,dto}`；`growth-planet/src/test/java/com/growthplanet/InfrastructureRegressionTest.java`。
+**Files:** `growth-planet/src/main/java/cn/studykid/growthplanet/{util/JwtUtil.java,entity/ChildProfile.java,common/result,common/exception,config,dto}`；`growth-planet/src/test/java/cn/studykid/growthplanet/InfrastructureRegressionTest.java`。
 
 **Interfaces:** 保留 `Result.ok/fail`；错误码改为字符串，成功码保留0。保留 `JwtUtil(JwtProperties)` 和测试构造器。
 
@@ -76,7 +76,7 @@ assertNotNull(Result.fail(ResultCode.E009_FORBIDDEN).getRequestId());
 
 ## Task 5: Schema、迁移和验收
 
-**Files:** `growth-planet/sql/sprint1_schema.sql`、`growth-planet/sql/migrations/`、`growth-planet/src/test/resources/schema-test.sql`、`growth-planet/src/test/java/com/growthplanet/*IT.java`、`growth-planet/docs/`、`growth-planet/README.md`。
+**Files:** `growth-planet/sql/sprint1_schema.sql`、`growth-planet/sql/migrations/`、`growth-planet/src/test/resources/schema-test.sql`、`growth-planet/src/test/java/cn/studykid/growthplanet/*IT.java`、`growth-planet/docs/`、`growth-planet/README.md`。
 
 - [x] 同步新建库 schema 和测试 schema，身份唯一键不因软删除复用。
 - [x] 提供迁移预检、增量 DDL、旧状态保守回填及重跑/备份/停写/回滚注意事项，不能自动合并重复身份或认可旧同意。

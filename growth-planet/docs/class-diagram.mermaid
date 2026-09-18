@@ -42,6 +42,19 @@ classDiagram
         String message
         String requestId
     }
+    class ChildProfile {
+        Long userId
+        Long familyId
+        List allergies
+        List dislikes
+        List tastes
+        String profileStatus
+    }
+    class ChildPreferencesReq {
+        List dislikes
+        List tastes
+        rejectUnknownField()
+    }
     Family "1" --> "*" FamilyMember
     User "1" --> "*" FamilyMember
     User "1" --> "0..1" ChildProfile
@@ -51,10 +64,13 @@ classDiagram
     SessionService --> User : latest state
     SessionService --> FamilyMember : BOUND families
     AuthServiceImpl --> ChildAuthorizationService
+    AuthController --> ChildPreferencesReq : strict input
+    AuthServiceImpl --> ChildProfile : profile read and preference update
     FamilyServiceImpl --> ChildAuthorizationService
     ComplianceServiceImpl --> ChildAuthorizationService
     ChildAuthorizationService --> ConsentLog : locked latest grant
     ChildAuthorizationService --> FamilyMember : locked scope
+    ChildAuthorizationService --> Family : guardian owner for child access
     FamilyServiceImpl --> NoticeService
     NoticeService --> Notice : same transaction
     ComplianceServiceImpl --> PrivacyRequest

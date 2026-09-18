@@ -16,6 +16,10 @@ sequenceDiagram
     C->>F: 使用邀请码提交最小申请
     F->>L: 锁家庭、儿童、关系
     F->>DB: PENDING 申请、通知事件、审计一起提交
+    P->>F: GET family/children?bindStatus=PENDING
+    F-->>P: 本家庭分页申请 childId/applyId
+    C->>F: GET family/binding
+    F-->>C: 本人 PENDING/BOUND/REJECTED 或 NONE
     P->>S: 指定 childId/applyId/PROFILE/version 的同意
     S->>L: 锁定申请并检查归属
     S->>DB: 追加 GRANT/SELF_ATTESTED
@@ -25,6 +29,12 @@ sequenceDiagram
     P->>A: 完整儿童档案
     A->>L: 锁内检查 BOUND 和有效同意
     A->>DB: 保存 COMPLETE 档案和审计
+    P->>A: GET child/profile?childId
+    A->>L: 检查家长归属、BOUND、有效同意
+    A-->>P: 档案回显
+    C->>A: PUT child/preferences，仅 dislikes/tastes
+    A->>L: 锁定本人关系并检查创建家长有效同意
+    A->>DB: 更新两个偏好列及审计，同一事务
     P->>S: 撤回指定版本的同意
     S->>L: 同一授权锁顺序
     S->>DB: 追加 REVOKE、取消待发订阅、审计一起提交
@@ -32,6 +42,9 @@ sequenceDiagram
     P->>A: 再次写档案
     A->>L: 锁内读取最新撤回
     A-->>P: 409 / E-010
+    C->>A: 读写本人偏好
+    A->>L: 同一锁顺序检查家长最新同意
+    A-->>C: 409 / E-010
     P->>S: 数据导出申请及 Idempotency-Key
     S->>DB: 保存或读取已有隐私请求
     S-->>P: RECEIVED / taskId，不生成虚假文件

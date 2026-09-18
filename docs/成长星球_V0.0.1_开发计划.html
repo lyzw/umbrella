@@ -149,12 +149,12 @@
       <tr><th style="width:120px">维度</th><th>内容</th></tr>
       <tr><td>功能清单</td><td><span class="fcode">F-001</span> 微信登录 · <span class="fcode">F-002</span> 角色选择 · <span class="fcode">F-003</span> 儿童档案 · <span class="fcode">F-004</span> 家庭创建/邀请码 · <span class="fcode">F-005</span> 儿童加入 · <span class="fcode">F-006</span> 绑定审批 · <span class="fcode">F-007</span> 监护人同意+核验 · <span class="fcode">F-012</span> 同意留痕/出口入口 · <span class="fcode">F-013</span> 基础框架 5 Tab（Q-03）</td></tr>
       <tr><td>涉及数据表</td><td>usr_user、usr_family、usr_family_member、usr_child_profile、usr_consent_log、sys_audit_log、sys_notice（事件基础）；sys_privacy_request建模与迁移设计</td></tr>
-      <tr><td>接口组</td><td><b>AUTH</b>（wx-login / select-role / child-profile）· <b>FAMILY</b>（create / invite-code / join / bind-approve）· <b>COMPLIANCE</b>（consent GET/POST / revoke / data-export 入口）</td></tr>
+      <tr><td>接口组</td><td><b>AUTH</b>（wx-login / select-role / logout / child-profile GET/POST / preferences GET/PUT）· <b>FAMILY</b>（create / invite-code / join / bind-approve / children分页 / binding本人查询）· <b>COMPLIANCE</b>（consent GET/POST / revoke / data-export受理 / requests查询）</td></tr>
       <tr><td>交付物</td><td>工程脚手架及版本兼容报告；账号/家庭/同意/审计/通知基础的可执行迁移和回填报告；首次角色及token轮换；先同意后绑定建档；5 Tab点餐/我的可用、任务/学习占位、成长静态。自报状态SELF_ATTESTED，不假作核验。</td></tr>
       <tr><td>进入准则</td><td>详细设计评审通过；开发/测试环境就绪（MySQL 8.0 + Redis）；技术栈版本闸门 Q-06 预检通过。</td></tr>
       <tr><td>退出准则 DoD</td><td>先同意再绑定建档；无同意写入及撤回并发测试AC-01通过；越权拒绝；角色不可切换提权；绑定业务与站内事件原子提交；Q-01未批前只用不含真实儿童身份的演示数据。</td></tr>
       <tr><td>依赖</td><td>无（首 Sprint，含脚手架）。</td></tr>
-      <tr><td>当前状态<br>2026-09-18</td><td><b>后端审计修复完成，Sprint 1整体未退出。</b>43项本地测试通过（14单元+29隔离集成），打包成功；验证范围和未关闭项见<a href="../growth-planet/docs/sprint1-verification.md">后端验证记录</a>。未连接或修改现有业务数据库。</td></tr>
+      <tr><td>当前状态<br>2026-09-18</td><td><b>后端代码收口完成，Sprint 1整体未退出。</b>53项本地测试通过（14单元+39隔离集成），打包成功；基础包cn.studykid.growthplanet。验证范围和未关闭项见<a href="../growth-planet/docs/sprint1-verification.md">后端验证记录</a>。未连接或修改现有业务数据库。</td></tr>
     </table>
   </div>
 
@@ -163,8 +163,8 @@
     <tr><th>任务</th><th>当前状态</th><th>证据及待办</th></tr>
     <tr><td>F-001 登录</td><td>后端已实现，隔离测试通过</td><td>AuthFlowIT / SecurityRegressionIT；真实微信联调及前置处理依据审批待完成。</td></tr>
     <tr><td>F-002 角色与会话</td><td>后端已实现、已验证</td><td>首次选择、同角色幂等、禁止提权、旧token失效及退出已覆盖；前端角色流程待联调。</td></tr>
-    <tr><td>F-003 儿童档案</td><td>家长建档后端已验证；部分完成</td><td>绑定及有效同意校验、JSON回读已覆盖；前端分步引导及儿童非安全偏好接口待完成。</td></tr>
-    <tr><td>F-004至F-006 家庭/邀请码/绑定</td><td>后端已实现、已验证</td><td>FamilyFlowIT / TransactionRegressionIT；重申、越权、并发审批及通知失败回滚已覆盖，前端联调待完成。</td></tr>
+    <tr><td>F-003 儿童档案</td><td>后端已收口、已验证；前端待完成</td><td>家长建档及GET回显、儿童非安全偏好GET/PUT、家长偏好查询已补齐；白名单、撤回并发和审计失败回滚通过。前端分步引导待联调，F-022收藏不计完成。</td></tr>
+    <tr><td>F-004至F-006 家庭/邀请码/绑定</td><td>后端已收口、已验证</td><td>FamilyFlowIT / Sprint1ClosureIT / TransactionRegressionIT；新增本家庭儿童申请/关系分页及儿童本人绑定状态查询，重申、越权、并发审批及通知失败回滚已覆盖；前端联调待完成。</td></tr>
     <tr><td>F-007 同意与撤回</td><td>后端声明及授权控制已验证；部分完成</td><td>同意/撤回追加留痕、重授、版本与年龄校验已覆盖；SELF_ATTESTED不等于核验，Q-01审批与正式核验流程未关闭。</td></tr>
     <tr><td>F-010 通知基础</td><td>Sprint 1事件基础已完成、已验证</td><td>站内/订阅记录同事务、防重、撤回取消待发事件；通知中心与订阅授权/实际投递/重试仍属后续Sprint。</td></tr>
     <tr><td>F-012 审计与权利入口</td><td>后端基础已完成、已验证；完整功能未完成</td><td>审计、导出RECEIVED持久化/查询/幂等已覆盖；前端入口、导出文件/下载、删除办理、处理人与时限待完成。</td></tr>

@@ -535,7 +535,7 @@
   <table class="mtx">
     <tr><th>错误码</th><th>PRD</th><th>HTTP</th><th>含义</th></tr>
     <tr><td>E-001</td><td>无微信授权</td><td>401</td><td>未登录访问写操作（仅可浏览）</td></tr>
-    <tr><td>E-002</td><td>档案未补全</td><td>409（写接口）</td><td>启动查询200返回profileStatus；需要完整档案的写操作拒绝并引导家长补全</td></tr>
+    <tr><td>E-002</td><td>档案未补全</td><td>409</td><td>需要完整档案的偏好读写操作拒绝并引导家长补全；家长档案GET未建档返回404，已有档案200返回profileStatus</td></tr>
     <tr><td>E-003</td><td>邀请码过期</td><td>400</td><td>邀请码 24h 失效</td></tr>
     <tr><td>E-004</td><td>监护人核验失败</td><td>400</td><td>非监护人/信息不符</td></tr>
     <tr><td>E-005</td><td>提交结果未知</td><td>无响应 / 503 / 504</td><td>网络断开可能无HTTP响应；同键重试或查单，不伪装状态冲突409</td></tr>
@@ -554,7 +554,8 @@
     <tr><td><code>POST /api/auth/wx-login</code><br/><span class="fcode">F-001</span></td><td>公开</td><td><b>请求：</b>{code}；临时码失效返回明确认证错误。首次role=UNSELECTED，不自动选CHILD；token有效30分钟。<br/><b>响应示例：</b><pre>{"code":0,"data":{"token":"example-access-token","role":"UNSELECTED","isNew":true,"expiresIn":1800},"message":"success","requestId":"req-login-001"}</pre></td></tr>
     <tr><td><code>POST /api/auth/select-role</code><br/>F-002</td><td>UNSELECTED</td><td>{role:CHILD或PARENT}；只选一次，换发token，旧token失效；重复相同选择返回当前状态，不得改为ADMIN。</td></tr>
     <tr><td><code>POST /api/child/profile</code><br/>F-003</td><td>PARENT</td><td>{childId,nickname,grade,school,allergies,dislikes,tastes}；BOUND+有效同意后建档；返回profileStatus。校验限长见修订基线。</td></tr>
-    <tr><td><code>PUT /api/child/preferences</code><br/><code>GET /api/child/preferences</code><br/>F-022</td><td>写CHILD；读本人/绑定家长</td><td>写仅dislikes/tastes，拒绝安全字段注入；GET返回favoriteDishIds，收藏存档案集合。</td></tr>
+    <tr><td><code>GET /api/child/profile</code><br/>F-003</td><td>PARENT</td><td>childId必传且为正整数；当前家庭BOUND+有效同意后返回childId/nickname/grade/school/allergies/dislikes/tastes/profileStatus；未建档404。</td></tr>
+    <tr><td><code>PUT /api/child/preferences</code><br/><code>GET /api/child/preferences</code><br/>F-003；F-022后续扩展</td><td>写CHILD；读本人/绑定家长</td><td>BOUND+有效家长同意+COMPLETE档案；写仅dislikes/tastes必填数组，每组最多20项，每项非空且最多64字符，拒绝任何额外字段，包括childId和安全字段。GET必传childId；Sprint 1响应childId/dislikes/tastes；缺完整档案409/E-002，撤回后读写409/E-010。Sprint 3收藏落库后再返回favoriteDishIds，本期不伪造该字段。</td></tr>
   </table>
 
   <h3>6.2 家庭与绑定（FAMILY）</h3>
@@ -564,6 +565,8 @@
     <tr><td><code>GET /api/family/invite-code</code><br/><span class="fcode">F-004</span></td><td>PARENT</td><td><b>响应：</b>{inviteCode, expireAt, qrBase64}（重新获取/查看）</td></tr>
     <tr><td><code>POST /api/family/join</code><br/><span class="fcode">F-005</span></td><td>CHILD</td><td><b>请求：</b>{inviteCode}<br/><b>响应：</b>{applyId, status:"PENDING"}（E-003 过期）；写 sys_notice 通知家长</td></tr>
     <tr><td><code>POST /api/family/bind-approve</code><br/><span class="fcode">F-006</span></td><td>PARENT</td><td>{applyId,relationLabel,approve}；同意绑定须锁内验证该申请所属家庭、childId有效同意及Q-01门槛；返回BOUND/REJECTED及通知事件。入学勋章须BOUND+COMPLETE，不能仅绑定即发。</td></tr>
+    <tr><td><code>GET /api/family/children</code><br/>F-004至F-006</td><td>PARENT</td><td>当前家庭儿童申请/关系，page默认1且≥1、pageSize默认20且1至100；bindStatus可选PENDING/BOUND/REJECTED。返回items/total/page/pageSize，单项familyId/childId/applyId/bindStatus/applicationVersion/relationLabel，按applyId升序；不返回档案及邀请码。</td></tr>
+    <tr><td><code>GET /api/family/binding</code><br/>F-005/006</td><td>CHILD</td><td>仅本人，无需传familyId。优先返回有效PENDING/BOUND，否则最近更新的REJECTED；从未申请返回NONE及本人childId，其他关系字段null。已有关系响应字段同children单项；撤回后仍可查最小关系状态。</td></tr>
   </table>
 
   <h3>6.3 钱包与额度（WALLET）</h3>
