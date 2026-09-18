@@ -20,10 +20,12 @@ public enum ResultCode {
     E008_NOTICE_FAILED(1008, HttpStatus.SERVICE_UNAVAILABLE, "通知失败"),
     E009_FORBIDDEN(1009, HttpStatus.FORBIDDEN, "越权访问"),
     E010_CONSENT_REVOKED(1010, HttpStatus.CONFLICT, "同意缺失、失效或已撤回"),
+    E011_ALLOWANCE_CONFIRM_REQUIRED(1011, HttpStatus.CONFLICT, "额度已变化，请重新确认"),
     E012_IDEMPOTENCY_CONFLICT(1012, HttpStatus.CONFLICT, "请求标识已用于其他内容"),
     E400_INVALID_ARGUMENT(1400, HttpStatus.BAD_REQUEST, "参数不合法"),
     E404_NOT_FOUND(1404, HttpStatus.NOT_FOUND, "资源不存在"),
     E405_METHOD_NOT_ALLOWED(1405, HttpStatus.METHOD_NOT_ALLOWED, "请求方法不支持"),
+    E410_GONE(1410, HttpStatus.GONE, "资源已过期"),
     E415_UNSUPPORTED_MEDIA(1415, HttpStatus.UNSUPPORTED_MEDIA_TYPE, "请求内容类型不支持"),
     E503_UNAVAILABLE(1503, HttpStatus.SERVICE_UNAVAILABLE, "服务暂不可用"),
     E500_SYSTEM_ERROR(1500, HttpStatus.INTERNAL_SERVER_ERROR, "系统异常");

@@ -26,13 +26,25 @@ public class GlobalExceptionHandler {
     }
 
     private ResponseEntity<Result<Void>> failure(ResultCode code) {
+        auditFailure(code);
+        return ResponseEntity.status(code.getHttpStatus()).body(Result.fail(code));
+    }
+
+    private void auditFailure(ResultCode code) {
         try {
             audit.record(code);
         } catch (RuntimeException ex) {
             log.error("failure_audit_unavailable requestId={} errorCode={} exceptionType={}",
                     RequestContext.requestId(), code.getCode(), ex.getClass().getSimpleName());
         }
-        return ResponseEntity.status(code.getHttpStatus()).body(Result.fail(code));
+    }
+
+    @ExceptionHandler(AllowanceConfirmationException.class)
+    public ResponseEntity<Result<cn.studykid.growthplanet.dto.response.AllowancePreviewResp>>
+            handleAllowanceConfirmation(AllowanceConfirmationException ex) {
+        ResultCode code = ResultCode.E011_ALLOWANCE_CONFIRM_REQUIRED;
+        auditFailure(code);
+        return ResponseEntity.status(code.getHttpStatus()).body(Result.of(code, ex.getPreview()));
     }
 
     @ExceptionHandler(BizException.class)
