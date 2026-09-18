@@ -1,0 +1,220 @@
+classDiagram
+    %% ===== 实体层 (Entity / DO) =====
+    class User {
+        +Long id
+        +String openid
+        +String unionid
+        +String role
+        +String nickname
+        +String avatarUrl
+        +String phone
+        +String status
+        +LocalDateTime createTime
+        +LocalDateTime updateTime
+        +Long deleteAt = 0L
+    }
+    class Family {
+        +Long id
+        +String familyName
+        +Long ownerUserId
+        +String inviteCode
+        +Long inviteCodeExpire
+        +LocalDateTime createTime
+        +LocalDateTime updateTime
+        +Long deleteAt = 0L
+    }
+    class FamilyMember {
+        +Long id
+        +Long familyId
+        +Long userId
+        +String relationLabel
+        +String role
+        +String bindStatus
+        +String guardianStatus
+        +LocalDateTime createTime
+        +LocalDateTime updateTime
+        +Long deleteAt = 0L
+    }
+    class ChildProfile {
+        +Long id
+        +Long userId
+        +Long familyId
+        +String nickname
+        +String grade
+        +String school
+        +List~String~ allergies
+        +List~String~ dislikes
+        +List~String~ tastes
+        +String profileStatus
+        +LocalDateTime createTime
+        +LocalDateTime updateTime
+        +Long deleteAt = 0L
+    }
+    class ConsentLog {
+        +Long id
+        +Long userId
+        +Long childId
+        +Long familyId
+        +String consentType
+        +String action
+        +String version
+        +Integer selfReportedAge
+        +String guardianStatus
+        +Long signedAt
+        +Long expireAt
+        +LocalDateTime createTime
+        +LocalDateTime updateTime
+        +Long deleteAt = 0L
+    }
+    class AuditLog {
+        +Long id
+        +Long actorUserId
+        +Long familyId
+        +String action
+        +String targetType
+        +Long targetId
+        +String ip
+        +String detail
+        +LocalDateTime createTime
+        +Long deleteAt = 0L
+    }
+
+    %% ===== 横切 / 公共 =====
+    class Result~T~ {
+        +int code
+        +T data
+        +String message
+        +ok(data) Result
+        +fail(ResultCode) Result
+    }
+    class ResultCode {
+        <<enum>>
+        +E001_NO_WX_AUTH
+        +E002_PROFILE_INCOMPLETE
+        +E003_INVITE_CODE_EXPIRED
+        +E004_GUARDIAN_VERIFY_FAILED
+        +E005_SUBMIT_TIMEOUT
+        +E006_BALANCE_INSUFFICIENT
+        +E007_CONCURRENCY_CONFLICT
+        +E008_NOTICE_FAILED
+        +E009_FORBIDDEN
+        +E010_CONSENT_REVOKED
+        +int code
+        +int httpStatus
+        +String message
+    }
+    class BizException {
+        +ResultCode code
+    }
+    class LoginUser {
+        +Long userId
+        +String role
+        +List~Long~ familyIds
+        +String jti
+    }
+    class UserContext {
+        +set(LoginUser)
+        +get() LoginUser
+        +clear()
+    }
+    class RoleEnum {
+        <<enum>>
+        +CHILD
+        +PARENT
+        +ADMIN
+        +UNSET
+    }
+
+    %% ===== 工具 / 拦截器 =====
+    class JwtUtil {
+        +issue(LoginUser) String
+        +reissue(LoginUser) String
+        +parse(token) LoginUser
+    }
+    class JwtInterceptor {
+        +preHandle(req,resp,handler) bool
+        +afterCompletion(req,resp,handler,ex)
+    }
+    class InviteCodeUtil {
+        +randomCode() String
+    }
+    class WechatClient {
+        <<interface>>
+        +code2Session(code) WxSession
+    }
+    class MockWechatClient {
+        +code2Session(code) WxSession
+    }
+    class WxWechatClient {
+        +code2Session(code) WxSession
+    }
+
+    %% ===== Service 层 =====
+    class AuthService {
+        <<interface>>
+        +wxLogin(code) WxLoginResp
+        +selectRole(role) SelectRoleResp
+        +saveChildProfile(req) ChildProfileResp
+    }
+    class FamilyService {
+        <<interface>>
+        +createFamily(req) CreateFamilyResp
+        +getInviteCode() InviteCodeResp
+        +joinFamily(req) JoinFamilyResp
+        +bindApprove(req) BindApproveResp
+    }
+    class ComplianceService {
+        <<interface>>
+        +getConsent(childId) ConsentResp
+        +submitConsent(req) ConsentResp
+        +revokeConsent(req) RevokeResp
+        +dataExport(req) DataExportResp
+    }
+    class AuditService {
+        <<interface>>
+        +record(action, actorUserId, familyId, detail)
+    }
+
+    %% ===== Controller 层 =====
+    class AuthController {
+        +wxLogin(req) Result
+        +selectRole(req) Result
+        +childProfile(req) Result
+    }
+    class FamilyController {
+        +create(req) Result
+        +inviteCode() Result
+        +join(req) Result
+        +bindApprove(req) Result
+    }
+    class ComplianceController {
+        +getConsent() Result
+        +submitConsent(req) Result
+        +revokeConsent(req) Result
+        +dataExport(req) Result
+    }
+
+    %% ===== 关系 =====
+    User "1" --> "0..1" ChildProfile : 儿童档案
+    Family "1" --> "0..*" FamilyMember : 成员
+    User "1" --> "0..*" FamilyMember : 家庭成员
+    FamilyMember "0..*" --> "1" Family : 归属家庭
+    FamilyMember "0..*" --> "1" User : 对应用户
+    ConsentLog "0..*" --> "1" User : 监护人
+    ConsentLog "0..*" --> "1" ChildProfile : 儿童
+
+    JwtInterceptor ..> UserContext : 注入
+    JwtInterceptor ..> JwtUtil : 校验
+    UserContext ..> LoginUser : 持有
+    AuthController ..> AuthService
+    FamilyController ..> FamilyService
+    ComplianceController ..> ComplianceService
+    AuthService ..> WechatClient
+    MockWechatClient ..|> WechatClient
+    WxWechatClient ..|> WechatClient
+    AuthService ..> AuditService
+    FamilyService ..> AuditService
+    ComplianceService ..> AuditService
+    ComplianceService ..> JwtUtil : revoke 拉黑
+    AuthService ..> JwtUtil : 签发/重签
+    FamilyService ..> InviteCodeUtil

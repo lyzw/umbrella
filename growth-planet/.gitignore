@@ -1,0 +1,11 @@
+# 构建产物
+target/
+*.class
+
+# IDE / OS
+.DS_Store
+*.iml
+.idea/
+
+# Maven 本地设置（仅本机中央仓镜像，非通用配置，可选忽略；此处保留提交以便复用）
+# mvn-settings.xml

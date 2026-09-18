@@ -1,0 +1,10 @@
+spring:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
+  # datasource / redis 由 @ServiceConnection（Testcontainers）在集成测试中注入
+
+logging:
+  level:
+    com.growthplanet: INFO

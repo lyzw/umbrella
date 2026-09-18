@@ -1,0 +1,43 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: growth-planet
+  # 本地占位数据源（dev/test 由 profile 覆盖；test 由 @ServiceConnection 注入容器地址）
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/growth_planet?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8mb4
+    username: root
+    password: root
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  # Sprint 1 不在应用启动时自动建表；生产/本地用 sql/sprint1_schema.sql 手动建表
+  sql:
+    init:
+      mode: never
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: auto
+      # 全局逻辑删除：未删除=0；删除语句由业务以 setSql 注入 UNIX_TIMESTAMP()*1000（见各 Service）
+      logic-delete-field: deleteAt
+      logic-not-delete-value: 0
+      logic-delete-value: UNIX_TIMESTAMP() * 1000
+  mapper-locations: classpath*:mapper/*.xml
+
+jwt:
+  # 生产请放入配置中心；此处为开发/测试占位（长度 >= 32 字节，满足 HS256 要求）
+  secret: growth-planet-default-secret-key-please-change-in-prod-0123456789
+  access-ttl: 86400000
+  issuer: growth-planet
+
+wx:
+  appid: wx-dev-appid
+  secret: wx-dev-secret
+  mock: true

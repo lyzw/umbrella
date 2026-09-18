@@ -1,0 +1,98 @@
+sequenceDiagram
+    autonumber
+    participant C as 客户端(儿童/家长)
+    participant AC as AuthController
+    participant FC as FamilyController
+    participant CC as ComplianceController
+    participant AS as AuthService
+    participant FS as FamilyService
+    participant CS as ComplianceService
+    participant WC as WechatClient
+    participant JWT as JwtUtil
+    participant MP as Mapper/DB
+    participant RDS as Redis(黑名单)
+    participant AUD as AuditService
+
+    Note over C,MP: === 全链路：登录 → 角色 → 档案 → 家庭 → 绑定 → 同意 ===
+
+    rect rgb(239,246,255)
+    Note over C,MP: ① 微信登录 (公开接口，过拦截器但无 token)
+    C->>AC: POST /api/auth/wx-login {code}
+    AC->>AS: wxLogin(code)
+    AS->>WC: code2Session(code)
+    WC-->>AS: openid
+    AS->>MP: 查/建 usr_user(role=UNSET)
+    AS->>JWT: issue(userId,UNSET,[])
+    JWT-->>AS: token
+    AS->>AUD: record(LOGIN)
+    AS-->>C: {token, openid, role:UNSET, isNew}
+    end
+
+    rect rgb(240,253,244)
+    Note over C,MP: ② 角色选择 (CHILD / PARENT)
+    C->>AC: POST /api/auth/select-role {role} + Bearer
+    AC->>AS: selectRole(role)
+    AS->>MP: UPDATE usr_user.role
+    AS->>JWT: reissue(userId,role,[])
+    JWT-->>AS: newToken
+    AS-->>C: {role, token:newToken, nextStep}
+    end
+
+    rect rgb(254,252,242)
+    Note over C,MP: ③ 儿童档案 (仅 CHILD)
+    C->>AC: POST /api/child/profile {...} + Bearer
+    AC->>AS: saveChildProfile(req)
+    AS->>MP: INSERT/UPDATE usr_child_profile(profile_status=COMPLETED)
+    AS-->>C: {profileStatus:COMPLETED}
+    end
+
+    rect rgb(239,246,255)
+    Note over C,MP: ④ 家庭创建 + 邀请码 (仅 PARENT)
+    C->>FC: POST /api/family/create {familyName} + Bearer
+    FC->>FS: createFamily(req)
+    FS->>MP: INSERT usr_family(invite_code,expire)
+    FS->>MP: INSERT usr_family_member(PARENT,APPROVED)
+    FS->>JWT: reissue(写入 family_ids=[familyId])
+    FS->>AUD: record(CREATE_FAMILY)
+    FS-->>C: {familyId, inviteCode, expireAt, token:newToken}
+    C->>FC: GET /api/family/invite-code + Bearer
+    FC->>FS: getInviteCode()
+    FS-->>C: {inviteCode, expireAt}
+    end
+
+    rect rgb(254,242,242)
+    Note over C,MP: ⑤ 儿童加入 + ⑥ 家长绑定审批
+    C->>FC: POST /api/family/join {inviteCode} + Bearer(CHILD)
+    FC->>FS: joinFamily(req)
+    FS->>MP: 校验 invite_code/expire → INSERT usr_family_member(CHILD,PENDING)
+    FS-->>C: {applyId, status:PENDING}
+    C->>FC: POST /api/family/bind-approve {applyId,approve} + Bearer(PARENT)
+    FC->>FS: bindApprove(req)
+    FS->>MP: UPDATE usr_family_member(APPROVED/REJECTED)
+    FS->>AUD: record(BIND)
+    FS-->>C: {bindStatus}
+    end
+
+    rect rgb(240,253,244)
+    Note over C,MP: ⑦ 监护人同意提交 (含自报年龄核验)
+    C->>CC: POST /api/compliance/consent {version, selfReportedAge, agreed} + Bearer(PARENT)
+    CC->>CS: submitConsent(req)
+    alt selfReportedAge < 18
+        CS-->>C: BizException(E004 监护人核验失败) 400
+    else 通过
+        CS->>MP: INSERT usr_consent_log(GRANT, APPROVED)
+        CS->>AUD: record(GRANT)
+        CS-->>C: {guardianStatus:APPROVED}
+    end
+    end
+
+    Note over C,RDS: === 撤回即时降级 (E-010) ===
+    rect rgb(254,242,242)
+    C->>CC: POST /api/compliance/consent/revoke {consentType,childId} + Bearer(PARENT)
+    CC->>CS: revokeConsent(req)
+    CS->>MP: UPDATE usr_consent_log(REVOKE, REVOKED)
+    CS->>RDS: SET jwt:blacklist:{jti} TTL=剩余有效期
+    CS->>AUD: record(REVOKE)
+    CS-->>C: BizException(E010 已撤回,能力降级) 409 / 或 {status:REVOKED}
+    Note right of RDS: 该家长后续请求被拦截器查黑名单 → 401(E001)，儿童端被降级
+    end
