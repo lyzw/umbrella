@@ -7,14 +7,14 @@
 <style>
   :root{
     /* —— 角色主色 —— */
-    --kid:#3b82f6; --kid-50:#eff6ff; --kid-100:#dbeafe; --kid-700:#1d4ed8;
-    --parent:#22c55e; --parent-50:#f0fdf4; --parent-100:#bbf7d0; --parent-700:#15803d;
+    --kid:#1d4ed8; --kid-50:#eff6ff; --kid-100:#dbeafe; --kid-700:#1d4ed8;
+    --parent:#15803d; --parent-50:#f0fdf4; --parent-100:#bbf7d0; --parent-700:#15803d;
     --admin:#f59e0b; --admin-50:#fffbeb; --admin-100:#fde68a;
     --platform:#a855f7;
     /* —— 语义色 —— */
     --success:#16a34a; --warning:#f97316; --danger:#ef4444; --info:#3b82f6;
     /* —— 中性 —— */
-    --ink:#1f2733; --sub:#5b6776; --muted:#8a94a6;
+    --ink:#1f2733; --sub:#5b6776; --muted:#596579;
     --bg:#f6f8fb; --card:#ffffff; --line:#e6ebf2; --soft:#eef3fb;
     --radius:16px; --radius-lg:20px; --shadow:0 1px 3px rgba(20,40,80,.06),0 6px 18px rgba(20,40,80,.05);
   }
@@ -51,7 +51,7 @@
 
   /* —— 设计 token 展示 —— */
   .swatch{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0;}
-  .sw{width:92px;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:11px;}
+  .sw{width:92px;border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:12px;}
   .sw i{display:block;height:48px;}
   .sw span{display:block;padding:4px 6px;color:var(--sub);}
 
@@ -60,29 +60,29 @@
   @media(max-width:900px){.screen-grid{grid-template-columns:1fr;}}
   .screen-item{display:flex;gap:18px;align-items:flex-start;}
   @media(max-width:560px){.screen-item{flex-direction:column;align-items:center;}}
-  .phone{width:300px;flex:0 0 300px;background:#fff;border-radius:40px;border:11px solid #1f2733;
+  .phone{width:300px;max-width:100%;flex:0 0 auto;background:#fff;border-radius:40px;border:11px solid #1f2733;
          box-shadow:0 18px 44px rgba(20,40,80,.20);overflow:hidden;position:relative;}
   .phone .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:22px;
         background:#1f2733;border-radius:0 0 14px 14px;z-index:20;}
   .phone .statusbar{height:30px;display:flex;justify-content:space-between;align-items:center;
-        padding:0 20px;font-size:11px;color:var(--ink);font-weight:600;}
+        padding:0 20px;font-size:12px;color:var(--ink);font-weight:600;}
   .phone .screen{background:var(--bg);min-height:560px;position:relative;padding-bottom:62px;}
   .annotate{flex:1;min-width:0;}
   .annotate h4{margin:0 0 6px;font-size:16px;color:var(--ink);}
-  .annotate .role{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;margin-bottom:8px;}
+  .annotate .role{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;margin-bottom:8px;}
   .r-kid{background:var(--kid-50);color:var(--kid-700);}
   .r-par{background:var(--parent-50);color:var(--parent-700);}
   .annotate ul{margin:6px 0;padding-left:18px;font-size:13px;color:var(--sub);line-height:1.7;}
   .annotate b{color:var(--ink);}
-  .lab{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin:10px 0 3px;text-transform:uppercase;}
+  .lab{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;margin:10px 0 3px;text-transform:uppercase;}
 
   /* —— 屏幕内部通用组件 —— */
   .appbar{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px;}
   .appbar .t{font-size:17px;font-weight:700;}
-  .bell{width:34px;height:34px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;
+  .bell{width:44px;height:44px;flex-shrink:0;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;
         font-size:16px;box-shadow:var(--shadow);position:relative;}
   .dot{position:absolute;top:-2px;right:-2px;min-width:16px;height:16px;border-radius:9px;background:var(--danger);
-        color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+        color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 3px;}
   .seg{display:flex;background:#fff;border-radius:12px;margin:6px 14px;padding:4px;box-shadow:var(--shadow);}
   .seg div{flex:1;text-align:center;font-size:13px;font-weight:600;padding:6px 0;border-radius:9px;color:var(--sub);}
   .seg div.on{background:var(--kid);color:#fff;}
@@ -92,24 +92,24 @@
   .chip.on{background:var(--kid-50);color:var(--kid-700);border-color:var(--kid-100);}
   .pad{padding:0 14px;}
   .meal-h{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;padding:12px 14px 4px;color:var(--ink);}
-  .meal-h .tagm{font-size:11px;font-weight:600;color:var(--muted);}
+  .meal-h .tagm{font-size:12px;font-weight:600;color:var(--muted);}
   .dish{display:flex;gap:10px;background:#fff;border-radius:14px;padding:10px;margin:8px 14px;box-shadow:var(--shadow);}
   .dish .img{width:74px;height:74px;border-radius:11px;flex:0 0 74px;display:flex;align-items:center;justify-content:center;font-size:32px;}
   .dish .info{flex:1;min-width:0;}
   .dish .nm{font-size:14px;font-weight:700;color:var(--ink);}
-  .dish .meta{font-size:11px;color:var(--muted);margin:2px 0;}
+  .dish .meta{font-size:12px;color:var(--muted);margin:2px 0;}
   .dish .price{font-size:14px;font-weight:700;color:var(--kid-700);}
   .dish .row2{display:flex;align-items:center;justify-content:space-between;margin-top:6px;}
-  .tagc{font-size:10px;font-weight:700;padding:2px 7px;border-radius:7px;}
+  .tagc{font-size:12px;font-weight:700;padding:2px 7px;border-radius:7px;}
   .t-cal{background:#fff7ed;color:#c2410c;}
   .t-spicy{background:#fef2f2;color:#b91c1c;}
   .t-mild{background:#eff6ff;color:#1d4ed8;}
   .t-ok{background:#f0fdf4;color:#15803d;}
-  .heart{flex:0 0 30px;width:30px;height:30px;border-radius:50%;background:var(--kid-50);
+  .heart{flex:0 0 44px;width:44px;height:44px;border-radius:50%;background:var(--kid-50);
          display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--kid);}
   .tabbar{position:absolute;left:0;right:0;bottom:0;height:58px;background:#fff;border-top:1px solid var(--line);
           display:flex;align-items:center;justify-content:space-around;box-shadow:0 -2px 12px rgba(20,40,80,.05);}
-  .tabbar .tb{display:flex;flex-direction:column;align-items:center;font-size:10px;color:var(--muted);font-weight:600;}
+  .tabbar .tb{display:flex;flex-direction:column;align-items:center;font-size:12px;color:var(--muted);font-weight:600;}
   .tabbar .tb .ic{font-size:18px;margin-bottom:1px;}
   .tabbar .tb.on{color:var(--kid);}
   .tabbar .tb.onp{color:var(--parent);}
@@ -124,14 +124,25 @@
   .btn-row{display:flex;gap:10px;padding:0 14px;margin:12px 0;}
   .btn-row .btn{margin:0;flex:1;}
   .btn-sm{font-size:13px;padding:9px;}
+  .stepper{display:flex;align-items:center;gap:8px;margin-left:auto;}
+  .stepper button{width:44px;height:44px;flex:0 0 44px;border:1px solid var(--kid-100);
+    border-radius:8px;background:#fff;color:var(--kid-700);font-size:20px;cursor:pointer;}
+  .stepper b{min-width:18px;text-align:center;}
+  .stepper button:focus-visible{outline:2px solid var(--kid);outline-offset:2px;}
+  .seg div,.chip,.tabbar .tb,.btn{min-height:44px;min-width:44px;}
+  .seg div,.chip{display:flex;align-items:center;justify-content:center;}
+  .lrow,.btn-row{flex-wrap:wrap;}
+  .lrow>div,.btn-row .btn,.screen-grid>*{min-width:0;}
+  .phone{overflow-wrap:anywhere;}
+  @media(max-width:560px){.wrap{padding:16px 12px;}table{display:block;overflow-x:auto;}}
 
   /* 详情卡 */
   .hero-img{height:150px;display:flex;align-items:center;justify-content:center;font-size:64px;color:#fff;}
-  .back{position:absolute;top:8px;left:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.85);
+  .back{position:absolute;top:8px;left:12px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.85);
         display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink);z-index:5;}
 
   /* 状态徽标 */
-  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;}
   .p-todo{background:#fff7ed;color:#c2410c;}
   .p-doing{background:#eff6ff;color:#1d4ed8;}
   .p-done{background:#f0fdf4;color:#15803d;}
@@ -144,7 +155,7 @@
   .lrow:last-child{border-bottom:none;}
   .lrow .ic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 38px;}
   .lrow .tt{font-size:14px;font-weight:600;color:var(--ink);}
-  .lrow .ss{font-size:11.5px;color:var(--muted);}
+  .lrow .ss{font-size:12px;color:var(--muted);}
   .lrow .ar{margin-left:auto;color:var(--muted);font-size:15px;}
 
   /* 卡片小 */
@@ -181,6 +192,7 @@
 </style>
 </head>
 <body>
+<aside class="note b"><b>2026-09-17 审计修订：</b>静态示意稿，不是可操作应用或无障碍验收证明。当前契约见<a href="成长星球_V0.0.1_审计修订基线.md">修订基线</a>与<a href="README.md">文档索引</a>；采纳标签仅表示设计处置，实机交互、读屏、接口与合规仍待验证。</aside>
 <div class="wrap">
 
   <!-- ===== 文档头 ===== -->
@@ -206,7 +218,7 @@
       ① <b>U-Q-01 二级监护人</b>：V0.0.1 <b>不做</b>，设置入口置灰标「即将推出」（PRD Out Scope / IDX 3.2）。
       ② <b>U-Q-02 TTS 朗读</b>：V0.0.1 <b>标 P2 可选</b>，详情页标注依赖（PRD F-017）。
       ③ <b>U-Q-03 单孩/多孩</b>：V0.0.1 <b>单孩</b>，看板不画切换器（IDX 2.2）。
-      ④ <b>U-Q-04 任务/学习/成长 Tab</b>：V0.0.1 仅点餐可用；任务/学习占位「敬请期待」，成长仅静态幼苗（IDX 2.2）。
+      ④ <b>U-Q-04 任务/学习/成长 Tab</b>：V0.0.1 点餐、我的可用；任务/学习占位「敬请期待」，成长仅静态幼苗（IDX 2.2）。
       ⑤ <b>U-Q-05 虚拟消耗额符号</b>：<b>保留 ¥</b> 但全稿明确标注「虚拟消耗额（非真实货币）」（IDX 1.3 终裁，满足 R-15 去货币化目标）。
     </div>
   </div>
@@ -214,104 +226,104 @@
   <h3>〇.1 UI 矛盾点（U-R-01 ~ 09）</h3>
   <table>
     <tr><th style="width:78px">编号</th><th>审查建议摘要</th><th style="width:96px">裁定</th><th>处理 / 理由</th></tr>
-    <tr><td><b>U-R-01</b><br/><span class="muted" style="font-size:11px">高</span></td>
+    <tr><td><b>U-R-01</b><br/><span class="muted" style="font-size:12px">高</span></td>
       <td>提报页"额度内自动扣减"、审批历史"自动扣减¥18"与 PRD F-019（所有确认单经家长同意后扣减）矛盾。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>提报交互说明改为"提交→待家长确认；额度内系统自动校验通过+家长一键同意即扣减，超额需显式放行；<b>扣减发生在家长同意后</b>"；预览卡"扣减后余额"→"预计扣减后余额（待爸妈同意）"；审批历史"自动扣减"→"家长同意后扣减"。</td></tr>
-    <tr><td><b>U-R-02</b><br/><span class="muted" style="font-size:11px">高</span></td>
+    <tr><td><b>U-R-02</b><br/><span class="muted" style="font-size:12px">高</span></td>
       <td>点餐首页油焖大虾因忌口🔒锁定，却出现在家长审批超额流（且 ¥27 与 ¥18 不自洽）。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
-      <td>超额卡改用<b>非忌口超额度</b>组合「红烧鸡腿×2 = ¥24（单日上限 ¥20）」，既体现超额又不与"忌口项不可选"冲突，金额与单日上限自洽。</td></tr>
-    <tr><td><b>U-R-03</b><br/><span class="muted" style="font-size:11px">高</span></td>
+      <td>超额示例为「红烧鸡腿×2 + 清炒时蔬×1 = 虚拟¥30（12×2+6；单日上限20）」。菜品安全校验通过后，仍须最新额度预览及显式确认。</td></tr>
+    <tr><td><b>U-R-03</b><br/><span class="muted" style="font-size:12px">高</span></td>
       <td>提报/看板/我的三屏 demo 数字互相打架（预览已呈现扣减结果）。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
-      <td>统一一套连贯 demo：初始余额 <b>¥50</b>；提报预览"当前 ¥50 / 预计后 ¥32（待爸妈同意）"；提交后看板"余额 ¥32 / 今日已记 ¥18 / 待审批 1"；我的页"¥32"。三屏成时间线。</td></tr>
-    <tr><td><b>U-R-04</b><br/><span class="muted" style="font-size:11px">中</span></td>
+      <td>统一时间线：初始0，家长手动发放50；提交18后余额仍50；审批成功后余额32、今日已记18；另提30的新单待审批1。设置上限20是本例家长配置，非默认30。</td></tr>
+    <tr><td><b>U-R-04</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>设置卡"单日消费上限¥20"却配文"本周已用¥13/¥20"，维度混淆。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
-      <td>统一为"今日已用 ¥13 / 单日上限 ¥20"，与 F-009 单日维度一致。</td></tr>
-    <tr><td><b>U-R-05</b><br/><span class="muted" style="font-size:11px">中</span></td>
+      <td>统一为"今日已用 ¥18 / 单日上限 ¥20"，与 F-009 单日维度一致。</td></tr>
+    <tr><td><b>U-R-05</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>核心页面表写成长/任务"P2（框架）"，成长屏又标"P4 养成/P0 静态幼苗"，阶段口径混乱。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>统一：V0.0.1 仅"静态幼苗"(P0)；任务/学习业务 P2/P3；养成动画 P4。表与屏标注一致。</td></tr>
-    <tr><td><b>U-R-06</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-R-06</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>家长"首页"与"看板"两 Tab 内容重叠、职责不清。</td>
       <td><span class="pill p-warn">🟡 采纳</span></td>
       <td>明确"首页=家庭看板摘要（默认落地页）"，"看板=更细的周/月趋势分析独立页"；核心页面表补职责说明，避免重复实现。</td></tr>
-    <tr><td><b>U-R-07</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-R-07</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>首页"告诉爸妈今日菜单"、详情"加入"、提报"告诉爸妈"三级 CTA 语义层级不清，首页按钮可能绕过份量确认。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>主流程 home(❤️标记) → detail(加入) → 提报(份量/备注/预览) → 告诉爸妈(submit) → 状态追踪。首页按钮改"去确认今日菜单 →"仅跳转提报页，不直达提交。</td></tr>
-    <tr><td><b>U-R-08</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-R-08</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>筛选"低糖/无辣"、备注"少糖/少葱/不要辣"、营养"无辣/高蛋白"术语前后不一致。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
-      <td>设计系统补"标签词库"统一：筛选=低糖/无辣/忌口过滤；备注=少糖/少葱/不要辣/多米饭；营养标签=无辣/高蛋白/无过敏源。</td></tr>
-    <tr><td><b>U-R-09</b><br/><span class="muted" style="font-size:11px">中</span></td>
+      <td>设计系统补"标签词库"统一：筛选=低糖/无辣/忌口过滤；备注=少糖/少葱/不要辣/多米饭；营养标签=无辣/高蛋白/过敏信息待核对。</td></tr>
+    <tr><td><b>U-R-09</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>清炒时蔬标"🌶 微辣"用红色警示色，且"无辣"筛选是否过滤微辣不明。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
-      <td>定义辣度分级（无/微/中/重）；"无辣"筛选<b>仅隐藏中/重辣</b>、微辣保留；中/重辣用警示色，<b>忌口（海鲜/过敏）才用红锁</b>；微辣改用中性色。</td></tr>
+      <td>辣度0–3；「无辣」只保留 spiceLevel=0，微/中/重辣均排除。未知或命中过敏原阻止提交；不喜欢只提示，不作为安全锁。</td></tr>
   </table>
 
   <h3>〇.2 UI 缺失项（U-G-01 ~ 20）</h3>
   <table>
     <tr><th style="width:78px">编号</th><th>审查建议摘要</th><th style="width:96px">裁定</th><th>处理 / 理由</th></tr>
-    <tr><td><b>U-G-01</b><br/><span class="muted" style="font-size:11px">高</span></td>
+    <tr><td><b>U-G-01</b><br/><span class="muted" style="font-size:12px">高</span></td>
       <td>缺儿童登录/绑定/onboarding 屏（默认已有账号不成立）。</td>
       <td><span class="pill p-warn">🟡 部分采纳</span></td>
-      <td>本稿聚焦首期核心业务屏，<b>不新增完整 onboarding 屏</b>（会稀释点餐闭环）；改为补"登录与绑定流程说明卡"：child 常由 parent 微信内"切换孩子视图/代登"；流程细节见 IDX 3.1–3.3。</td></tr>
-    <tr><td><b>U-G-02</b><br/><span class="muted" style="font-size:11px">高</span></td>
+      <td>首版独立账号：最小登录→绑定申请→家长同意→绑定→家长建档；同设备仅家长只读预览。完整 onboarding 屏尚未绘制，属于设计交付缺口，不能标为已验收。</td></tr>
+    <tr><td><b>U-G-02</b><br/><span class="muted" style="font-size:12px">高</span></td>
       <td>设置页画出"二级监护人"，但 V0.0.1 是否支持未决。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>二级监护人入口<b>置灰 + 标「即将推出」</b>（U-Q-01 决策：V0.0.1 不做）。</td></tr>
-    <tr><td><b>U-G-03</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-G-03</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>"学习"Tab 无对应界面/范围，易误导。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>儿童端导航明确：任务/学习 Tab V0.0.1 <b>占位「敬请期待」</b>，避免空白误导（IDX 2.2）。</td></tr>
-    <tr><td><b>U-G-04</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-G-04</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>空态/加载态/错误态无高保真屏。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>新增「空态屏」与「加载/网络错误屏」两屏，呼应 2.5 状态语言（骨架屏文案、插画+重试）。</td></tr>
-    <tr><td><b>U-G-05</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-G-05</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>看板标注"多孩切换器"但 UI 无控件。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>V0.0.1 单孩（U-Q-03）：看板标注"单孩默认隐藏切换器；多孩时显示选择器（P4）"。</td></tr>
-    <tr><td><b>U-G-06</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-G-06</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>"营养达标"无判定规则，研发无法落地。</td>
       <td><span class="pill p-warn">🟡 部分采纳</span></td>
-      <td>UI 仅展示结果；补标注"达标依据=热量/蛋白/蔬菜（规则见 PRD 业务规则 U-G-06）"，规则落 PRD。</td></tr>
-    <tr><td><b>U-G-07</b><br/><span class="muted" style="font-size:11px">中</span></td>
+      <td>U-G-06 是历史问题编号，不是 PRD 规则。首版撤下营养达标判断，只展示有来源的每份热量/成分，无来源显示「暂无数据」。</td></tr>
+    <tr><td><b>U-G-07</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>忌口/过敏设置无入口与数据源。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
-      <td>补说明：忌口/过敏编辑入口在<b>家长端 / 后台</b>（IDX 3.9/3.10），儿童端只读展示。</td></tr>
-    <tr><td><b>U-G-08</b><br/><span class="muted" style="font-size:11px">中</span></td>
+      <td>过敏字段仅绑定家长维护；儿童仅可编辑 dislikes/tastes。普通运营菜品权限不包含儿童档案编辑。</td></tr>
+    <tr><td><b>U-G-08</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>审批"改一改"后续无替代菜单选择/编辑屏。</td>
       <td><span class="pill p-warn">🟡 部分采纳</span></td>
       <td>审批卡补"改一改 → 推送替代建议（如替换为≤额度的套餐）"流程说明；完整编辑屏留 V0.0.1 接口层（不另画屏）。</td></tr>
-    <tr><td><b>U-G-09</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-G-09</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>"我的零花钱"流水可点但无明细屏。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
-      <td>新增「零花钱流水明细屏」（按场景：点餐/任务/奖励 着色），落实 F-009/F-012。</td></tr>
-    <tr><td><b>U-G-10</b><br/><span class="muted" style="font-size:11px">中</span></td>
+      <td>新增「零花钱流水明细屏」（按场景：点餐/任务/奖励 着色），落实 F-009/F-023。</td></tr>
+    <tr><td><b>U-G-10</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>详情"朗读"依赖 TTS，V0.0.1 是否做未定。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>详情朗读标注 <b>P2 可选 + 依赖（微信同声传译/腾讯云 TTS）</b>（U-Q-02/F-017）。</td></tr>
-    <tr><td><b>U-G-11</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-G-11</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>后台 Web 触点/数据流未体现。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
-      <td>新增「后台触点与数据流」说明：后台配置菜品库/当日菜单 → 小程序展示 → 儿童提报 → 家长审批 → 记账（IDX 3.10）。</td></tr>
-    <tr><td><b>U-G-12</b><br/><span class="muted" style="font-size:11px">中</span></td>
+      <td>后台维护菜品库和仅展示的SCHOOL菜单；家长配置FAMILY菜单 → 儿童提报 → 家长审批 → 虚拟记账（IDX 3.10）。</td></tr>
+    <tr><td><b>U-G-12</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>声称"触控≥44px"但份量 ± 仅 24px、chip≈30px。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
-      <td>份量 ± 扩至 <b>36px</b>（列表内微调）；修正设计系统声明为"<b>主操作≥44px，列表内微调≥36px</b>"（与 IDX 8 一致）。</td></tr>
-    <tr><td><b>U-G-13</b><br/><span class="muted" style="font-size:11px">低</span></td>
+      <td>份量±、筛选、收藏、返回、通知和导航均采用至少44×44px目标；实机验证另行执行。</td></tr>
+    <tr><td><b>U-G-13</b><br/><span class="muted" style="font-size:12px">低</span></td>
       <td>辅助文字 11px 低于儿童界面主张。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>关键辅助文（meta/标签/进度文案）提至 <b>≥12px</b>，状态栏维持可读。</td></tr>
-    <tr><td><b>U-G-14</b><br/><span class="muted" style="font-size:11px">中</span></td>
+    <tr><td><b>U-G-14</b><br/><span class="muted" style="font-size:12px">中</span></td>
       <td>高保真屏未标注对应 PRD 的 F-xxx。</td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>每屏标注「对应 PRD：F-xxx」，闭合规划→需求→审查追溯链。</td></tr>
-    <tr><td><b>U-G-15~20</b><br/><span class="muted" style="font-size:11px">低</span></td>
+    <tr><td><b>U-G-15~20</b><br/><span class="muted" style="font-size:12px">低</span></td>
       <td>¥ 去货币化、周图坐标轴、warning 与 admin 同色、明日切换、导出/注销二次确认、emoji 辅文字。</td>
       <td><span class="pill p-warn">🟡 合并采纳</span></td>
       <td>¥ 保留但全稿标"虚拟消耗额"（U-Q-05）；周图补周一~周日 x 轴与数值；warning 改 #f97316 与 admin 琥珀区分（U-G-17）；明日 seg 标"V0.0.1 默认仅当日"；导出/注销补二次确认弹窗说明；所有 emoji 主视觉均配文字标签。</td></tr>
@@ -320,7 +332,7 @@
   <h3>〇.3 设计评审报告（视觉/合规）建议裁定</h3>
   <table>
     <tr><th style="width:120px">评审建议</th><th>裁定</th><th>处理 / 理由</th></tr>
-    <tr><td><b>未成年人模式</b><br/><span class="muted" style="font-size:11px">P0 合规</span></td>
+    <tr><td><b>未成年人模式</b><br/><span class="muted" style="font-size:12px">P0 合规</span></td>
       <td><span class="pill p-done">✅ 采纳</span></td>
       <td>交互/合规已委派 IDX 第九章；本稿在"我的/设置"补「未成年人模式」常驻入口说明，与额度护栏打通。完整规范见 IDX 9。</td></tr>
     <tr><td><b>毛玻璃导航 / 分层阴影</b></td>
@@ -337,7 +349,7 @@
       <td>本期遵循 transform/opacity 保守动效；勋章/浇水动画升级 Lottie 列入 P2 增强。</td></tr>
     <tr><td><b>订阅消息授权引导 / 可验证监护人</b></td>
       <td><span class="pill p-done">✅ 已采纳</span></td>
-      <td>已落 IDX 3.5（授权引导时机）+ 3.3（MVP 微信绑定+自报年龄，核验 P1+）；UI 在提报成功/通知层补"开启爸妈提醒"说明。</td></tr>
+      <td>家长在自己的绑定/审批/设置页授权本人提醒；儿童只授权本人完成通知。自报仅 SELF_ATTESTED，最低核验强度按 Q-01 发布闸门确认。</td></tr>
   </table>
 
   <!-- ===== 一、主题与用户 ===== -->
@@ -372,7 +384,7 @@
       <tr><td>审批流（详情）</td><td>审批中心（点餐 / 任务 / 超额复核卡片）</td><td>P1（护栏核心）</td></tr>
       <tr><td>设置</td><td>额度设置 / 安全与权限 / 二级监护人（V0.0.1 置灰）/ 数据导出</td><td>P0–P4</td></tr>
     </table>
-    <div class="note b">导航结构：儿童端底部固定 5 Tab（<b>点餐 / 任务 / 学习 / 成长 / 我</b>），右上角常驻通知铃铛；家长端底部 4 Tab（<b>首页 / 审批 / 看板 / 设置</b>）。同一小程序、登录后按角色路由（JWT 区分 child / parent），数据分权隔离。<br/><b>V0.0.1 渐进显隐（采纳 R-02/R-13、U-G-03）：</b>仅「点餐」可用；「任务 / 学习」占位「敬请期待」；「成长」仅静态幼苗；家长端「首页」= 看板摘要默认落地、「看板」= 趋势详情（职责分离，U-R-06）。</div>
+    <div class="note b">导航结构：儿童端底部固定 5 Tab（<b>点餐 / 任务 / 学习 / 成长 / 我</b>），右上角常驻通知铃铛；家长端底部 4 Tab（<b>首页 / 审批 / 看板 / 设置</b>）。同一小程序、登录后按角色路由（JWT 区分 child / parent），数据分权隔离。<br/><b>V0.0.1 渐进显隐（采纳 R-02/R-13、U-G-03）：</b>「点餐」「我的」可用；「任务 / 学习」占位「敬请期待」；「成长」仅静态幼苗；家长端「首页」= 看板摘要默认落地、「看板」= 趋势详情（职责分离，U-R-06）。</div>
   </div>
 
   <!-- ===== 二、设计系统 ===== -->
@@ -381,8 +393,8 @@
     <h4 style="margin:0 0 8px">2.1 角色主色与语义色</h4>
     <p>同一界面内，<b>护栏 / 审批一律以「家长绿」强调</b>，避免儿童误触敏感操作；品牌蓝专用于儿童主操作。</p>
     <div class="swatch">
-      <div class="sw"><i style="background:#3b82f6"></i><span>kid 儿童蓝 #3b82f6</span></div>
-      <div class="sw"><i style="background:#22c55e"></i><span>parent 家长绿 #22c55e</span></div>
+      <div class="sw"><i style="background:#1d4ed8"></i><span>kid 儿童蓝 #1d4ed8</span></div>
+      <div class="sw"><i style="background:#15803d"></i><span>parent 家长绿 #15803d</span></div>
       <div class="sw"><i style="background:#f59e0b"></i><span>admin 后台琥珀 #f59e0b</span></div>
       <div class="sw"><i style="background:#a855f7"></i><span>platform 中台紫 #a855f7</span></div>
       <div class="sw"><i style="background:#16a34a"></i><span>success #16a34a</span></div>
@@ -423,8 +435,8 @@
       <tr><th>类型</th><th>统一术语</th></tr>
       <tr><td>筛选 chip</td><td>全部 / 我爱吃 / 低糖 / 无辣 / 忌口过滤</td></tr>
       <tr><td>备注 chip</td><td>少糖 / 少葱 / 不要辣 / 多米饭</td></tr>
-      <tr><td>营养标签</td><td>无辣 / 高蛋白 / 无过敏源 / 膳食纤维</td></tr>
-      <tr><td>辣度分级</td><td>无辣 / 微辣（中性蓝）/ 中辣·重辣（红警示）；「无辣」筛选仅隐藏中·重辣，微辣保留（U-R-09）</td></tr>
+      <tr><td>营养标签</td><td>无辣 / 高蛋白 / 过敏信息待核对 / 膳食纤维</td></tr>
+      <tr><td>辣度分级</td><td>无辣 / 微辣（中性蓝）/ 中辣·重辣（红警示）；「无辣」筛选只保留辣度0，排除微/中/重辣（U-R-09）</td></tr>
     </table>
   </div>
 
@@ -436,7 +448,7 @@
     <div class="card">
       <h4 style="margin-top:0">2.8 触控与字号（U-G-12 / U-G-13）</h4>
       <ul style="font-size:13.5px;color:var(--sub);line-height:1.9;margin:6px 0 0;padding-left:18px">
-        <li><b>触控目标：</b>主操作 ≥44×44px，列表内微调（如份量 ±）≥36px。</li>
+        <li><b>触控目标：</b>所有操作目标 ≥44×44px，含份量微调。</li>
         <li><b>辅助字号：</b>关键说明 ≥14px，辅助文字 ≥12px，状态栏维持可读。</li>
         <li>所有 emoji 主视觉均配文字标签（U-G-20）。</li>
       </ul>
@@ -445,7 +457,7 @@
 
   <!-- ===== 三、高保真界面 ===== -->
   <h2>三、高保真界面设计（首期核心） <span class="en">High-Fidelity Screens</span></h2>
-  <p class="lead">以下为 1:1 还原的手机界面（375×812 逻辑像素），每个屏幕右侧给出<b>布局结构 / 主要组件 / 交互方式 / 视觉风格</b>标注，可直接作为前端切图与组件开发的依据。</p>
+  <p class="lead">以下为300px宽的静态缩略原型，并非375×812的1:1实机还原。右侧标注供设计讨论；运行时交互、完整屏幕适配及读屏仍待验证。菜品热量/成分均为示例，生产展示须有来源。学校菜单仅展示；本页可提交示例均为FAMILY家庭菜单。</p>
 
   <!-- ===== 儿童端 1 点餐首页 ===== -->
   <div class="screen-grid">
@@ -460,7 +472,7 @@
             <div class="chip on">全部</div><div class="chip">❤️ 我爱吃</div>
             <div class="chip">低糖</div><div class="chip">无辣</div><div class="chip">忌口过滤</div>
           </div>
-          <div class="meal-h">🍱 午餐 <span class="tagm">学校食堂 · 3 道可选</span></div>
+          <div class="meal-h">🍱 午餐 <span class="tagm">家庭菜单 · 3 道可选</span></div>
           <div class="dish"><div class="img" style="background:#fde68a">🍗</div>
             <div class="info"><div class="nm">红烧鸡腿</div>
               <div class="meta">热量 320 kcal · 蛋白质丰富</div>
@@ -510,7 +522,7 @@
       <ul>
         <li>点 ❤️ 标记「今天想吃」→ 同步家长可见偏好。</li>
         <li><b>过敏/忌口项灰显并锁住（🔒）</b>，不可选，防误触。</li>
-        <li>筛选 chip 实时过滤（「无辣」仅隐藏中/重辣，<b>微辣保留</b>，U-R-09）；「朗读这道菜」语音辅助（P2 详情页）。</li>
+        <li>筛选 chip 实时过滤（「无辣」只保留 spiceLevel=0，排除微/中/重辣，U-R-09）；「朗读这道菜」语音辅助（P2 详情页）。</li>
         <li>日期 seg「今日/明日」：V0.0.1 默认仅当日，「明日」占位（U-G-18）。</li>
       </ul>
       <div class="lab k">视觉风格</div>
@@ -538,7 +550,7 @@
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">
               <span class="tagc t-ok">✅ 无辣</span>
               <span class="tagc t-cal">🥩 高蛋白</span>
-              <span class="tagc t-ok">🌿 无过敏源</span>
+              <span class="tagc t-cal">过敏原：大豆（示例）</span>
             </div>
           </div>
           <div class="voice">🔊 朗读这道菜：「红烧鸡腿，蛋白质丰富，适合长身体的你～」</div>
@@ -601,12 +613,12 @@
           <div class="list">
             <div class="lrow"><div class="ic" style="background:#fde68a">🍗</div>
               <div style="flex:1"><div class="tt">红烧鸡腿</div><div class="ss">已带入忌口：无</div></div>
-              <div style="display:flex;align-items:center;gap:8px"><span style="width:24px;height:24px;border-radius:8px;background:#eef3fb;display:flex;align-items:center;justify-content:center">−</span>
-              <b>1</b><span style="width:24px;height:24px;border-radius:8px;background:var(--kid);color:#fff;display:flex;align-items:center;justify-content:center">+</span></div></div>
+              <div class="stepper"><button type="button" title="减少红烧鸡腿份量" aria-label="减少红烧鸡腿份量">−</button>
+              <b>1</b><button type="button" title="增加红烧鸡腿份量" aria-label="增加红烧鸡腿份量">+</button></div></div>
             <div class="lrow"><div class="ic" style="background:#bbf7d0">🥬</div>
               <div style="flex:1"><div class="tt">清炒时蔬</div><div class="ss">已带入忌口：无</div></div>
-              <div style="display:flex;align-items:center;gap:8px"><span style="width:24px;height:24px;border-radius:8px;background:#eef3fb;display:flex;align-items:center;justify-content:center">−</span>
-              <b>1</b><span style="width:24px;height:24px;border-radius:8px;background:var(--kid);color:#fff;display:flex;align-items:center;justify-content:center">+</span></div></div>
+              <div class="stepper"><button type="button" title="减少清炒时蔬份量" aria-label="减少清炒时蔬份量">−</button>
+              <b>1</b><button type="button" title="增加清炒时蔬份量" aria-label="增加清炒时蔬份量">+</button></div></div>
           </div>
           <div class="pad" style="font-size:13px;font-weight:700;margin:10px 0 4px">备注（点一下就选）</div>
           <div class="chips">
@@ -617,7 +629,7 @@
             <div style="display:flex;justify-content:space-between;font-size:14px"><span class="ss" style="color:var(--sub)">合计虚拟消耗额</span><b style="color:var(--kid-700);font-size:18px">¥18</b></div>
             <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--sub);margin-top:6px"><span>当前余额</span><span>¥50</span></div>
             <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--sub);margin-top:4px"><span>预计扣减后（待爸妈同意）</span><span>¥32</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--success);margin-top:4px"><span>今日营养</span><b>✅ 达标</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--sub);margin-top:4px"><span>营养信息</span><b>暂无数据</b></div>
           </div>
           <div class="btn btn-kid">💌 告诉爸妈</div>
           <div class="tabbar">
@@ -644,7 +656,7 @@
       <ul>
         <li>份量 stepper（大号 ±，≥44px 触控）。</li>
         <li>备注 chip 多选；忌口自动带入并标注「已带入」。</li>
-        <li>金额预览卡（强对比数字）；「营养达标」依据=热量/蛋白/蔬菜（判定规则见 PRD 业务规则 U-G-06，UI 仅展示结果）。</li>
+        <li>金额预览由服务端计算；营养只展示有来源的信息，不输出达标结论。</li>
       </ul>
       <div class="lab k">交互方式</div>
       <ul>
@@ -703,7 +715,7 @@
       </ul>
       <div class="lab k">交互方式</div>
       <ul>
-        <li>状态由通知中台驱动：订阅消息 + 站内通知 + 短信兜底（V0.0.1 默认站内+订阅，短信兜底）。</li>
+        <li>状态以服务端查询为准，通知仅触发刷新；首版站内+订阅，短信后置。未授权仍可查站内记录。</li>
         <li>「待家长确认」期间儿童可<b>撤回</b>提交（防误提交焦虑）；超额单设当日复核次数上限（防刷，评审 3.2）。</li>
         <li>若被驳回，儿童见温和说明（「今天先选便宜点的好不好？」），可改后重提。</li>
       </ul>
@@ -731,32 +743,32 @@
             <div class="kpi"><div class="k" style="color:var(--warning)">1</div><div class="l">待审批</div></div>
           </div>
           <div class="card" style="margin:8px 14px;padding:14px">
-            <div style="font-size:14px;font-weight:700;margin-bottom:6px">📊 本周消费（虚拟 ¥）</div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px">📊 消费趋势（P2独立样例）</div>
             <div style="display:flex;align-items:flex-end;gap:6px;height:80px">
-              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:9px;color:var(--muted);margin-bottom:2px">6</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:22px"></div></div>
-              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:9px;color:var(--parent-700);margin-bottom:2px;font-weight:700">12</span><div style="width:100%;background:var(--parent);border-radius:5px 5px 0 0;height:50px"></div></div>
-              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:9px;color:var(--muted);margin-bottom:2px">9</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:36px"></div></div>
-              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:9px;color:var(--muted);margin-bottom:2px">5</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:20px"></div></div>
-              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:9px;color:var(--muted);margin-bottom:2px">8</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:32px"></div></div>
-              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:9px;color:var(--muted);margin-bottom:2px">4</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:14px"></div></div>
-              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:9px;color:var(--muted);margin-bottom:2px">5</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:20px"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:12px;color:var(--muted);margin-bottom:2px">6</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:22px"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:12px;color:var(--parent-700);margin-bottom:2px;font-weight:700">12</span><div style="width:100%;background:var(--parent);border-radius:5px 5px 0 0;height:50px"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:12px;color:var(--muted);margin-bottom:2px">9</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:36px"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:12px;color:var(--muted);margin-bottom:2px">5</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:20px"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:12px;color:var(--muted);margin-bottom:2px">8</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:32px"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:12px;color:var(--muted);margin-bottom:2px">4</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:14px"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end"><span style="font-size:12px;color:var(--muted);margin-bottom:2px">5</span><div style="width:100%;background:var(--parent-100);border-radius:5px 5px 0 0;height:20px"></div></div>
             </div>
             <div style="display:flex;gap:6px;margin-top:4px">
-              <span style="flex:1;text-align:center;font-size:10px;color:var(--muted)">一</span>
-              <span style="flex:1;text-align:center;font-size:10px;color:var(--muted)">二</span>
-              <span style="flex:1;text-align:center;font-size:10px;color:var(--muted)">三</span>
-              <span style="flex:1;text-align:center;font-size:10px;color:var(--muted)">四</span>
-              <span style="flex:1;text-align:center;font-size:10px;color:var(--muted)">五</span>
-              <span style="flex:1;text-align:center;font-size:10px;color:var(--muted)">六</span>
-              <span style="flex:1;text-align:center;font-size:10px;color:var(--muted)">日</span>
+              <span style="flex:1;text-align:center;font-size:12px;color:var(--muted)">一</span>
+              <span style="flex:1;text-align:center;font-size:12px;color:var(--muted)">二</span>
+              <span style="flex:1;text-align:center;font-size:12px;color:var(--muted)">三</span>
+              <span style="flex:1;text-align:center;font-size:12px;color:var(--muted)">四</span>
+              <span style="flex:1;text-align:center;font-size:12px;color:var(--muted)">五</span>
+              <span style="flex:1;text-align:center;font-size:12px;color:var(--muted)">六</span>
+              <span style="flex:1;text-align:center;font-size:12px;color:var(--muted)">日</span>
             </div>
           </div>
           <div class="list">
             <div class="lrow"><div class="ic" style="background:#dcfce7">✅</div>
-              <div><div class="tt">今日营养达标</div><div class="ss">蛋白质充足 · 蔬菜均衡</div></div>
-              <span class="pill p-done">良好</span></div>
+              <div><div class="tt">营养信息</div><div class="ss">暂无数据</div></div>
+              <span class="pill p-warn">待补充</span></div>
             <div class="lrow"><div class="ic" style="background:#fef3c7">🔥</div>
-              <div><div class="tt">连续打卡 6 天</div><div class="ss">喝水 · 运动 · 睡眠</div></div>
+              <div><div class="tt">健康打卡（P2）</div><div class="ss">敬请期待</div></div>
               <span class="ar">›</span></div>
           </div>
           <div class="tabbar">
@@ -809,8 +821,8 @@
               <div style="font-size:14px;font-weight:700">🍱 小宇想点超预算的餐</div>
               <span class="pill p-warn">⚠ 超额复核</span></div>
             <div style="font-size:12.5px;color:var(--sub);margin:6px 0">红烧鸡腿×2 · 清炒时蔬×1 · 备注少糖</div>
-            <div style="display:flex;justify-content:space-between;font-size:13px"><span class="ss" style="color:var(--sub)">本单虚拟金额</span><b style="color:var(--danger)">虚拟 ¥24（单日上限 ¥20）</b></div>
-            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--sub)"><span>孩子留言</span><span>「今天好饿想吃虾～」</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span class="ss" style="color:var(--sub)">本单虚拟金额</span><b style="color:var(--danger)">虚拟 ¥30（单日上限 ¥20）</b></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--sub)"><span>孩子留言</span><span>「想多吃一份鸡腿」</span></div>
           </div>
           <div class="btn-row">
             <button class="btn btn-par btn-sm">✅ 这次同意</button>
@@ -822,8 +834,8 @@
               <div><div class="tt">午餐已确认</div><div class="ss">09:15 · 家长同意后扣减 虚拟¥18</div></div>
               <span class="pill p-done">已通过</span></div>
             <div class="lrow"><div class="ic" style="background:#e0f2fe">🧹</div>
-              <div><div class="tt">整理书桌（家务）</div><div class="ss">待你确认完成</div></div>
-              <span class="pill p-doing">待确认</span></div>
+              <div><div class="tt">家务审批</div><div class="ss">后续版本开放</div></div>
+              <span class="pill p-todo">P2占位</span></div>
           </div>
           <div class="tabbar">
             <div class="tb"><span class="ic">🏠</span>首页</div>
@@ -854,7 +866,7 @@
         <li>同意 → 家长「同意」后系统扣减虚拟零花钱，通知孩子「爸妈同意啦」。</li>
         <li>改一改 → 推送替代建议（如替换为≤单日额度的套餐），详见替代菜单选择/编辑（U-G-08）。</li>
         <li>拒绝 → 孩子见温和说明（「今天先选便宜点的好不好？」），可改后重提。</li>
-        <li>所有审批经订阅消息 + 站内 + 短信兜底（V0.0.1 默认站内+订阅）。</li>
+        <li>审批事务写站内及订阅待发事件，提交后投递；家长在自己账号授权。短信后置，通知失败不回滚已完成审批。</li>
       </ul>
       <div class="lab p">对应 PRD</div>
       <ul><li>F-020 审批流卡片 · F-019 状态机 · F-009 额度规则</li></ul>
@@ -873,10 +885,11 @@
         <div class="screen">
           <div class="appbar"><div class="t">⚙️ 设置</div><div class="bell">🔔</div></div>
           <div class="pad" style="font-size:13px;font-weight:700;margin:8px 0 2px">💰 额度护栏</div>
+          <button type="button" class="btn btn-par">发放虚拟零花钱</button>
           <div class="card" style="margin:6px 14px;padding:14px">
             <div style="display:flex;justify-content:space-between;font-size:13px"><span>单日消费上限</span><b>¥20</b></div>
-            <div style="height:8px;background:#eef3fb;border-radius:4px;margin:8px 0;overflow:hidden"><div style="width:65%;height:100%;background:var(--parent)"></div></div>
-            <div style="font-size:11.5px;color:var(--muted)">今日已用 ¥13 / 单日上限 ¥20 · 超额将转你复核</div>
+            <div style="height:8px;background:#eef3fb;border-radius:4px;margin:8px 0;overflow:hidden"><div style="width:90%;height:100%;background:var(--parent)"></div></div>
+            <div style="font-size:12px;color:var(--muted)">今日已用 ¥18 / 单日上限 ¥20 · 超额将转你复核</div>
           </div>
           <div class="list">
             <div class="lrow"><div class="ic" style="background:#ede9fe">🌟</div><div><div class="tt">未成年人模式</div><div class="ss">时长/时段/消费约束（合规入口）</div></div><span class="ar">›</span></div>
@@ -904,7 +917,8 @@
       </ul>
       <div class="lab p">主要组件</div>
       <ul>
-        <li>额度滑块（家长可视化调节）。</li>
+        <li>额度滑块搭配精确数值输入；发放表单输入金额0.01–9999.99和1–100字理由，仅绑定家长可提交。</li>
+        <li>发放按 Idempotency-Key 防重复；失败保留表单并同键重试，成功刷新余额及 F-023 流水，不提供充值/真实支付。</li>
         <li>合规入口（同意撤回 / 导出 / 注销），均二次确认。</li>
       </ul>
       <div class="lab p">交互方式</div>
@@ -929,7 +943,7 @@
       <div class="phone"><div class="notch"></div>
         <div class="statusbar"><span>9:41</span><span>📶 🔋</span></div>
         <div class="screen">
-          <div class="appbar"><div class="t">🌱 我的成长</div><div class="bell">🔔</div></div>
+          <div class="appbar"><div class="t">🌱 成长（P4示意）</div><div class="bell">🔔</div></div>
           <div class="tree">
             <div style="font-size:46px">🌿</div>
             <div style="font-size:14px;font-weight:700;margin-top:4px">小宇的成长树 · Lv.3</div>
@@ -955,11 +969,11 @@
       </div>
     </div>
     <div class="annotate">
-      <span class="role r-kid">儿童端 · 成长树 / 勋章（激励收敛层）</span>
+      <span class="role r-kid">儿童端 · P4后续示意，非首版交付</span>
       <h4>成长 Tab（P4 养成框架，P0 静态幼苗）</h4>
       <div class="lab k">布局结构</div>
       <ul>
-        <li>成长树主视觉（浇水长大，P0 静态幼苗 → P4 养成）。</li>
+        <li>本屏等级、任务、连续打卡和勋章为P4示意；V0.0.1只展示静态幼苗，不开放这些入口。</li>
         <li>等级进度条 + 鼓励语。</li>
         <li>勋章墙（已得/未解锁 🔒）。</li>
         <li>连续打卡 / 勋章汇总列表。</li>
@@ -999,7 +1013,7 @@
             <div class="lrow"><div class="ic" style="background:#dcfce7">👨‍👩‍👦</div><div><div class="tt">我的家庭</div><div class="ss">监护人列表</div></div><span class="ar">›</span></div>
             <div class="lrow"><div class="ic" style="background:#fef3c7">💰</div><div><div class="tt">我的零花钱</div><div class="ss">余额 ¥32 · 流水</div></div><span class="ar">›</span></div>
             <div class="lrow"><div class="ic" style="background:#ede9fe">🔔</div><div><div class="tt">通知中心</div><div class="ss">2 条待处理</div></div><span class="pill p-doing">2</span></div>
-            <div class="lrow"><div class="ic" style="background:#f1f5f9">⚙️</div><div><div class="tt">设置</div><div class="ss">家长代操作区</div></div><span class="ar">›</span></div>
+            <div class="lrow"><div class="ic" style="background:#f1f5f9">⚙️</div><div><div class="tt">设置</div><div class="ss">家长账号管理</div></div><span class="ar">›</span></div>
           </div>
           <div class="tabbar">
             <div class="tb"><span class="ic">🍽️</span>点餐</div>
@@ -1028,12 +1042,12 @@
       <div class="lab k">交互方式</div>
       <ul>
         <li>点「零花钱」→ 进入流水明细屏，按场景（点餐/任务/奖励）着色（U-G-09）。</li>
-        <li>「我的档案」展示忌口/口味；<b>编辑入口在家长端/后台</b>（儿童端只读，U-G-07）。</li>
-        <li>登录/绑定：11 岁儿童常由家长在其微信内「切换孩子视图/代登」；流程见 IDX 3.1–3.3（U-G-01）。</li>
-        <li>设置内敏感操作（数据导出/注销）由家长代操作并留痕，二次确认。</li>
+        <li>儿童只改非安全偏好dislikes/tastes；过敏由绑定家长维护，普通后台运营无儿童档案编辑权。</li>
+        <li>独立CHILD/PARENT账号；家长儿童视图仅只读预览，不允许代理提交。适用用户群待Q-07确认。</li>
+        <li>数据导出/删除由家长本人账号重新鉴权、二次确认并创建可办理工单，不借儿童角色操作。</li>
       </ul>
       <div class="lab k">对应 PRD</div>
-      <ul><li>F-003 儿童档案 · F-005 家庭绑定 · F-012 零花钱流水 · F-007 监护人</li></ul>
+      <ul><li>F-003 儿童档案 · F-005 家庭绑定 · F-023 零花钱流水 · F-007 监护人</li></ul>
       <div class="lab k">视觉风格</div>
       <ul>
         <li>干净卡片式个人中心，图标优先；状态用色块+数字，儿童一眼可读。</li>
@@ -1055,8 +1069,7 @@
           <div class="pad" style="font-size:13px;color:var(--sub)">虚拟余额 <b style="color:var(--kid-700)">¥32</b> · 今日已记 ¥18</div>
           <div class="list">
             <div class="lrow"><div class="ic" style="background:#dcfce7">🍗</div><div><div class="tt">点餐扣减 · 午餐</div><div class="ss">09:15 · 家长同意后</div></div><span class="pill p-reject">−虚拟¥18</span></div>
-            <div class="lrow"><div class="ic" style="background:#dbeafe">🧹</div><div><div class="tt">家务奖励 · 整理书桌</div><div class="ss">昨日 · 家长确认</div></div><span class="pill p-done">+虚拟¥5</span></div>
-            <div class="lrow"><div class="ic" style="background:#fef3c7">🎁</div><div><div class="tt">奖励兑换 · 多看动画</div><div class="ss">09-10 · 家长授权</div></div><span class="pill p-reject">−虚拟¥3</span></div>
+            <div class="lrow"><div class="ic" style="background:#dbeafe">🎁</div><div><div class="tt">家长手动发放</div><div class="ss">09:00 · 本周虚拟零花钱</div></div><span class="pill p-done">+虚拟¥50</span></div>
           </div>
           <div class="tabbar">
             <div class="tb"><span class="ic">🍽️</span>点餐</div>
@@ -1078,11 +1091,11 @@
       </ul>
       <div class="lab k">交互方式</div>
       <ul>
-        <li>从「我的→零花钱」进入；数据来自虚拟钱包流水（F-012）。</li>
+        <li>从「我的→零花钱」进入；数据来自虚拟钱包流水（F-023），初始0+发放50−扣减18=余额32。</li>
         <li>点行 → 下钻查看确认单/奖励来源（V0.0.1 可暂用 Toast 提示）。</li>
       </ul>
       <div class="lab k">对应 PRD</div>
-      <ul><li>F-012 消费记录 · F-008 虚拟钱包</li></ul>
+      <ul><li>F-023 消费记录 · F-008 虚拟钱包</li></ul>
     </div>
   </div>
 
@@ -1143,16 +1156,16 @@
   <div class="card">
     <h4 style="margin-top:0">🖥️ 后台触点与数据流（U-G-11）</h4>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:600;color:var(--ink);margin:8px 0">
-      <span class="pill p-warn">后台配置菜品库 / 当日菜单</span><span>→</span>
+      <span class="pill p-warn">家长配置家庭菜单</span><span>→</span>
       <span class="pill p-kid">小程序展示</span><span>→</span>
       <span class="pill p-kid">儿童提报</span><span>→</span>
       <span class="pill p-done">家长审批</span><span>→</span>
       <span class="pill p-done">虚拟记账</span>
     </div>
     <ul style="color:var(--sub);font-size:13.5px;margin:10px 0 0">
-      <li>后台维护 <code>life_dish</code>（名称/虚拟价格/热量/图片/标签/忌口标识）与 <code>life_menu_daily</code>（学校+日期+餐段→菜品，替代 life_restaurant，R-07）。</li>
-      <li>忌口/过敏编辑入口在后台或家长端（U-G-07）；审批「改一改」的替代菜单选择/编辑留接口层（U-G-08）。</li>
-      <li>营养「达标」判定规则由 PRD 业务规则定义（热量/蛋白/蔬菜），UI 仅展示结果（U-G-06）。</li>
+      <li>后台维护菜品和SCHOOL菜单，仅展示/收藏；家长配置本家庭FAMILY菜单才可提报。source_type/owner_key/family_id及日期/餐段模型见详细设计。</li>
+      <li>过敏仅家长维护；UNKNOWN或匹配过敏原禁止提报/审批。「改一改」保存建议并驳回原单，儿童接受后以新ID重提，不覆盖原明细。</li>
+      <li>U-G-06 已改为撤下无依据的营养判断；缺来源时展示「暂无数据」。</li>
     </ul>
   </div>
 

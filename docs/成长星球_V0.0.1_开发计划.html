@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>成长星球 · V0.0.1 开发计划</title>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.8/dist/mermaid.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded",function(){if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:"default"});});</script>
 <style>
   :root{
@@ -83,6 +83,7 @@
 </style>
 </head>
 <body>
+<aside class="note"><b>审计修订 V1.1 · 2026-09-17：</b>以下为待批准实施计划，不是进度完成报告。负责人、任务人日、有效产能和日期需项目负责人补齐；不得将4个Sprint解释成已承诺四周。范围与发布闸门见<a href="成长星球_V0.0.1_审计修订基线.md">修订基线</a>，目录见<a href="README.md">文档索引</a>。</aside>
 <div class="wrap">
 
   <div class="hero">
@@ -109,7 +110,7 @@
   <!-- ============ A ============ -->
   <h2 id="A">A. 开篇与目标</h2>
   <div class="card">
-    <p><b>目标：</b>本计划将详细分析设计文档（16 张表 DDL 就绪、8 组 REST 接口、5 张核心流程图）转换为研发可执行的 4 个 Sprint，明确每个阶段的目标、功能清单、数据表、接口组、交付物与进出准则（DoD），并给出端到端里程碑、依赖图、测试策略、风险回滚与交付矩阵。</p>
+    <p><b>目标：</b>本计划将详细分析设计文档（原16表及新增隐私请求模型（迁移待验证）、8 组 REST 接口、5 张核心流程图）转换为研发可执行的 4 个 Sprint，明确每个阶段的目标、功能清单、数据表、接口组、交付物与进出准则（DoD），并给出端到端里程碑、依赖图、测试策略、风险回滚与交付矩阵。</p>
     <p><b>范围：</b>严格 = V0.0.1 = P0 地基 + P1 点餐 MVP，覆盖 F-001~F-023（共 23 个 F）；不含 P2–P4（真实支付、课表作业、AI、成长树、多孩 UI 等仅占位或置灰）。</p>
     <p><b>衔接：</b>本计划不新增架构决策，全部沿用《全局规划设计文档》与《详细分析设计文档》的裁定与口径；术语、视觉风格、功能编号、表名、接口路径与上文一致，便于回溯。</p>
   </div>
@@ -119,9 +120,9 @@
     <div class="card" style="margin:0;border-left:4px solid var(--brand2)">
       <h4 style="margin-top:0;color:var(--brand2)">数据 / 状态机</h4>
       <ul style="font-size:13.5px">
-        <li><b>逻辑删除：</b><code>delete_at BIGINT DEFAULT 0</code>（非布尔 <code>deleted</code>）；业务唯一键设计成 <code>UNIQUE(biz_col, delete_at)</code>，实现"删了还能重建"。</li>
-        <li><b>扣减时机：</b>统一在家长<b>同意后</b>（APPROVED→COMPLETED）发生；提交只做预校验 + 置 PENDING，<b>提交不扣减</b>。</li>
-        <li><b>钱包并发：</b><code>life_wallet.version</code> 乐观锁 + 事务，防并发超扣（E-007）。</li>
+        <li><b>逻辑删除：</b>保留delete_at，但身份标识、流水、请求幂等键不得复用；逐表审定唯一键，不统一加删除时间戳。</li>
+        <li><b>扣减时机：</b>PENDING→COMPLETED与钱包、额度、流水、审批、通知事件同事务；DRAFT仅客户端，提交不扣减。</li>
+        <li><b>钱包并发：</b>固定锁序为家庭/儿童关系→确认单→钱包→规则，version补充校验，唯一流水与命令幂等防重复。</li>
       </ul>
     </div>
     <div class="card" style="margin:0;border-left:4px solid var(--brand)">
@@ -129,7 +130,7 @@
       <ul style="font-size:13.5px">
         <li><b>技术栈：</b>Java 21 LTS + Spring Boot 4.1.1 + MyBatis-Plus + MySQL 8.0 + Redis + JWT；三角色（CHILD/PARENT/ADMIN）。</li>
         <li><b>分层 + 域前缀：</b>接入/网关鉴权/业务+中台/数据/基础设施；表前缀 <code>usr_</code>/<code>life_</code>/<code>sys_</code>（<code>edu_</code> 仅占位）。</li>
-        <li><b>零真实支付：</b>全为虚拟消耗额（¥ 非真实货币）；短信仅兜底后置（Q-02）。</li>
+        <li><b>零真实支付：</b>全为虚拟消耗额（¥ 非真实货币）；短信后置，本版不接入（Q-02）。</li>
       </ul>
     </div>
   </div>
@@ -141,20 +142,35 @@
   <!-- Sprint 1 -->
   <div class="sprint-head">
     <h3>Sprint 1 · 地基可运行（P0 账号 / 家庭 / 合规 / 框架）</h3>
-    <p style="margin:0;color:var(--sub)">目标：打通"登录 → 角色 → 档案 → 家庭 → 绑定 → 监护人同意"全链路，搭建分层工程脚手架与数据层。</p>
+    <p style="margin:0;color:var(--sub)">目标：登录→首次角色→最小绑定申请→监护人同意→绑定→家长建档；先交付审计与站内事件基础，未同意不采集档案。</p>
   </div>
   <div class="card">
     <table class="mtx">
       <tr><th style="width:120px">维度</th><th>内容</th></tr>
       <tr><td>功能清单</td><td><span class="fcode">F-001</span> 微信登录 · <span class="fcode">F-002</span> 角色选择 · <span class="fcode">F-003</span> 儿童档案 · <span class="fcode">F-004</span> 家庭创建/邀请码 · <span class="fcode">F-005</span> 儿童加入 · <span class="fcode">F-006</span> 绑定审批 · <span class="fcode">F-007</span> 监护人同意+核验 · <span class="fcode">F-012</span> 同意留痕/出口入口 · <span class="fcode">F-013</span> 基础框架 5 Tab（Q-03）</td></tr>
-      <tr><td>涉及数据表</td><td><span class="domain-usr">usr_user</span> · <span class="domain-usr">usr_family</span> · <span class="domain-usr">usr_family_member</span> · <span class="domain-usr">usr_child_profile</span> · <span class="domain-usr">usr_consent_log</span> · <span class="domain-">sys_audit_log</span></td></tr>
+      <tr><td>涉及数据表</td><td>usr_user、usr_family、usr_family_member、usr_child_profile、usr_consent_log、sys_audit_log、sys_notice（事件基础）；sys_privacy_request建模与迁移设计</td></tr>
       <tr><td>接口组</td><td><b>AUTH</b>（wx-login / select-role / child-profile）· <b>FAMILY</b>（create / invite-code / join / bind-approve）· <b>COMPLIANCE</b>（consent GET/POST / revoke / data-export 入口）</td></tr>
-      <tr><td>交付物</td><td>① 工程脚手架（Spring Boot 4.1.1 + MyBatis-Plus + JWT 网关鉴权）② 16 表 DDL 中 usr_ 5 张 + sys_audit_log 落地（含 <code>delete_at</code> 与唯一键）③ 微信登录与三角色 JWT 分权 ④ 家庭创建/邀请码(24h)/绑定审批 ⑤《同意书》独立勾选+自报年龄留痕 ⑥ 5 Tab 框架（点餐可用，余占位）</td></tr>
+      <tr><td>交付物</td><td>工程脚手架及版本兼容报告；账号/家庭/同意/审计/通知基础的可执行迁移和回填报告；首次角色及token轮换；先同意后绑定建档；5 Tab点餐/我的可用、任务/学习占位、成长静态。自报状态SELF_ATTESTED，不假作核验。</td></tr>
       <tr><td>进入准则</td><td>详细设计评审通过；开发/测试环境就绪（MySQL 8.0 + Redis）；技术栈版本闸门 Q-06 预检通过。</td></tr>
-      <tr><td>退出准则 DoD</td><td>微信登录→角色→档案→家庭→绑定→同意全链路可跑通；越权访问返回 403(E-009)；同意撤回即时降级(E-010)；单元/集成测试覆盖 AUTH/FAMILY/COMPLIANCE 关键路径；代码评审通过。</td></tr>
+      <tr><td>退出准则 DoD</td><td>先同意再绑定建档；无同意写入及撤回并发测试AC-01通过；越权拒绝；角色不可切换提权；绑定业务与站内事件原子提交；Q-01未批前只用不含真实儿童身份的演示数据。</td></tr>
       <tr><td>依赖</td><td>无（首 Sprint，含脚手架）。</td></tr>
+      <tr><td>当前状态<br>2026-09-18</td><td><b>后端审计修复完成，Sprint 1整体未退出。</b>43项本地测试通过（14单元+29隔离集成），打包成功；验证范围和未关闭项见<a href="../growth-planet/docs/sprint1-verification.md">后端验证记录</a>。未连接或修改现有业务数据库。</td></tr>
     </table>
   </div>
+
+  <h4>Sprint 1 任务状态（2026-09-18复核）</h4>
+  <table class="mtx">
+    <tr><th>任务</th><th>当前状态</th><th>证据及待办</th></tr>
+    <tr><td>F-001 登录</td><td>后端已实现，隔离测试通过</td><td>AuthFlowIT / SecurityRegressionIT；真实微信联调及前置处理依据审批待完成。</td></tr>
+    <tr><td>F-002 角色与会话</td><td>后端已实现、已验证</td><td>首次选择、同角色幂等、禁止提权、旧token失效及退出已覆盖；前端角色流程待联调。</td></tr>
+    <tr><td>F-003 儿童档案</td><td>家长建档后端已验证；部分完成</td><td>绑定及有效同意校验、JSON回读已覆盖；前端分步引导及儿童非安全偏好接口待完成。</td></tr>
+    <tr><td>F-004至F-006 家庭/邀请码/绑定</td><td>后端已实现、已验证</td><td>FamilyFlowIT / TransactionRegressionIT；重申、越权、并发审批及通知失败回滚已覆盖，前端联调待完成。</td></tr>
+    <tr><td>F-007 同意与撤回</td><td>后端声明及授权控制已验证；部分完成</td><td>同意/撤回追加留痕、重授、版本与年龄校验已覆盖；SELF_ATTESTED不等于核验，Q-01审批与正式核验流程未关闭。</td></tr>
+    <tr><td>F-010 通知基础</td><td>Sprint 1事件基础已完成、已验证</td><td>站内/订阅记录同事务、防重、撤回取消待发事件；通知中心与订阅授权/实际投递/重试仍属后续Sprint。</td></tr>
+    <tr><td>F-012 审计与权利入口</td><td>后端基础已完成、已验证；完整功能未完成</td><td>审计、导出RECEIVED持久化/查询/幂等已覆盖；前端入口、导出文件/下载、删除办理、处理人与时限待完成。</td></tr>
+    <tr><td>F-013 五 Tab框架</td><td>待实现/验证</td><td>当前growth-planet仅后端，无前端交付与验收证据。</td></tr>
+    <tr><td>工程与数据库交付</td><td>本地构建及隔离迁移验证通过；部分完成</td><td>八表schema、预检/扩展/切换脚本已交付，MigrationIT合成旧结构验证通过；Q-06完整版本审核、真实存量迁移及恢复演练待完成。</td></tr>
+  </table>
 
   <!-- Sprint 2 -->
   <div class="sprint-head">
@@ -165,11 +181,11 @@
     <table class="mtx">
       <tr><th style="width:120px">维度</th><th>内容</th></tr>
       <tr><td>功能清单</td><td><span class="fcode">F-008</span> 虚拟钱包地基 · <span class="fcode">F-009</span> 家长额度设置(前移) · <span class="fcode">F-010</span> 站内通知中心 · <span class="fcode">F-023</span> 消费记录(流水底座)</td></tr>
-      <tr><td>涉及数据表</td><td><span class="domain-life">life_wallet</span>(含 version 乐观锁) · <span class="domain-life">life_allowance_rule</span>(默认 30/30/150, Q-04) · <span class="domain-life">life_allowance_log</span> · <span class="domain-">sys_notice</span></td></tr>
-      <tr><td>接口组</td><td><b>WALLET</b>（balance / allowance-rule PUT / allowance-log）· <b>NOTICE</b>（notices GET / read，站内中心 F-010）</td></tr>
-      <tr><td>交付物</td><td>① 钱包与额度规则建表 + 默认值 ② 余额查询/额度设置/流水查询 ③ 站内通知中心（聚合/已读/红点，触达保底）④ 家长额度变更对下一张确认单即时生效</td></tr>
+      <tr><td>涉及数据表</td><td><span class="domain-life">life_wallet</span>(含 version 行锁及版本校验) · <span class="domain-life">life_allowance_rule</span>(默认 30/30/150, Q-04) · <span class="domain-life">life_allowance_log</span> · <span class="domain-">sys_notice</span></td></tr>
+      <tr><td>接口组</td><td>WALLET：balance / grant POST / allowance-rule PUT / allowance-log；NOTICE：notices GET / read，事件基础复用Sprint1。</td></tr>
+      <tr><td>交付物</td><td>钱包与额度、唯一流水；手动发放入口及幂等接口；通知中心；规则变更影响待审单审批，日周周期独立重置；0→发放50→审批18→余额32的AC-02。</td></tr>
       <tr><td>进入准则</td><td>Sprint 1 退出（usr_ 域与 JWT 鉴权可用）。</td></tr>
-      <tr><td>退出准则 DoD</td><td>钱包余额初始 0(Q-05)；额度默认与可改生效；流水写入含 balance_before/after 快照；站内通知红点逻辑正确；乐观锁字段就位（并发用例 Sprint 4 验证）。</td></tr>
+      <tr><td>退出准则 DoD</td><td>钱包余额初始 0(Q-05)；额度默认与可改生效；流水写入含 balance_before/after 快照；站内通知红点逻辑正确；行锁及版本校验字段就位（并发用例 Sprint 4 验证）。</td></tr>
       <tr><td>依赖</td><td>依赖 Sprint 1（child_id / family_id / JWT / sys_notice 表）。</td></tr>
     </table>
   </div>
@@ -185,7 +201,7 @@
       <tr><td>功能清单</td><td><span class="fcode">F-014</span> 菜品库 · <span class="fcode">F-015</span> 当日菜单配置 · <span class="fcode">F-016</span> 菜单展示 · <span class="fcode">F-017</span> 语音辅助(<span class="pill p2">P2 置灰</span>) · <span class="fcode">F-018</span> 菜单确认 · <span class="fcode">F-019</span> 额度状态机 · <span class="fcode">F-020</span> 审批流 · <span class="fcode">F-021</span> 状态追踪 · <span class="fcode">F-022</span> 偏好持久化</td></tr>
       <tr><td>涉及数据表</td><td><span class="domain-life">life_dish_category</span> · <span class="domain-life">life_dish</span> · <span class="domain-life">life_menu_daily</span> · <span class="domain-life">life_menu_confirm</span>(状态机) · <span class="domain-life">life_menu_item</span> · <span class="domain-life">life_confirm_approval</span> · <span class="domain-usr">usr_child_profile</span>(偏好)</td></tr>
       <tr><td>接口组</td><td><b>MENU</b>（admin/dish · admin/menu-daily · menu/daily · mark-favorite）· <b>CONFIRM</b>（menu/confirm · confirm GET · status · withdraw）· <b>APPROVE</b>（approvals · approve/modify/reject）</td></tr>
-      <tr><td>交付物</td><td>① 菜品库 CRUD + 当日菜单按校/日期/餐段配置(uk_school_date_meal) ② 儿童端菜单展示(餐段折叠/大图卡/忌口过敏灰显/筛选) ③ 确认单提报(份量±1/备注/自动带入忌口) ④ F-019 状态机(DRAFT→PENDING→APPROVED→COMPLETED；REJECTED→DRAFT) ⑤ 家长审批卡(同意/改一改/拒绝，超额显式放行) ⑥ 审批同意后触发钱包扣减 + 儿童端状态追踪(仅状态,情绪保护)</td></tr>
+      <tr><td>交付物</td><td>菜品及学校展示/家庭提报菜单；服务端过敏、日期、菜品与数量校验；提交幂等及快照；PENDING→COMPLETED/REJECTED/CANCELLED；拒绝/撤回重提新ID；审批最新额度预览确认；原子扣减及故障回滚。</td></tr>
       <tr><td>进入准则</td><td>Sprint 1（家庭/绑定/同意）与 Sprint 2（钱包/额度/流水/站内通知）退出。</td></tr>
       <tr><td>退出准则 DoD</td><td>G1 端到端成功率 ≥ 95%；扣减确在同意后(E-006/E-007)；超额强制显式放行；儿童端不现负面词(R-03);忌口过敏灰显;偏好"沿用昨天"可用;撤回仅 PENDING 期间。</td></tr>
       <tr><td>依赖</td><td>依赖 Sprint 1（家庭/同意/偏好表）、Sprint 2（钱包扣减/额度/流水/通知）。</td></tr>
@@ -194,19 +210,19 @@
 
   <!-- Sprint 4 -->
   <div class="sprint-head">
-    <h3>Sprint 4 · 通知三通道与收尾验收（P1 通知 + 合规加固 + 灰度）</h3>
-    <p style="margin:0;color:var(--sub)">目标：补齐三通道通知，落实未成年人模式/WCAG/审计合规，完成并发安全验证与灰度上线验收。</p>
+    <h3>Sprint 4 · 订阅投递、隐私办理与发布验收</h3>
+    <p style="margin:0;color:var(--sub)">目标：补齐站内+订阅双通道、导出/删除工单办理，执行并发、实机、性能及灰度演练。短信不在本版。</p>
   </div>
   <div class="card">
     <table class="mtx">
       <tr><th style="width:120px">维度</th><th>内容</th></tr>
-      <tr><td>功能清单</td><td><span class="fcode">F-011</span> 三通道通知(订阅+站内+短信兜底) · <span class="fcode">F-012</span> 数据出口入口(基础导出) · 合规加固(未成年人模式 / WCAG 2.2 AA / 儿童情绪保护) · 并发与安全验证 · 灰度上线</td></tr>
-      <tr><td>涉及数据表</td><td><span class="domain-">sys_notice</span>(channel 三态) · <span class="domain-">sys_audit_log</span> · <span class="domain-usr">usr_consent_log</span> · <span class="domain-life">life_wallet</span>(并发验证)</td></tr>
-      <tr><td>接口组</td><td><b>NOTICE</b>（三通道下发与降级，F-011）· <b>COMPLIANCE</b>（data-export 落地，F-012）</td></tr>
-      <tr><td>交付物</td><td>① 三通道：订阅消息(须提交页引导授权)+站内保底+短信仅安全/超时兜底(Q-02) ② 未成年人模式常驻入口/时长锁屏/22:00–8:00 禁服务 ③ WCAG 对比度/触控44px/动效降级 ④ 关键操作全量 sys_audit_log ⑤ 钱包并发扣减压测(E-007) ⑥ 灰度(白名单)放量 + 验收清单通过 + 版本闸门 Q-06 收口</td></tr>
+      <tr><td>功能清单</td><td><span class="fcode">F-011</span> 双通道通知(订阅+站内，短信后置) · <span class="fcode">F-012</span> 导出/删除工单办理 · 合规加固(未成年人模式 / WCAG 2.2 AA / 儿童情绪保护) · 并发与安全验证 · 灰度上线</td></tr>
+      <tr><td>涉及数据表</td><td>sys_notice（IN_APP/SUBSCRIBE及独立投递状态）、sys_privacy_request、sys_audit_log、usr_consent_log、life_wallet（并发验证）</td></tr>
+      <tr><td>接口组</td><td><b>NOTICE</b>（投递/重试，F-011）· <b>COMPLIANCE</b>（导出/删除工单、进度和鉴权下载，F-012）</td></tr>
+      <tr><td>交付物</td><td>家长在自己端授权，事务事件投递及失败重试；sys_privacy_request及办理人员/期限/删除恢复演练；可访问性实机验证；并发及故障注入报告；性能基线；灰度停写与应用回滚演练。夜间策略待产品/合规评审，不宣称统一法定禁服务。</td></tr>
       <tr><td>进入准则</td><td>Sprint 1–3 退出；订阅消息模板已在微信平台申请。</td></tr>
-      <tr><td>退出准则 DoD</td><td>三通道触达 ≥ 99%(站内保底);非功能(首屏≤1s/对比度/触控)达标;并发不超扣;越权/E-009 覆盖;验收清单全部通过;灰度无阻断问题。</td></tr>
-      <tr><td>依赖</td><td>依赖 Sprint 1（合规/审计）、Sprint 2（sys_notice 表）、Sprint 3（业务触发通知点）。</td></tr>
+      <tr><td>退出准则 DoD</td><td>每日已提交事件中5秒内站内可查询≥99%，不等于触达；按基线第6节验证性能/可访问性；AC-01至AC-10及灰度演练通过，所有发布闸门有责任人签核。</td></tr>
+      <tr><td>依赖</td><td>依赖 Sprint 1（同意/审计/sys_notice事件基础）、Sprint 2（通知中心/钱包）、Sprint 3（业务触发点）。</td></tr>
     </table>
   </div>
 
@@ -214,11 +230,11 @@
   <h2 id="C">C. 端到端核心链路里程碑</h2>
   <p>沿"儿童确认今日菜单 → 家长额度护栏 → 虚拟记账 → 正向反馈"最小闭环（G1）拆解为 7 个核心里程碑，每个里程碑给出进入/退出口径与归属 Sprint。里程碑是 Sprint 内的关键验收节点，也是跨 Sprint 的衔接闸门。</p>
 
-  <div class="milestone"><div class="mno">M1</div><div class="mbody"><b>地基贯通</b>（Sprint 1）— 微信登录→角色→档案→家庭→绑定→监护人同意全链路跑通。退出：AUTH/FAMILY/COMPLIANCE 关键路径集成测试通过，越权/E-009 覆盖。</div></div>
-  <div class="milestone"><div class="mno">M2</div><div class="mbody"><b>钱包就绪</b>（Sprint 2）— 虚拟钱包+额度规则+流水+站内通知中心可用。退出：余额初始0、额度默认/可改、流水快照、红点逻辑正确。</div></div>
-  <div class="milestone"><div class="mno">M3</div><div class="mbody"><b>菜单上线</b>（Sprint 3 前半）— 后台菜品库+当日菜单配置，儿童端可按校/餐段浏览（忌口过敏灰显）。退出：MENU 接口与 life_menu_daily 配置联调通过。</div></div>
+  <div class="milestone"><div class="mno">M1</div><div class="mbody"><b>地基贯通</b>（Sprint 1）— 最小登录→首次角色→绑定申请→指定儿童同意→绑定→家长建档。退出：Q-01通过，AUTH/FAMILY/COMPLIANCE集成通过，无同意写入和越权测试覆盖。<b>当前：部分完成，未退出。</b>2026-09-18后端隔离集成通过，Q-01审批及真实联调仍未完成。</div></div>
+  <div class="milestone"><div class="mno">M2</div><div class="mbody"><b>钱包就绪</b>（Sprint 2）— 钱包、手动发放、额度、唯一流水和站内中心。退出：初始0→发放50→提交18余额50→审批余额32；发放重试不重复入账。</div></div>
+  <div class="milestone"><div class="mno">M3</div><div class="mbody"><b>菜单上线</b>（Sprint 3 前半）— SCHOOL仅展示/收藏，FAMILY由家长配置后可提报。退出：跨家庭拒绝，未知/命中过敏原阻断，不喜欢仅提示，AC-07通过。</div></div>
   <div class="milestone"><div class="mno">M4</div><div class="mbody"><b>确认闭环</b>（Sprint 3 后半）— 儿童确认→家长审批→<b>同意后扣减</b>→状态追踪端到端。退出：G1 闭环成功率 ≥ 95%，扣减时机正确(E-006/E-007)，超额显式放行。</div></div>
-  <div class="milestone"><div class="mno">M5</div><div class="mbody"><b>三通道通知</b>（Sprint 4 前半）— 订阅+站内+短信兜底三通道与降级。退出：触达 ≥ 99%(站内保底)，订阅授权引导就位，短信仅兜底(Q-02)。</div></div>
+  <div class="milestone"><div class="mno">M5</div><div class="mbody"><b>双通道通知</b>（Sprint 4 前半）— 站内+订阅，短信后置。退出：站内可查询指标通过，家长本人授权、未授权降级、提交后重试及撤回同意停止敏感重试均验证。</div></div>
   <div class="milestone"><div class="mno">M6</div><div class="mbody"><b>合规与安全加固</b>（Sprint 4 中）— 未成年人模式/WCAG/情绪保护/审计全量。退出：非功能与合规清单达标，sys_audit_log 覆盖关键操作。</div></div>
   <div class="milestone"><div class="mno">M7</div><div class="mbody"><b>灰度上线验收</b>（Sprint 4 末）— 白名单灰度放量→全量，验收清单全通过，版本闸门 Q-06 收口。退出：无阻断问题，可正式上线。</div></div>
 
@@ -226,7 +242,7 @@
 
   <!-- ============ D ============ -->
   <h2 id="D">D. 依赖关系图</h2>
-  <p>下图给出 Sprint 内部功能依赖与跨 Sprint 衔接（F 编号间箭头表示"先于"）。节点与边均避免括号/等号等 Mermaid 语法红线字符。</p>
+  <p>箭头表示前置交付依赖，不是运行时事件调用。站内事件基础前移Sprint1，通知中心在Sprint2，订阅投递在Sprint4；依赖须无环且不倒跨Sprint。</p>
   <div class="mermaid">
 graph TD
   subgraph S1[Sprint1 地基可运行]
@@ -239,9 +255,10 @@ graph TD
     A7[F-007 监护人同意]
     A8[F-012 同意留痕]
     A9[F-013 基础框架]
+    A10[F-010 站内事件基础]
   end
   subgraph S2[Sprint2 钱包与额度]
-    B1[F-008 虚拟钱包]
+    B1[F-008 钱包及手动发放]
     B2[F-009 额度设置]
     B3[F-010 站内通知]
     B4[F-023 消费流水]
@@ -257,35 +274,41 @@ graph TD
     C8[F-022 偏好持久化]
   end
   subgraph S4[Sprint4 通知与验收]
-    D1[F-011 三通道通知]
+    D1[F-011 订阅投递]
     D2[合规加固]
     D3[灰度上线]
   end
-  A1 --> A2 --> A3
-  A3 --> A4 --> A5 --> A6
+  A1 --> A2 --> A4 --> A5
+  A5 --> A7
   A7 --> A6
+  A6 --> A3
   A8 --> A7
   A9 --> A1
+  A9 --> A8
+  A9 --> A10
+  A10 --> A5
   B1 --> B2
-  B3 --> B1
-  B4 --> B1
-  A6 --> B1
+  A10 --> B3
+  B1 --> B4
+  A3 --> B1
   C1 --> C2 --> C3
   C3 --> C4 --> C5
   C5 --> C6 --> C7
   B1 --> C5
   B2 --> C5
   C8 --> C4
-  C6 --> B4
-  C7 --> B3
-  D1 --> B3
-  D2 --> A7
+  B4 --> C5
+  B3 --> C4
+  A3 --> C8
+  C7 --> D1
+  A7 --> D2
+  C7 --> D2
   D1 --> D3
   D2 --> D3
   </div>
 
   <h3>D.1 关键路径与版本闸门依赖（Q-06）</h3>
-  <p>发布前必须做技术栈兼容闸门；下图用 <code>alt/else</code> 分支表达，分支标签仅用中文且无括号/等号/分号/问号，规避 Mermaid 10.9.8 语法红线。</p>
+  <p>发布前核验技术版本与兼容性；替代版本同样须完整集成测试，不得绕过闸门。</p>
   <div class="mermaid">
 sequenceDiagram
   participant L as 发布闸门
@@ -300,7 +323,7 @@ sequenceDiagram
     L->>D: 锁定已验证稳定版后发布
   end
   </div>
-  <div class="note"><b>语法红线声明：</b>本文件所有 Mermaid 块（含上方 <code>alt 版本兼容 / else 锁稳定版</code>）均不含 <code>()</code>、<code>=</code>、<code>;</code>、<code>?</code> 等禁止字符，可在 Mermaid 10.9.8 解析。历史教训（详细设计 7.4 曾用 <code>else affected=0 (并发版本冲突)</code> 触发 Syntax error）已规避。</div>
+  <div class="note">Mermaid固定10.9.8；语法是否有效应由解析/渲染检查确认，不将括号或等号一律视为禁用字符。CDN不可用时保留源文本；离线静态图仍需交付。</div>
 
   <!-- ============ E ============ -->
   <h2 id="E">E. 测试策略</h2>
@@ -309,49 +332,42 @@ sequenceDiagram
       <h4 style="margin-top:0;color:var(--brand)">单元测试</h4>
       <ul style="font-size:13.5px">
         <li>额度校验逻辑（单笔/日/周，默认 30/30/150，Q-04）。</li>
-        <li>F-019 状态机流转（DRAFT/PENDING/APPROVED/REJECTED/COMPLETED）边界。</li>
-        <li>逻辑删除 <code>delete_at</code> 唯一键重建语义（删后可再建）。</li>
-        <li>JWT 三角色分权与 token 失效/刷新。</li>
+        <li>F-019 状态机流转（PENDING/REJECTED/CANCELLED/COMPLETED（DRAFT仅客户端））边界。</li>
+        <li>逻辑删除按表验证唯一性：身份/流水幂等键不可复用，同日菜单更新原记录；禁止统一追加delete_at放宽约束。</li>
+        <li>JWT 三角色分权与 token失效/30分钟过期后重新wx-login。</li>
       </ul>
     </div>
     <div class="card" style="margin:0">
       <h4 style="margin-top:0;color:var(--brand2)">集成测试</h4>
       <ul style="font-size:13.5px">
         <li>全链路：登录→家庭→同意→菜单→确认→审批→扣减→通知（覆盖 M1–M4）。</li>
-        <li>通知三通道降级：订阅未授权→站内保底；关键安全→短信兜底(Q-02)。</li>
+        <li>订阅未授权→站内可查询；失败按1/5/30分钟最多3次重试；短信不在本版(Q-02)。</li>
         <li>数据隔离：跨家庭访问返回 403(E-009)。</li>
         <li>同意撤回即时降级(E-010)与留痕。</li>
       </ul>
     </div>
   </div>
 
-  <h3>E.1 并发安全用例：虚拟钱包扣减（乐观锁 + 事务）</h3>
+  <h3>E.1 并发安全用例：虚拟钱包扣减（行锁及版本校验 + 事务）</h3>
   <div class="card">
     <table class="mtx">
       <tr><th style="width:160px">用例</th><th>场景</th><th>预期</th><th>对应错误码</th></tr>
-      <tr><td>CONC-01 乐观锁串行</td><td>同一儿童两笔家长审批并发触发扣减</td><td>事务 + <code>version</code> 条件更新，串行化成功，余额绝不超扣</td><td>—</td></tr>
-      <tr><td>CONC-02 版本冲突重试</td><td>两笔扣减同时读到同一 version，后者更新 0 行</td><td>后者返回并发冲突，提示重试（不超扣）</td><td>E-007</td></tr>
-      <tr><td>CONC-03 余额不足</td><td>扣减金额 &gt; 余额</td><td>标记异常、不扣减、通知家长</td><td>E-006</td></tr>
+      <tr><td>CONC-01 行锁及版本校验串行</td><td>同一儿童两笔家长审批并发触发扣减</td><td>事务 + <code>version</code> 条件更新，串行化成功，余额绝不超扣</td><td>—</td></tr>
+      <tr><td>CONC-02 版本冲突重试</td><td>传入过期expectedVersion，或故障注入令条件更新影响0行</td><td>HTTP409，不部分提交；行锁下不假设两个事务同时取得同一最新版本</td><td>E-007</td></tr>
+      <tr><td>CONC-03 余额不足</td><td>扣减金额 &gt; 余额</td><td>保持PENDING，不扣减，明确提示家长</td><td>E-006</td></tr>
       <tr><td>CONC-04 提交不扣减</td><td>儿童提交确认单</td><td>仅 PENDING + 预校验，余额不变（扣减在同意后）</td><td>—</td></tr>
     </table>
-    <pre><span class="c">// 伪代码：扣减核心（事务内）</span>
-<span class="k">begin</span> transaction
-  wallet = selectForUpdate(childId)   <span class="c">// 取 balance 与 version=v0</span>
-  <span class="k">if</span> wallet.balance &gt;= amount:
-     rows = update wallet
-            set balance = balance - amount,
-                version = version + 1
-            where id = wallet.id <span class="k">and</span> version = v0
-     <span class="k">if</span> rows == 0: <span class="k">throw</span> E007_CONFLICT   <span class="c">// 并发版本冲突</span>
-     insert life_allowance_log(DEDUCT, snapshot)
-     update confirm.status = COMPLETED
-     <span class="k">commit</span>
-  <span class="k">else</span>:
-     <span class="k">rollback</span>; notifyParent(E006_INSUFFICIENT)
-</pre>
+    <ol>
+      <li>开启事务，锁家庭/儿童关系并核对身份、最新同意；再锁确认单。相同已完成命令返回原结果，其他终态/版本冲突409。</li>
+      <li>锁钱包再锁规则；按Asia/Shanghai独立切换日/周周期，重核最新额度、余额、菜单日期/来源及过敏安全。</li>
+      <li>超额时要求显式确认及最新预览版本，陈旧预览返回E-011；不信任提交时is_over_limit。余额不足E-006。</li>
+      <li>检查钱包条件更新影响行数；同事务累计额度、写唯一流水、审批、COMPLETED和通知事件，再提交。任一步失败整体回滚，不部分记账。</li>
+      <li>提交后异步投递，外部通知失败仅重试。审计记录requestId/actorId/confirmId、规则及余额版本、事务结果，不记录明文档案。</li>
+    </ol>
+    <p>这是实现算法契约，不是可运行示例。并发AC-03/04、状态竞争及逐步骤故障注入AC-05、跨日跨周AC-06和安全AC-07须在应用实现后执行，完整预期见修订基线第7节。</p>
   </div>
 
-  <h3>E.2 错误码覆盖矩阵（E-001 ~ E-010）</h3>
+  <h3>E.2 错误码覆盖矩阵（E-001 ~ E-012）</h3>
   <table class="mtx">
     <tr><th>错误码</th><th>含义</th><th>测试归属</th></tr>
     <tr><td>E-001 无微信授权</td><td>未登录访问写操作</td><td>UT 鉴权 / IT 登录链路</td></tr>
@@ -360,27 +376,29 @@ sequenceDiagram
     <tr><td>E-004 监护人核验失败</td><td>非监护人/年龄不符</td><td>UT 自报年龄 &lt;18 拒绝</td></tr>
     <tr><td>E-005 提交超时</td><td>网络失败/重试</td><td>IT 确认提交幂等</td></tr>
     <tr><td>E-006 虚拟余额不足</td><td>扣减时不足</td><td>CONC-03</td></tr>
-    <tr><td>E-007 并发扣减冲突</td><td>乐观锁版本冲突</td><td>CONC-01/02</td></tr>
-    <tr><td>E-008 通知发送失败</td><td>三通道降级站内保底</td><td>IT 通知降级</td></tr>
+    <tr><td>E-007 并发扣减冲突</td><td>行锁及版本校验版本冲突</td><td>CONC-01/02</td></tr>
+    <tr><td>E-008 通知发送失败</td><td>双通道降级站内保底</td><td>IT 通知降级</td></tr>
     <tr><td>E-009 越权访问</td><td>跨家庭数据</td><td>IT 数据隔离</td></tr>
     <tr><td>E-010 家长撤回同意</td><td>能力降级</td><td>IT 撤回即时降级</td></tr>
+    <tr><td>E-011 额度预览变化</td><td>超额或旧预览返回409，不扣款</td><td>AC-04/06；规则降低、累计变化与跨日</td></tr>
+    <tr><td>E-012 幂等键冲突</td><td>同键不同参409，同参返回原结果</td><td>AC-03；提交与发放重试</td></tr>
   </table>
 
   <h3>E.3 验收检查清单（引用详细设计 9.2）</h3>
   <div class="grid3">
     <div class="card" style="margin:0"><h4 style="margin-top:0;color:var(--brand)">功能</h4><ul style="font-size:13px"><li>F-001~F-006 全链路</li><li>F-007 同意+留痕+撤回</li><li>F-008/009/023 钱包护栏</li><li>F-014~F-022 点餐闭环</li><li>F-010/011 通知</li></ul></div>
     <div class="card" style="margin:0"><h4 style="margin-top:0;color:var(--brand2)">安全</h4><ul style="font-size:13px"><li>越权拒绝 E-009</li><li>并发不超扣 E-007</li><li>儿童端无真实支付</li><li>审计覆盖 sys_audit_log</li><li>JWT 分权</li></ul></div>
-    <div class="card" style="margin:0"><h4 style="margin-top:0;color:var(--brand3)">非功能</h4><ul style="font-size:13px"><li>首屏≤1s</li><li>对比度≥4.5:1</li><li>触控≥44px</li><li>未成年人模式</li><li>埋点/审计覆盖</li></ul></div>
+    <div class="card" style="margin:0"><h4 style="margin-top:0;color:var(--brand3)">非功能</h4><ul style="font-size:13px"><li>骨架P95≤1s、可操作P95≤2s（基线第6节条件）</li><li>对比度≥4.5:1</li><li>触控≥44px</li><li>未成年人模式</li><li>埋点/审计覆盖</li></ul></div>
   </div>
 
   <!-- ============ F ============ -->
   <h2 id="F">F. 风险与待办</h2>
-  <h3>F.1 六项已收口裁定落点回顾（Q-01 ~ Q-06）</h3>
+  <h3>F.1 六项待联合确认裁定落点回顾（Q-01 ~ Q-06）</h3>
   <table class="mtx">
     <tr><th style="width:60px">编号</th><th>裁定</th><th>本计划落点</th></tr>
-    <tr><td><b>Q-01</b></td><td>监护人核验：微信绑定+同意书+自报年龄；可验证核验 P1+</td><td>Sprint 1（F-007/US-3）写 usr_consent_log；REALNAME 留 P1+</td></tr>
-    <tr><td><b>Q-02</b></td><td>短信仅安全/超时兜底，默认站内+订阅</td><td>Sprint 4（F-011）三通道，短信后置兜底</td></tr>
-    <tr><td><b>Q-03</b></td><td>5 Tab 仅点餐可用，余占位</td><td>Sprint 1（F-013）框架显隐</td></tr>
+    <tr><td><b>Q-01</b></td><td>声明记SELF_ATTESTED，不证明身份或监护关系</td><td>Sprint 1；最低核验强度及前置账号处理依据未批准，不开放真实儿童数据</td></tr>
+    <tr><td><b>Q-02</b></td><td>首版站内+订阅，短信后置</td><td>Sprint 1事件基础、Sprint 2中心、Sprint 4订阅投递</td></tr>
+    <tr><td><b>Q-03</b></td><td>5 Tab 仅点餐、我的可用；任务/学习占位，成长静态</td><td>Sprint 1（F-013）框架显隐</td></tr>
     <tr><td><b>Q-04</b></td><td>额度默认 单笔30/每日30/每周150</td><td>Sprint 2（F-009）默认值写入 + 可改</td></tr>
     <tr><td><b>Q-05</b></td><td>虚拟余额初始0；手动增(P0)/任务发(P2)</td><td>Sprint 2（life_wallet 默认0；MANUAL 场景）</td></tr>
     <tr><td><b>Q-06</b></td><td>Java21+SB4.1.1 版本闸门</td><td>Sprint 1 预检 + Sprint 4 发布闸门（D.1 图）</td></tr>
@@ -390,32 +408,32 @@ sequenceDiagram
   <div class="card">
     <ul style="font-size:13.5px;margin:0">
       <li><b>阶段划分：</b>内部灰度（运营+种子家庭）→ 小范围家长 → 全量；按家庭/学校白名单放量。</li>
-      <li><b>回滚策略：</b>前后端独立可回滚；数据库变更走<b>可逆 DDL</b>（新增列/表优先，避免破坏式变更）；配置开关降级（如短信通道、未成年人模式阈值）。</li>
-      <li><b>Q-06 版本闸门：</b>发布前验收 Java 21 + Spring Boot 4.1.1 GA 与 MyBatis-Plus 兼容；不兼容则锁稳定版（R-10），不阻塞业务发布。</li>
-      <li><b>监控：</b>确认转化率、通知触达率、钱包扣减异常率（E-006/E-007）为灰度核心指标，超阈值自动触发回滚。</li>
+      <li><b>回滚策略：</b>扩展/回填/切换/清理，先验证旧应用兼容再回滚应用；不得自动DROP列或逆向DDL。钱包先对账，修复须审批。</li>
+      <li><b>Q-06：</b>选定版本及替代版本均须验证GA与依赖兼容、通过集成测试；未通过阻断发布。</li>
+      <li><b>监控提案：</b>重复扣款、负余额、越权、无同意写入任一发生即停写；5分钟≥100请求，5xx&gt;1%或P95&gt;600ms连续两窗停止扩量并回滚兼容应用；低样本不扩量。恢复目标RPO≤15分钟、RTO≤60分钟需演练验收。</li>
     </ul>
   </div>
 
   <h3>F.3 待办与假设</h3>
-  <div class="note"><b>实现层假设（与详细设计 10.1 一致）：</b>① 邀请码 6 位大写字母数字 24h 有效；② 确认单仅 PENDING 期间可撤回；③ 超额单设当日复核次数上限防骚扰；④ 订阅消息模板须提前在微信平台申请；⑤ 数据导出 V0.0.1 仅入口+基础导出，完整 P4；⑥ 单孩优先，多孩按 child_id 隔离（R-14）；⑦ 金额全标"虚拟"，¥ 非真实货币（R-15）。</div>
+  <div class="note"><b>实现层假设：</b>邀请码6位大写字母数字、24h有效；仅PENDING可撤回；超额防刷阈值/窗口/错误提示待产品和安全批准后配置，不能留无效空规则；订阅模板前置申请；首版导出/删除工单可由指定人员办理；单孩优先，多孩按child_id隔离；所有金额为虚拟单位。完整契约及责任见修订基线。</div>
 
   <!-- ============ G ============ -->
   <h2 id="G">G. 交付总览矩阵（F × 阶段 × 接口组 × 数据表）</h2>
   <div class="card">
     <table class="mtx">
       <tr><th style="width:80px">F 编号</th><th>优先级</th><th>归属阶段</th><th>接口组</th><th>涉及数据表</th><th>一句话定义</th></tr>
-      <tr><td><span class="fcode">F-001</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>AUTH</td><td>usr_user</td><td>微信登录换 openid 建匿名会话</td></tr>
+      <tr><td><span class="fcode">F-001</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>AUTH</td><td>usr_user</td><td>微信登录换 openid 建最小账号会话</td></tr>
       <tr><td><span class="fcode">F-002</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>AUTH</td><td>usr_user</td><td>角色选择写 role</td></tr>
       <tr><td><span class="fcode">F-003</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>AUTH</td><td>usr_child_profile</td><td>儿童分步档案引导</td></tr>
       <tr><td><span class="fcode">F-004</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>FAMILY</td><td>usr_family</td><td>家庭创建+6位邀请码24h</td></tr>
       <tr><td><span class="fcode">F-005</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>FAMILY</td><td>usr_family_member</td><td>儿童输入码发起绑定</td></tr>
       <tr><td><span class="fcode">F-006</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>FAMILY</td><td>usr_family_member</td><td>家长审批绑定关系</td></tr>
-      <tr><td><span class="fcode">F-007</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>COMPLIANCE</td><td>usr_consent_log</td><td>《同意书》勾选+自报年龄核验</td></tr>
-      <tr><td><span class="fcode">F-012</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1(基础) / Sprint 4(导出)</td><td>COMPLIANCE</td><td>usr_consent_log / sys_audit_log</td><td>同意留痕/出口入口</td></tr>
-      <tr><td><span class="fcode">F-013</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>框架</td><td>—</td><td>5 Tab 框架(点餐可用,余占位)</td></tr>
-      <tr><td><span class="fcode">F-008</span></td><td><span class="pill p0">P0</span></td><td>Sprint 2</td><td>WALLET</td><td>life_wallet</td><td>虚拟钱包地基(乐观锁)</td></tr>
+      <tr><td><span class="fcode">F-007</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>COMPLIANCE</td><td>usr_consent_log</td><td>《同意书》勾选+自报年龄声明（非核验）</td></tr>
+      <tr><td><span class="fcode">F-012</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1(基础) / Sprint 4(办理)</td><td>COMPLIANCE</td><td>usr_consent_log / sys_audit_log / sys_privacy_request</td><td>同意留痕及可办理导出/删除工单</td></tr>
+      <tr><td><span class="fcode">F-013</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1</td><td>框架</td><td>—</td><td>5 Tab 框架(点餐/我的可用，任务/学习占位，成长静态)</td></tr>
+      <tr><td><span class="fcode">F-008</span></td><td><span class="pill p0">P0</span></td><td>Sprint 2</td><td>WALLET</td><td>life_wallet</td><td>虚拟钱包及手动发放（行锁、幂等、唯一流水）</td></tr>
       <tr><td><span class="fcode">F-009</span></td><td><span class="pill p0">P0</span></td><td>Sprint 2</td><td>WALLET</td><td>life_allowance_rule</td><td>家长额度设置(默认30/30/150)</td></tr>
-      <tr><td><span class="fcode">F-010</span></td><td><span class="pill p0">P0</span></td><td>Sprint 2</td><td>NOTICE</td><td>sys_notice</td><td>站内通知中心</td></tr>
+      <tr><td><span class="fcode">F-010</span></td><td><span class="pill p0">P0</span></td><td>Sprint 1事件基础 / Sprint 2中心</td><td>NOTICE</td><td>sys_notice</td><td>站内通知中心</td></tr>
       <tr><td><span class="fcode">F-023</span></td><td><span class="pill p1">P1</span></td><td>Sprint 2(底座) / Sprint 3(集成)</td><td>WALLET</td><td>life_allowance_log</td><td>虚拟消费流水</td></tr>
       <tr><td><span class="fcode">F-014</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>MENU</td><td>life_dish_category / life_dish</td><td>菜品库 CRUD</td></tr>
       <tr><td><span class="fcode">F-015</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>MENU</td><td>life_menu_daily</td><td>当日菜单配置</td></tr>
@@ -425,14 +443,14 @@ sequenceDiagram
       <tr><td><span class="fcode">F-019</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>CONFIRM/系统</td><td>life_menu_confirm</td><td>额度状态机(扣减在同意后)</td></tr>
       <tr><td><span class="fcode">F-020</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>APPROVE</td><td>life_confirm_approval</td><td>家长审批流</td></tr>
       <tr><td><span class="fcode">F-021</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>CONFIRM</td><td>life_menu_confirm</td><td>儿童端状态追踪(仅状态)</td></tr>
-      <tr><td><span class="fcode">F-022</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>—</td><td>usr_child_profile</td><td>就餐偏好持久化</td></tr>
-      <tr><td><span class="fcode">F-011</span></td><td><span class="pill p1">P1</span></td><td>Sprint 4</td><td>NOTICE</td><td>sys_notice</td><td>三通道通知(短信兜底)</td></tr>
+      <tr><td><span class="fcode">F-022</span></td><td><span class="pill p1">P1</span></td><td>Sprint 3</td><td>AUTH/MENU</td><td>usr_child_profile</td><td>非安全偏好与长期收藏；过敏仅家长维护</td></tr>
+      <tr><td><span class="fcode">F-011</span></td><td><span class="pill p1">P1</span></td><td>Sprint 4</td><td>NOTICE</td><td>sys_notice</td><td>站内+订阅通知，短信后置</td></tr>
     </table>
   </div>
-  <div class="note b"><b>矩阵说明：</b>23 个 F 全部映射到 4 个 Sprint 与 8 组接口、16 张表；其中 F-012/F-023 跨 Sprint（底座在前、集成在后），F-017 为 P2 置灰项；<code>edu_</code> 学习域本期不建表（仅占位），与全局裁定一致。</div>
+  <div class="note b"><b>矩阵说明：</b>23个F映射至4个Sprint；原16表增加sys_privacy_request形成17个逻辑对象，完整迁移仍待交付。F-010/F-012/F-023跨Sprint，F-017为P2占位；edu_本期不建表。Q-07独立账号/只读预览和Q-08菜单来源须一起评审。</div>
 
   <footer style="margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;">
-    成长星球 · V0.0.1 开发计划 V1.0 ｜ 将详细分析设计落地为 4 Sprint / 7 里程碑 ｜ 沿用全局规划与详细设计全部裁定（delete_at 逻辑删除、扣减在家长同意后、Java21+SB4.1.1、零真实支付、短信后置）｜ Mermaid 10.9.8 可解析（已规避括号/等号/分号/问号语法红线）。
+    成长星球 · V0.0.1 开发计划审计修订稿 ｜ 4 Sprint / 7里程碑为待批准计划；具体人员、产能和日期尚待确认 ｜ Mermaid固定10.9.8，静态依赖检查不等于完整解析或浏览器渲染验证。
   </footer>
 
 </div>

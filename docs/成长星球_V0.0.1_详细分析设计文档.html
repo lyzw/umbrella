@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>成长星球 · V0.0.1 详细分析设计文档</title>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.8/dist/mermaid.min.js"></script>
 <script>document.addEventListener("DOMContentLoaded",function(){if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:"default"});});</script>
 <style>
   :root{
@@ -80,11 +80,12 @@
 </style>
 </head>
 <body>
+<aside class="note"><b>审计修订 V1.1 · 2026-09-17：</b>这是待联合评审的设计，不是实现或DDL就绪证明。新增字段、API、锁序、隐私请求与迁移验收详见<a href="成长星球_V0.0.1_审计修订基线.md">审计修订基线</a>；见<a href="README.md">文档索引</a>。Q-01核验、Q-07账号适用人群和发布闸门尚未关闭。</aside>
 <div class="wrap">
 
   <div class="hero">
     <h1>「成长星球」V0.0.1 详细分析设计文档</h1>
-    <p class="lead">本文件是《成长星球·全局规划设计文档》"阶段一"的深化落地，严格对齐全局规划的架构分层、技术选型、6 项裁定（已在 V0.0.1 收口）与版本决策。范围是 <b>首个可上线版本 = P0 地基 + P1 小当家·点餐 MVP</b>，可直接指导研发拆解、测试设计与上线。术语、目标、视觉风格与全局文档一致。</p>
+    <p class="lead">本文件是《成长星球·全局规划设计文档》阶段一的设计深化，范围为 <b>V0.0.1 = P0 地基 + P1 小当家·点餐 MVP</b>。Q-01至Q-08以审计修订基线为准，尚待联合确认；本稿用于研发拆解和测试设计讨论，完成接口映射、迁移演练及发布验收后方可上线。</p>
     <p>
       <span class="tag">阶段一 = V0.0.1</span>
       <span class="tag">P0 + P1（23 个 F）</span>
@@ -99,7 +100,7 @@
     <b>目录：</b>
     <a href="#s1">1 文档信息与衔接</a><a href="#s2">2 需求范围（In/Out·G1–G4）</a>
     <a href="#s3">3 功能拆解（23 F + US）</a><a href="#s4">4 角色与权限模型</a>
-    <a href="#s5">5 数据结构（DDL 就绪）</a><a href="#s6">6 接口定义（RESTful）</a>
+    <a href="#s5">5 数据结构（数据字典（迁移待验证））</a><a href="#s6">6 接口定义（RESTful）</a>
     <a href="#s7">7 核心流程设计</a><a href="#s8">8 非功能与合规</a>
     <a href="#s9">9 上线回滚与验收</a><a href="#s10">10 待确认项收口</a>
   </nav>
@@ -122,8 +123,8 @@
     <tr><th>维度</th><th>全局规划约束</th><th>本版落地</th></tr>
     <tr><td>阶段定义</td><td>第一阶段 = V0.0.1 = P0+P1</td><td>全文以 23 个 F（F-001~F-023）为范围边界，严格不含 P2–P4</td></tr>
     <tr><td>架构分层</td><td>五层：表现/网关鉴权/业务+中台/数据/基础设施</td><td>接口按域分组、数据按 usr_/life_ 三主域组织（edu_ 仅占位）</td></tr>
-    <tr><td>技术选型</td><td>Java21 + Spring Boot 4.1.1 + MyBatis-Plus + MySQL8 + Redis + JWT</td><td>数据结构用 MySQL8 类型；钱包并发用乐观锁；Q-06 版本闸门在 6、9 章落实</td></tr>
-    <tr><td>6 项裁定</td><td>Q-01~Q-06 已收口</td><td>第五章/第六章/第十章逐项落点（核验分层、短信后置、5 Tab 显隐、额度默认、余额初始、版本闸门）</td></tr>
+    <tr><td>技术选型</td><td>Java21 + Spring Boot 4.1.1 + MyBatis-Plus + MySQL8 + Redis + JWT</td><td>数据结构用 MySQL8 类型；钱包并发用行锁及版本校验；Q-06 版本闸门在 6、9 章落实</td></tr>
+    <tr><td>6 项裁定</td><td>Q-01~Q-06 待联合确认</td><td>第五章/第六章/第十章逐项落点（核验分层、短信后置、5 Tab 显隐、额度默认、余额初始、版本闸门）</td></tr>
     <tr><td>状态机口径</td><td>F-019 权威：扣减统一在家长同意后</td><td>第五章 life_menu_confirm.status + 第七章 7.1/7.2/7.4 全流程一致</td></tr>
   </table>
 
@@ -137,7 +138,7 @@
         <li>家庭：F-004 家庭创建/邀请码·F-005 儿童加入·F-006 绑定审批</li>
         <li>合规：F-007 家长身份确认+授权·F-012 同意留痕与数据出口入口</li>
         <li>钱包：F-008 虚拟钱包地基·F-009 家长额度设置（前移）·F-023 消费记录</li>
-        <li>通知：F-010 站内通知中心·F-011 通知中台（三通道）</li>
+        <li>通知：F-010 站内通知中心·F-011 通知中台（双通道）</li>
         <li>框架：F-013 基础框架与导航</li>
         <li>后台/点餐：F-014 菜品库·F-015 当日菜单配置·F-016 菜单展示·F-017 语音辅助(P2可选·置灰)·F-018 菜单确认·F-019 额度状态机·F-020 审批流·F-021 状态追踪·F-022 偏好持久化</li>
       </ul>
@@ -150,7 +151,7 @@
         <li>课表/作业/错题/OCR/阅读/百科、教师角色（edu_ 仅占位）</li>
         <li>AI 小问号、成长树养成、个性化推荐、成长洞察</li>
         <li>多孩切换 UI、二级监护人委托</li>
-        <li>数据导出/注销完整实现（仅入口，P4 落地）</li>
+        <li>高级自动化隐私办理后置；首版已有人工可办理的导出/删除工单</li>
       </ul>
     </div>
   </div>
@@ -161,9 +162,9 @@
     <tr><td><b>G1</b></td><td>跑通"孩子确认今日菜单 → 家长额度护栏 → 虚拟记账 → 正向反馈"最小闭环</td><td>端到端成功率 ≥ 95%</td></tr>
     <tr><td><b>G2</b></td><td>V0.0.1 内零真实支付，儿童端无任何真实资金能力</td><td>无支付/商户接口；金额全为虚拟消耗额</td></tr>
     <tr><td><b>G3</b></td><td>监护人同意留痕 100% 覆盖（无同意不得采集儿童数据）</td><td>F-007/F-012 全链路留痕</td></tr>
-    <tr><td><b>G4</b></td><td>家长审批平均响应 ≤ 异步（不强制实时），通知触达率 ≥ 99%</td><td>三通道兜底，站内保底</td></tr>
+    <tr><td><b>G4</b></td><td>每24h已提交业务事件中，5秒内站内记录可查询比例≥99%</td><td>家长审批时长仅观测；订阅受理、送达、已读不混用</td></tr>
   </table>
-  <div class="note r"><b>非目标（引用 PRD 2.3）：</b>真实支付/商户接单、家务/健康/课表/作业/错题/AI/成长树养成、教师角色、多孩 UI 切换、OCR、个性化推荐、数据导出完整能力（仅留入口）。本版不实现上述任何一项。</div>
+  <div class="note r"><b>非目标（引用 PRD 2.3）：</b>真实支付/商户接单、家务/健康/课表/作业/错题/AI/成长树养成、教师角色、多孩 UI 切换、OCR、个性化推荐、高级自动化隐私办理。本版不实现上述任何一项。</div>
 
   <!-- ============ 3 ============ -->
   <h2 id="s3">三、功能拆解（23 个 F 编号）</h2>
@@ -172,24 +173,24 @@
   <h3>3.1 账号 / 家庭 / 合规模块（P0）</h3>
   <table>
     <tr><th style="width:90px">编号</th><th>优先级</th><th>负责端</th><th>对应全局模块</th><th>一句话定义</th></tr>
-    <tr><td><span class="fcode">F-001</span></td><td><span class="pill p0">P0</span></td><td>儿童/家长</td><td class="domain-usr">usr_ 账号</td><td>wx.login→code2Session 换取 openid，建匿名会话</td></tr>
+    <tr><td><span class="fcode">F-001</span></td><td><span class="pill p0">P0</span></td><td>儿童/家长</td><td class="domain-usr">usr_ 账号</td><td>wx.login→code2Session 换取 openid，建最小账号会话</td></tr>
     <tr><td><span class="fcode">F-002</span></td><td><span class="pill p0">P0</span></td><td>双方</td><td class="domain-usr">usr_ 账号</td><td>「我是孩子 / 我是家长」角色选择，写入 usr_user.role</td></tr>
-    <tr><td><span class="fcode">F-003</span></td><td><span class="pill p0">P0</span></td><td>儿童</td><td class="domain-usr">usr_child_profile</td><td>分步档案引导（昵称→年级→学校→忌口/口味 chip），进度条</td></tr>
+    <tr><td><span class="fcode">F-003</span></td><td><span class="pill p0">P0</span></td><td>家长</td><td class="domain-usr">usr_child_profile</td><td>有效同意与BOUND后建档；儿童仅维护dislikes/tastes，过敏字段仅家长维护</td></tr>
     <tr><td><span class="fcode">F-004</span></td><td><span class="pill p0">P0</span></td><td>家长</td><td class="domain-usr">usr_family</td><td>家长建家庭→6 位邀请码/二维码，24h 有效</td></tr>
     <tr><td><span class="fcode">F-005</span></td><td><span class="pill p0">P0</span></td><td>儿童</td><td class="domain-usr">usr_family_member</td><td>输入码/扫码发起绑定申请（bind_status=PENDING）</td></tr>
     <tr><td><span class="fcode">F-006</span></td><td><span class="pill p0">P0</span></td><td>家长</td><td class="domain-usr">usr_family_member</td><td>家长确认监护关系（子/女），审批绑定</td></tr>
-    <tr><td><span class="fcode">F-007</span></td><td><span class="pill p0">P0</span></td><td>家长</td><td class="domain-usr">usr_consent_log</td><td>《同意书》独立勾选 + 自报年龄 attestation（Q-01；可验证核验 P1+）；写 guardian_status=VERIFIED</td></tr>
-    <tr><td><span class="fcode">F-012</span></td><td><span class="pill p0">P0</span></td><td>家长/后台</td><td class="domain-usr">usr_consent_log</td><td>同意时间戳留痕、导出/删除入口（家长代操作，完整 P4）</td></tr>
-    <tr><td><span class="fcode">F-013</span></td><td><span class="pill p0">P0</span></td><td>儿童</td><td>框架（表现层）</td><td>底部 5 Tab（点餐可用，余占位）、铃铛、安全条（Q-03）</td></tr>
+    <tr><td><span class="fcode">F-007</span></td><td><span class="pill p0">P0</span></td><td>家长</td><td class="domain-usr">usr_consent_log</td><td>独立明示同意及自报仅SELF_ATTESTED；Q-01核验强度未批准不开放真实儿童数据</td></tr>
+    <tr><td><span class="fcode">F-012</span></td><td><span class="pill p0">P0</span></td><td>家长/后台</td><td class="domain-usr">usr_consent_log</td><td>同意时间戳留痕、导出/删除入口（家长本人账号办理，首版含可办理的导出/删除工单）</td></tr>
+    <tr><td><span class="fcode">F-013</span></td><td><span class="pill p0">P0</span></td><td>儿童</td><td>框架（表现层）</td><td>底部 5 Tab（点餐、我的可用；任务/学习占位，成长静态）、铃铛、安全条（Q-03）</td></tr>
   </table>
 
   <h3>3.2 钱包 / 通知模块（P0 地基 + P1 业务）</h3>
   <table>
     <tr><th style="width:90px">编号</th><th>优先级</th><th>负责端</th><th>对应全局模块</th><th>一句话定义</th></tr>
-    <tr><td><span class="fcode">F-008</span></td><td><span class="pill p0">P0</span></td><td>双方</td><td class="domain-life">life_wallet</td><td>虚拟余额/额度规则/扣减流水地基（点餐与任务共用；余额初始 0，Q-05）</td></tr>
+    <tr><td><span class="fcode">F-008</span></td><td><span class="pill p0">P0</span></td><td>双方</td><td class="domain-life">life_wallet / life_allowance_log</td><td>余额初始0，家长手动发放、额度及唯一流水；任务奖励P2</td></tr>
     <tr><td><span class="fcode">F-009</span></td><td><span class="pill p0">P0</span></td><td>家长</td><td class="domain-life">life_allowance_rule</td><td>单笔/每日/每周上限设置（前移，默认 30/30/150，Q-04）</td></tr>
     <tr><td><span class="fcode">F-010</span></td><td><span class="pill p0">P0</span></td><td>双方</td><td>通知中台 sys_notice</td><td>站内通知中心：全量聚合、已读/未读、红点</td></tr>
-    <tr><td><span class="fcode">F-011</span></td><td><span class="pill p1">P1</span></td><td>双方</td><td>通知中台</td><td>三通道：订阅消息 + 站内 + 家长短信兜底（短信后置，Q-02）</td></tr>
+    <tr><td><span class="fcode">F-011</span></td><td><span class="pill p1">P1</span></td><td>双方</td><td>通知中台</td><td>双通道：订阅消息 + 站内；短信后置（短信后置，Q-02）</td></tr>
     <tr><td><span class="fcode">F-023</span></td><td><span class="pill p1">P1</span></td><td>双方</td><td class="domain-life">life_allowance_log</td><td>每笔虚拟扣减/增加流水；家长端按日/周/月汇总</td></tr>
   </table>
 
@@ -197,7 +198,7 @@
   <table>
     <tr><th style="width:90px">编号</th><th>优先级</th><th>负责端</th><th>对应全局模块</th><th>一句话定义</th></tr>
     <tr><td><span class="fcode">F-014</span></td><td><span class="pill p1">P1</span></td><td>后台(ADMIN)</td><td class="domain-life">life_dish</td><td>菜品增删改；图文/虚拟价格/热量/标签/忌口标识</td></tr>
-    <tr><td><span class="fcode">F-015</span></td><td><span class="pill p1">P1</span></td><td>后台(ADMIN)</td><td class="domain-life">life_menu_daily</td><td>按学校+日期+餐段配置当日菜单（替代 restaurant，R-07）</td></tr>
+    <tr><td><span class="fcode">F-015</span></td><td><span class="pill p1">P1</span></td><td>ADMIN/PARENT按来源授权</td><td class="domain-life">life_menu_daily</td><td>ADMIN管理SCHOOL仅展示；PARENT管理本家庭FAMILY可提报，按来源/归属/日期/餐段唯一</td></tr>
     <tr><td><span class="fcode">F-016</span></td><td><span class="pill p1">P1</span></td><td>儿童(CHILD)</td><td class="domain-life">life_menu_daily</td><td>当日菜单展示：餐段折叠、大图卡、营养/忌口标识、筛选</td></tr>
     <tr><td><span class="fcode">F-017</span></td><td><span class="pill p2">P2</span></td><td>儿童(CHILD)</td><td class="domain-life">life_menu_daily</td><td>语音「朗读这道菜」TTS（本期置灰，R-08）</td></tr>
     <tr><td><span class="fcode">F-018</span></td><td><span class="pill p1">P1</span></td><td>儿童(CHILD)</td><td class="domain-life">life_menu_confirm</td><td>菜单确认/提报：选菜/份量/备注，自动带入忌口，过敏项灰显</td></tr>
@@ -208,15 +209,15 @@
   </table>
 
   <h3>3.4 用户故事与可测试验收要点（US-1..9，精简引用 PRD 六）</h3>
-  <div class="us"><p><span class="role">US-1（儿童）</span> 微信一键登录并创建档案。AC：弹授权建匿名会话；选「我是孩子」进分步档案；保存后状态"待家长绑定"，写操作灰显。</p></div>
+  <div class="us"><p><span class="role">US-1（儿童/家长）</span> 最小登录→角色→绑定申请→家长同意→绑定→家长建档；无同意不展示档案表单、不存草稿/埋点；档案只有INCOMPLETE/COMPLETE，family_id必填。</p></div>
   <div class="us"><p><span class="role">US-2（家长）</span> 创建家庭并邀请孩子。AC：生成 6 位码/二维码，24h 有效；儿童提交申请提示"等爸妈确认"；审批后双方收"家庭已连通"通知 + 入学勋章。</p></div>
-  <div class="us"><p><span class="role">US-3（家长）</span> 确认监护人并同意信息处理。AC：《同意书》可展开、独立勾选；通过写 guardian_status=VERIFIED；失败给原因不静默；撤回即时降级。</p></div>
-  <div class="us"><p><span class="role">US-4（家长）</span> 设零花钱额度上限。AC：可设单笔/每日/每周并写入 life_allowance_rule；未设用默认 30/30/150；变更后下一张确认单即按新规则。</p></div>
+  <div class="us"><p><span class="role">US-3（家长）</span> 确认监护人并同意信息处理。AC：《同意书》可展开、独立勾选；通过写 guardian_status=SELF_ATTESTED；失败给原因不静默；撤回即时降级。</p></div>
+  <div class="us"><p><span class="role">US-4（家长）</span> 设零花钱额度上限。AC：可设单笔/每日/每周并写入 life_allowance_rule；未设用默认 30/30/150；变更后提交及待审单审批均按最新规则。</p></div>
   <div class="us"><p><span class="role">US-5（儿童）</span> 浏览今日菜单并标记想吃。AC：按餐段折叠 + 大图卡（虚拟价格/热量/忌口）；支持筛选；可标记"今天想吃"。</p></div>
   <div class="us"><p><span class="role">US-6（儿童）</span> 向爸妈确认今日菜单。AC：勾选菜品+份量±1+备注 chip；预览合计虚拟额与预计余额；点"告诉爸妈"生成确认单 status=PENDING。</p></div>
   <div class="us"><p><span class="role">US-7（家长）</span> 审批菜单确认单。AC：卡片看明细；额度内一键同意；超额强制说明须显式放行；同意后扣减并通知孩子"已完成"；拒绝给温和说明可重提。</p></div>
   <div class="us"><p><span class="role">US-8（后台）</span> 配置每日菜单。AC：维护菜品库（图文/虚拟价格/热量/标签）；按学校+日期+餐段发布当日菜单，发布后儿童端可见。</p></div>
-  <div class="us"><p><span class="role">US-9（家长/合规）</span> 撤回同意或导出/删除数据。AC：设置-安全与权限可撤回某类采集，即时降级留痕；数据出口入口可触发生成儿童数据包（V0.0.1 入口+基础导出，完整 P4）。</p></div>
+  <div class="us"><p><span class="role">US-9（家长/合规）</span> 撤回同意或导出/删除数据。AC：设置-安全与权限可撤回某类采集，即时降级留痕；数据出口入口可触发生成儿童数据包（V0.0.1 入口+基础导出，首版含可办理的导出/删除工单）。</p></div>
 
   <!-- ============ 4 ============ -->
   <h2 id="s4">四、角色与权限模型</h2>
@@ -227,7 +228,7 @@
     <tr><td>家长</td><td><code>ROLE_PARENT</code></td><td>建家庭、邀绑定、设额度、审批确认单、看消费看板、撤回同意/数据出口</td><td>所绑定家庭的成员及其数据</td></tr>
     <tr><td>后台运营</td><td><code>ROLE_ADMIN</code></td><td>菜品库、当日菜单配置、内容/风控（P1 起）</td><td>全量运营数据（脱敏）</td></tr>
   </table>
-  <div class="note b"><b>鉴权实现（引用 PRD 十）：</b>JWT 区分 <code>child / parent / admin</code>；token 含 <code>user_id + role + family_id[]</code>；敏感接口签名/防重放；token 失效与刷新机制。</div>
+  <div class="note b"><b>鉴权实现（引用 PRD 十）：</b>JWT 区分 <code>child / parent / admin</code>；token 含 <code>user_id + role + family_id[]</code>；敏感接口签名/防重放；token有效30分钟，过期重新wx-login并加载最新权限。</div>
 
   <h3>4.2 数据隔离规则（family_id + child_id）</h3>
   <ul style="font-size:13.5px">
@@ -235,13 +236,13 @@
     <li><b>家长维度：</b>家长仅能访问其 <code>usr_family_member</code> 关联家庭下的成员数据；审批/记账以家长身份留痕。</li>
     <li><b>后台维度：</b>运营访问儿童数据须脱敏，且操作写 <code>sys_audit_log</code>。</li>
     <li><b>越权处理：</b>访问非本家庭数据 → 统一 401/403（E-009）+ 安全日志。</li>
-    <li><b>同设备双账号（引用交互评审 3.1）：</b>家长端「一键切换到儿童视图/代操作」；代操作视同家长本人行为，审批/记账以家长身份留痕。</li>
+    <li><b>同设备视图（Q-07）：</b>独立CHILD/PARENT账号；家长儿童视图仅只读预览，不改role、不代理提交。无儿童独立账号的方案需先补actor/subject模型并经产品确认。</li>
   </ul>
 
   <!-- ============ 5 ============ -->
-  <h2 id="s5">五、数据结构（DDL 就绪）</h2>
-  <p>本版共 <b>16 张表</b>，按 <span class="domain-usr">usr_</span> 账户/家庭/成长基础、<span class="domain-life">life_</span> 生活域组织（<span class="domain-edu">edu_</span> 学习域本期不建表，仅占位）。通用字段：<code>create_time DATETIME</code> / <code>update_time DATETIME</code> / <code>delete_at BIGINT DEFAULT 0</code>；<code>delete_at</code> 为<b>逻辑删除时间戳</b>（0 = 未删除，非 0 = 删除时刻的 long 时间戳），替代布尔 <code>deleted</code>，用于支撑"删了还能重建"的唯一键语义（见下）；枚举用 <code>VARCHAR</code> 在 Java 控制。金额字段均为<b>虚拟消耗额（非真实货币）</b>，统一 DECIMAL(10,2)；钱包表含 <code>version INT</code> 乐观锁防并发超扣。</p>
-  <div class="note b"><b>逻辑删除与唯一键（delete_at 替代 deleted）：</b>物理删除会破坏审计且不可恢复；布尔 <code>deleted</code> 软删会在业务唯一键（如 openid、invite_code）上"占坑"，导致同名记录无法重建。改为 <code>delete_at BIGINT</code> 后，业务唯一约束应设计为 <code>UNIQUE(biz_col, delete_at)</code>：有效行 <code>delete_at = 0</code>，软删行 <code>delete_at = 删除时间戳(≠0)</code>；删除后该 biz_col 的"有效位(0)"被释放，可再次插入 <code>delete_at = 0</code> 的同名有效记录，实现"删了还能重建"。所有查询一律以 <code>delete_at = 0</code> 作为有效过滤条件。</div>
+  <h2 id="s5">五、数据结构（数据字典（迁移待验证））</h2>
+  <p>原16表字典加新增sys_privacy_request设计，共17个逻辑对象，尚未与应用/迁移脚本逐项核对。通用字段create_time/update_time/delete_at保留；金额DECIMAL(10,2)，非真实货币。钱包采用行锁及事务，version作附加条件校验。增量完整字段与迁移顺序见修订基线第4节。</p>
+  <div class="note b"><b>唯一键与删除：</b>openid、确认单号、钱包/规则child_id、流水和请求幂等键不可因软删除复用；成员关系和同日菜单更新原记录。禁止统一添加delete_at到全部唯一键。普通业务过滤有效行，审计与幂等检查仍须覆盖历史记录；名称复用约束逐表设计。</div>
 
   <h3>5.1 账户与家庭域（usr_）</h3>
 
@@ -252,10 +253,10 @@
       <tr><td>id</td><td>BIGINT</td><td>PK, AI</td><td>用户ID</td><td>PK</td></tr>
       <tr><td>openid</td><td>VARCHAR(64)</td><td>NOT NULL, UNIQUE</td><td>微信 openid（code2Session）</td><td>uk_openid</td></tr>
       <tr><td>unionid</td><td>VARCHAR(64)</td><td>NULL</td><td>微信 unionid（可选）</td><td>idx_unionid</td></tr>
-      <tr><td>role</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>CHILD/PARENT/ADMIN</td><td>idx_role</td></tr>
+      <tr><td>role</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'UNSELECTED'</td><td>UNSELECTED/CHILD/PARENT/ADMIN；公开接口只能首次选CHILD/PARENT</td><td>idx_role</td></tr>
       <tr><td>nickname</td><td>VARCHAR(64)</td><td>NULL</td><td>昵称</td><td>—</td></tr>
       <tr><td>avatar_url</td><td>VARCHAR(255)</td><td>NULL</td><td>头像</td><td>—</td></tr>
-      <tr><td>phone</td><td>VARCHAR(20)</td><td>NULL</td><td>家长手机号（短信兜底需，明示同意采集）</td><td>idx_phone</td></tr>
+      <tr><td>phone</td><td>VARCHAR(20)</td><td>NULL</td><td>历史预留字段；首版不为短信采集，未来用途须另评审</td><td>idx_phone是否保留随迁移评审</td></tr>
       <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'NORMAL'</td><td>NORMAL/DISABLED</td><td>—</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>DATETIME / DATETIME / BIGINT</td><td>默认 NOW / NOW / 0（0=未删除，非0=删除时间戳）</td><td>通用字段（逻辑删除）</td><td>—</td></tr>
     </table>
@@ -284,7 +285,7 @@
       <tr><td>user_id</td><td>BIGINT</td><td>NOT NULL</td><td>用户ID</td><td>idx_user（FK→usr_user.id）</td></tr>
       <tr><td>member_type</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>CHILD/PARENT/SECONDARY_GUARDIAN</td><td>—</td></tr>
       <tr><td>relation_label</td><td>VARCHAR(20)</td><td>NULL</td><td>子/女/父/母</td><td>—</td></tr>
-      <tr><td>guardian_status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'UNVERIFIED'</td><td>UNVERIFIED/VERIFIED（Q-01 MVP 自报年龄即 VERIFIED）</td><td>—</td></tr>
+      <tr><td>guardian_status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'UNVERIFIED'</td><td>UNVERIFIED/SELF_ATTESTED/VERIFIED；声明不等于核验，同意记录独立判断</td><td>—</td></tr>
       <tr><td>bind_status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'PENDING'</td><td>PENDING/BOUND/REJECTED（F-005/F-006）</td><td>idx_bind</td></tr>
       <tr><td>bind_apply_time</td><td>DATETIME</td><td>NULL</td><td>申请时间</td><td>—</td></tr>
       <tr><td>bind_confirm_time</td><td>DATETIME</td><td>NULL</td><td>审批时间</td><td>—</td></tr>
@@ -307,7 +308,8 @@
       <tr><td>dislikes</td><td>JSON</td><td>NULL</td><td>忌口数组（F-022 持久化）</td><td>—</td></tr>
       <tr><td>tastes</td><td>JSON</td><td>NULL</td><td>口味偏好数组</td><td>—</td></tr>
       <tr><td>avatar_url</td><td>VARCHAR(255)</td><td>NULL</td><td>头像</td><td>—</td></tr>
-      <tr><td>profile_status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'INCOMPLETE'</td><td>INCOMPLETE/PENDING_BIND/COMPLETE（F-003/E-002）</td><td>—</td></tr>
+      <tr><td>profile_status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'INCOMPLETE'</td><td>INCOMPLETE/COMPLETE；同意及绑定后才建档</td><td>—</td></tr>
+      <tr><td>favorite_dish_ids</td><td>JSON</td><td>NOT NULL，默认空数组</td><td>长期收藏集合；入学勋章由BOUND+COMPLETE推导</td><td>—</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段</td><td>—</td></tr>
     </table>
     <p class="mtx" style="margin-bottom:0">注：过敏/忌口在确认单生成时自动带入并灰显不可选（F-018）。</p>
@@ -338,7 +340,8 @@
       <tr><td>virtual_price</td><td>DECIMAL(10,2)</td><td>NOT NULL DEFAULT 0</td><td><b>虚拟消耗额</b>（非真实货币，R-15）</td><td>idx_price</td></tr>
       <tr><td>calories</td><td>INT</td><td>NULL</td><td>热量(kcal)</td><td>—</td></tr>
       <tr><td>tags</td><td>VARCHAR(255)</td><td>NULL</td><td>标签（辣度/忌口类，逗号分隔）</td><td>—</td></tr>
-      <tr><td>allergen_flag</td><td>VARCHAR(20)</td><td>NULL</td><td>过敏标识（海鲜/坚果…）</td><td>idx_allergen</td></tr>
+      <tr><td>allergens / allergen_status</td><td>JSON / VARCHAR(20)</td><td>NOT NULL，空数组 / UNKNOWN</td><td>多值标准编码；UNKNOWN/DECLARED，未知不允许提报或审批；旧allergen_flag先保留并迁移核对</td><td>按查询评估</td></tr>
+      <tr><td>spice_level</td><td>TINYINT</td><td>NOT NULL，0至3</td><td>无辣仅0；历史不明数据须核实后发布</td><td>—</td></tr>
       <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'ON_SALE'</td><td>ON_SALE/OFF_SALE</td><td>—</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段</td><td>—</td></tr>
     </table>
@@ -349,25 +352,26 @@
     <table>
       <tr><th>字段</th><th>类型</th><th>约束</th><th>说明</th><th>索引</th></tr>
       <tr><td>id</td><td>BIGINT</td><td>PK, AI</td><td>—</td><td>PK</td></tr>
-      <tr><td>school</td><td>VARCHAR(128)</td><td>NOT NULL</td><td>学校（F-015 按学校配置）</td><td>—</td></tr>
+      <tr><td>source_type / owner_key</td><td>VARCHAR(10) / VARCHAR(128)</td><td>NOT NULL</td><td>SCHOOL/FAMILY及服务端确定的归属标识</td><td>复合唯一键</td></tr>
+      <tr><td>school / family_id</td><td>VARCHAR(128) / BIGINT</td><td>条件必填、互斥</td><td>SCHOOL填学校仅展示；FAMILY填家庭允许提报</td><td>idx_family</td></tr>
       <tr><td>menu_date</td><td>DATE</td><td>NOT NULL</td><td>菜单日期</td><td>—</td></tr>
       <tr><td>meal_type</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>BREAKFAST/LUNCH/DINNER</td><td>—</td></tr>
       <tr><td>dish_ids</td><td>JSON</td><td>NOT NULL</td><td>关联菜品ID数组（后台配置，避免额外关联表）</td><td>—</td></tr>
       <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'PUBLISHED'</td><td>DRAFT/PUBLISHED（发布后儿童端可见）</td><td>—</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段</td><td>—</td></tr>
     </table>
-    <p class="mtx" style="margin-bottom:0"><b>唯一索引：</b><code>uk_school_date_meal(school, menu_date, meal_type)</code> 保证每校每日每餐段唯一菜单。</p>
+    <p class="mtx" style="margin-bottom:0"><b>唯一索引：</b><code>uk_source_owner_date_meal(source_type, owner_key, menu_date, meal_type)</code>；同归属同餐段修订原记录，不删后重建。</p>
   </div>
 
   <div class="card">
-    <h4 style="margin-top:0">life_wallet（虚拟钱包 · 乐观锁）</h4>
+    <h4 style="margin-top:0">life_wallet（虚拟钱包 · 行锁及版本校验）</h4>
     <table>
       <tr><th>字段</th><th>类型</th><th>约束</th><th>说明</th><th>索引</th></tr>
       <tr><td>id</td><td>BIGINT</td><td>PK, AI</td><td>钱包ID</td><td>PK</td></tr>
       <tr><td>child_id</td><td>BIGINT</td><td>NOT NULL, UNIQUE</td><td>儿童 user_id</td><td>uk_child（FK→usr_user.id）</td></tr>
       <tr><td>family_id</td><td>BIGINT</td><td>NOT NULL</td><td>家庭ID</td><td>idx_family</td></tr>
       <tr><td>balance</td><td>DECIMAL(10,2)</td><td>NOT NULL DEFAULT 0.00</td><td><b>虚拟余额</b>（初始 0，Q-05）</td><td>—</td></tr>
-      <tr><td>version</td><td>INT</td><td>NOT NULL DEFAULT 0</td><td><b>乐观锁</b>：扣减时 WHERE version=? 防并发超扣（E-007）</td><td>—</td></tr>
+      <tr><td>version</td><td>INT</td><td>NOT NULL DEFAULT 0</td><td><b>行锁及版本校验</b>：扣减时 WHERE version=? 防并发超扣（E-007）</td><td>—</td></tr>
       <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'NORMAL'</td><td>NORMAL/FROZEN</td><td>—</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段</td><td>—</td></tr>
     </table>
@@ -385,7 +389,8 @@
       <tr><td>weekly_limit</td><td>DECIMAL(10,2)</td><td>NOT NULL DEFAULT 150.00</td><td>每周上限（默认 ¥150，Q-04）</td><td>—</td></tr>
       <tr><td>daily_used</td><td>DECIMAL(10,2)</td><td>NOT NULL DEFAULT 0.00</td><td>当日已用（周期重置）</td><td>—</td></tr>
       <tr><td>weekly_used</td><td>DECIMAL(10,2)</td><td>NOT NULL DEFAULT 0.00</td><td>当周已用</td><td>—</td></tr>
-      <tr><td>cycle_reset_time</td><td>DATETIME</td><td>NULL</td><td>上次重置时间</td><td>idx_reset</td></tr>
+      <tr><td>daily_period / weekly_period</td><td>DATE / DATE</td><td>NOT NULL（回填后收紧）</td><td>Asia/Shanghai日00:00、周一00:00独立周期；锁内分别重置</td><td>—</td></tr>
+      <tr><td>version</td><td>INT</td><td>NOT NULL DEFAULT 0</td><td>改规则及累计更新递增，用于超额预览校验</td><td>—</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段</td><td>—</td></tr>
     </table>
   </div>
@@ -401,14 +406,16 @@
       <tr><td>menu_date</td><td>DATE</td><td>NOT NULL</td><td>菜单日期</td><td>—</td></tr>
       <tr><td>meal_type</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>BREAKFAST/LUNCH/DINNER</td><td>—</td></tr>
       <tr><td>total_amount</td><td>DECIMAL(10,2)</td><td>NOT NULL DEFAULT 0.00</td><td>虚拟消耗额合计</td><td>—</td></tr>
-      <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'PENDING'</td><td>DRAFT/PENDING/APPROVED/REJECTED/COMPLETED（F-019）</td><td>idx_status</td></tr>
+      <tr><td>status</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'PENDING'</td><td>PENDING/REJECTED/CANCELLED/COMPLETED；DRAFT仅客户端</td><td>idx_status</td></tr>
+      <tr><td>menu_id / previous_confirm_id / version</td><td>BIGINT / BIGINT / INT</td><td>NOT NULL / NULL / DEFAULT 0</td><td>菜单来源、重提关联原单、状态版本</td><td>idx_menu / idx_previous</td></tr>
+      <tr><td>request_key / request_hash</td><td>VARCHAR(64) / CHAR(64)</td><td>NOT NULL</td><td>提交幂等键及规范化请求摘要</td><td>UNIQUE(child_id,request_key)</td></tr>
       <tr><td>is_over_limit</td><td>TINYINT(1)</td><td>NOT NULL DEFAULT 0</td><td>0 额度内 / 1 超额（预校验标记，F-019）</td><td>—</td></tr>
       <tr><td>remark</td><td>VARCHAR(255)</td><td>NULL</td><td>儿童备注（少糖少葱等）</td><td>—</td></tr>
       <tr><td>submit_time</td><td>DATETIME</td><td>NULL</td><td>提交时间（PENDING 起点）</td><td>—</td></tr>
       <tr><td>parent_id</td><td>BIGINT</td><td>NULL</td><td>审批家长 user_id</td><td>idx_parent</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段</td><td>—</td></tr>
     </table>
-    <p class="mtx" style="margin-bottom:0">关键点：提交即 status=PENDING（DRAFT 仅编辑态）；<b>扣减发生在 APPROVED→COMPLETED</b>，提交不扣减。</p>
+    <p class="mtx" style="margin-bottom:0">提交仅PENDING不扣款；PENDING→COMPLETED与扣款同事务，不持久化APPROVED。拒绝/撤回后重提创建新ID；旧状态迁移先对账。</p>
   </div>
 
   <div class="card">
@@ -437,7 +444,8 @@
       <tr><td>action</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>APPROVE/MODIFY/REJECT</td><td>—</td></tr>
       <tr><td>before_status / after_status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>状态流转前后</td><td>—</td></tr>
       <tr><td>is_over_limit</td><td>TINYINT(1)</td><td>NOT NULL DEFAULT 0</td><td>本次是否超额放行</td><td>—</td></tr>
-      <tr><td>reason</td><td>VARCHAR(255)</td><td>NULL</td><td>改一改/拒绝原因（温和文案，R-03）</td><td>—</td></tr>
+      <tr><td>reason</td><td>VARCHAR(255)</td><td>改一改/拒绝必填</td><td>温和说明</td><td>—</td></tr>
+      <tr><td>suggested_items</td><td>JSON</td><td>NULL；MODIFY必填</td><td>替代明细，不修改原单；审批记录不可覆盖</td><td>—</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段</td><td>—</td></tr>
     </table>
   </div>
@@ -454,8 +462,9 @@
       <tr><td>amount</td><td>DECIMAL(10,2)</td><td>NOT NULL</td><td>虚拟消耗额变动</td><td>—</td></tr>
       <tr><td>scene</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>MENU_CONFIRM/TASK_REWARD/MANUAL（Q-05 P0 手动增）</td><td>—</td></tr>
       <tr><td>balance_before / balance_after</td><td>DECIMAL(10,2)</td><td>NOT NULL</td><td>变动前后余额（审计）</td><td>—</td></tr>
-      <tr><td>ref_id</td><td>BIGINT</td><td>NULL</td><td>关联确认单/任务ID</td><td>idx_ref</td></tr>
-      <tr><td>operator_id</td><td>BIGINT</td><td>NULL</td><td>操作人（家长；系统扣减为 0）</td><td>—</td></tr>
+      <tr><td>ref_id</td><td>BIGINT</td><td>扣款必填；手动发放可空</td><td>关联原业务ID</td><td>UNIQUE(wallet_id,scene,ref_id,trans_type)</td></tr>
+      <tr><td>operator_id</td><td>BIGINT</td><td>NOT NULL</td><td>真实审批/发放家长ID</td><td>—</td></tr>
+      <tr><td>request_key / request_hash</td><td>VARCHAR(64) / CHAR(64)</td><td>手动发放必填</td><td>同键同参返回原结果；异参E-012</td><td>UNIQUE(operator_id,scene,request_key)</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段</td><td>idx_create_time</td></tr>
     </table>
   </div>
@@ -474,7 +483,9 @@
       <tr><td>content</td><td>VARCHAR(512)</td><td>NULL</td><td>内容</td><td>—</td></tr>
       <tr><td>biz_id</td><td>BIGINT</td><td>NULL</td><td>业务ID（确认单/家庭等）</td><td>idx_biz</td></tr>
       <tr><td>read_status</td><td>TINYINT(1)</td><td>NOT NULL DEFAULT 0</td><td>0 未读 / 1 已读（红点依据）</td><td>idx_receiver_read</td></tr>
-      <tr><td>channel</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'IN_APP'</td><td>IN_APP/SUBSCRIBE/SMS</td><td>—</td></tr>
+      <tr><td>channel</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'IN_APP'</td><td>IN_APP/SUBSCRIBE；同事务创建两通道记录</td><td>—</td></tr>
+      <tr><td>event_key</td><td>VARCHAR(128)</td><td>NOT NULL</td><td>业务事件键</td><td>UNIQUE(event_key,receiver_id,channel)</td></tr>
+      <tr><td>subscription_status / attempt_count / next_retry_at / last_error</td><td>VARCHAR(20) / INT / DATETIME / VARCHAR(255)</td><td>订阅行使用；次数默认0</td><td>PENDING/SENT/FAILED/UNAUTHORIZED；事务外扫描投递，不将SENT当已读</td><td>idx_retry(subscription_status,next_retry_at)</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段</td><td>—</td></tr>
     </table>
   </div>
@@ -488,14 +499,14 @@
       <tr><td>child_id</td><td>BIGINT</td><td>NOT NULL</td><td>儿童 user_id</td><td>idx_child</td></tr>
       <tr><td>consent_type</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>GUARDIAN_AGREEMENT（首期仅此一类，可扩展）</td><td>—</td></tr>
       <tr><td>agreement_version</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>同意书版本号（可展开全文留痕）</td><td>—</td></tr>
-      <tr><td>self_reported_age</td><td>INT</td><td>NULL</td><td>家长自报年龄（Q-01，&lt;18 不可作监护人）</td><td>—</td></tr>
-      <tr><td>verification_method</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'WECHAT_BIND'</td><td>WECHAT_BIND/SELF_ATTEST（Q-01 MVP）/REALNAME（P1+ 三要素）</td><td>—</td></tr>
-      <tr><td>guardian_status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>VERIFIED（核验/自报通过）</td><td>—</td></tr>
+      <tr><td>self_reported_age</td><td>INT</td><td>NULL</td><td>家长自报年龄；提交声明时校验18–120整数（产品输入约束），不证明监护资格；最低核验强度见Q-01</td><td>—</td></tr>
+      <tr><td>verification_method</td><td>VARCHAR(20)</td><td>NOT NULL DEFAULT 'SELF_ATTEST'</td><td>SELF_ATTEST声明；WECHAT_BIND仅登录关联；REALNAME须实际证据，最低强度按Q-01批准，不默认后置</td><td>—</td></tr>
+      <tr><td>guardian_status</td><td>VARCHAR(20)</td><td>NOT NULL</td><td>SELF_ATTESTED为声明；VERIFIED须有核验证据</td><td>—</td></tr>
       <tr><td>action</td><td>VARCHAR(10)</td><td>NOT NULL</td><td>GRANT/REVOKE（撤回即时降级，E-010）</td><td>idx_action</td></tr>
       <tr><td>ip</td><td>VARCHAR(64)</td><td>NULL</td><td>操作IP</td><td>—</td></tr>
       <tr><td>create_time / update_time / delete_at</td><td>—</td><th>—</th><td>通用字段</td><td>—</td></tr>
     </table>
-    <p class="mtx" style="margin-bottom:0"><b>唯一/复合索引：</b><code>idx_parent_child(parent_id, child_id, action)</code> 便于查最新有效同意/撤回态。</p>
+    <p class="mtx" style="margin-bottom:0"><b>普通复合索引：</b><code>idx_parent_child(parent_id, child_id, consent_type, create_time, id)</code>；按create_time及id确定顺序查询同意事件，不对action设唯一约束。撤回/重授追加事件，协议版本独立留痕。</p>
   </div>
 
   <div class="card">
@@ -512,35 +523,38 @@
       <tr><td>detail</td><td>VARCHAR(512)</td><td>NULL</td><td>详情（如 扣减金额/越权资源）</td><td>—</td></tr>
       <tr><td>ip</td><td>VARCHAR(64)</td><td>NULL</td><td>IP</td><td>—</td></tr>
       <tr><td>ua</td><td>VARCHAR(255)</td><td>NULL</td><td>User-Agent</td><td>—</td></tr>
-      <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段（长期留存，安全审计）</td><td>idx_create_time</td></tr>
+      <tr><td>create_time / update_time / delete_at</td><td>—</td><td>—</td><td>通用字段；安全审计期限待合规批准，不默认永久保留</td><td>idx_create_time</td></tr>
     </table>
   </div>
 
-  <div class="note">共 16 张表：<span class="domain-usr">usr_</span> 5 张（user/family/member/child_profile/consent_log）× + <span class="domain-life">life_</span> 9 张（dish_category/dish/menu_daily/wallet/allowance_rule/menu_confirm/menu_item/confirm_approval/allowance_log）+ 系统 2 张（sys_notice/sys_audit_log）。DDL 可直接据此落地；索引建议已标注唯一/普通索引。</div>
+  <div class="note">原usr_5表、life_9表、系统2表之外新增sys_privacy_request：身份、类型、状态、请求键、处理期限、受控结果引用和过期时间，完整字段见修订基线第4节。必须交付可执行DDL、去重回填、索引及锁表评估；数据字典不能视为已可部署。</div>
 
   <!-- ============ 6 ============ -->
   <h2 id="s6">六、接口定义（RESTful + JWT）</h2>
-  <p>按域分 <b>8 组</b> 接口；统一响应结构 <code>{code, data, message}</code>（<code>code=0</code> 成功，非 0 见错误码）；请求头带 <code>Authorization: Bearer &lt;JWT&gt;</code>；错误码复用 PRD E-001..E-010（映射下方）。所有写接口强制按 JWT 中 family_id/child_id 做数据隔离。</p>
+  <p>按域分8组接口；统一响应<code>{code,data,message,requestId}</code>，code=0成功，错误E-001至E-012见下表；业务ID及金额使用字符串。请求头带Bearer token；服务端按当前账号、最新家庭关系和同意鉴权，不仅信任JWT内旧family_id/child_id。详细校验、分页及JSON示例见修订基线第5节。</p>
   <table class="mtx">
     <tr><th>错误码</th><th>PRD</th><th>HTTP</th><th>含义</th></tr>
     <tr><td>E-001</td><td>无微信授权</td><td>401</td><td>未登录访问写操作（仅可浏览）</td></tr>
-    <tr><td>E-002</td><td>档案未补全</td><td>200/warn</td><td>启动且档案缺失，引导补全</td></tr>
+    <tr><td>E-002</td><td>档案未补全</td><td>409（写接口）</td><td>启动查询200返回profileStatus；需要完整档案的写操作拒绝并引导家长补全</td></tr>
     <tr><td>E-003</td><td>邀请码过期</td><td>400</td><td>邀请码 24h 失效</td></tr>
     <tr><td>E-004</td><td>监护人核验失败</td><td>400</td><td>非监护人/信息不符</td></tr>
-    <tr><td>E-005</td><td>提交超时</td><td>409</td><td>网络失败/重试</td></tr>
+    <tr><td>E-005</td><td>提交结果未知</td><td>无响应 / 503 / 504</td><td>网络断开可能无HTTP响应；同键重试或查单，不伪装状态冲突409</td></tr>
     <tr><td>E-006</td><td>虚拟余额不足</td><td>409</td><td>扣减时余额&lt;金额</td></tr>
-    <tr><td>E-007</td><td>并发扣减冲突</td><td>409</td><td>乐观锁版本冲突</td></tr>
-    <tr><td>E-008</td><td>通知发送失败</td><td>200/warn</td><td>三通道降级，站内保底</td></tr>
+    <tr><td>E-007</td><td>并发扣减冲突</td><td>409</td><td>行锁及版本校验版本冲突</td></tr>
+    <tr><td>E-008</td><td>通知发送失败</td><td>200/warn</td><td>双通道降级，站内保底</td></tr>
     <tr><td>E-009</td><td>越权访问</td><td>403</td><td>访问非本家庭数据</td></tr>
     <tr><td>E-010</td><td>家长撤回同意</td><td>409</td><td>相应能力已降级</td></tr>
+    <tr><td>E-011</td><td>额度超限/预览失效</td><td>409</td><td>返回最新额度与版本，须重新显式确认</td></tr>
+    <tr><td>E-012</td><td>幂等键参数冲突</td><td>409</td><td>同键不同请求摘要，拒绝执行</td></tr>
   </table>
 
   <h3>6.1 认证与档案（AUTH）</h3>
   <table>
     <tr><th style="width:170px">接口</th><th>角色</th><th>参数 / 响应</th></tr>
-    <tr><td><code>POST /api/auth/wx-login</code><br/><span class="fcode">F-001</span></td><td>公开</td><td><b>请求：</b>{code}（wx.login 临时码）<br/><b>响应：</b>{token, openid, role, isNew}<br/><pre>{"code":0,"data":{"token":"jwt...","openid":"oXxx","role":"CHILD","isNew":true},"message":"success"}</pre></td></tr>
-    <tr><td><code>POST /api/auth/select-role</code><br/><span class="fcode">F-002</span></td><td>CHILD/PARENT</td><td><b>请求：</b>{role:"CHILD"|"PARENT"} 更新 usr_user.role<br/><b>响应：</b>{role, nextStep:"PROFILE"|"FAMILY"}</td></tr>
-    <tr><td><code>POST /api/child/profile</code><br/><span class="fcode">F-003</span></td><td>CHILD</td><td><b>请求：</b>{nickname, grade, school, allergies[], dislikes[], tastes[]}<br/><b>响应：</b>{profileStatus:"COMPLETE"}（未补全写操作灰显，E-002）</td></tr>
+    <tr><td><code>POST /api/auth/wx-login</code><br/><span class="fcode">F-001</span></td><td>公开</td><td><b>请求：</b>{code}；临时码失效返回明确认证错误。首次role=UNSELECTED，不自动选CHILD；token有效30分钟。<br/><b>响应示例：</b><pre>{"code":0,"data":{"token":"example-access-token","role":"UNSELECTED","isNew":true,"expiresIn":1800},"message":"success","requestId":"req-login-001"}</pre></td></tr>
+    <tr><td><code>POST /api/auth/select-role</code><br/>F-002</td><td>UNSELECTED</td><td>{role:CHILD或PARENT}；只选一次，换发token，旧token失效；重复相同选择返回当前状态，不得改为ADMIN。</td></tr>
+    <tr><td><code>POST /api/child/profile</code><br/>F-003</td><td>PARENT</td><td>{childId,nickname,grade,school,allergies,dislikes,tastes}；BOUND+有效同意后建档；返回profileStatus。校验限长见修订基线。</td></tr>
+    <tr><td><code>PUT /api/child/preferences</code><br/><code>GET /api/child/preferences</code><br/>F-022</td><td>写CHILD；读本人/绑定家长</td><td>写仅dislikes/tastes，拒绝安全字段注入；GET返回favoriteDishIds，收藏存档案集合。</td></tr>
   </table>
 
   <h3>6.2 家庭与绑定（FAMILY）</h3>
@@ -549,58 +563,62 @@
     <tr><td><code>POST /api/family/create</code><br/><span class="fcode">F-004</span></td><td>PARENT</td><td><b>请求：</b>{familyName}<br/><b>响应：</b>{familyId, inviteCode, expireAt}（生成 6 位码，24h）</td></tr>
     <tr><td><code>GET /api/family/invite-code</code><br/><span class="fcode">F-004</span></td><td>PARENT</td><td><b>响应：</b>{inviteCode, expireAt, qrBase64}（重新获取/查看）</td></tr>
     <tr><td><code>POST /api/family/join</code><br/><span class="fcode">F-005</span></td><td>CHILD</td><td><b>请求：</b>{inviteCode}<br/><b>响应：</b>{applyId, status:"PENDING"}（E-003 过期）；写 sys_notice 通知家长</td></tr>
-    <tr><td><code>POST /api/family/bind-approve</code><br/><span class="fcode">F-006</span></td><td>PARENT</td><td><b>请求：</b>{applyId, relationLabel, approve:true|false}<br/><b>响应：</b>{bindStatus:"BOUND"|"REJECTED"}；BOUND 触发家庭连通通知 + 入学勋章</td></tr>
+    <tr><td><code>POST /api/family/bind-approve</code><br/><span class="fcode">F-006</span></td><td>PARENT</td><td>{applyId,relationLabel,approve}；同意绑定须锁内验证该申请所属家庭、childId有效同意及Q-01门槛；返回BOUND/REJECTED及通知事件。入学勋章须BOUND+COMPLETE，不能仅绑定即发。</td></tr>
   </table>
 
   <h3>6.3 钱包与额度（WALLET）</h3>
+  <p><code>POST /api/wallet/grant</code>（F-008，PARENT）：childId、amount两位小数字符串0.01–9999.99、reason 1–100字、Idempotency-Key必填；锁内加余额与MANUAL/GRANT唯一流水同事务，防余额溢出。完整JSON入参、出参与冲突响应见修订基线第5节。</p>
   <table>
     <tr><th style="width:170px">接口</th><th>角色</th><th>参数 / 响应</th></tr>
     <tr><td><code>GET /api/wallet/balance</code><br/><span class="fcode">F-008/023</span></td><td>CHILD/PARENT</td><td><b>响应：</b>{childId, balance, version}（按 child_id 隔离，Q-05 初始0）</td></tr>
-    <tr><td><code>PUT /api/wallet/allowance-rule</code><br/><span class="fcode">F-009</span></td><td>PARENT</td><td><b>请求：</b>{childId, singleLimit, dailyLimit, weeklyLimit}（默认 30/30/150，Q-04）<br/><b>响应：</b>{rule}；变更后下一张确认单即按新规则</td></tr>
-    <tr><td><code>GET /api/wallet/allowance-log</code><br/><span class="fcode">F-023</span></td><td>CHILD/PARENT</td><td><b>请求：</b>{childId, period:"DAY"|"WEEK"|"MONTH"}<br/><b>响应：</b>{list:[{transType,amount,scene,balanceAfter,createTime}]}</td></tr>
+    <tr><td><code>PUT /api/wallet/allowance-rule</code><br/>F-009</td><td>PARENT</td><td>{childId,singleLimit,dailyLimit,weeklyLimit,expectedVersion}；0–9999.99两位小数，single≤daily≤weekly；返回rule及新version。提交及待审单审批均读最新规则。</td></tr>
+    <tr><td><code>GET /api/wallet/allowance-log</code><br/>F-023</td><td>CHILD/PARENT</td><td>{childId,startDate,endDate,page,pageSize}；日期范围≤31日，pageSize≤100；返回items/total/page/pageSize，流水项含transType/amount/scene/balanceAfter/createTime。</td></tr>
   </table>
 
   <h3>6.4 菜单配置与查询（MENU）</h3>
+  <p><code>POST /api/parent/menu-daily</code>仅家长本家庭FAMILY菜单；familyId/ownerKey由服务端推导。运营接口仅SCHOOL展示菜单。<code>PUT /api/admin/dish/{id}</code>完整校验；<code>DELETE /api/admin/dish/{id}</code>下架逻辑删除并保留历史快照。提交/审批均检查来源、日期、菜品有效、数量、过敏信息，UNKNOWN或命中过敏编码拒绝；不喜欢仅提示。</p>
   <table>
     <tr><th style="width:170px">接口</th><th>角色</th><th>参数 / 响应</th></tr>
-    <tr><td><code>POST /api/admin/dish</code> (+PUT/DELETE)<br/><span class="fcode">F-014</span></td><td>ADMIN</td><td><b>请求：</b>{categoryId, name, imageUrl, virtualPrice, calories, tags[], allergenFlag, status}<br/><b>响应：</b>{dishId}（CRUD 同语义）</td></tr>
-    <tr><td><code>POST /api/admin/menu-daily</code><br/><span class="fcode">F-015</span></td><td>ADMIN</td><td><b>请求：</b>{school, menuDate, mealType, dishIds[]}<br/><b>响应：</b>{menuId}；发布后儿童端可见（uk_school_date_meal）</td></tr>
-    <tr><td><code>GET /api/menu/daily</code><br/><span class="fcode">F-016</span></td><td>CHILD</td><td><b>请求：</b>{school, menuDate, mealType}（按 child 所在学校）<br/><b>响应：</b>{date, meals:[{mealType, dishes:[{dishId,name,imageUrl,virtualPrice,calories,tags,allergenFlag,isDisliked}]}]}（忌口/过敏灰显）</td></tr>
-    <tr><td><code>POST /api/menu/mark-favorite</code><br/><span class="fcode">F-016/022</span></td><td>CHILD</td><td><b>请求：</b>{menuDate, mealType, dishId, favorite:true}（"今天想吃"标记，家长可见）</td></tr>
+    <tr><td><code>POST /api/admin/dish</code><br/>F-014</td><td>ADMIN</td><td>{categoryId,name,imageUrl,virtualPrice,calories,tags,allergens,allergenStatus,spiceLevel,status}；多过敏原编码，UNKNOWN/DECLARED，辣度整数0–3；非负价格，返回dishId；修改/删除见上文。</td></tr>
+    <tr><td><code>POST /api/admin/menu-daily</code><br/><span class="fcode">F-015</span></td><td>ADMIN</td><td><b>请求：</b>{school, menuDate, mealType, dishIds[]}；仅SCHOOL，ownerKey服务端推导<br/><b>响应：</b>{menuId}；发布后仅展示/收藏，唯一键uk_source_owner_date_meal</td></tr>
+    <tr><td><code>GET /api/menu/daily</code><br/>F-016</td><td>授权CHILD/家长只读预览</td><td>{sourceType,menuDate,mealType}；归属由服务端检查；返回menuId/sourceType/canSubmit及dishes。菜品含allergens/allergenStatus/spiceLevel/isDisliked；UNKNOWN或命中过敏原不可提交，不喜欢仅提示。</td></tr>
+    <tr><td><code>POST /api/menu/mark-favorite</code><br/>F-016/022</td><td>CHILD</td><td>{dishId,favorite}；维护favorite_dish_ids长期偏好集合，重复操作幂等；家长授权查询可见，不按菜单日期重新清空。</td></tr>
   </table>
 
   <h3>6.5 确认单（CONFIRM）</h3>
   <table>
     <tr><th style="width:170px">接口</th><th>角色</th><th>参数 / 响应</th></tr>
-    <tr><td><code>POST /api/menu/confirm</code><br/><span class="fcode">F-018/019</span></td><td>CHILD</td><td><b>请求：</b>{menuDate, mealType, items:[{dishId, quantity, note}], remark}<br/><b>响应：</b>{confirmId, status:"PENDING", isOverLimit:false, totalAmount, estBalanceAfter}<br/>提交即 PENDING，<b>不扣减</b>；写 sys_notice 通知家长</td></tr>
+    <tr><td><code>POST /api/menu/confirm</code><br/>F-018/019</td><td>CHILD</td><td>{menuId,items:[{dishId,quantity,note}],remark,previousConfirmId可选}，Idempotency-Key必填；1–20种菜，数量1–9，无重复ID；服务端取价快照。返回confirmId/PENDING/totalAmount/estBalanceAfter，不扣款；同事务写通知事件。</td></tr>
     <tr><td><code>GET /api/menu/confirm/{id}</code><br/><span class="fcode">F-021</span></td><td>CHILD/PARENT</td><td><b>响应：</b>{confirmId, status, isOverLimit, items[], totalAmount, childVisibleNote}</td></tr>
-    <tr><td><code>GET /api/menu/confirm/status</code><br/><span class="fcode">F-021</span></td><td>CHILD</td><td><b>响应：</b>{confirmId, status:"PENDING"|"COMPLETED"|...}（儿童端仅状态，E-010 情绪保护）</td></tr>
-    <tr><td><code>POST /api/menu/confirm/{id}/withdraw</code><br/><span class="fcode">F-018</span></td><td>CHILD</td><td><b>请求：</b>{}（仅 PENDING 期间可撤回 → DRAFT/取消）；<b>响应：</b>{status:"DRAFT"}</td></tr>
+    <tr><td><code>GET /api/menu/confirm/status</code><br/>F-021</td><td>CHILD</td><td>请求confirmId；响应confirmId/status/version，状态为PENDING/REJECTED/CANCELLED/COMPLETED；仅本人。</td></tr>
+    <tr><td><code>POST /api/menu/confirm/{id}/withdraw</code><br/>F-018</td><td>CHILD</td><td>{expectedVersion}；PENDING条件更新为CANCELLED，重复撤回返回原结果，其他终态409；重提新建单。</td></tr>
   </table>
 
   <h3>6.6 家长审批（APPROVE）</h3>
   <table>
     <tr><th style="width:170px">接口</th><th>角色</th><th>参数 / 响应</th></tr>
     <tr><td><code>GET /api/parent/approvals</code><br/><span class="fcode">F-020</span></td><td>PARENT</td><td><b>请求：</b>{status:"PENDING"}<br/><b>响应：</b>{list:[{confirmId, childName, items[], totalAmount, isOverLimit, estBalanceAfter}]}</td></tr>
-    <tr><td><code>POST /api/parent/approve/{id}/approve</code><br/><span class="fcode">F-020/019</span></td><td>PARENT</td><td><b>请求：</b>{explicitConfirm:true}（超额须显式；额度内可一键）<br/><b>响应：</b>{status:"COMPLETED", deducted:true}（同意后扣减，见 7.4）</td></tr>
-    <tr><td><code>POST /api/parent/approve/{id}/modify</code><br/><span class="fcode">F-020</span></td><td>PARENT</td><td><b>请求：</b>{items:[...], reason}（改一改，推送替代建议）；<b>响应：</b>{status:"REJECTED", childNote:"温和说明"}</td></tr>
-    <tr><td><code>POST /api/parent/approve/{id}/reject</code><br/><span class="fcode">F-020</span></td><td>PARENT</td><td><b>请求：</b>{reason}；<b>响应：</b>{status:"REJECTED"}（儿童见温和说明，可改后重提）</td></tr>
+    <tr><td><code>POST /api/parent/approve/{id}/approve</code><br/>F-020/019</td><td>PARENT</td><td>{expectedVersion,explicitConfirm}，超额另带walletVersion/ruleVersion/confirmVersion/usageDate；锁内重核最新规则，过期预览E-011；成功COMPLETED及余额；同命令重试返回原结果。</td></tr>
+    <tr><td><code>POST /api/parent/approve/{id}/modify</code><br/>F-020</td><td>PARENT</td><td>{expectedVersion,items:[{dishId,quantity,note}],reason}；仅PENDING，原单REJECTED，建议写suggested_items，不覆盖原始明细。</td></tr>
+    <tr><td><code>POST /api/parent/approve/{id}/reject</code><br/>F-020</td><td>PARENT</td><td>{expectedVersion,reason}；仅PENDING转REJECTED；reason 1–255字。</td></tr>
   </table>
 
   <h3>6.7 通知（NOTICE）</h3>
   <table>
     <tr><th style="width:170px">接口</th><th>角色</th><th>参数 / 响应</th></tr>
     <tr><td><code>GET /api/notices</code><br/><span class="fcode">F-010</span></td><td>CHILD/PARENT</td><td><b>请求：</b>{readStatus?} <br/><b>响应：</b>{list:[{id,noticeType,title,content,readStatus,createTime}], unreadCount}</td></tr>
-    <tr><td><code>POST /api/notices/{id}/read</code><br/><span class="fcode">F-010</span></td><td>CHILD/PARENT</td><td><b>响应：</b>{readStatus:1}（红点更新；批量已读可传 ids[]）</td></tr>
+    <tr><td><code>POST /api/notices/{id}/read</code><br/>F-010</td><td>CHILD/PARENT</td><td>仅本人单条通知，重复已读幂等；返回readStatus:1及unreadCount；本版不承诺批量已读接口。</td></tr>
   </table>
 
   <h3>6.8 合规（COMPLIANCE）</h3>
+  <p>通用集合响应统一items/total/page/pageSize，page≥1、pageSize默认20且≤100，替代旧表中的list简写；ID和金额为十进制字符串。错误、权限、限长及新增接口JSON见修订基线第5节。完整OpenAPI与实现比对仍待交付。</p>
   <table>
     <tr><th style="width:170px">接口</th><th>角色</th><th>参数 / 响应</th></tr>
-    <tr><td><code>GET /api/compliance/consent</code><br/><span class="fcode">F-007</span></td><td>PARENT</td><td><b>响应：</b>{agreementText, version, currentStatus:"UNVERIFIED"|"VERIFIED"}（可展开全文）</td></tr>
-    <tr><td><code>POST /api/compliance/consent</code><br/><span class="fcode">F-007</span></td><td>PARENT</td><td><b>请求：</b>{version, selfReportedAge, agreed:true}（独立勾选，不与登录合并；&lt;18 拒绝 E-004）<br/><b>响应：</b>{guardianStatus:"VERIFIED"}；写 usr_consent_log（Q-01 MVP：微信绑定+自报年龄）</td></tr>
-    <tr><td><code>POST /api/compliance/consent/revoke</code><br/><span class="fcode">F-012</span></td><td>PARENT</td><td><b>请求：</b>{consentType}<br/><b>响应：</b>{status:"REVOKED"}；即时降级对应采集能力 + 留痕（E-010）</td></tr>
-    <tr><td><code>POST /api/compliance/data-export</code><br/><span class="fcode">F-012</span></td><td>PARENT</td><td><b>请求：</b>{childId}；<b>响应：</b>{taskId, status:"GENERATING"}（V0.0.1 入口+基础导出，完整 P4）</td></tr>
+    <tr><td><code>GET /api/compliance/consent</code><br/>F-007</td><td>PARENT</td><td>childId/consentType；返回协议、版本、当前同意与独立声明/核验状态。</td></tr>
+    <tr><td><code>POST /api/compliance/consent</code><br/>F-007</td><td>PARENT</td><td>{childId,applyId,consentType,version,selfReportedAge,agreed:true}；年龄整数18–120；声明返回SELF_ATTESTED，非VERIFIED；Q-01审批前不得上线采集。</td></tr>
+    <tr><td><code>POST /api/compliance/consent/revoke</code><br/>F-012</td><td>PARENT</td><td>{childId,consentType,version}；返回REVOKED，与写操作共用授权锁；取消敏感通知重试。</td></tr>
+    <tr><td><code>POST /api/compliance/data-export</code><br/><code>POST /api/compliance/data-delete</code><br/>F-012</td><td>PARENT</td><td>{childId}，删除另传confirmed:true并重新验证身份；Idempotency-Key必填；返回taskId/RECEIVED，首版工单人工办理。</td></tr>
+    <tr><td><code>GET /api/compliance/requests/{id}</code><br/><code>GET /api/compliance/requests/{id}/download</code></td><td>发起家长；查询另限隐私管理员</td><td>状态查询含dueAt/errorCode；仅EXPORT且READY可下载，24h过期410；不公开对象地址。</td></tr>
   </table>
 
   <!-- ============ 7 ============ -->
@@ -611,19 +629,20 @@
 stateDiagram-v2
   [*] --> DRAFT: 儿童编辑
   DRAFT --> PENDING: 提交「告诉爸妈」
-  PENDING --> APPROVED: 家长同意（额度内一键 / 超额显式放行）
+  PENDING --> COMPLETED: 同意及扣款同事务
   PENDING --> REJECTED: 家长拒绝 / 改一改
-  APPROVED --> COMPLETED: 扣减虚拟零花钱成功
-  REJECTED --> DRAFT: 儿童改后重提
+  PENDING --> CANCELLED: 儿童撤回
+  REJECTED --> [*]
+  CANCELLED --> [*]
   COMPLETED --> [*]
   note right of PENDING
     系统做额度预校验
     置 is_over_limit
     不立即扣减
   end note
-  note right of APPROVED
-    扣减动作发生于
-    家长「同意」之后
+  note right of COMPLETED
+    失败回滚保持PENDING
+    重提创建新ID关联原单
   end note
   </div>
   <table class="mtx">
@@ -645,7 +664,7 @@ sequenceDiagram
   C->>S: 提交确认单(选菜/份量/备注)
   S->>S: 额度预校验 is_over_limit(单笔/日/周)
   S->>S: 生成确认单 status=PENDING(不扣减)
-  S->>N: 发站内+订阅通知家长
+  S->>N: 同事务写站内及订阅待发事件
   N-->>P: 审批提醒(订阅/站内)
   P->>S: 查看审批卡(confirmId)
   alt 额度内
@@ -653,12 +672,13 @@ sequenceDiagram
   else 超额
     P->>S: 强制额度说明后显式放行(explicitConfirm=true)
   end
-  S->>W: 家长同意后 扣减虚拟零花钱
-  W->>W: 乐观锁 version++ 余额-=金额
-  S->>S: status=COMPLETED
-  S->>N: 通知双方「已记账✅」
+  S->>S: 开事务 锁关系及确认单 检查最新同意与版本
+  S->>W: 锁钱包和规则 重新核对余额额度及预览版本
+  W->>W: 扣款 累计额度 写唯一流水
+  S->>S: 同事务写审批及COMPLETED
+  S->>N: 同事务写事件 提交后异步投递
   N-->>C: 状态更新+勋章动画
-  Note over C: 撤回分支: PENDING 期间儿童可撤回 → DRAFT/取消
+  Note over C: 撤回仅PENDING转CANCELLED 失败整体回滚 重提新建单
   </div>
 
   <h3>7.3 登录到家庭绑定时序</h3>
@@ -670,21 +690,24 @@ sequenceDiagram
   participant F as 家庭服务
   participant CM as 合规服务
   participant N as 通知服务
+  participant P as 家长端
   C->>A: wx.login code
   A->>WX: code2Session
   WX-->>A: openid
-  A-->>C: JWT(token, role=CHILD)
-  C->>C: 选角色 + 档案引导(F-002/003)
+  A-->>C: 最小账号上下文 role为UNSELECTED
+  C->>A: 首次选CHILD并换发token 不采集档案
   C->>F: 输入邀请码 join(F-005)
   F->>N: 发绑定申请通知家长
   N-->>P: 家长收到申请(订阅/站内)
-  P->>F: 审批确认关系(F-006)
-  P->>CM: 同意书勾选+自报年龄(F-007, Q-01)
-  CM->>CM: 写 usr_consent_log guardian_status=VERIFIED
-  F->>N: 家庭已连通通知 + 入学勋章
+  P->>CM: 针对childId和applyId同意并声明年龄
+  CM->>CM: 留痕SELF_ATTESTED 最低核验强度按Q-01闸门
+  P->>F: 有效同意后审批绑定为BOUND
+  F->>N: 同事务写家庭连通事件
+  P->>A: 为已绑定儿童填写档案
+  Note over C,P: 同意及绑定前不收集档案 入学勋章由BOUND和COMPLETE推导
   </div>
 
-  <h3>7.4 虚拟钱包扣减并发安全（事务 + 乐观锁 + "家长同意后扣减"）</h3>
+  <h3>7.4 虚拟钱包扣减并发安全（行锁 + 幂等 + 原子事务）</h3>
   <div class="mermaid">
 sequenceDiagram
   participant P as 家长端
@@ -692,42 +715,48 @@ sequenceDiagram
   participant W as 钱包服务
   participant L as 流水日志
   P->>AP: 同意 approve confirmId
-  AP->>AP: 校验 confirm.status 为 PENDING
-  AP->>W: 开启事务 查询 balance 与 version
-  W-->>AP: 返回 balance 与 version 值 v0
-  AP->>W: 校验 balance 是否大于等于 amount
-  alt 余额充足
-    AP->>W: 扣减金额并将 version 加 1 条件为 version 等于 v0
-    W-->>AP: 扣减成功
-    AP->>L: 写入 life_allowance_log 类型为 DEDUCT 含快照
-    AP->>AP: 提交事务 并将 confirm.status 置为 COMPLETED
-  else 并发版本冲突
-    AP->>W: 回滚事务
-    AP-->>P: 返回 E-007 并发冲突需重试
+  AP->>AP: 开事务 锁家庭儿童关系再锁确认单 检查权限和最新同意
+  alt 已完成的相同命令重试
+    AP-->>P: 返回原结果 不再扣款
+  else PENDING且expectedVersion一致
+    AP->>W: 依序锁钱包和额度规则
+    W->>W: 独立重置日周周期 校验最新规则余额菜单过敏信息
+    alt 校验通过且超额预览有效
+      AP->>W: 条件扣款并递增版本 检查影响行数 累计日周额度
+      AP->>L: 插入唯一扣款流水
+      AP->>AP: 写审批及COMPLETED和通知事件 后提交
+      AP-->>P: 返回COMPLETED与余额
+    else 任一校验或写入失败
+      AP->>AP: 整体回滚 保持PENDING
+      AP-->>P: 返回余额不足或版本冲突或额度需重确认
+    end
+  else 已拒绝或取消或版本冲突
+    AP->>AP: 回滚
+    AP-->>P: 返回409
   end
-  Note over W: 乐观锁 version 防止同一余额多笔同时扣减导致超扣
+  Note over W,L: 关系 确认单 钱包 规则固定锁序 流水业务键唯一防重复
   </div>
-  <div class="note b">对应 E-006/E-007：扣减发生在<b>家长同意后</b>（非提交时）；余额不足 → 标记异常通知家长（E-006）；并发冲突 → 乐观锁 + 事务串行化，绝不超扣（E-007）。</div>
+  <div class="note b">E-006余额不足、E-007状态/版本冲突、E-011额度变化均不部分提交。超额授权绑定walletVersion/ruleVersion/confirmVersion/usageDate；审批拒绝跨日旧菜单。AC-03至AC-06须做并发与故障注入验证，图示不是测试通过证明。</div>
 
-  <h3>7.5 通知下发（站内 + 订阅消息 + 短信兜底降级）</h3>
+  <h3>7.5 通知下发（站内 + 订阅待发事件）</h3>
   <div class="mermaid">
 sequenceDiagram
   participant T as 业务触发
   participant N as 通知服务
   participant DB as sys_notice
   participant WX as 微信订阅消息
-  participant SMS as 短信网关
   T->>N: 发通知(type, receiverId, bizId)
-  N->>DB: 写站内通知(必达, read_status=0)
-  N->>WX: 订阅消息(若用户已授权模板)
-  alt 订阅未授权/失败
-    N->>DB: 站内保底(E-008)
-  end
-  alt 关键安全或审批超时 Q-02 后置
-    N->>SMS: 短信兜底 需手机号与明示同意
+  N->>DB: 业务事务内写IN_APP及SUBSCRIBE事件
+  N->>DB: 提交后扫描待发记录
+  alt 接收人自己已授权
+    N->>WX: 投递订阅消息
+    WX-->>N: 平台受理或失败
+    N->>DB: 记录SENT或重试状态
+  else 未授权
+    N->>DB: 记录UNAUTHORIZED 站内仍可查询
   end
   </div>
-  <div class="note"><b>Q-02 落点：</b>V0.0.1 默认「站内通知中心 + 微信订阅消息」双通道；<b>短信仅作关键安全/审批超时兜底</b>，整体后置。订阅消息受微信"用户须主动触发一次"限制，提交成功页须加"开启爸妈提醒"引导授权（交互 3.5）。</div>
+  <div class="note"><b>Q-02：</b>首版不接短信。家长在自身绑定/审批/设置界面申请自己的审批提醒；儿童只能授权本人完成提醒。失败按1/5/30分钟最多3次重试，SENT仅平台受理，非送达/已读；撤回同意取消敏感事件重试，外部失败不回滚已提交业务。</div>
 
   <!-- ============ 8 ============ -->
   <h2 id="s8">八、非功能与合规要点</h2>
@@ -735,8 +764,8 @@ sequenceDiagram
     <div class="card" style="margin:0">
       <h4 style="margin-top:0;color:var(--brand)">性能 / 安全（引用 PRD 十一）</h4>
       <ul style="font-size:13.5px">
-        <li><b>性能：</b>菜单首屏 ≤1s（骨架屏）；接口 P95 ≤300ms；通知触达 ≥99%；支持千级家庭同时在线。</li>
-        <li><b>安全：</b>JWT 分权；虚拟钱包扣减事务+乐观锁防超扣；儿童数据加密存储、最小化采集；越权统一 401/403 + 安全日志；后台操作全审计。</li>
+        <li><b>性能验收提案：</b>骨架P95≤1s、可操作P95≤2s、API P95≤300ms；每日已提交事件中5秒内站内可查询≥99%，非送达率。100并发/1000家庭及设备/网络/时长条件统一采用修订基线第6节。</li>
+        <li><b>安全：</b>JWT分权；虚拟钱包扣减采用事务、行锁及版本校验；儿童数据加密存储、最小化采集；未登录401、已登录越权403、不可见资源404；记录脱敏安全日志，后台关键操作留审计。</li>
         <li><b>不采集：</b>V0.0.1 不采集儿童真实位置/人脸；OCR/位置待 P2+ 且需同意。</li>
       </ul>
     </div>
@@ -744,7 +773,7 @@ sequenceDiagram
       <h4 style="margin-top:0;color:var(--brand2)">无障碍 / 未成年人模式（引用交互 8 / 9）</h4>
       <ul style="font-size:13.5px">
         <li><b>WCAG 2.2 AA：</b>对比度 ≥4.5:1、组件 ≥3:1；状态配图标+文字不纯靠颜色；触控 ≥44×44px；动效仅 transform/opacity 且尊重"减少动态效果"。</li>
-        <li><b>未成年人模式（P0 硬约束）：</b>常驻入口；单日/单次时长上限温柔锁屏；22:00–8:00 禁服务；内容分级无公开社交；消费与额度护栏打通。</li>
+        <li><b>儿童保护策略提案：</b>时长/夜间设置待产品及合规确认；22:00–08:00仅候选儿童侧规则，不锁家长管理和权利请求，不作统一法定义务断言。</li>
         <li><b>儿童情绪保护（R-03）：</b>仅见状态，不现"被拦截/拒绝"负面词；驳回原因家长温和说明。</li>
       </ul>
     </div>
@@ -754,9 +783,9 @@ sequenceDiagram
     <ul style="font-size:13.5px">
       <li><b>同意留痕：</b>监护人同意书独立勾选、不与登录合并；通过写 usr_consent_log（VERIFIED + 时间戳）；撤回即时降级 + 留痕（E-010）。</li>
       <li><b>虚拟消费合规：</b>仅虚拟记账 + 额度护栏，儿童端无真实支付；超额异步复核非实时拦截。</li>
-      <li><b>可验证监护人核验：</b>Q-01 MVP 用微信绑定+明示同意+自报年龄；实名/三要素 P1+ 增强。</li>
+      <li><b>监护人核验：</b>自报仅SELF_ATTESTED；身份与监护关系证据独立，Q-01未批准不开放真实儿童数据。</li>
       <li><b>虚拟兑换：</b>奖励兑换中心 P2 仅限虚拟权益，规避经营资质风险。</li>
-      <li><b>审计：</b>同意/记账/审批/越权均写入 sys_audit_log（采纳 R-12），满足儿童数据强合规。</li>
+      <li><b>审计：</b>同意/记账/审批/越权须写入sys_audit_log（R-12），并验证覆盖、脱敏与保留策略；审计记录不能替代适用法规和处理依据审核。</li>
     </ul>
   </div>
 
@@ -767,8 +796,8 @@ sequenceDiagram
     <tr><th>项</th><th>策略</th></tr>
     <tr><td>阶段划分</td><td>内部灰度（运营+种子家庭）→ 小范围家长 → 全量</td></tr>
     <tr><td>灰度</td><td>按家庭/学校白名单放量；监控确认转化率与通知触达</td></tr>
-    <tr><td>回滚</td><td>前后端独立可回滚；数据库变更走可逆 DDL；配置开关降级（如短信通道）</td></tr>
-    <tr><td>Q-06 版本闸门</td><td>发布前验收 Java 21 + Spring Boot 4.1.1 GA 与 MyBatis-Plus 兼容；不兼容则锁稳定版（R-10）</td></tr>
+    <tr><td>回滚</td><td>扩展/回填/切换/清理分阶段；回滚已验证兼容的应用，不自动逆向DDL或DROP列；钱包对账及恢复须审批，目标与停写阈值见修订基线第7节。</td></tr>
+    <tr><td>Q-06 版本闸门</td><td>候选Java 21 + Spring Boot 4.1.1及替代版本均须验证GA、依赖兼容和集成测试；未通过阻断发布（R-10）</td></tr>
   </table>
 
   <h3>9.2 验收清单（引用 PRD 十二，节选）</h3>
@@ -778,38 +807,38 @@ sequenceDiagram
     <tr><td>合规</td><td>F-007 同意书独立勾选 + 自报年龄（Q-01）+ 留痕；撤回即时降级（E-010）</td></tr>
     <tr><td>钱包/护栏</td><td>F-008/009/023：额度设置生效；额度内一键同意、超额显式放行；<b>扣减发生在同意后</b></td></tr>
     <tr><td>点餐</td><td>F-014~F-022：菜单展示/确认/审批/状态追踪/消费记录端到端跑通</td></tr>
-    <tr><td>通知</td><td>F-010/011：站内通知中心可用；订阅消息 + 短信兜底（若实现）三通道</td></tr>
+    <tr><td>通知</td><td>F-010/011：站内通知中心可用；站内通知 + 微信订阅消息；短信后置</td></tr>
     <tr><td>安全</td><td>越权拒绝（E-009）、并发扣减不超扣（E-007）、儿童端无真实支付能力</td></tr>
-    <tr><td>非功能</td><td>首屏≤1s、对比度达标、触控≥44px、埋点/审计日志覆盖关键操作</td></tr>
+    <tr><td>非功能</td><td>骨架P95≤1s、可操作P95≤2s（基线第6节条件）、对比度达标、触控≥44px、埋点/审计日志覆盖关键操作</td></tr>
   </table>
 
   <!-- ============ 10 ============ -->
   <h2 id="s10">十、待确认项收口</h2>
   <div class="card">
-    <p>全局规划 6 项待确认项已在 V0.0.1 全部收口，裁定贯穿数据结构/接口/流程，无悬空；下表为最终裁决。</p>
+    <p>以下为修订方案，不是最终批准。Q-01最低核验强度、Q-07账号人群、Q-08菜单边界及各责任角色见修订基线；未决项不得标记关闭。</p>
     <table class="mtx">
-      <tr><th style="width:60px">编号</th><th style="width:84px">状态</th><th>裁定（已收口）</th><th>本版落点</th></tr>
-      <tr><td><b>Q-01</b></td><td>已收口</td><td>监护人核验：微信绑定+同意书+自报年龄；可验证核验 P1+</td><td>usr_consent_log.verification_method=WECHAT_BIND/SELF_ATTEST；guardian_status=VERIFIED（F-007/US-3）；REALNAME 留 P1+ <span style="color:var(--muted);font-size:12px;">〔沿用 PRD 十一〕</span></td></tr>
-      <tr><td><b>Q-02</b></td><td>已收口</td><td>短信：默认站内+订阅双通道；短信仅安全/超时兜底后置</td><td>sys_notice.channel=IN_APP/SUBSCRIBE 为主；SMS_FALLBACK 仅关键安全/超时（6.7 合规/7.5 流程） <span style="color:var(--muted);font-size:12px;">〔短信后置兜底〕</span></td></tr>
-      <tr><td><b>Q-03</b></td><td>已收口</td><td>5 Tab：仅点餐可用，余占位，成长静态幼苗</td><td>基础框架 F-013 仅点餐承载完整链路；任务/学习占位"敬请期待"；成长静态幼苗 <span style="color:var(--muted);font-size:12px;">〔仅点餐可用〕</span></td></tr>
-      <tr><td><b>Q-04</b></td><td>已收口</td><td>额度默认 单笔30/每日30/每周150</td><td>额度默认值为<b>业务可配项</b>（单笔30/每日30/每周150），F-009 PUT 接口可调整；life_allowance_rule 默认值写入（F-009/US-4） <span style="color:var(--muted);font-size:12px;">〔唯一需业务拍板默认值〕</span></td></tr>
-      <tr><td><b>Q-05</b></td><td>已收口</td><td>虚拟余额初始0；家长手动增(P0)/任务发放(P2)</td><td>life_wallet.balance 默认 0；life_allowance_log.scene=MANUAL（P0 手动增入口）、TASK_REWARD（P2） <span style="color:var(--muted);font-size:12px;">〔余额初始 0〕</span></td></tr>
-      <tr><td><b>Q-06</b></td><td>已收口</td><td>技术栈 Java21+SB4.1.1；GA/MyBatis-Plus 兼容闸门(R-10)</td><td>全文据此技术选型；9.1 上线前设版本闸门，不兼容锁稳定版 <span style="color:var(--muted);font-size:12px;">〔上线前版本闸门〕</span></td></tr>
+      <tr><th style="width:60px">编号</th><th style="width:84px">状态</th><th>裁定（待联合确认）</th><th>本版落点</th></tr>
+      <tr><td><b>Q-01</b></td><td>待合规批准</td><td>自报仅声明，身份与监护关系另核验</td><td>SELF_ATTESTED；未获批准不开放真实儿童数据采集</td></tr>
+      <tr><td><b>Q-02</b></td><td>待联合确认</td><td>首版站内+订阅；短信后置</td><td>sys_notice.channel仅IN_APP/SUBSCRIBE，不预留已启用短信兜底的承诺。</td></tr>
+      <tr><td><b>Q-03</b></td><td>待联合确认</td><td>5 Tab：仅点餐、我的可用；任务/学习占位，成长静态，成长静态幼苗</td><td>基础框架 F-013 仅点餐承载完整链路；任务/学习占位"敬请期待"；成长静态幼苗 <span style="color:var(--muted);font-size:12px;">〔点餐、我的可用〕</span></td></tr>
+      <tr><td><b>Q-04</b></td><td>待联合确认</td><td>额度默认 单笔30/每日30/每周150</td><td>额度默认值为<b>业务可配项</b>（单笔30/每日30/每周150），F-009 PUT 接口可调整；life_allowance_rule 默认值写入（F-009/US-4） <span style="color:var(--muted);font-size:12px;">〔唯一需业务拍板默认值〕</span></td></tr>
+      <tr><td><b>Q-05</b></td><td>待联合确认</td><td>虚拟余额初始0；家长手动增(P0)/任务发放(P2)</td><td>life_wallet.balance 默认 0；life_allowance_log.scene=MANUAL（P0 手动增入口）、TASK_REWARD（P2） <span style="color:var(--muted);font-size:12px;">〔余额初始 0〕</span></td></tr>
+      <tr><td><b>Q-06</b></td><td>待联合确认</td><td>候选Java21+SB4.1.1；GA/依赖兼容及集成测试闸门(R-10)</td><td>替代版本也须重新验证；未通过阻断发布 <span style="color:var(--muted);font-size:12px;">〔上线前版本闸门〕</span></td></tr>
     </table>
   </div>
   <h3>10.1 实现层补充假设</h3>
   <ul style="font-size:13.5px">
     <li><b>A-邀请码：</b>6 位大写字母数字，24h 有效；过期需家长重新生成（E-003）。</li>
-    <li><b>A-撤回窗口：</b>确认单仅 PENDING 期间儿童可撤回（7.2 分支）；进入 APPROVED 后不可撤，需家长拒绝/改一改。</li>
-    <li><b>A-超额防刷（评审 3.2）：</b>超额单设"当日复核次数上限"，超限提示"已告诉爸妈，耐心等哦"，防重复骚扰家长。</li>
+    <li><b>A-撤回窗口：</b>仅PENDING可撤回为CANCELLED；COMPLETED不能拒绝、改写或撤回；异常经对账与受审计的人工处理。</li>
+    <li><b>A-超额防刷：</b>阈值、窗口、去重与429重试提示待产品/安全批准并配置；发布前完成边界测试。不能把金额幂等代替频控，也不宣称未定义次数上限已可实现。</li>
     <li><b>A-订阅模板：</b>上线前须在微信公众平台提前申请订阅消息模板（审批提醒/确认完成）。</li>
-    <li><b>A-数据导出：</b>V0.0.1 仅入口 + 基础导出，完整能力（含删除到期清理）P4 落地（F-012/US-9）。</li>
+    <li><b>A-隐私请求：</b>首版人工办理导出/删除，必须有受理人员、身份复核、处理进度、鉴权下载与清理验收（F-012/US-9）；全自动办理后置，不能只交付空入口。</li>
     <li><b>A-多孩：</b>全局已裁定 V0.0.1 单孩优先；若支持多孩，家长端/看板顶部"孩子选择器"，数据按 child_id 隔离（R-14）。</li>
     <li><b>A-虚拟消耗额符号：</b>全接口/界面金额标注"虚拟"，¥ 非真实货币（R-15）。</li>
   </ul>
 
   <footer style="margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;">
-    成长星球 · V0.0.1 详细分析设计文档 V1.0 ｜ 全局规划"阶段一"深化 ｜ 对齐《全局规划设计文档》《V0.0.1 PRD》《交互设计文档》｜ 口径/术语/视觉一致，23 个 F 全覆盖、16 张表 DDL 就绪、8 组接口、5 张核心流程图。
+    成长星球 · V0.0.1 详细分析设计审计修订稿 ｜ 包含23项需求映射、原16表及新增隐私请求模型、8组接口与核心流程图 ｜ 映射完整性、实现、迁移和发布验收仍待验证。
   </footer>
 
 </div>

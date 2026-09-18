@@ -55,6 +55,7 @@
 </style>
 </head>
 <body>
+<aside class="note"><b>2026-09-17 审计修订：</b>首版契约见<a href="成长星球_V0.0.1_审计修订基线.md">修订基线</a>及<a href="README.md">索引</a>。P0/P1是功能优先级，不等于Sprint编号；站内事件基础Sprint1、通知中心Sprint2、订阅投递Sprint4。月份仅为估算，版本兼容、合规核验及人员排期未批准。</aside>
 <div class="wrap">
 
   <h1>「成长星球」儿童生活与学习小程序 · 产品规划方案</h1>
@@ -165,11 +166,11 @@
   <h3>4.3 核心使用场景（概览）</h3>
   <table>
     <tr><th>场景</th><th>角色</th><th>简述</th><th>对应阶段</th></tr>
-    <tr><td>首次登录到家庭绑定</td><td>儿童+家长</td><td>微信登录→建档→邀请码绑定→监护人同意</td><td>P0</td></tr>
+    <tr><td>首次登录到家庭绑定</td><td>儿童+家长</td><td>最小登录→角色→绑定申请→指定儿童同意→绑定→家长建档；Q-01为前置闸门</td><td>P0</td></tr>
     <tr><td>首餐菜单确认</td><td>儿童+家长</td><td>浏览菜单→确认→家长同意→虚拟记账→正反馈</td><td>P1</td></tr>
     <tr><td>超额异步复核</td><td>儿童+家长</td><td>超预算不拦截→家长复核放行/改/拒</td><td>P1</td></tr>
     <tr><td>家务得奖励</td><td>儿童+家长</td><td>领任务→完成→家长确认→零花钱+勋章</td><td>P2</td></tr>
-    <tr><td>合规撤回/导出</td><td>家长</td><td>撤回同意、导出/删除儿童数据</td><td>P0/P4</td></tr>
+    <tr><td>同意撤回/隐私请求</td><td>家长</td><td>首版可办理导出/删除工单，P4只增强自动化</td><td>P0基础 / 首版交付</td></tr>
   </table>
 
   <h2>五、核心设计原则</h2>
@@ -227,7 +228,7 @@
       <ul>
         <li>账号 / 家庭关系</li>
         <li>虚拟钱包</li>
-        <li>通知（订阅+站内+短信）</li>
+        <li>通知（订阅+站内，短信后置）</li>
         <li>AI 服务（P4）</li>
         <li>数据看板</li>
       </ul>
@@ -258,29 +259,29 @@
   <h3><span class="pill p0">P0</span> 基础平台（V0.0.1 地基）</h3>
   <table>
     <tr><th>功能</th><th>说明</th><th>负责端</th><th>PRD 编号</th></tr>
-    <tr><td>微信登录 + 匿名会话</td><td>wx.login→code2Session；建匿名会话</td><td>儿童/家长</td><td>F-001</td></tr>
+    <tr><td>微信登录 + 最小账号会话</td><td>wx.login→code2Session；建最小账号会话</td><td>儿童/家长</td><td>F-001</td></tr>
     <tr><td>角色选择</td><td>我是孩子 / 我是家长</td><td>双方</td><td>F-002</td></tr>
-    <tr><td>儿童档案引导</td><td>昵称→年级→学校→忌口/口味（多选 chip）</td><td>儿童</td><td>F-003</td></tr>
+    <tr><td>儿童档案引导</td><td>有效同意与BOUND后由家长建档；儿童仅维护非安全偏好，过敏字段仅家长编辑</td><td>家长/儿童</td><td>F-003</td></tr>
     <tr><td>家庭创建与邀请码</td><td>家长建家庭，生成 6 位码/二维码（24h 有效）</td><td>家长</td><td>F-004</td></tr>
     <tr><td>儿童加入家庭</td><td>输入码/扫码发起绑定申请</td><td>儿童</td><td>F-005</td></tr>
     <tr><td>绑定申请审批</td><td>家长确认监护关系（子/女）</td><td>家长</td><td>F-006</td></tr>
-    <tr><td>家长身份确认 + 授权</td><td>《同意书》明示勾选 + 可验证监护人核验 + 留痕</td><td>家长</td><td>F-007</td></tr>
-    <tr><td>虚拟钱包地基</td><td>余额 / 额度规则 / 扣减流水（点餐与任务共用）</td><td>双方</td><td>F-008</td></tr>
+    <tr><td>家长身份确认 + 授权</td><td>明示同意与自报仅SELF_ATTESTED；身份和关系核验独立，最低强度由Q-01批准</td><td>家长</td><td>F-007</td></tr>
+    <tr><td>虚拟钱包地基</td><td>余额初始0；首版手动发放/额度/唯一流水，任务奖励P2</td><td>双方</td><td>F-008</td></tr>
     <tr><td>家长额度设置（最小可行，前移）</td><td>单笔/每日/每周上限（原 P2 UI 前移）</td><td>家长</td><td>F-009</td></tr>
     <tr><td>站内通知中心</td><td>全量聚合、已读/未读、红点</td><td>双方</td><td>F-010</td></tr>
-    <tr><td>通知中台</td><td>订阅消息 + 站内 + 家长短信兜底</td><td>双方</td><td>F-011</td></tr>
-    <tr><td>合规同意留痕与数据出口</td><td>同意留痕、导出/删除入口（家长代操作）</td><td>家长/后台</td><td>F-012</td></tr>
-    <tr><td>基础框架与导航</td><td>底部 5 Tab（点餐可用，余占位）、铃铛</td><td>儿童</td><td>F-013</td></tr>
+    <tr><td>通知中台</td><td>订阅消息 + 站内；短信后置</td><td>双方</td><td>F-011</td></tr>
+    <tr><td>合规同意留痕与数据出口</td><td>同意留痕、导出/删除入口（家长本人账号办理）</td><td>家长/后台</td><td>F-012</td></tr>
+    <tr><td>基础框架与导航</td><td>底部 5 Tab（点餐、我的可用；任务/学习占位，成长静态）、铃铛</td><td>儿童</td><td>F-013</td></tr>
   </table>
 
   <h3><span class="pill p1">P1</span> 小当家·点餐（V0.0.1 首期核心）</h3>
   <table>
     <tr><th>功能</th><th>说明</th><th>负责端</th><th>PRD 编号</th></tr>
     <tr><td>后台菜品库管理</td><td>菜品增删改、图文/价格(虚拟)/热量/标签</td><td>后台</td><td>F-014</td></tr>
-    <tr><td>后台当日菜单配置</td><td>按学校/日期配置当日菜单（餐段分组）</td><td>后台</td><td>F-015</td></tr>
+    <tr><td>当日菜单配置</td><td>SCHOOL由后台配置仅展示/收藏；FAMILY由家长配置可提报，按来源/归属/日期/餐段隔离</td><td>后台/家长按来源授权</td><td>F-015</td></tr>
     <tr><td>当日菜单展示</td><td>餐段折叠、大图卡、营养/忌口标识、筛选、语音朗读</td><td>儿童</td><td>F-016 / F-017</td></tr>
     <tr><td>菜单确认 / 提报</td><td>选菜/份量/备注，自动带入忌口</td><td>儿童</td><td>F-018</td></tr>
-    <tr><td>额度校验与状态机</td><td>待确认→已确认→已完成/已驳回（家长确认后扣减）</td><td>系统</td><td>F-019</td></tr>
+    <tr><td>额度校验与状态机</td><td>PENDING→COMPLETED（审批记账原子提交），或REJECTED/CANCELLED</td><td>系统</td><td>F-019</td></tr>
     <tr><td>家长端审批流卡片</td><td>看明细→同意/改一改/拒绝；超额强制说明</td><td>家长</td><td>F-020</td></tr>
     <tr><td>确认状态追踪</td><td>儿童端可见状态流转 + 通知</td><td>儿童</td><td>F-021</td></tr>
     <tr><td>就餐偏好持久化</td><td>忌口/口味存档案，自动带入，可"沿用昨天"</td><td>双方</td><td>F-022</td></tr>
@@ -291,7 +292,7 @@
   <p>零花钱管理 UI、家务小任务、健康打卡、日程提醒、购物清单、奖励兑换中心、二级监护人/审批委托。<span class="muted" style="color:var(--muted);font-size:13px">（钱包地基/通知中台/护栏机制已于 P0/P1 预建，P2 主要补"业务 UI + 激励闭环"。）</span></p>
 
   <h3><span class="pill p3">P3</span> 学习成长（规划层） / <span class="pill p4">P4</span> 智能激励（规划层）</h3>
-  <p>课表/作业/错题本/阅读/知识百科、教师角色与家校互通；AI 小问号、成长档案看板、勋章/成长树、个性化推荐、成长洞察告警、数据导出注销、多孩扩展。</p>
+  <p>课表/作业/错题本/阅读/知识百科、教师角色与家校互通；AI小问号、成长档案看板、勋章/成长树、个性化推荐、成长洞察、隐私工单自动化增强、多孩扩展。导出/删除的可办理流程不后置。</p>
 
   <h2>八、阶段性路线图（Roadmap）</h2>
   <div class="ph">
@@ -299,17 +300,17 @@
     <div class="step"><b>P1 点餐起步</b><span>第 2–4 月</span><br/>小当家·菜单展示与确认 MVP（额度护栏+站内通知+审批）</div>
     <div class="step"><b>P2 生活自主</b><span>第 5–8 月</span><br/>零花钱/家务/健康/日程 + 奖励兑换/二级监护人</div>
     <div class="step"><b>P3 学习成长</b><span>第 9–12 月</span><br/>课表/作业/错题/阅读 + 教师角色与家校互通</div>
-    <div class="step"><b>P4 智能激励</b><span>第 13–18 月</span><br/>AI/成长树/多孩 + 成长洞察/数据删除导出</div>
+    <div class="step"><b>P4 智能激励</b><span>第 13–18 月</span><br/>AI/成长树/多孩 + 成长洞察/隐私办理自动化增强</div>
   </div>
 
   <h3>8.1 各阶段目标、关键交付与退出标准</h3>
   <table>
     <tr><th>阶段</th><th>目标</th><th>关键交付</th><th>退出标准（示例）</th></tr>
-    <tr><td><b>P0</b></td><td>建成三角色可运行地基与护栏底座</td><td>登录/档案/家庭绑定/虚拟钱包/通知中台/合规同意/额度设置</td><td>儿童可建档并绑定家庭；家长可设额度；通知三通道可用</td></tr>
+    <tr><td><b>P0</b></td><td>建成三角色可运行地基与护栏底座</td><td>登录/档案/家庭绑定/虚拟钱包/通知中台/合规同意/额度设置</td><td>同意及绑定后家长建档；家长发放/设额度；站内基础前置，订阅Sprint4集成</td></tr>
     <tr><td><b>P1</b></td><td>跑通首个用户价值闭环</td><td>菜单配置+展示+确认+家长审批+虚拟记账+状态追踪</td><td>端到端"确认→审批→记账→正反馈"跑通，无真实支付</td></tr>
     <tr><td><b>P2</b></td><td>生活自主闭环</td><td>零花钱UI/家务/健康/日程/购物/奖励兑换/二级监护人</td><td>"赚→花"动机闭环成立</td></tr>
     <tr><td><b>P3</b></td><td>学习成长闭环</td><td>课表/作业/错题/OCR/阅读/百科/教师家校互通</td><td>学习模块可用，家校三方协同</td></tr>
-    <tr><td><b>P4</b></td><td>智能激励收敛</td><td>AI/成长树/多孩/洞察告警/数据导出注销</td><td>跨模块激励体系成型，合规闭环</td></tr>
+    <tr><td><b>P4</b></td><td>智能激励收敛</td><td>AI/成长树/多孩/洞察告警/隐私办理自动化增强</td><td>跨模块激励体系成型，合规闭环</td></tr>
   </table>
 
   <h3>8.2 为何从「点餐」起步</h3>
@@ -331,13 +332,13 @@
     <tr><td>错题本 OCR</td><td>高</td><td>高</td><td>中</td><td>无</td><td class="warn">P3</td></tr>
     <tr><td>教师角色/家校互通</td><td>中</td><td>高</td><td>低</td><td>学校接入</td><td class="warn">P3</td></tr>
     <tr><td>AI 小问号</td><td>高</td><td>中</td><td>中</td><td>护栏</td><td class="warn">P4</td></tr>
-    <tr><td>数据导出与注销</td><td>中</td><td>中</td><td>中</td><td>合规</td><td class="warn">P4（合规）</td></tr>
+    <tr><td>数据导出与注销</td><td>中</td><td>中</td><td>中</td><td>合规</td><td class="warn">P0/P1（首版人工办理，自动化后置）</td></tr>
   </table>
 
   <h2>十、技术架构概览</h2>
   <div class="card">
     <p><b>后端：</b>Java + Spring Boot + MySQL（具体版本见审查文档 R-10，需确认 GA 与依赖兼容）。ORM 用 MyBatis-Plus；API 风格 RESTful + JWT（child/parent 分权）。</p>
-    <p><b>数据库：</b>MySQL 8.0；通用字段 <code>create_time / update_time / delete_at</code>（<code>delete_at</code> 为 BIGINT 删除时间戳，默认 0，替代布尔 deleted，支撑"删了还能重建"）；枚举用 VARCHAR 在 Java 控制。缓存/会话用 Redis；通知用微信订阅消息 + 可选 MQ 解耦。</p>
+    <p><b>数据库：</b>MySQL 8.0；通用字段 <code>create_time / update_time / delete_at</code>（<code>delete_at</code> 为 BIGINT 删除时间戳，默认 0，替代布尔 deleted；身份及流水键不可复用，配置唯一约束逐表设计）；枚举用 VARCHAR 在 Java 控制。缓存/会话用 Redis；通知用微信订阅消息 + 可选 MQ 解耦。</p>
     <p><b>小程序端：</b>微信小程序原生 或 Taro/uni-app（Vue/React 跨端）。前端非 Java，属独立工程。</p>
     <p><b>支付与安全：</b>不做真实支付，结算走虚拟零花钱记账 + 额度护栏；儿童对外动作走审批流；内容经后台审核；隐私最小化采集 + 家长明示同意。</p>
   </div>
@@ -352,7 +353,7 @@
     <tr><td>life_menu_confirm / life_menu_item / life_confirm_approval</td><td>确认单与明细、家长确认状态</td><td>P1</td></tr>
     <tr><td>life_allowance_log</td><td>虚拟零花钱发放/扣减流水</td><td>P0/P1</td></tr>
   </table>
-  <div class="note b">★ <b>数据模型调整建议：</b>规划文档列出 <code>life_restaurant</code>，但 V0.0.1 为"学校展示当日菜单、家庭提报"，无多商户营运，建议以 <code>life_menu_daily</code>（按学校+日期的每日菜单）替代 restaurant 实体，避免过度设计（见审查 R-07）。</div>
+  <div class="note b">★ <b>数据模型调整建议：</b>V0.0.1无多商户营运，以 <code>life_menu_daily</code> 替代restaurant实体；按source_type、owner_key、日期、餐段区分SCHOOL学校菜单和FAMILY家庭菜单。学校菜单只展示/收藏，家庭菜单才可提报；模型和迁移约束见修订基线第4节（R-07）。</div>
 
   <h2>十一、风险与合规</h2>
   <div class="grid2">
@@ -383,8 +384,8 @@
     <p><b>已做假设：</b>微信小程序（非原生 App）；三角色；通用场景（不限定城市）；不做真实支付、食堂非真实营运——学校端仅展示当日菜单、家庭端由孩子向父母确认/提报，点餐与任务均为虚拟零花钱记账。</p>
     <p><b>待确认项（详见《审查与修改建议》及 PRD 第十五章）：</b></p>
     <ul>
-      <li>A1：家长"可验证监护人核验"（实名/运营商三要素）是否纳入 V0.0.1，或后置为增强项？</li>
-      <li>A2：家长短信兜底通道在 V0.0.1 是否实现（涉及短信服务商与手机号采集）？</li>
+      <li>A1：Q-01最低身份及监护关系核验强度待合规批准，未批准不开放真实儿童数据；不得默认后置。</li>
+      <li>A2：Q-02首版站内+订阅，短信后置，不采集仅用于短信的手机号。</li>
       <li>A3：儿童端底部 5 Tab 在 P0 的渐进显隐规则？</li>
       <li>A4：菜单"价格"统一约定为"虚拟消耗额"，是否需独立于未来真实货币体系？</li>
       <li>A5：技术栈具体版本（Spring Boot 4.1.1 是否 GA）待确认。</li>

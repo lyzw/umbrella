@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>成长星球 · 设计评审报告（UI / 交互 / 合规）</title>
+<style>
+  :root{
+    --brand:#3b82f6; --brand-700:#1d4ed8; --brand-50:#eff6ff;
+    --par:#22c55e; --par-700:#15803d; --par-50:#f0fdf4;
+    --amber:#f59e0b; --amber-50:#fffbeb;
+    --danger:#ef4444; --danger-50:#fef2f2;
+    --ink:#1f2733; --sub:#5b6776; --muted:#8a94a6;
+    --bg:#f6f8fb; --card:#ffffff; --line:#e6ebf2; --soft:#eef3fb;
+    --radius:18px; --shadow:0 1px 3px rgba(20,40,80,.06),0 10px 30px rgba(20,40,80,.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.85;font-size:16px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:38px 26px 110px;}
+
+  .hero{background:linear-gradient(120deg,#eff6ff,#eef6ff 55%,#f0fdf4);
+        border:1px solid var(--line);border-radius:24px;padding:32px 34px;margin-bottom:26px;}
+  .hero h1{font-size:29px;margin:0 0 6px;letter-spacing:.4px;}
+  .hero p{margin:6px 0;color:var(--sub);}
+  .tag{display:inline-block;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:600;
+       background:#fff;color:var(--brand-700);border:1px solid var(--brand-50);margin:3px 6px 3px 0;}
+
+  .verdict{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:18px 0 8px;}
+  @media(max-width:820px){.verdict{grid-template-columns:1fr;}}
+  .vcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+         padding:18px 20px;box-shadow:var(--shadow);}
+  .vcard h4{margin:0 0 6px;font-size:15px;}
+  .vcard .score{font-size:30px;font-weight:800;}
+  .vcard .desc{font-size:13px;color:var(--sub);}
+
+  h2{font-size:23px;margin:50px 0 14px;padding-left:14px;border-left:6px solid var(--brand);}
+  h3{font-size:18px;margin:28px 0 10px;color:var(--brand-700);}
+  p{margin:8px 0;color:var(--sub);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+        padding:20px 22px;margin:16px 0;box-shadow:var(--shadow);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:820px){.grid2{grid-template-columns:1fr;}}
+
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top;}
+  th{background:var(--soft);color:var(--ink);font-weight:600;}
+  td b{color:var(--ink);}
+
+  .ok{color:#15803d;font-weight:700;}
+  .warn{color:#b45309;font-weight:700;}
+  .bad{color:#b91c1c;font-weight:700;}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;}
+  .p-ok{background:#f0fdf4;color:#15803d;}
+  .p-warn{background:#fffbeb;color:#b45309;}
+  .p-bad{background:#fef2f2;color:#b91c1c;}
+
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:13px 18px;
+        font-size:13.5px;color:#7c5e10;margin:14px 0;}
+  .note.b{background:#eff6ff;border-color:#bfdbfe;color:#1e40af;}
+  .note.g{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
+  .note.r{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
+
+  code{background:var(--soft);padding:1px 6px;border-radius:6px;font-size:13px;color:#b45309;}
+  .muted{color:var(--muted);font-size:13px;}
+  a{color:var(--brand-700);}
+  .footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;}
+  .lvl{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:8px;margin-right:6px;}
+  .lvl.p0{background:#fef2f2;color:#b91c1c;}
+  .lvl.p1{background:#fffbeb;color:#b45309;}
+  .lvl.p2{background:#eff6ff;color:#1d4ed8;}
+  ul.tight{margin:6px 0;padding-left:20px;}
+  ul.tight li{margin:4px 0;}
+</style>
+</head>
+<body>
+<aside class="note" id="audit-errata">
+  <b>历史报告勘误 · 2026-09-18：</b>原报告留作设计讨论记录，不代表法律审核、市场趋势调查或实施验收。当前处置见<a href="../成长星球_V0.0.1_审计修订基线.md">审计修订基线</a>与<a href="../README.md">文档索引</a>。
+  <ul>
+    <li>“22:00–08:00禁服务”等历史法定义务表述未经官方依据核验，不作为合规结论；仅可作为待产品/合规评审的儿童侧策略候选，家长管理与权利请求不锁定。</li>
+    <li>微信登录和自报年龄不能证明身份，更不能证明监护关系；Q-01最低核验强度批准前不开放儿童真实数据。</li>
+    <li>家长须在本人账号授予审批提醒权限，儿童不能代授；家长儿童视图首版仅只读，不代理提交。</li>
+    <li>“视觉落后两代”“2026标配”等为原作者主观评价，缺少调查与可用性证据，不作为整改验收标准。优先验证可读性、触控、焦点、读屏和减少动态效果。</li>
+    <li>毛玻璃、暗色主题和复杂动画为后续可选探索，不替代当前业务一致性与可访问性修复。</li>
+  </ul>
+</aside>
+<div class="wrap">
+
+  <div class="hero">
+    <h1>「成长星球」设计评审报告</h1>
+    <p class="lead">对象：高保真 UI 设计方案（UI v1.0）+ 交互设计文档（IDX v1.0）｜ 视角：小程序产品与体验顾问</p>
+    <p>
+      <span class="tag">微信小程序</span>
+      <span class="tag">儿童 6–12 / 家长 / 后台</span>
+      <span class="tag">UI 趋势对标</span>
+      <span class="tag">交互评审</span>
+      <span class="tag">未成年人合规</span>
+      <span class="tag">评审 v1.0</span>
+    </p>
+    <p class="muted">结论先行：产品定位、信息架构、状态机、无障碍与合规意识均为上乘；主要短板在「UI 表现层偏旧」与「未成年人模式未单独成章」。以下按可落地、可评审维度给出。</p>
+  </div>
+
+  <!-- ===== 总体评分 ===== -->
+  <h2>一、总体评价（评分卡）</h2>
+  <div class="verdict">
+    <div class="vcard">
+      <h4>🎯 产品 / 交互逻辑</h4>
+      <div class="score" style="color:var(--par-700)">A</div>
+      <div class="desc">三角色信息架构清晰，核心闭环（提报→护栏→记账）状态机定义严谨，儿童友好文案到位。</div>
+    </div>
+    <div class="vcard">
+      <h4>🎨 UI 表现 / 趋势契合</h4>
+      <div class="score" style="color:var(--amber)">B−</div>
+      <div class="desc">设计系统完整，但视觉语言停留在 2022 扁平风；缺液态玻璃/毛玻璃、自定义图标、暗色模式等 2025–2026 主流元素。</div>
+    </div>
+    <div class="vcard">
+      <h4>⚖️ 合规 / 安全</h4>
+      <div class="score" style="color:var(--amber)">B+</div>
+      <div class="desc">监护人同意流、数据可删可导出意识强；但「未成年人模式」硬性要求未单独成章，是上架最大风险点。</div>
+    </div>
+  </div>
+
+  <div class="note g"><b>一句话：</b>方向对、地基稳、合规起点好；只需把「视觉皮」升级一代 + 补上未成年人模式，就能从「能用」到「好用且合规可过审」。</div>
+
+  <!-- ===== 二、UI 趋势对标（核心诉求） ===== -->
+  <h2>二、UI 是否符合当前流行设计？（核心对标）</h2>
+  <p>以 2025–2026 移动/小程序主流趋势为基准（iOS 26 液态玻璃、微信设计语言升级、毛玻璃分层、自定义插画图标、暗色模式、弹簧微动效），逐项对标如下：</p>
+
+  <table>
+    <tr><th>流行趋势</th><th>当前设计表现</th><th>判定</th><th>改造建议</th></tr>
+    <tr>
+      <td><b>液态玻璃 / 毛玻璃</b><br/>（iOS 26、微信导航栏趋势）</td>
+      <td>平涂色块 + 柔和投影，无通透/折射层次</td>
+      <td><span class="pill p-warn">⚠️ 落后</span></td>
+      <td>顶部 App Bar、Tab Bar、弹层改为<b>半透明毛玻璃</b>（<code>backdrop-filter: blur</code> + 微白底），卡片用<b>分层阴影</b>替代单薄投影，质感立刻现代一档。</td>
+    </tr>
+    <tr>
+      <td><b>大圆角 / 圆润形态</b></td>
+      <td>卡片 16–20px、按钮胶囊，已采用</td>
+      <td><span class="pill p-ok">✅ 符合</span></td>
+      <td>保持。可进一步统一为「12/16/20/28」刻度，弹窗/头像用更大圆角强化亲和。</td>
+    </tr>
+    <tr>
+      <td><b>渐变 + 糖果色 + 微光</b></td>
+      <td>儿童蓝/家长绿为平涂；Hero、成长树有渐变</td>
+      <td><span class="pill p-warn">⚠️ 部分</span></td>
+      <td>主色从「纯色块」升级为<b>品牌渐变 + 左上微光高光</b>（如按钮加 1px 白色顶光），提升「果冻/糖果」现代感，更贴合低龄。</td>
+    </tr>
+    <tr>
+      <td><b>自定义插画 / SVG 图标</b><br/>（emoji → 统一图标库）</td>
+      <td>大量使用 emoji 作主图标（🍽️✅🌱🔔 等）</td>
+      <td><span class="pill p-bad">❌ 风险</span></td>
+      <td>emoji 在 iOS/Android/微信端<b>渲染不一致、风格不可控、无法改色描边</b>。建议建立<b>统一 SVG 图标库 + 儿童向插画</b>（如线性/圆润双风格），图标语义更强、品牌更稳。强图标方向对，执行层要升级。</td>
+    </tr>
+    <tr>
+      <td><b>暗色 / 护眼模式</b></td>
+      <td>无</td>
+      <td><span class="pill p-warn">⚠️ 缺失</span></td>
+      <td>儿童可能睡前使用；暗色模式已是 2026 标配。建议提供「护眼/夜间」主题，复用现有 Token 换深色背景 + 降饱和主色。</td>
+    </tr>
+    <tr>
+      <td><b>弹簧微动效 / Lottie</b></td>
+      <td>仅 transform/opacity 基础过渡，偏保守</td>
+      <td><span class="pill p-warn">⚠️ 偏保守</span></td>
+      <td>勋章庆祝、成长树浇水引入<b>弹簧曲线（spring）+ Lottie 动效</b>；提交成功用「撒花/星星」庆祝动画，强化即时正反馈（文档已提原则，建议在视觉层落地）。</td>
+    </tr>
+    <tr>
+      <td><b>2.5D / 空间感插画</b></td>
+      <td>成长树仅 🌿 emoji，无插画资产</td>
+      <td><span class="pill p-warn">⚠️ 偏弱</span></td>
+      <td>成长树、勋章墙、空状态应投入<b>专业插画/2.5D 资产</b>，这是儿童产品差异化与情感连接的核心，也是当前最大的「观感短板」。</td>
+    </tr>
+    <tr>
+      <td><b>强图标 + 大字号</b></td>
+      <td>正文 16px、组件 ≥44px、图标优先</td>
+      <td><span class="pill p-ok">✅ 符合</span></td>
+      <td>保持，这是面向 11 岁用户的正确决策。</td>
+    </tr>
+  </table>
+
+  <div class="note b"><b>趋势结论：</b>结构/规范已达标，但「皮肤」落后约 2 代。最值得优先投入的 3 项：① 毛玻璃导航与分层阴影；② emoji → 统一图标/插画库；③ 成长树与勋章的专业插画资产。这三项做完，观感即可从「工具感」跃迁到「儿童产品级」。</div>
+
+  <!-- ===== 三、交互设计评审 ===== -->
+  <h2>三、交互设计评审</h2>
+
+  <h3>3.1 信息架构与导航 <span class="pill p-ok">✅ 扎实</span></h3>
+  <ul class="tight">
+    <li><span class="ok">优点：</span>三角色（儿童/家长/后台）+ 能力中台下沉的架构清晰；儿童 5 Tab、家长 4 Tab 分工明确；通知铃铛红点联动合理。</li>
+    <li><span class="warn">建议：</span>明确「同设备双账号切换」场景。现实中家长常先用自己的手机帮孩子操作，需补充「家长端一键切换到儿童视图 / 代操作」或「家庭内多成员快速切换」的交互，否则家长体验割裂。</li>
+  </ul>
+
+  <h3>3.2 核心流程与状态机 <span class="pill p-ok">✅ 严谨</span></h3>
+  <ul class="tight">
+    <li><span class="ok">优点：</span>「选菜→预览→提交→额度校验→（额度内自动 / 超额异步复核）→完成/驳回」状态机闭环完整；超额「不实时拦截、转复核中」对儿童情绪保护极佳，是亮点设计。</li>
+    <li><span class="warn">建议 1：</span>补充<b>「提交后撤回」</b>能力。当前仅「驳回后可改」，但等待家长期间儿童能否撤销？建议加「撤回」入口，避免误提交焦虑。</li>
+    <li><span class="warn">建议 2：</span>防刷/防沉迷。若儿童反复提交超额单，需加「当日复核次数上限」或温和提示「已告诉爸妈，耐心等哦」，防止重复骚扰家长。</li>
+    <li><span class="warn">建议 3：</span>儿童端状态词（爸妈在看 / 复核中）很友好，但需确保<b>家长端状态与儿童端严格同步</b>，避免两侧看到不一致进度。</li>
+  </ul>
+
+  <h3>3.3 反馈与提示机制 <span class="pill p-ok">✅ 完善</span></h3>
+  <ul class="tight">
+    <li>分层反馈（Toast / 站内 / 订阅消息 / 短信兜底 / 动画）设计到位，符合小程序多通道通知最佳实践。</li>
+    <li><span class="warn">建议：</span>订阅消息受微信「用户必须主动触发一次」规则限制（一次性订阅/长期订阅资质），需在交互中明确「引导用户点击授权订阅」的时机（如提交成功页加「开启爸妈提醒」按钮），否则家长可能收不到复核通知。这点文档未强调，是落地关键。</li>
+  </ul>
+
+  <h3>3.4 微交互与无障碍 <span class="pill p-ok">✅ 领先</span></h3>
+  <ul class="tight">
+    <li>WCAG 2.2 AA 对照、触控 ≥44px、状态图标+文字双编码、动效可关——在同类儿童产品中属领先水平。</li>
+    <li><span class="warn">建议：</span>文档提及但原型未体现「焦点可见描边」「读屏语义标签」。交付前端时需在组件层落实 <code>aria-*</code> 与焦点态，否则评审清单会落空。</li>
+  </ul>
+
+  <!-- ===== 四、合规（高风险） ===== -->
+  <h2>四、合规要点（上架最高风险，需重点补强）</h2>
+
+  <div class="note r"><b>⚠️ 最关键缺口：</b>面向 6–12 岁儿童的产品，必须响应监管对「未成年人模式」的硬性要求。当前文档仅在防沉迷一句带过，<b>未单独成章、未定义模式入口与具体约束</b>，是上架驳回的高概率点。</div>
+
+  <table>
+    <tr><th>合规项</th><th>当前覆盖</th><th>判定</th><th>必须补充</th></tr>
+    <tr>
+      <td><b>未成年人模式</b><br/>（网信办《移动互联网未成年人模式建设指南》2024）</td>
+      <td>仅提「防沉迷/时长提醒」</td>
+      <td><span class="pill p-bad">❌ 缺失</span></td>
+      <td>单独定义：① 醒目入口；② 单日/单次时长上限；③ 22:00–8:00 禁服务或可设；④ 内容分级与社交限制；⑤ 消费限制（与额度护栏打通）。规则会更新，以最新口径为准。</td>
+    </tr>
+    <tr>
+      <td><b>儿童敏感个人信息</b><br/>（《个人信息保护法》第 28 条）</td>
+      <td>最小采集、明示同意、可撤回、可导出/删除均有</td>
+      <td><span class="pill p-ok">✅ 良好</span></td>
+      <td>保持，并在隐私指引中明示「儿童个人信息」特殊处理；加密存储留痕。</td>
+    </tr>
+    <tr>
+      <td><b>可验证监护人同意</b></td>
+      <td>3.3 流程清晰（独立勾选 + 核验 + 留痕）</td>
+      <td><span class="pill p-warn">⚠️ 待落地</span></td>
+      <td>需明确<b>真实可验证路径</b>（实名/支付验证/运营商三要素之一）。仅「勾选同意书」不满足「可验证」，需有核验动作落地方案。</td>
+    </tr>
+    <tr>
+      <td><b>虚拟货币 / 实物兑换</b></td>
+      <td>首期虚拟记账；P2「奖励兑换中心」含真实小奖励</td>
+      <td><span class="pill p-warn">⚠️ 注意</span></td>
+      <td>首期「虚拟零花钱」与「记账」表述安全；但 P2 若兑换<b>真实商品/权益</b>，可能构成经营行为需资质。建议首期兑换仅限<b>虚拟权益</b>（如「多看 30 分钟动画」由家长端授权），规避合规风险。</td>
+    </tr>
+    <tr>
+      <td><b>UGC 内容安全</b></td>
+      <td>读后感/AI 对话标注「审核中/通过才公开」</td>
+      <td><span class="pill p-ok">✅ 良好</span></td>
+      <td>保持，并落具体审核策略（机审+人审）、违规处置与未成年人保护词库。</td>
+    </tr>
+  </table>
+
+  <div class="note b">官方依据（规则会更新，以最新口径为准）：
+    <ul class="tight" style="margin-top:6px">
+      <li>微信小程序设计指南：<a href="https://developers.weixin.qq.com/miniprogram/design/" target="_blank">developers.weixin.qq.com/miniprogram/design</a></li>
+      <li>微信小程序运营规范（含未成年人保护、UGC 条款）：<a href="https://developers.weixin.qq.com/miniprogram/dev/framework/operation-standard.html" target="_blank">…/operation-standard.html</a></li>
+      <li>《个人信息保护法》第二十八条（敏感个人信息）</li>
+      <li>网信办《移动互联网未成年人模式建设指南》（2024）</li>
+    </ul>
+  </div>
+
+  <!-- ===== 五、优先级改进清单 ===== -->
+  <h2>五、优先级改进清单</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--danger)"><span class="lvl p0">P0</span>上架前必做</h3>
+      <ul class="tight">
+        <li>补「未成年人模式」章节：入口 + 时长/时段/内容/消费约束。</li>
+        <li>明确「可验证监护人」的真实核验路径并落后端。</li>
+        <li>明确订阅消息授权引导时机（避免家长收不到复核通知）。</li>
+        <li>儿童端「提交后撤回」+ 超额重复提交防刷。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--amber)"><span class="lvl p1">P1</span>首期体验升级</h3>
+      <ul class="tight">
+        <li>emoji → 统一 SVG 图标库 + 儿童向插画。</li>
+        <li>导航栏/Tab/弹层毛玻璃化，卡片分层阴影。</li>
+        <li>主色渐变 + 微光高光，去「平涂工具感」。</li>
+        <li>成长树、勋章墙、空状态专业插画资产。</li>
+        <li>同设备双账号/家长代操作切换交互。</li>
+      </ul>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0;color:var(--brand-700)"><span class="lvl p2">P2</span>增强项</h3>
+    <ul class="tight">
+      <li>暗色 / 护眼模式主题（复用 Token）。</li>
+      <li>勋章庆祝 / 浇水动画升级为 Lottie + 弹簧曲线。</li>
+      <li>无障碍焦点态、读屏语义在组件层落地。</li>
+      <li>虚拟兑换仅限虚拟权益，规避实物合规风险。</li>
+    </ul>
+  </div>
+
+  <!-- ===== 六、给前端/设计的落地建议 ===== -->
+  <h2>六、给前端 / 设计的落地建议</h2>
+  <div class="card">
+    <ul class="tight">
+      <li><b>设计 Token 升级：</b>在现有 <code>app.wxss</code> 变量基础上，增加 <code>--blur</code>、<code>--shadow-layer</code>、<code>--grad-primary</code>、<code>--icon</code> 等，支持毛玻璃与渐变换肤。</li>
+      <li><b>图标工程化：</b>用一套统一管理的小程序图标（SVG/字体），替代 emoji；插画走独立资源目录，避免跨端渲染差异。</li>
+      <li><b>组件复用：</b>抽离「菜品卡 / 列表行 / 状态徽标 / TabBar / 金额卡 / 时间线 / 空状态」为通用组件，儿童端与家长端仅切 <code>--primary</code> 变量，保证一致性。</li>
+      <li><b>动效基线：</b>统一封装 spring 曲线与「减少动态效果」监听，代儿童端庆祝动画统一调用。</li>
+      <li><b>合规开关：</b>未成年人模式、订阅授权引导、可验证监护人核验做成可配置开关，便于随监管更新调整。</li>
+    </ul>
+  </div>
+
+  <div class="note g"><b>总结：</b>这份设计在「想清楚」层面已经优秀——架构、状态机、儿童友好、合规起点都到位。现在的关键是把「视觉皮」升级一代（毛玻璃 + 自定义图标 + 专业插画），并把「未成年人模式」从一句话补成一章可过审的规范。两者都补齐后，成长星球具备直接进开发、且过审概率高的质量。</div>
+
+  <div class="footer">
+    成长星球 · 设计评审报告（评审 v1.0）｜ 基于《高保真 UI 设计方案（UI v1.0）》与《交互设计文档（IDX v1.0）》评审 ｜ 视角：小程序产品与体验顾问 ｜ 趋势基准：2025–2026 移动/小程序主流设计语言。<br/>
+    说明：本评审为产品与体验设计咨询意见，不构成法律合规背书；硬性合规结论请以微信公众平台、网信办及《个人信息保护法》最新口径为准。
+  </div>
+
+</div>
+</body>
+</html>

@@ -69,6 +69,7 @@
 </style>
 </head>
 <body>
+<aside class="note"><b>2026-09-17 审计修订：</b>首版及长期能力分开，当前契约见<a href="成长星球_V0.0.1_审计修订基线.md">修订基线</a>与<a href="README.md">索引</a>。月份为估算；技术版本和替代版本均须兼容性验证，合规与上线状态不由本文件背书。</aside>
 <div class="wrap">
 
   <div class="hero">
@@ -202,7 +203,7 @@
       <g font-size="12" fill="#1f2733">
         <rect x="510" y="274" width="200" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="610" y="294" text-anchor="middle">账号 · 家庭关系中心</text>
         <rect x="722" y="274" width="220" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="832" y="294" text-anchor="middle">虚拟钱包（记账/额度）</text>
-        <rect x="510" y="312" width="200" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="610" y="332" text-anchor="middle">通知中台（三通道）</text>
+        <rect x="510" y="312" width="200" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="610" y="332" text-anchor="middle">通知中台（双通道）</text>
         <rect x="722" y="312" width="220" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="832" y="332" text-anchor="middle">数据看板 / 统计</text>
         <rect x="510" y="350" width="200" height="32" rx="8" fill="#fff" stroke="#c4b5fd"/><text x="610" y="370" text-anchor="middle">内容审核（AI 助审）</text>
         <rect x="722" y="350" width="220" height="32" rx="8" fill="#fff" stroke="#d6bcfa"/><text x="832" y="370" text-anchor="middle">AI 服务（P4 启用）</text>
@@ -220,15 +221,15 @@
       <rect x="250" y="500" width="340" height="38" rx="9" fill="#fff" stroke="#bae6fd"/>
       <text x="420" y="524" font-size="12.5" fill="#0369a1" text-anchor="middle">MySQL 8.0 · 业务库（usr_ / life_ / edu_ 三主域）</text>
       <rect x="610" y="500" width="350" height="38" rx="9" fill="#fff" stroke="#bae6fd"/>
-      <text x="785" y="524" font-size="12.5" fill="#0369a1" text-anchor="middle">Redis · 会话/缓存/限流/并发锁（version 乐观锁）</text>
+      <text x="785" y="524" font-size="12.5" fill="#0369a1" text-anchor="middle">Redis · 会话/缓存/限流；扣款锁在MySQL事务内</text>
 
       <!-- 基础设施 -->
       <rect x="20" y="560" width="960" height="78" rx="12" fill="#f1f5f9" stroke="#94a3b8"/>
       <text x="34" y="580" font-size="13" font-weight="700" fill="#475569">⑤ 基础设施（Infrastructure）</text>
       <g font-size="12" fill="#1f2733">
         <rect x="40" y="588" width="290" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="185" y="611" text-anchor="middle">微信生态（开放平台 / 订阅消息 / code2Session）</text>
-        <rect x="350" y="588" width="290" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="495" y="611" text-anchor="middle">MQ（可选解耦：通知/记账异步，R-04 后置）</text>
-        <rect x="660" y="588" width="300" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="810" y="611" text-anchor="middle">短信网关（仅关键安全/审批超时兜底）</text>
+        <rect x="350" y="588" width="290" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="495" y="611" text-anchor="middle">MQ 后置：仅解耦提交后通知</text>
+        <rect x="660" y="588" width="300" height="36" rx="8" fill="#fff" stroke="#cbd5e1"/><text x="810" y="611" text-anchor="middle">短信网关：首版不接入</text>
       </g>
 
       <!-- 纵向箭头 表现->网关->业务->数据 -->
@@ -255,7 +256,7 @@
       <ul style="font-size:13.5px">
         <li>建家庭、邀绑定、设额度、审批确认单、看消费看板、撤回同意/数据出口</li>
         <li>数据可见：所绑定家庭成员及其数据</li>
-        <li>端：<b>同一小程序</b>按角色路由 + 代操作切换</li>
+        <li>端：<b>同一小程序</b>按角色路由 + 只读预览</li>
       </ul>
     </div>
     <div class="card" style="margin:0;border-top:4px solid var(--brand3)">
@@ -307,9 +308,9 @@
     <div class="col"><h4 style="color:var(--brand4)">账号 · 家庭关系中心</h4><ul>
       <li>微信登录 code2Session</li><li>角色路由</li><li>家庭/成员关系</li><li>监护状态</li></ul></div>
     <div class="col"><h4 style="color:var(--brand4)">虚拟钱包</h4><ul>
-      <li>虚拟余额</li><li>额度规则引擎</li><li>扣减/发放流水</li><li>并发乐观锁</li></ul></div>
+      <li>虚拟余额</li><li>额度规则引擎</li><li>扣减/发放流水</li><li>并发行锁及版本校验</li></ul></div>
     <div class="col"><h4 style="color:var(--brand4)">通知中台</h4><ul>
-      <li>站内通知中心</li><li>微信订阅消息</li><li>家长短信兜底</li><li>三通道降级</li></ul></div>
+      <li>站内通知中心</li><li>微信订阅消息</li><li>短信后置，首版不接入</li><li>双通道降级</li></ul></div>
     <div class="col"><h4 style="color:var(--brand4)">数据看板</h4><ul>
       <li>消费/营养统计</li><li>成长多维聚合</li><li>趋势分析</li></ul></div>
     <div class="col"><h4 style="color:var(--brand4)">内容审核</h4><ul>
@@ -329,18 +330,18 @@
     <table>
       <tr><th style="width:170px">层 / 域</th><th>选型</th><th>说明与口径</th></tr>
       <tr><td>后端框架</td><td><b>Java 21 LTS + Spring Boot 4.1.1</b></td><td>Spring Framework 7 · Jakarta EE 11（<code>jakarta.*</code> 命名空间）· 虚拟线程。属全新代际，与旧 Java 11 / 2.7.18 工程隔离（引用功能规划六）。</td></tr>
-      <tr><td>ORM</td><td><b>MyBatis-Plus</b></td><td>复杂报表/统计友好；通用字段 <code>create_time / update_time / delete_at</code>（<code>delete_at</code> 为 BIGINT 删除时间戳，默认 0，替代布尔 deleted，支撑"删了还能重建"）；枚举用 VARCHAR 在 Java 控制。</td></tr>
+      <tr><td>ORM</td><td><b>MyBatis-Plus</b></td><td>复杂报表/统计友好；通用字段 <code>create_time / update_time / delete_at</code>（<code>delete_at</code> 为 BIGINT 删除时间戳，默认 0，替代布尔 deleted；身份及流水键不可复用，配置唯一约束逐表设计）；枚举用 VARCHAR 在 Java 控制。</td></tr>
       <tr><td>数据库</td><td><b>MySQL 8.0</b></td><td>业务库按 <span class="domain-usr">usr_</span> / <span class="domain-life">life_</span> / <span class="domain-edu">edu_</span> 三主域组织。</td></tr>
-      <tr><td>缓存 / 会话</td><td><b>Redis</b></td><td>会话、热点缓存、限流、虚拟钱包并发扣减乐观锁（<code>version</code> 字段，防 E-007 并发超扣）。</td></tr>
-      <tr><td>鉴权</td><td><b>JWT 分权</b></td><td>child / parent / admin 三角色；token 失效与刷新；敏感接口签名/防重放。</td></tr>
-      <tr><td>通知</td><td>微信订阅消息 + 站内通知中心 + 短信兜底（后置）</td><td>三通道兜底，站内保底（F-010/F-011 · 采纳 R-04）。</td></tr>
-      <tr><td>解耦</td><td>可选 MQ</td><td>通知/记账异步解耦；V0.0.1 可先同步，MQ 作为 R-04 后置增强（引用功能规划六）。</td></tr>
+      <tr><td>缓存 / 会话</td><td><b>Redis</b></td><td>仅会话、热点缓存、限流；审批在MySQL内按关系→确认单→钱包→规则加行锁，version额外校验，不依赖Redis保证记账一致性。</td></tr>
+      <tr><td>鉴权</td><td><b>JWT 分权</b></td><td>child / parent / admin 三角色；访问token有效30分钟，过期重新wx-login，不提供长期refresh token；服务端重查账号及权限，退出/禁用使会话失效；敏感接口防重放。</td></tr>
+      <tr><td>通知</td><td>微信订阅消息 + 站内通知中心 + 短信兜底（后置）</td><td>双通道兜底，站内保底（F-010/F-011 · 采纳 R-04）。</td></tr>
+      <tr><td>解耦</td><td>可选 MQ（后置）</td><td>首版数据库outbox任务投递通知；钱包、额度、流水、审批、完成状态与通知事件同事务。MQ只能解耦提交后的外部投递，不能异步补记账。</td></tr>
       <tr><td>小程序端</td><td>微信小程序原生 或 Taro / uni-app（Vue/React 跨端）</td><td>前端独立工程，非 Java；家长端/儿童端同一小程序按角色路由。</td></tr>
       <tr><td>后台</td><td>Web 管理台（独立工程）</td><td>不在小程序内；菜单/任务/勋章/审核/风控。</td></tr>
     </table>
   </div>
 
-  <div class="note r"><b>Q-06 技术栈版本闸门（关键裁定）：</b>默认采用 <b>Java 21 LTS + Spring Boot 4.1.1</b>，但须在<b>发布前设置「GA 与 MyBatis-Plus 兼容性」验收闸门（引用 R-10）</b>。若 GA 版本或 MyBatis-Plus 适配未就绪，则<b>锁定稳定版</b>（如 Spring Boot 3.x 稳定线）以保证交付，待生态成熟再升级。架构层面通过分层与接口契约降低对具体版本的耦合。</div>
+  <div class="note r"><b>Q-06 技术栈版本闸门：</b><b>Java 21 LTS + Spring Boot 4.1.1</b>为候选组合，不代表本次已核实GA或兼容性。发布前须验证GA、MyBatis-Plus等依赖兼容并通过集成测试（R-10）；候选组合不通过时，替代版本也须重新验证，未通过仍阻断发布。架构层面通过分层与接口契约降低对具体版本的耦合。</div>
 
   <!-- ============ 6 ============ -->
   <h2 id="s6">六、演进路线 Roadmap（P0–P4）</h2>
@@ -349,7 +350,7 @@
     <div class="step"><b style="color:var(--p1)">P1 点餐起步 = V0.0.1</b><span>第 2–4 月</span><br/>小当家·菜单展示与确认 MVP（额度护栏+站内通知+审批）</div>
     <div class="step"><b style="color:var(--p2)">P2 生活自主</b><span>第 5–8 月</span><br/>零花钱/家务/健康/日程 + 奖励兑换/二级监护人</div>
     <div class="step"><b style="color:var(--p3)">P3 学习成长</b><span>第 9–12 月</span><br/>课表/作业/错题/阅读 + 教师角色与家校互通</div>
-    <div class="step"><b style="color:var(--p4)">P4 智能激励</b><span>第 13–18 月</span><br/>AI/成长树/多孩 + 成长洞察/数据删除导出</div>
+    <div class="step"><b style="color:var(--p4)">P4 智能激励</b><span>第 13–18 月</span><br/>AI/成长树/多孩 + 成长洞察/隐私办理自动化增强</div>
   </div>
 
   <div class="note b"><b>阶段一锚定：</b>全局规划的<b>第一阶段即 V0.0.1 = P0 地基 + P1 小当家·点餐 MVP</b>。它是首个可上线版本，本文档的架构/技术/合规均以其为落地校验点；P2–P4 为后续演进，本期仅规划边界与接口预留。</div>
@@ -357,11 +358,11 @@
   <h3>6.1 各阶段目标、关键交付与退出标准</h3>
   <table>
     <tr><th style="width:70px">阶段</th><th>目标</th><th>关键交付（含 V0.0.1 对齐）</th><th>退出标准（示例）</th></tr>
-    <tr><td><b>P0</b></td><td>建成三角色可运行地基与护栏底座</td><td>登录/档案/家庭绑定/虚拟钱包/通知中台/合规同意/额度设置（F-001~F-013）</td><td>儿童可建档并绑定家庭；家长可设额度；通知三通道可用</td></tr>
+    <tr><td><b>P0</b></td><td>建成三角色可运行地基与护栏底座</td><td>登录/档案/家庭绑定/虚拟钱包/通知中台/合规同意/额度设置（F-001~F-013）</td><td>同意及绑定后家长建档；家长发放/设额度；站内基础前置，订阅Sprint4集成</td></tr>
     <tr><td><b>P1</b><br/><span class="pill p0">阶段一·V0.0.1</span></td><td>跑通首个用户价值闭环</td><td>菜单配置+展示+确认+家长审批+虚拟记账+状态追踪（F-014~F-023）</td><td>端到端"确认→审批→记账→正反馈"跑通，<b>零真实支付</b></td></tr>
     <tr><td><b>P2</b></td><td>生活自主闭环</td><td>零花钱UI/家务/健康/日程/购物/奖励兑换/二级监护人</td><td>"赚→花"动机闭环成立</td></tr>
     <tr><td><b>P3</b></td><td>学习成长闭环</td><td>课表/作业/错题/OCR/阅读/百科/教师家校互通</td><td>学习模块可用，家校三方协同</td></tr>
-    <tr><td><b>P4</b></td><td>智能激励收敛</td><td>AI/成长树/多孩/洞察告警/数据导出注销</td><td>跨模块激励体系成型，合规闭环</td></tr>
+    <tr><td><b>P4</b></td><td>智能激励收敛</td><td>AI/成长树/多孩/洞察告警/隐私办理自动化增强</td><td>跨模块激励体系成型，合规闭环</td></tr>
   </table>
 
   <h3>6.2 为何从「点餐」起步（引用产品规划 8.2）</h3>
@@ -392,7 +393,7 @@
         <li><b>儿童个人信息保护：</b>位置/人脸/OCR 需家长同意，可撤回；儿童数据单独存储、加密。</li>
         <li><b>未成年人模式：</b>须满足《移动互联网未成年人模式建设指南》与微信平台口径（时长/时段/内容分级/消费约束）。</li>
         <li><b>内容安全：</b>AI 与 UGC（读后感/对话）需机审+人审，防不良信息。</li>
-        <li><b>沉迷防控：</b>游戏化适度，设使用时长提醒；22:00–8:00 禁服务或仅家长授权时段开放。</li>
+        <li><b>沉迷防控：</b>游戏化适度，设使用时长提醒；夜间保护候选22:00–08:00，仅儿童侧；具体配置待产品/合规确认。</li>
         <li><b>越权与审计：</b>跨家庭数据访问须拒绝并留安全日志（E-009）。</li>
       </ul>
     </div>
@@ -408,23 +409,23 @@
       </ul>
     </div>
   </div>
-  <div class="note"><b>合规红线（引用交互 9 / PRD 11.3）：</b>不采集儿童真实位置/人脸（V0.0.1）；OCR/位置待 P2+ 且需同意；监护人同意书独立勾选、不与登录合并；可验证监护人核验（实名/运营商三要素）作 P1+ 增强（见 9、Q-01）。未成年人模式为 P0 合规硬约束，非可选项。</div>
+  <div class="note"><b>发布闸门：</b>首版不采集儿童位置/人脸，OCR后置；同意独立勾选。自报不等于核验，Q-01最低强度未批准不采集真实儿童数据。夜间/时长限制是待评审产品策略，不作法定义务断言；官方法规适用须另行核验。</div>
 
   <!-- ============ 9 ============ -->
   <h2 id="s9">九、假设与待确认（含 6 项裁定）</h2>
   <div class="card">
-    <p><b>已做基础假设：</b>微信小程序（非原生 App）；三角色；通用场景（不限定城市）；不做真实支付、食堂非真实营运——学校端仅展示当日菜单、家庭端由孩子向父母确认/提报，点餐与任务均为虚拟零花钱记账。下述 6 项待确认已由本全局文档<b>按推荐默认裁定并推进</b>，避免再次留悬空（引用 PRD 十五、产品规划十二）。</p>
+    <p><b>设计假设：</b>微信小程序（非原生 App）；三角色；通用场景（不限定城市）；不做真实支付、食堂非真实营运；学校菜单仅展示/收藏，家庭菜单由孩子提报并经家长审批后虚拟记账，任务奖励属P2。下述Q-01至Q-06为待联合确认的设计口径，Q-07账号边界与Q-08菜单来源补充见修订基线；不得将默认方案视为发布闸门已通过。</p>
   </div>
 
   <h3>9.1 六项待确认裁定（落点）</h3>
   <table>
-    <tr><th style="width:60px">编号</th><th>问题</th><th>本全局文档裁定（默认推进）</th><th>依据</th></tr>
-    <tr><td><b>Q-01</b></td><td>监护人可验证核验（实名/运营商三要素）是否纳入 V0.0.1？</td><td><b>V0.0.1 MVP 用「微信绑定 + 明示《同意书》勾选 + 家长自报年龄 attestation」</b>建立监护关系；可验证核验（实名/运营商三要素之一）<b>作 P1+ 增强</b>，不阻塞 MVP。</td><td>采纳 R-05</td></tr>
-    <tr><td><b>Q-02</b></td><td>家长短信兜底是否 V0.0.1 实现？</td><td>V0.0.1 默认<b>「站内通知中心 + 微信订阅消息」双通道</b>；<b>短信仅作关键安全/审批超时兜底，整体后置</b>（启用须补手机号采集+明示同意+服务商选型）。</td><td>采纳 R-04</td></tr>
-    <tr><td><b>Q-03</b></td><td>儿童端 5 Tab 在 P0 的渐进显隐规则？</td><td>V0.0.1 <b>仅「点餐」可用</b>；任务/学习占位"敬请期待"；成长仅静态幼苗（P4 养成）。</td><td>采纳 R-02</td></tr>
+    <tr><th style="width:60px">编号</th><th>问题</th><th>本次设计口径（待联合确认）</th><th>依据</th></tr>
+    <tr><td><b>Q-01</b></td><td>最低身份及监护关系核验强度</td><td>自报仅SELF_ATTESTED，VERIFIED须独立证据；未批准不开放真实儿童数据采集</td><td>待合规批准</td></tr>
+    <tr><td><b>Q-02</b></td><td>首版通知范围</td><td>站内+订阅；短信本版不接入，不采集仅用于短信的手机号。未来接入须独立评审授权、供应商、费用和失败策略。</td><td>文档已修订，待联合确认</td></tr>
+    <tr><td><b>Q-03</b></td><td>儿童端 5 Tab 在 P0 的渐进显隐规则？</td><td>V0.0.1 <b>「点餐」「我的」可用</b>；任务/学习占位"敬请期待"；成长仅静态幼苗（P4 养成）。</td><td>采纳 R-02</td></tr>
     <tr><td><b>Q-04</b></td><td>额度默认值？</td><td><b>单笔 ¥30 / 每日 ¥30 / 每周 ¥150</b>（虚拟消耗额，可配置）。</td><td>PRD F-009 裁定</td></tr>
     <tr><td><b>Q-05</b></td><td>虚拟余额初始值？家长是否"充值"虚拟币？</td><td><b>初始 0</b>；家长可<b>手动增（P0 简单入口）</b> / 任务发放（P2）。</td><td>PRD F-008 裁定</td></tr>
-    <tr><td><b>Q-06</b></td><td>技术栈版本（Spring Boot 4.1.1 是否 GA）？</td><td>默认 <b>Java 21 LTS + Spring Boot 4.1.1</b>；设置发布前<b>「GA 与 MyBatis-Plus 兼容性」验收闸门（R-10）</b>，若不兼容则锁稳定版。</td><td>功能规划六 · R-10</td></tr>
+    <tr><td><b>Q-06</b></td><td>技术栈版本及兼容性？</td><td>候选Java 21 + Spring Boot 4.1.1及任何替代版本均须验证GA、依赖兼容和集成测试；未通过阻断发布。</td><td>修订基线Q-06 · R-10</td></tr>
   </table>
 
   <h3>9.2 补充合理假设（架构师补充）</h3>
@@ -432,7 +433,7 @@
     <li><b>A-单孩优先：</b>V0.0.1 限制为单孩以简化链路；若支持多孩，家长端/看板顶部提供「孩子选择器」，数据按 <code>child_id</code> 隔离（引用交互 R-14 / U-Q-03）。</li>
     <li><b>A-虚拟消耗额符号：</b>全稿金额符号 <code>¥</code> 表示<b>虚拟消耗额（非真实货币）</b>；关键卡显式标注"虚拟"，满足 R-15 去货币化目标（引用 UI 2.7 / U-Q-05）。</li>
     <li><b>A-扣减口径：</b>严格遵循 F-019 权威状态机——<b>扣减统一发生在家长「同意」之后</b>，提交时不扣减；超额不实时拦截，转异步复核（引用 PRD F-018/F-019、交互 3.8、采纳 R-01）。</li>
-    <li><b>A-数据模型去冗余：</b>V0.0.1 以 <code>life_menu_daily</code>（按学校+日期+餐段）替代 <code>life_restaurant</code>，避免过度设计（引用 R-07）。</li>
+    <li><b>A-数据模型去冗余：</b>V0.0.1 以 <code>life_menu_daily</code> 替代 <code>life_restaurant</code>；按source_type、owner_key、日期、餐段唯一，分别支持SCHOOL学校菜单与FAMILY家庭菜单；字段、权限与迁移约束见修订基线第4节。</li>
     <li><b>A-二级监护人：</b>V0.0.1 <b>不做</b>，入口置灰标"即将推出"（引用 U-Q-01 / U-G-02）。</li>
   </ul>
 
@@ -446,7 +447,7 @@
     <tr><td>三角色</td><td>儿童(ROLE_CHILD) / 家长(ROLE_PARENT) / 后台运营(ROLE_ADMIN)。</td></tr>
     <tr><td>虚拟零花钱 / 虚拟消耗额</td><td>模拟记账单位（非真实货币），¥ 符号统一标注"虚拟"（R-15）。</td></tr>
     <tr><td>额度护栏</td><td>单笔/每日/每周上限 + 超额异步复核（家长显式放行）。</td></tr>
-    <tr><td>确认单状态机(F-019)</td><td>DRAFT→PENDING(待家长确认)→APPROVED(家长同意)→COMPLETED(扣减成功)；REJECTED→DRAFT(改后重提)。扣减统一在"同意"之后。</td></tr>
+    <tr><td>确认单状态机(F-019)</td><td>DRAFT仅客户端；持久化PENDING→COMPLETED或REJECTED/CANCELLED；审批和记账原子提交，失败仍PENDING；重提新ID关联旧单。</td></tr>
     <tr><td>能力中台</td><td>账号家庭 / 虚拟钱包 / 通知 / 数据看板 / 内容审核 / 合规审计 / AI(P4) 等共享下沉能力。</td></tr>
     <tr><td>数据域前缀</td><td><span class="domain-usr">usr_</span> 账户/家庭/成长基础 · <span class="domain-life">life_</span> 生活域 · <span class="domain-edu">edu_</span> 学习域。</td></tr>
     <tr><td>未成年人模式</td><td>P0 合规硬约束：时长/时段/内容分级/消费约束（交互 9）。</td></tr>
@@ -458,7 +459,7 @@
     <p>本全局规划设计文档为<b>总纲</b>，定义了架构、模块边界、技术选型、演进与合规基线。下游《V0.0.1 详细分析设计文档》将在本总纲约束下展开以下细化，并与之严格对齐：</p>
     <ul style="font-size:13.5px">
       <li><b>需求细化：</b>将 F-001~F-023 拆解为详细用例、验收标准与异常分支（承接 PRD 六、八）。</li>
-      <li><b>数据结构：</b>给出 <span class="domain-usr">usr_</span> / <span class="domain-life">life_</span> 各实体完整 DDL、索引、通用字段与 <code>version</code> 乐观锁设计（承接功能规划六、PRD 十）。</li>
+      <li><b>数据结构：</b>给出 <span class="domain-usr">usr_</span> / <span class="domain-life">life_</span> 各实体完整 DDL、索引、通用字段与 <code>version</code> 行锁及版本校验设计（承接功能规划六、PRD 十）。</li>
       <li><b>接口契约：</b>RESTful + JWT 分权接口清单、状态码、错误码（E-001~E-010）与并发扣减事务设计。</li>
       <li><b>流程细化：</b>F-019 状态机落到服务编排（提交预校验不扣减 → 家长同意 → 扣减 → 通知），含撤回/防刷（交互 3.8）。</li>
       <li><b>技术闸门落地：</b>在详细设计阶段执行 Q-06 的 GA/MyBatis-Plus 兼容性验收，确定最终依赖版本。</li>
