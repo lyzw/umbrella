@@ -47,7 +47,7 @@
 
 **Interfaces:**
 - Parent catalog load paginates through `/parent/dish`.
-- Parent menu load uses `/parent/menu-daily` and treats `E-404` as an unpublished empty selection.
+- Parent menu load uses `/parent/menu-daily`; an unpublished selection returns `data: null`, with legacy `E-404` responses still accepted by the mini program.
 - Parent publish sends only `{menuDate, mealType, dishIds, status:"PUBLISHED"}`.
 
 - [x] Add page tests for parent loading, selection limits, payload whitelist, and child-flow regression.
