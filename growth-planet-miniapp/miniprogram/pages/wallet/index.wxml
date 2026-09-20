@@ -4,7 +4,7 @@
   <view class="notice">虚拟单位，仅用于家庭记账，不支持充值、提现或真实支付。</view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:if="{{receipt}}" class="notice">{{receipt}}</view>
-  <view wx:if="{{wallet}}" class="section"><text class="label">当前余额</text><view class="amount">{{wallet.balance}}<text class="unit">虚拟单位</text></view></view>
+  <view wx:if="{{wallet}}" class="balance-card"><text class="label">当前余额</text><view class="amount">{{wallet.balance}}<text class="unit">虚拟单位</text></view></view>
   <view wx:if="{{pendingGrant}}" class="notice"><view>上次发放结果尚未确认，请核对流水或原样重试。</view><button bindtap="retryGrant" disabled="{{busy}}">重试原发放请求</button></view>
   <view wx:if="{{role === 'PARENT' && wallet}}" class="section">
     <view class="section-title">发放零花钱</view>

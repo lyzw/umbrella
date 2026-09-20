@@ -1,1 +1,13 @@
-.document { display: block; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; font-family: monospace; font-size: 13px; line-height: 1.7; margin-top: 16px; }
+/* 同意与数据权利：三个分区统一为卡片表面，层级清晰 */
+.section {
+  border-top: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-soft);
+}
+/* 导出 / 删除等危险操作按钮组留出稳定间距 */
+.actions { margin-top: 16px; }
+.document { display: block; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; font-family: monospace; font-size: 13px; line-height: 1.7; margin-top: 16px; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: 14px; }

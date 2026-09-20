@@ -1,0 +1,15 @@
+/* 偏好 / 档案表单分区统一为卡片表面 */
+.section {
+  border-top: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-soft);
+}
+/* 表单分区之间留出呼吸感 */
+.field { margin-bottom: 16px; }
+/* 保存 / 主操作按钮在卡片内占满宽度，便于儿童或家长单手操作 */
+.section button.primary { width: 100%; }
+.actions { margin-top: 16px; }

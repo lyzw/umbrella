@@ -1,0 +1,16 @@
+/* 支持页分区统一为卡片表面，与首页 / 点餐页的卡片语言一致 */
+.section {
+  border-top: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-soft);
+}
+/* 儿童申请行（全局 .link-row）已是列表项，这里补充分区留白 */
+.section + .section { margin-top: 0; }
+/* 邀请码 / 绑定提示在窄屏也能完整换行 */
+.notice { overflow-wrap: anywhere; }
+/* 操作按钮组留出稳定间距，点击目标足够大 */
+.actions { margin-top: 16px; }

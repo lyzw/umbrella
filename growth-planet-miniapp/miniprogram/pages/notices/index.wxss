@@ -1,0 +1,16 @@
+/* 通知记录项：整卡可点，按压反馈 */
+.item { transition: transform var(--motion-fast), background-color var(--motion-fast); }
+.item:active { transform: scale(.99); background: var(--surface-2); }
+/* 未读 / 已读徽标语义化 */
+.unread-badge {
+  background: var(--primary);
+  color: #fff;
+}
+.read-badge {
+  background: #fff;
+  color: #5b6776;
+  border: 1px solid #cbd5e1;
+}
+/* 仅看未读开关行与记录区留出间距 */
+.row { padding: 4px 0; }
+.actions { margin-top: 16px; }

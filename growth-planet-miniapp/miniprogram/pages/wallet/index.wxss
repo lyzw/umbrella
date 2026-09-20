@@ -1,0 +1,26 @@
+/* 余额概览卡：角色化主色底，强调虚拟单位语义 */
+.balance-card {
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 6px;
+  box-shadow: var(--shadow-soft);
+}
+.balance-card .amount { font-size: 36px; }
+/* 收支记录行：交易类型与金额基线对齐，符号色由 .price 继承 */
+.item .row { align-items: baseline; }
+/* 邀请 / 发放类操作按钮在卡片内占满宽度，点击目标更大 */
+.section button.primary { width: 100%; }
+/* 长表单分区之间留出呼吸感 */
+.section + .section { margin-top: 4px; }
+/* 发放 / 额度 / 收支记录分区统一为卡片表面，与家庭页一致 */
+.section {
+  border-top: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-soft);
+}
