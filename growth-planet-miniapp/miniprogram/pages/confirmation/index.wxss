@@ -1,2 +1,11 @@
-.record { width: 100%; text-align: left; }
 .picker { margin-bottom: 12px; }
+/* 确认单/审批记录：整卡可点，按压有反馈 */
+.record { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 4px; transition: transform var(--motion-fast), background-color var(--motion-fast); }
+.record:active { transform: scale(.99); background: var(--surface-2); }
+.record .row { align-items: baseline; }
+/* 审批操作区与普通内容分区做出层级区分 */
+.section { background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: 16px; }
+/* 合计金额在详情页更醒目，但保持虚拟单位语义 */
+.amount { font-size: 28px; }
+/* 草稿提交前的总览卡 */
+.item .row { align-items: baseline; }
