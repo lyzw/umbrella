@@ -1,0 +1,1 @@
+.document { display: block; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-all; font-family: monospace; font-size: 13px; line-height: 1.7; margin-top: 16px; }

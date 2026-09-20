@@ -1,0 +1,31 @@
+<view class="page parent">
+  <view class="header"><view class="title">同意与数据权利</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
+  <picker wx:if="{{children.length}}" range="{{children}}" range-key="childId" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">儿童 {{childId}}</view></picker>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:if="{{consent}}" class="section">
+    <view class="section-title">档案处理同意</view><view class="badge">{{consent.currentStatus}}</view>
+    <view class="muted">{{consent.agreementText}}</view><view class="small">协议版本 {{consent.version}}</view>
+    <view class="actions"><button wx:if="{{consent.currentStatus === 'GRANTED'}}" class="danger" bindtap="revoke" disabled="{{busy}}">撤回同意</button></view>
+  </view>
+  <view wx:if="{{childId}}" class="section">
+    <view class="section-title">数据权利申请</view>
+    <view class="muted">受理后由工作人员办理。导出范围为当前档案、偏好及最近至多500条本人同意记录，不含全量历史。删除申请受理不代表删除已完成。</view>
+    <view class="actions"><button bindtap="exportRequest" disabled="{{busy || pendingExport}}">申请导出</button></view>
+    <view wx:if="{{pendingExport}}" class="notice"><view>导出申请结果未知</view><button bindtap="retry" data-type="export" disabled="{{busy}}">重试原导出申请</button></view>
+    <view class="field" wx:if="{{synthetic}}"><text class="label">删除核验：当前家长合成账号</text><input value="{{account}}" bindinput="input" data-field="account" maxlength="51" disabled="{{busy || pendingDelete}}" /></view>
+    <view class="actions"><button class="danger" bindtap="deleteRequest" disabled="{{busy || pendingDelete}}">重新核验并申请删除</button></view>
+    <view wx:if="{{pendingDelete}}" class="notice"><view>删除申请结果未知</view><button bindtap="retry" data-type="delete" disabled="{{busy}}">重试原删除申请</button></view>
+  </view>
+  <view class="section">
+    <view class="section-title">查询申请</view>
+    <view class="field"><text class="label">申请编号</text><input value="{{taskId}}" bindinput="input" data-field="taskId" type="number" maxlength="19" disabled="{{busy}}" /></view>
+    <button bindtap="query" disabled="{{busy || !taskId}}">查询办理状态</button>
+    <view wx:if="{{task}}" class="item">
+      <view class="row"><text>{{task.requestType === 'EXPORT' ? '导出申请' : '删除申请'}}</text><text class="badge">{{task.label}}</text></view>
+      <view class="muted">申请编号 {{task.taskId}}</view><view class="muted">办理期限 {{task.dueAt || '尚未确定'}}</view>
+      <view wx:if="{{task.errorCode}}" class="error">办理结果 {{task.errorCode}}</view>
+      <view wx:if="{{task.downloadAvailable}}" class="actions"><button bindtap="document" disabled="{{busy}}">查看导出内容</button></view>
+    </view>
+    <view wx:if="{{documentText}}" class="section"><button bindtap="closeDocument">关闭内容</button><text class="document" selectable>{{documentText}}</text></view>
+  </view>
+</view>

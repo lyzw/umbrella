@@ -1,0 +1,35 @@
+<view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <view class="header"><view class="title">虚拟零花钱</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
+  <picker wx:if="{{role === 'PARENT' && children.length}}" range="{{children}}" range-key="childId" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">儿童 {{childId}}</view></picker>
+  <view class="notice">虚拟单位，仅用于家庭记账，不支持充值、提现或真实支付。</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:if="{{receipt}}" class="notice">{{receipt}}</view>
+  <view wx:if="{{wallet}}" class="section"><text class="label">当前余额</text><view class="amount">{{wallet.balance}}<text class="unit">虚拟单位</text></view></view>
+  <view wx:if="{{pendingGrant}}" class="notice"><view>上次发放结果尚未确认，请核对流水或原样重试。</view><button bindtap="retryGrant" disabled="{{busy}}">重试原发放请求</button></view>
+  <view wx:if="{{role === 'PARENT' && wallet}}" class="section">
+    <view class="section-title">发放零花钱</view>
+    <view class="field"><text class="label">发放金额</text><input type="digit" value="{{amount}}" bindinput="input" data-field="amount" maxlength="7" disabled="{{busy || pendingGrant}}" /></view>
+    <view class="field"><text class="label">发放原因</text><input value="{{reason}}" bindinput="input" data-field="reason" maxlength="100" disabled="{{busy || pendingGrant}}" /></view>
+    <button class="primary" bindtap="grant" disabled="{{busy || pendingGrant}}">确认发放</button>
+  </view>
+  <view wx:if="{{rule}}" class="section">
+    <view class="section-title">使用额度</view>
+    <view class="muted">今日已用 {{rule.dailyUsed}} · 本周已用 {{rule.weeklyUsed}}</view>
+    <view class="field"><text class="label">单笔额度</text><input type="digit" value="{{singleLimit}}" bindinput="input" data-field="singleLimit" maxlength="7" disabled="{{role !== 'PARENT' || busy}}" /></view>
+    <view class="field"><text class="label">每日额度</text><input type="digit" value="{{dailyLimit}}" bindinput="input" data-field="dailyLimit" maxlength="7" disabled="{{role !== 'PARENT' || busy}}" /></view>
+    <view class="field"><text class="label">每周额度</text><input type="digit" value="{{weeklyLimit}}" bindinput="input" data-field="weeklyLimit" maxlength="7" disabled="{{role !== 'PARENT' || busy}}" /></view>
+    <button wx:if="{{role === 'PARENT'}}" bindtap="saveRule" disabled="{{busy}}">保存额度</button>
+  </view>
+  <view class="section">
+    <view class="section-title">收支记录</view>
+    <view class="field"><text class="label">开始日期</text><picker mode="date" value="{{startDate}}" bindchange="date" data-field="startDate" disabled="{{busy}}"><view class="picker">{{startDate}}</view></picker></view>
+    <view class="field"><text class="label">结束日期</text><picker mode="date" value="{{endDate}}" bindchange="date" data-field="endDate" disabled="{{busy}}"><view class="picker">{{endDate}}</view></picker></view>
+    <button bindtap="logs" disabled="{{busy || !childId}}">查询流水</button>
+    <view wx:if="{{!records.length && !busy}}" class="empty">暂无收支记录</view>
+    <view class="item" wx:for="{{records}}" wx:key="logId">
+      <view class="row"><text>{{item.transType === 'GRANT' ? '家长发放' : '餐单支出'}}</text><text class="price">{{item.transType === 'GRANT' ? '+' : '−'}}{{item.amount}}</text></view>
+      <view class="small">{{item.createTime}} · 流水 {{item.logId}}</view><view class="muted">余额 {{item.balanceAfter}}</view>
+    </view>
+    <view class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
+  </view>
+</view>
