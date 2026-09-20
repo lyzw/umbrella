@@ -238,7 +238,8 @@ class CatalogFlowIT extends BaseIT {
 
         mockMvc.perform(get("/api/parent/menu-daily").header("Authorization", bearer(other.parentToken()))
                 .param("menuDate", today().toString()).param("mealType", "LUNCH"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").doesNotExist());
         for (String token : List.of(ctx.childToken(), other.childToken())) {
             mockMvc.perform(get("/api/parent/dish").header("Authorization", bearer(token)))
                     .andExpect(status().isForbidden());

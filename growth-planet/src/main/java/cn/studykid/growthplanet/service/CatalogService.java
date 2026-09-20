@@ -198,7 +198,9 @@ public class CatalogService {
         MenuDaily menu = menus.selectOne(menuKey("FAMILY", familyId.toString(), menuDate, mealType)
                 .last("FOR UPDATE"));
         if (menu == null) {
-            throw new BizException(ResultCode.E404_NOT_FOUND);
+            // The maintenance page treats an unpublished date/meal as a normal empty state.
+            audit.record("MENU_MAINTENANCE_QUERY", ctx.getUserId(), familyId, "MENU", null, null, "empty");
+            return null;
         }
         Map<Long, Dish> current = lockVisibleDishes(menu.getDishIds());
         List<DishResp> visible = new ArrayList<>();

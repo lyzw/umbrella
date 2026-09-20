@@ -214,7 +214,9 @@ Both parent reads require an authenticated parent with a current bound family.
 Family ownership is always derived from the login context; neither read accepts
 `familyId`. The maintenance query does not require a child profile or consent,
 returns OFF_SALE referenced dishes for explicit cleanup, and reports logically
-deleted references in `missingDishIds`. An absent menu returns 404.
+deleted references in `missingDishIds`. An absent menu is a successful empty
+result (`data: null`) so the maintenance page can start a new menu without
+surfacing an expected 404 as a network error.
 
 Child menu query example:
 
