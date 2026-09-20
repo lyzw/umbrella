@@ -1,6 +1,6 @@
 <view class="nav {{role === 'PARENT' ? 'parent' : ''}}">
-  <button wx:for="{{role === 'PARENT' ? parentTabs : childTabs}}" wx:key="key" bindtap="change" data-key="{{item.key}}" class="tab {{active === item.key ? 'active' : ''}}" aria-label="{{item.text}}" aria-role="button">
-    <text class="tab-icon">{{item.icon}}</text>
+  <button wx:for="{{role === 'PARENT' ? parentTabs : childTabs}}" wx:key="key" bindtap="change" data-key="{{item.key}}" class="tab {{active === item.key ? 'active' : ''}}" aria-label="{{item.text}}" aria-role="button" aria-selected="{{active === item.key}}">
+    <view class="tab-icon"><text>{{item.icon}}</text></view>
     <text class="tab-label">{{item.text}}</text>
   </button>
 </view>
