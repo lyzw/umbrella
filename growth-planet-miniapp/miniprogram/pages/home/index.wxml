@@ -36,6 +36,11 @@
         <view class="home-list-copy"><text class="home-list-title">家庭与绑定</text><text class="home-list-subtitle">管理家庭关系和授权状态</text></view>
         <text class="home-list-arrow">›</text>
       </button>
+      <button class="home-list-row" bindtap="go" data-page="schedule">
+        <text class="home-list-icon schedule-icon">程</text>
+        <view class="home-list-copy"><text class="home-list-title">日程提醒</text><text class="home-list-subtitle">{{role === 'PARENT' ? '安排作业、兴趣班与服药提醒' : '看看接下来有什么安排'}}</text></view>
+        <text class="home-list-arrow">›</text>
+      </button>
     </view>
     <view class="notice">虚拟单位，仅用于家庭记账，不支持充值或真实支付。</view>
   </view>

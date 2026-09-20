@@ -1,7 +1,8 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
 const titles = { CONFIRM_SUBMIT: '有新的餐单待确认', CONFIRM_COMPLETED: '餐单已确认',
-  CONFIRM_REJECTED: '餐单需要调整', CONFIRM_MODIFIED: '家长提供了餐食建议', CONFIRM_CANCELLED: '餐单已撤回' };
+  CONFIRM_REJECTED: '餐单需要调整', CONFIRM_MODIFIED: '家长提供了餐食建议', CONFIRM_CANCELLED: '餐单已撤回',
+  SCHEDULE_REMIND: '日程提醒' };
 ui.page({
   data: { role: '', busy: false, error: '', records: [], page: 1, total: 0, unreadOnly: false },
   onShow() { if (ui.guard(this)) return this.refresh(); },

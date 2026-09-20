@@ -20,6 +20,7 @@
 .profile-icon { color: #1d4ed8; background: #dbeafe; }
 .notice-icon { color: #6d28d9; background: #ede9fe; }
 .privacy-icon { color: #475569; background: #f1f5f9; }
+.schedule-icon { color: #2563eb; background: #dbeafe; }
 .home-list-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .home-list-title { color: #1f2733; font-size: 15px; line-height: 22px; font-weight: 700; }
 .home-list-subtitle { color: #687386; font-size: 12px; line-height: 19px; }

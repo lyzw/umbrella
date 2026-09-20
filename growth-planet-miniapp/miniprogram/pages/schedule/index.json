@@ -1,0 +1,4 @@
+{
+  "navigationBarTitleText": "日程提醒",
+  "usingComponents": { "app-nav": "/components/app-nav/index" }
+}

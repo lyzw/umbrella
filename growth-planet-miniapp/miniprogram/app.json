@@ -9,6 +9,7 @@
     "pages/wallet/index",
     "pages/chore/index",
     "pages/medal/index",
+    "pages/schedule/index",
     "pages/notices/index",
     "pages/privacy/index"
   ],
