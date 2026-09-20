@@ -1,0 +1,52 @@
+<view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <view class="header"><view class="title">{{role === 'PARENT' ? '餐单审批' : '我的确认单'}}</view><button bindtap="refresh" disabled="{{busy || draft}}">刷新</button></view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:if="{{pendingSubmit}}" class="notice"><view>上次提交结果尚未确认，请先查阅记录，或原样重试。</view><button bindtap="retrySubmit" disabled="{{busy}}">重试上次提报</button></view>
+  <view wx:if="{{draft}}">
+    <view class="item" wx:for="{{draft.items}}" wx:key="dishId"><view class="row"><text>{{item.dishName}} × {{item.quantity}}</text><text>{{item.unitPrice}} / 份</text></view></view>
+    <view class="row"><text>预计合计</text><text class="price">{{draft.total}} 虚拟单位</text></view>
+    <view class="field"><text class="label">给家长的备注（选填）</text><textarea bindinput="input" data-field="remark" value="{{remark}}" maxlength="255" disabled="{{pendingSubmit}}" /></view>
+    <view class="notice">价格以服务端确认结果为准。提交不扣款，等待家长同意。</view>
+    <button class="primary" bindtap="submit" disabled="{{busy || pendingSubmit}}" loading="{{busy}}">提交给家长</button>
+  </view>
+  <view wx:elif="{{detail}}">
+    <view class="badge">{{detail.label}}</view><view class="subtitle">确认单 {{detail.confirmId}} · {{detail.menuDate}}</view>
+    <view class="item" wx:for="{{detail.items}}" wx:key="dishId"><view>{{item.dishName}} × {{item.quantity}}</view><view class="row"><text class="muted">{{item.note}}</text><text>{{item.subtotal}} 虚拟单位</text></view></view>
+    <view class="row"><text>合计</text><text class="amount">{{detail.totalAmount}}</text></view>
+    <view class="notice">{{detail.childVisibleNote}}</view>
+    <view wx:if="{{detail.balance !== null}}" class="muted">完成后余额 {{detail.balance}} 虚拟单位</view>
+    <view wx:if="{{role === 'CHILD'}}" class="actions">
+      <button wx:if="{{detail.status === 'PENDING'}}" bindtap="withdraw" disabled="{{busy}}">撤回</button>
+      <button wx:if="{{detail.status === 'REJECTED' || detail.status === 'CANCELLED'}}" class="primary" bindtap="resubmit" disabled="{{busy}}">调整后重新提报</button>
+    </view>
+    <view wx:if="{{pendingApprove}}" class="notice"><view>批准结果未知，请原样重试确认。</view><button bindtap="retryApprove" disabled="{{busy}}">重试原批准命令</button></view>
+    <view wx:if="{{pendingDecision}}" class="notice"><view>处理结果未知，请原样重试。</view><button bindtap="retryDecision" disabled="{{busy}}">重试原处理命令</button></view>
+    <view wx:if="{{role === 'PARENT' && detail.status === 'PENDING' && !pendingApprove && !pendingDecision}}" class="section">
+      <button class="primary" bindtap="approve" disabled="{{busy}}">同意并记账</button>
+      <view wx:if="{{preview}}" class="notice">
+        <view class="section-title">本次超出额度</view>
+        <view>本次 {{preview.totalAmount}}，余额 {{preview.balance}}</view>
+        <view>单笔额度 {{preview.singleLimit}}</view><view>今日已用 {{preview.dailyUsed}} / {{preview.dailyLimit}}</view><view>本周已用 {{preview.weeklyUsed}} / {{preview.weeklyLimit}}</view>
+        <view class="actions"><button bindtap="explicitApprove" disabled="{{busy}}">仍然同意这一次</button></view>
+      </view>
+      <view class="field"><text class="label">给孩子的温和说明</text><textarea value="{{reason}}" data-field="reason" bindinput="input" maxlength="255" /></view>
+      <view class="actions"><button bindtap="reject" disabled="{{busy}}">请孩子调整</button><button bindtap="editSuggestion" disabled="{{busy}}">建议替代餐食</button></view>
+      <view wx:if="{{editing}}" class="section">
+        <view wx:for="{{suggestions}}" wx:key="dishId" class="item"><view>{{item.name}}</view><view class="row"><button class="icon-button" bindtap="suggestion" data-id="{{item.dishId}}" data-delta="-1" aria-label="减少建议份数">−</button><text>{{item.quantity}}</text><button class="icon-button" bindtap="suggestion" data-id="{{item.dishId}}" data-delta="1" aria-label="增加建议份数">+</button></view></view>
+        <button bindtap="modify" disabled="{{busy || !suggestions.length}}">发送建议，不扣款</button>
+      </view>
+    </view>
+    <view class="actions"><button bindtap="backList" disabled="{{busy}}">返回记录</button></view>
+  </view>
+  <view wx:else>
+    <picker wx:if="{{role === 'PARENT' && children.length}}" range="{{children}}" range-key="childId" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">儿童 {{childId}}</view></picker>
+    <picker range="{{statuses}}" value="{{statusIndex}}" bindchange="filter" disabled="{{busy}}"><view class="picker">{{statuses[statusIndex]}}</view></picker>
+    <view wx:if="{{!records.length && !busy}}" class="empty">暂无此状态的确认单</view>
+    <button wx:for="{{records}}" wx:key="confirmId" class="item record" bindtap="open" data-id="{{item.confirmId}}">
+      <view class="row"><text>{{item.menuDate}}</text><text>{{item.totalAmount}} 虚拟单位</text></view>
+      <view class="row"><text class="small">确认单 {{item.confirmId}}</text><text class="badge">{{item.label}}</text></view>
+    </button>
+    <view class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
+  </view>
+  <view wx:if="{{busy}}" class="loading">正在处理，请勿重复提交</view>
+</view>
