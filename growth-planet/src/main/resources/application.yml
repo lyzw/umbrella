@@ -4,13 +4,15 @@ server:
 spring:
   application:
     name: growth-planet
+  profiles:
+    active: dev
   jackson:
     deserialization:
       accept-float-as-int: false
   # 本地占位数据源（dev/test 覆盖；test 由 @DynamicPropertySource 注入容器地址）
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/growth_planet?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8mb4
+    url: jdbc:mysql://localhost:3306/growth_planet?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
     username: root
     password: root
   data:
