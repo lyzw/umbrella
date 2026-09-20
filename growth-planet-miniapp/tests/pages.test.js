@@ -131,6 +131,24 @@ test('家长加载当前家庭菜单并仅提交服务端允许的维护字段',
   assert.equal(Object.hasOwn(sent.body, 'familyId'), false);
   assert.equal(page.data.count, 1);
 });
+test('家长首次维护时将空响应或旧版404视为未发布菜单', async () => {
+  const page = loadPage('menu');
+  page.catalogDishes = [dish];
+  api.get = async () => null;
+  await page.readParent();
+  assert.equal(page.data.menu, null);
+  assert.equal(page.data.ready, true);
+  assert.deepEqual(page.selectedDishIds, []);
+  assert.deepEqual(page.data.dishes.map(item => item.dishId), ['99']);
+
+  api.get = async () => {
+    throw Object.assign(new Error('资源不存在'), { status: 404, code: 'E-005' });
+  };
+  await page.readParent();
+  assert.equal(page.data.menu, null);
+  assert.equal(page.data.ready, true);
+  assert.deepEqual(page.selectedDishIds, []);
+});
 test('家长菜单限制50项并要求先清理下架或删除引用', () => {
   const page = loadPage('menu');
   page.catalogDishes = Array.from({ length: 51 }, (_, index) => ({

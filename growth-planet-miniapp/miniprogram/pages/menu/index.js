@@ -81,7 +81,8 @@ ui.page({
         mealType: this.data.mealType
       });
     } catch (error) {
-      if (error.code !== 'E-404') throw error;
+      // Compatible with older services that represented an unpublished menu as 404.
+      if (error.status !== 404 && error.code !== 'E-404') throw error;
     }
     const menuDishes = menu ? menu.dishes || [] : [];
     const catalogIds = new Set(this.catalogDishes.map(item => item.dishId));
