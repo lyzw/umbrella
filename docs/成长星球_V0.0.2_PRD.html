@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>成长星球 · V0.0.2 需求文档说明书（P2 生活自主）</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.8/dist/mermaid.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:"default"});});</script>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2733; --sub:#5b6776; --muted:#8a94a6;
+    --brand:#3b82f6; --brand2:#22c55e; --brand3:#f59e0b; --brand4:#a855f7;
+    --line:#e6ebf2; --soft:#eef3fb; --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.75;font-size:15px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 90px;}
+  h1{font-size:30px;margin:0 0 6px;}
+  h2{font-size:22px;margin:46px 0 14px;padding-left:12px;border-left:5px solid var(--brand);}
+  h3{font-size:17px;margin:26px 0 10px;color:var(--brand);}
+  h4{font-size:15px;margin:16px 0 8px;color:var(--ink);}
+  p{margin:8px 0;color:var(--sub);}
+  .lead{font-size:16px;color:var(--ink);}
+  .tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;background:var(--soft);color:var(--brand);margin-right:6px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,80,.04);}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--soft);color:var(--ink);font-weight:600;}
+  .pill{padding:2px 9px;border-radius:8px;color:#fff;font-weight:600;font-size:12px;}
+  .pp0{background:#64748b;} .pp1{background:var(--brand);} .pp2{background:var(--brand2);} .pp3{background:var(--brand3);}
+  .fcode{font-family:ui-monospace,Menlo,monospace;background:var(--soft);padding:1px 6px;border-radius:6px;color:#b45309;font-size:12.5px;}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:13.5px;color:#7c5e10;margin:12px 0;}
+  .note.r{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
+  .note.g{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
+  .note.b{background:#eff6ff;border-color:#bfdbfe;color:#1e40af;}
+  code{background:var(--soft);padding:1px 6px;border-radius:6px;font-size:13px;color:#b45309;}
+  .mermaid{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;text-align:center;}
+  .us{background:#fff;border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:10px;padding:12px 16px;margin:10px 0;}
+  .us .role{font-weight:700;color:var(--brand);}
+  .ac{margin:6px 0 0;padding-left:18px;color:var(--sub);font-size:13.5px;}
+  .ac li{margin:3px 0;}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 22px;margin:0 0 30px;}
+  .toc a{color:var(--sub);text-decoration:none;font-size:13.5px;display:inline-block;margin:2px 14px 2px 0;}
+  @media(max-width:760px){.toc a{display:block;}}
+</style>
+</head>
+<body>
+<aside class="note b"><b>前置假设（V0.0.2 规划基线）：</b>本文档以《成长星球 · V0.0.1 PRD》已上线、其 Q-01~Q-06 待确认项与《审计修订基线》已关闭为前提。V0.0.2 在 V0.0.1（F-001~F-023）之上延续编号 F-024 起，承接 P2 生活自主全量模块。未关闭项不再重复规划，仅在依赖处引用。</aside>
+<div class="wrap">
+
+  <h1>「成长星球」· V0.0.2 需求文档说明书（P2 生活自主）</h1>
+  <p class="lead">版本范围 = <b>V0.0.1（P0+P1）+ P2 生活自主全量</b>：零花钱管理 UI、家务小任务、健康打卡、日程提醒、购物清单、奖励兑换中心、二级监护人委托。延续"孩子自主决策 + 家长虚拟额度护栏"模式，跑通"赚→花→管"生活自主闭环，零真实支付。</p>
+  <p>
+    <span class="tag">微信小程序</span><span class="tag">V0.0.2 = P2 全量</span>
+    <span class="tag">虚拟零花钱闭环</span><span class="tag">家长护栏</span>
+    <span class="tag">承接 V0.0.1</span>
+  </p>
+
+  <nav class="toc">
+    <b>目录：</b>
+    <a href="#s1">1 文档信息</a><a href="#s2">2 版本目标与范围</a><a href="#s3">3 角色权限概览</a>
+    <a href="#s4">4 功能需求列表</a><a href="#s5">5 用户故事与验收</a><a href="#s6">6 核心交互</a>
+    <a href="#s7">7 非功能需求</a><a href="#s8">8 场景覆盖与冲突检查</a><a href="#s9">9 关键决策</a>
+    <a href="#s10">10 修订记录</a>
+  </nav>
+
+  <!-- 1 -->
+  <h2 id="s1">一、文档信息</h2>
+  <table>
+    <tr><th>项目</th><th>内容</th></tr>
+    <tr><td>文档名称</td><td>成长星球 · V0.0.2 需求文档说明书</td></tr>
+    <tr><td>文档版本</td><td>V1.0</td></tr>
+    <tr><td>编写日期</td><td>2026-09-20</td></tr>
+    <tr><td>编写人</td><td>需求文档专家（PRD Expert）</td></tr>
+    <tr><td>评审状态</td><td>待评审</td></tr>
+    <tr><td>前置文档</td><td>《成长星球 · V0.0.1 PRD》《成长星球 · 产品规划方案》《审计修订基线》</td></tr>
+  </table>
+
+  <!-- 2 -->
+  <h2 id="s2">二、版本目标与范围</h2>
+  <div class="card">
+    <p><b>2.1 文档目的：</b>在已上线的 V0.0.1（点餐 MVP）之上，结构化定义 P2 生活自主全量模块的需求，使研发、设计、测试可据此拆解 P2 开发任务。</p>
+    <p><b>2.2 业务目标（可量化）：</b></p>
+    <ul>
+      <li>G1：跑通"赚→花→管"闭环——家务/任务奖励入账（收入）、点餐/购物/兑换扣减（支出）、家长看板统览，端到端成功率 ≥ 95%。</li>
+      <li>G2：维持<b>零真实支付</b>；新增购物清单、奖励兑换均走虚拟零花钱记账 + 家长护栏。</li>
+      <li>G3：跨场景消费额度一致——点餐 + 购物 + 兑换共享每日/每周支出上限，奖励收入不计入支出额度（避免"赚钱反而触发超额"的语义冲突）。</li>
+      <li>G4：二级监护人可在家长授权范围内行使审批，且不触碰额度修改、数据导出、解绑等高危操作。</li>
+    </ul>
+    <p><b>2.3 非目标（本期不做）：</b>真实支付/物流履约、教师角色与家校互通（P3）、课表/作业/错题/OCR（P3）、AI 小问号与成长树养成（P4）、多孩扩展 UI、个性化推荐、隐私工单自动化（P4）。</p>
+  </div>
+
+  <h3>2.4 范围 In / Out</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div class="card" style="border-left:4px solid var(--brand2);">
+      <h4 style="margin-top:0;color:var(--brand2)">✅ 本期包含（In）</h4>
+      <ul style="color:var(--sub);font-size:14px;line-height:1.9;">
+        <li>零花钱管理 UI（余额看板、预算可视化、流水增强、发放入口）</li>
+        <li>家务小任务（任务库、认领、完成确认、状态机、周期任务）</li>
+        <li>健康打卡（打卡项、打卡提交、连续记录）</li>
+        <li>日程提醒（家庭日程、儿童视图、提醒投递）</li>
+        <li>购物清单（清单维护、确认审批、跨场景额度护栏）</li>
+        <li>奖励兑换中心（奖励库、兑换、审核履约）</li>
+        <li>二级监护人委托（邀请绑定、权限分级、时效撤销）</li>
+        <li>基础勋章/成就服务（跨模块复用）</li>
+      </ul>
+    </div>
+    <div class="card" style="border-left:4px solid var(--brand3);">
+      <h4 style="margin-top:0;color:var(--brand3)">⛔ 本期不包含（Out）</h4>
+      <ul style="color:var(--sub);font-size:14px;line-height:1.9;">
+        <li>真实支付、真实物流/到店履约系统（实物奖励由家长线下履约+站内确认）</li>
+        <li>教师角色、家校互通</li>
+        <li>课表/作业/错题/OCR/阅读/百科</li>
+        <li>AI 小问号、成长树养成、个性化推荐</li>
+        <li>多孩切换 UI、隐私工单全自动处理</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <h2 id="s3">三、角色权限概览（V0.0.2 扩展）</h2>
+  <table>
+    <tr><th>角色</th><th>标识</th><th>V0.0.2 新增能力</th><th>数据可见范围</th></tr>
+    <tr><td>儿童</td><td><code>ROLE_CHILD</code></td><td>认领任务、打卡、维护购物清单、兑换奖励、看本人零花钱与勋章</td><td>仅本人档案、本人确认单/流水/打卡/兑换</td></tr>
+    <tr><td>家长</td><td><code>ROLE_PARENT</code></td><td>配置任务库/日程/奖励库、审批任务/购物、发放虚拟币、看全量看板、管理二级监护人</td><td>所绑定家庭全部成员及数据</td></tr>
+    <tr><td>二级监护人</td><td><code>ROLE_DELEGATE</code></td><td>在授权范围内审批点餐/家务/购物、看子女状态；<b>不可</b>改额度/导出/解绑</td><td>仅被委托人子女，按委托范围过滤</td></tr>
+    <tr><td>后台运营</td><td><code>ROLE_ADMIN</code></td><td>任务/奖励模板库、内容风控（继承 F-014）</td><td>全量运营数据（脱敏）</td></tr>
+  </table>
+  <div class="note b">权限继承：在 V0.0.1 的 <code>family_id + child_id</code> 数据隔离之上，新增 <code>ROLE_DELEGATE</code> 与委托范围表；所有 V0.0.2 查询须叠加委托范围过滤，复用 E-009 越权拒绝逻辑。</div>
+
+  <!-- 4 -->
+  <h2 id="s4">四、功能需求列表（P2 全量，F-024 起）</h2>
+  <p>优先级含义：<span class="pill pp0">P0</span> 必须有 <span class="pill pp1">P1</span> 重要 <span class="pill pp2">P2</span> 可选。依赖列标注对 V0.0.1 与 V0.0.2 内部的前置功能。</p>
+
+  <table>
+    <tr><th>编号</th><th>模块</th><th>功能点</th><th>优先级</th><th>简要描述</th><th>依赖关系</th><th>验收标准</th></tr>
+
+    <tr><td colspan="7" style="background:var(--soft);font-weight:600;">A. 零花钱管理 UI</td></tr>
+    <tr><td><span class="fcode">F-024</span></td><td>钱包</td><td>零花钱主页/余额看板</td><td><span class="pill pp0">P0</span></td><td>儿童端展示虚拟余额、本周/本月已用、剩余额度；家长端按子女汇总看板</td><td>F-008, F-009, F-023</td><td>儿童端可见本人余额与剩余额度；家长端可见全部子女汇总；数据来自 V0.0.1 钱包与流水</td></tr>
+    <tr><td><span class="fcode">F-025</span></td><td>钱包</td><td>消费预算可视化</td><td><span class="pill pp1">P1</span></td><td>日/周/月消费趋势图、分类占比（点餐/家务奖励/购物/兑换）</td><td>F-024, F-026</td><td>图表在 P95≤2s 内渲染；分类占比与流水一致；空数据有占位态</td></tr>
+    <tr><td><span class="fcode">F-026</span></td><td>钱包</td><td>流水明细增强</td><td><span class="pill pp1">P1</span></td><td>在 F-023 基础上增加分类标签、按时间段/类型筛选</td><td>F-023</td><td>可按"收入/支出""分类""日期"筛选；分类标签来自流水 type 枚举</td></tr>
+    <tr><td><span class="fcode">F-027</span></td><td>钱包</td><td>家长手动发放入口增强</td><td><span class="pill pp2">P2</span></td><td>家长手动增虚拟币，带备注/原因，与任务奖励区分流水类型</td><td>F-008</td><td>发放写入 <code>life_allowance_log</code> 的 MANUAL_GRANT 类型；备注必填；计入余额但不计入支出额度</td></tr>
+
+    <tr><td colspan="7" style="background:var(--soft);font-weight:600;">B. 基础勋章/成就服务（跨模块复用）</td></tr>
+    <tr><td><span class="fcode">F-048</span></td><td>激励</td><td>勋章/成就服务（基础）</td><td><span class="pill pp0">P0</span></td><td>勋章定义、发放、查询与连续记录；被家务/健康/兑换复用</td><td>F-003</td><td>提供发放/查询接口；勋章发放幂等；儿童端可查看已得勋章</td></tr>
+
+    <tr><td colspan="7" style="background:var(--soft);font-weight:600;">C. 家务小任务</td></tr>
+    <tr><td><span class="fcode">F-028</span></td><td>家务</td><td>家务任务库</td><td><span class="pill pp0">P0</span></td><td>家长/后台配置任务模板（名称、预估时长、奖励额度、图标、周期）</td><td>F-004</td><td>可增删改任务模板；奖励额度为虚拟币，写入模板</td></tr>
+    <tr><td><span class="fcode">F-029</span></td><td>家务</td><td>儿童认领任务</td><td><span class="pill pp0">P0</span></td><td>儿童浏览可认领任务并认领，生成任务实例</td><td>F-028</td><td>认领后任务进入"已认领"；同一任务实例不可重复认领</td></tr>
+    <tr><td><span class="fcode">F-030</span></td><td>家务</td><td>任务完成提交+家长确认</td><td><span class="pill pp0">P0</span></td><td>儿童标记完成→家长确认→发放奖励（虚拟币+勋章）</td><td>F-029, F-008, F-048</td><td>家长确认后同事务发放虚拟币+勋章+流水；失败回滚</td></tr>
+    <tr><td><span class="fcode">F-031</span></td><td>家务</td><td>任务状态机</td><td><span class="pill pp0">P0</span></td><td>CLAIMED→SUBMITTED→CONFIRMED(发放)/REJECTED，复用 F-019 模式</td><td>F-019, F-030</td><td>状态唯一解读；确认与发放原子提交；拒绝后可重提新实例</td></tr>
+    <tr><td><span class="fcode">F-032</span></td><td>家务</td><td>周期任务自动生成</td><td><span class="pill pp1">P1</span></td><td>每日/每周重复任务按模板生成实例</td><td>F-028, F-031</td><td>到点生成待认领实例；生成失败不阻塞手动任务；时区以家庭时区为准</td></tr>
+
+    <tr><td colspan="7" style="background:var(--soft);font-weight:600;">D. 健康打卡</td></tr>
+    <tr><td><span class="fcode">F-033</span></td><td>健康</td><td>打卡项配置</td><td><span class="pill pp0">P0</span></td><td>喝水/睡眠/运动等预设项，家长可增删（属敏感信息，须在同意范围内）</td><td>F-003, F-007</td><td>配置在监护人同意范围内；撤回同意后停采并隐藏</td></tr>
+    <tr><td><span class="fcode">F-034</span></td><td>健康</td><td>儿童打卡提交</td><td><span class="pill pp0">P0</span></td><td>一键打卡并记录时间</td><td>F-033</td><td>同一打卡项同日可设上限（如喝水多次）；记录时间戳</td></tr>
+    <tr><td><span class="fcode">F-035</span></td><td>健康</td><td>打卡日历与连续记录</td><td><span class="pill pp1">P1</span></td><td>连续天数 streak 激励，发放连续勋章</td><td>F-034, F-048</td><td>连续 N 天触发勋章；断签重置；日历展示历史</td></tr>
+
+    <tr><td colspan="7" style="background:var(--soft);font-weight:600;">E. 日程提醒</td></tr>
+    <tr><td><span class="fcode">F-036</span></td><td>日程</td><td>家庭日程/提醒配置</td><td><span class="pill pp0">P0</span></td><td>家长添加日程（作业、兴趣班、服药等）+ 提醒时间</td><td>F-004, F-011</td><td>可设单次/重复提醒；到点触发通知中台</td></tr>
+    <tr><td><span class="fcode">F-037</span></td><td>日程</td><td>儿童日程视图</td><td><span class="pill pp1">P1</span></td><td>日历/列表视图展示当日与近期日程</td><td>F-036</td><td>儿童端按日期查看；点击看详情</td></tr>
+    <tr><td><span class="fcode">F-038</span></td><td>日程</td><td>提醒投递</td><td><span class="pill pp1">P1</span></td><td>基于 F-011 通知中台站内推送到点提醒</td><td>F-036, F-011</td><td>提醒经站内通知中心可达；投递失败不回滚业务（同 E-008）</td></tr>
+
+    <tr><td colspan="7" style="background:var(--soft);font-weight:600;">F. 购物清单</td></tr>
+    <tr><td><span class="fcode">F-039</span></td><td>购物</td><td>购物清单维护</td><td><span class="pill pp0">P0</span></td><td>儿童/家长添加想要物品（名称、预估虚拟价、图片）</td><td>F-004</td><td>清单按家庭/儿童隔离；儿童仅维护本人清单</td></tr>
+    <tr><td><span class="fcode">F-040</span></td><td>购物</td><td>购物确认与审批</td><td><span class="pill pp0">P0</span></td><td>儿童提交→家长审批→虚拟扣减，复用 F-019 状态机</td><td>F-039, F-019, F-009</td><td>审批同意后同事务扣减虚拟币+流水+通知；超额走复核中（同 V0.0.1）</td></tr>
+    <tr><td><span class="fcode">F-041</span></td><td>购物</td><td>跨场景额度护栏</td><td><span class="pill pp1">P1</span></td><td>点餐+购物+兑换共享每日/每周支出额度；奖励收入不计入</td><td>F-009, F-040, F-043</td><td>任一消费场景提交时按"累计支出+本单≤上限"判定；奖励发放不触发超额</td></tr>
+
+    <tr><td colspan="7" style="background:var(--soft);font-weight:600;">G. 奖励兑换中心</td></tr>
+    <tr><td><span class="fcode">F-042</span></td><td>奖励</td><td>奖励商品库</td><td><span class="pill pp0">P0</span></td><td>家长/后台配置可兑换奖励（实物/特权/活动）及消耗虚拟币</td><td>F-004</td><td>可增删改奖励；消耗额来自虚拟币余额</td></tr>
+    <tr><td><span class="fcode">F-043</span></td><td>奖励</td><td>儿童兑换</td><td><span class="pill pp0">P0</span></td><td>浏览→选择→兑换，扣减虚拟币，生成兑换单</td><td>F-042, F-008, F-041</td><td>兑换时校验余额≥消耗并计入跨场景额度；扣减原子提交</td></tr>
+    <tr><td><span class="fcode">F-044</span></td><td>奖励</td><td>家长审核与履约</td><td><span class="pill pp1">P1</span></td><td>实物奖励家长确认发放；特权类自动生效</td><td>F-043</td><td>实物类兑换状态待履约→已发放；特权类兑换后立即生效并通知</td></tr>
+
+    <tr><td colspan="7" style="background:var(--soft);font-weight:600;">H. 二级监护人委托</td></tr>
+    <tr><td><span class="fcode">F-045</span></td><td>家庭</td><td>二级监护人邀请与绑定</td><td><span class="pill pp0">P0</span></td><td>家长邀请祖辈等，限定权限范围，复用 F-006 绑定模式</td><td>F-004, F-006</td><td>邀请→对方接受→家长确认委托范围；数据按范围过滤</td></tr>
+    <tr><td><span class="fcode">F-046</span></td><td>家庭</td><td>权限分级</td><td><span class="pill pp0">P0</span></td><td>二级监护人可见/可审批范围（可审批点餐/家务/购物，不可改额度/导出/解绑）</td><td>F-045</td><td>委托人在授权范围外操作返回 403（复用 E-009）；高危操作对委托人不可见</td></tr>
+    <tr><td><span class="fcode">F-047</span></td><td>家庭</td><td>委托时效与撤销</td><td><span class="pill pp1">P1</span></td><td>临时委托时间段，到期自动降级</td><td>F-045, F-046</td><td>到期自动失效并通知；家长可随时撤销</td></tr>
+  </table>
+
+  <!-- 5 -->
+  <h2 id="s5">五、用户故事与验收（精选）</h2>
+  <div class="us">
+    <p><span class="role">US-1（儿童）</span> 作为孩子，我想要认领家务并完成后获得零花钱，以便体验"赚钱"。</p>
+    <ul class="ac">
+      <li>AC1：可浏览家长发布的任务并认领，生成任务实例。</li>
+      <li>AC2：标记完成后家长确认，虚拟币与勋章同事务入账（F-030/F-031/F-048）。</li>
+      <li>AC3：余额实时更新，收入不计入每周支出额度（F-041）。</li>
+    </ul>
+  </div>
+  <div class="us">
+    <p><span class="role">US-2（儿童）</span> 作为孩子，我想要把想买的东西加入清单并请爸妈确认，以便用零花钱"购买"。</p>
+    <ul class="ac">
+      <li>AC1：可维护购物清单（名称/预估虚拟价/图片）。</li>
+      <li>AC2：提交后家长审批，复用超额异步复核；同意后扣减虚拟币（F-040）。</li>
+      <li>AC3：购物与点餐共享每周额度，不会因点餐已花光而静默超支（F-041）。</li>
+    </ul>
+  </div>
+  <div class="us">
+    <p><span class="role">US-3（儿童）</span> 作为孩子，我想要用零花钱兑换奖励，以便获得正反馈。</p>
+    <ul class="ac">
+      <li>AC1：浏览奖励库，余额充足时可兑换（F-043）。</li>
+      <li>AC2：实物奖励家长确认发放；特权类立即生效（F-044）。</li>
+    </ul>
+  </div>
+  <div class="us">
+    <p><span class="role">US-4（家长）</span> 作为家长，我想要委托祖辈临时看护审批，以便我不在时孩子也能用。</p>
+    <ul class="ac">
+      <li>AC1：可邀请二级监护人并限定范围（F-045/F-046）。</li>
+      <li>AC2：委托人只能审批点餐/家务/购物，不能改额度/导出（E-009 复用）。</li>
+      <li>AC3：到期或撤销后自动降级（F-047）。</li>
+    </ul>
+  </div>
+
+  <!-- 6 -->
+  <h2 id="s6">六、核心交互（示例：家务任务状态机）</h2>
+  <div class="mermaid">
+stateDiagram-v2
+  [*] --> CLAIMED: 儿童认领
+  CLAIMED --> SUBMITTED: 标记完成
+  SUBMITTED --> CONFIRMED: 家长确认(同事务发奖励)
+  SUBMITTED --> REJECTED: 家长驳回
+  CONFIRMED --> [*]
+  REJECTED --> [*]
+  note right of CONFIRMED
+    发放虚拟币 + 勋章 + 流水
+    失败整体回滚保持SUBMITTED
+  end note
+  </div>
+  <div class="note">跨场景额度（F-041）统一口径：<b>消费类</b>（点餐 F-019 / 购物 F-040 / 兑换 F-043）计入每日/每周<b>支出</b>上限；<b>收入类</b>（家长发放 F-027 / 家务奖励 F-030）为入账，<b>不计入</b>支出额度。流水 type 枚举统一为：CONSUME_DEDUCT / REWARD_ADD / MANUAL_GRANT / EXCHANGE_DEDUCT。</div>
+
+  <!-- 7 -->
+  <h2 id="s7">七、非功能需求（V0.0.2）</h2>
+  <table>
+    <tr><th>编号</th><th>类别</th><th>优先级</th><th>要求</th><th>继承自</th></tr>
+    <tr><td>NF-1</td><td>性能</td><td><span class="pill pp0">P0</span></td><td>图表/日历渲染 P95≤2s；看板加载延续 V0.0.1 骨架 P95≤1s；千级家庭并发不退化</td><td>V0.0.1 §11.1</td></tr>
+    <tr><td>NF-2</td><td>兼容性</td><td><span class="pill pp0">P0</span></td><td>延续 V0.0.1 小程序包体限制；新增图表/图标资源须控制体积</td><td>V0.0.1 §11.2</td></tr>
+    <tr><td>NF-3</td><td>安全</td><td><span class="pill pp0">P0</span></td><td>家务奖励/购物/兑换扣减须事务+行锁+版本校验（复用 V0.0.1 钱包安全）；委托权限隔离；越权返回 403</td><td>V0.0.1 §11.3</td></tr>
+    <tr><td>NF-4</td><td>可用性/无障碍</td><td><span class="pill pp1">P1</span></td><td>延续 WCAG 2.2 AA：对比度、触控≥44px、状态图标+文字、动效仅 transform/opacity</td><td>V0.0.1 §11.4</td></tr>
+    <tr><td>NF-5</td><td>隐私合规</td><td><span class="pill pp0">P0</span></td><td>健康打卡属敏感信息，须复用 F-007 同意范围采集、可撤回、纳入 F-012 数据出口；新采集项留痕</td><td>V0.0.1 §10</td></tr>
+    <tr><td>NF-6</td><td>一致性与冲突</td><td><span class="pill pp0">P0</span></td><td>跨场景额度口径唯一（F-041）；流水 type 不混用；委托范围过滤统一叠加；与 V0.0.1 状态机无语义冲突</td><td>新增</td></tr>
+  </table>
+
+  <!-- 8 -->
+  <h2 id="s8">八、核心用户场景覆盖与冲突检查</h2>
+  <h3>8.1 场景覆盖矩阵</h3>
+  <table>
+    <tr><th>核心场景</th><th>角色</th><th>覆盖功能</th><th>闭环</th></tr>
+    <tr><td>赚：家务得零花钱</td><td>儿童+家长</td><td>F-028~F-032, F-048</td><td>认领→完成→确认→入账+勋章</td></tr>
+    <tr><td>花：点餐（继承）</td><td>儿童+家长</td><td>F-019(继承), F-041</td><td>确认→审批→扣减</td></tr>
+    <tr><td>花：购物清单</td><td>儿童+家长</td><td>F-039, F-040, F-041</td><td>加购→提交→审批→扣减</td></tr>
+    <tr><td>花：奖励兑换</td><td>儿童+家长</td><td>F-042~F-044, F-041</td><td>兑换→扣减→履约</td></tr>
+    <tr><td>管：零花钱看板</td><td>儿童+家长</td><td>F-024~F-027</td><td>余额/流水/趋势可视化</td></tr>
+    <tr><td>健康：打卡激励</td><td>儿童+家长</td><td>F-033~F-035, F-048</td><td>打卡→连续→勋章</td></tr>
+    <tr><td>时间：日程提醒</td><td>儿童+家长</td><td>F-036~F-038</td><td>配置→提醒投递</td></tr>
+    <tr><td>看护：二级监护人</td><td>家长+委托人</td><td>F-045~F-047</td><td>邀请→限定审批→到期降级</td></tr>
+  </table>
+  <h3>8.2 冲突与一致性检查（已规避）</h3>
+  <ul>
+    <li><b>额度语义冲突：</b>奖励收入 vs 消费支出。已裁定奖励为"收入"不计入每周支出额度（F-041），避免"赚钱触发超额"的歧义。</li>
+    <li><b>流水混用：</b>统一 <code>life_allowance_log.type</code> 枚举（CONSUME_DEDUCT/REWARD_ADD/MANUAL_GRANT/EXCHANGE_DEDUCT），各场景不混写。</li>
+    <li><b>状态机冲突：</b>家务状态机（F-031）与点餐状态机（F-019）独立实体、独立状态集合，无字段/语义重叠。</li>
+    <li><b>权限越界：</b>二级监护人所有操作叠加委托范围过滤，高危操作（改额度/导出/解绑）对委托人不可见且返回 403，复用 V0.0.1 E-009。</li>
+    <li><b>隐私越界：</b>健康打卡数据采集绑定 F-007 同意，撤回后停采，纳入 F-012 出口，不新增独立同意链路。</li>
+    <li><b>并发扣减：</b>家务奖励发放、购物/兑换扣减均复用 V0.0.1 钱包行锁+版本校验，防止跨场景并发超扣。</li>
+  </ul>
+
+  <!-- 9 -->
+  <h2 id="s9">九、关键决策（原待确认项 A-01~A-06 已按默认确认）</h2>
+  <div class="note g">2026-09-20 用户确认：以下 6 项待确认项全部采用建议默认值，由"待确认"转为"已确认决策"，纳入 V0.0.2 范围约束。</div>
+  <table>
+    <tr><th>编号</th><th>问题</th><th>影响</th><th>已确认决策（默认值）</th></tr>
+    <tr><td>A-01</td><td>跨场景额度口径：奖励收入是否计入每周额度？</td><td>F-041</td><td><b>不计入</b>：仅消费类（点餐/购物/兑换）计入每日/每周支出上限，奖励收入不入，避免语义冲突</td></tr>
+    <tr><td>A-02</td><td>购物/兑换是否复用点餐"超额异步复核"？</td><td>F-040, F-043</td><td><b>复用</b> F-019 状态机与"复核中（超预算）"标记，超额须家长显式放行</td></tr>
+    <tr><td>A-03</td><td>健康打卡数据是否纳入监护人同意与数据出口？</td><td>F-033, NF-5</td><td><b>是</b>：复用 F-007 同意范围采集、可撤回、纳入 F-012 数据出口</td></tr>
+    <tr><td>A-04</td><td>二级监护人默认审批范围？</td><td>F-046</td><td><b>可配置，默认</b>：可审批点餐/家务/购物；不可改额度/导出/解绑</td></tr>
+    <tr><td>A-05</td><td>周期任务生成失败/时区处理？</td><td>F-032</td><td><b>家庭时区为准</b>；生成失败不入账、可重试，不阻塞手动任务</td></tr>
+    <tr><td>A-06</td><td>实物奖励履约流程（物流/到店）？</td><td>F-044</td><td><b>家长线下履约 + 站内确认</b>；V0.0.2 不做真实物流/到店系统</td></tr>
+  </table>
+
+  <!-- 10 -->
+  <h2 id="s10">十、修订记录</h2>
+  <table>
+    <tr><th>版本</th><th>日期</th><th>修订人</th><th>修订内容</th></tr>
+    <tr><td>V1.0</td><td>2026-09-20</td><td>PRD Expert</td><td>基于 V0.0.1（F-001~F-023）规划 P2 生活自主全量（F-024~F-048），含目标/范围/功能需求/非功能需求/场景冲突检查/待确认项</td></tr>
+    <tr><td>V1.1</td><td>2026-09-20</td><td>用户确认</td><td>待确认项 A-01~A-06 全部按建议默认值确认，由"待确认"转为"已确认决策"，写入第九章</td></tr>
+  </table>
+
+  <footer style="margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;">
+    成长星球 · V0.0.2 PRD V1.0 ｜ 承接《V0.0.1 PRD》《产品规划方案》｜ F 编号自 F-024 延续，可追溯。
+  </footer>
+
+</div>
+</body>
+</html>

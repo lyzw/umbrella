@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>成长星球 · V0.0.2 UI+UX 设计稿（P2 生活自主）</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.8/dist/mermaid.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:"default"});});</script>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#fff; --ink:#1f2733; --sub:#5b6776; --muted:#8a94a6;
+    --brand:#3b82f6; --brand2:#22c55e; --brand3:#f59e0b; --brand4:#a855f7;
+    --line:#e6ebf2; --soft:#eef3fb; --radius:16px;
+    /* —— 复用现状小程序 design tokens —— */
+    --c-bg:#f7f9fc; --c-ink:#172033; --c-child:#2878ff; --c-child-d:#1859c9;
+    --c-child-s:#edf5ff; --c-child-b:#c9ddff; --c-child-i:#154a9e;
+    --c-parent:#15966a; --c-parent-d:#0e704e; --c-parent-s:#ebf9f3; --c-parent-b:#bce9d6;
+    --c-accent:#ff7657; --c-accent-s:#fff0eb; --c-pos:#22a06b; --c-pos-s:#e9f8f1;
+    --c-warn:#e89016; --c-warn-s:#fff7df; --c-danger:#e5484d; --c-danger-s:#fff1f0;
+    --r-sm:10px; --r-md:14px; --r-lg:18px; --r-xl:24px;
+    --s1:8px; --s2:12px; --s3:16px; --s4:22px;
+    --sh-soft:0 4px 14px rgba(32,55,92,.05), 0 1px 3px rgba(20,40,80,.06);
+    --sh-card:0 10px 28px rgba(32,55,92,.08);
+    --mo:.2s ease; --mo-f:.14s ease;
+    /* —— V0.0.2 扩展 tokens —— */
+    --c-shop:#7c5cff; --c-shop-s:#f1edff;     /* 购物 紫 */
+    --c-exch:#12b5a5; --c-exch-s:#e6faf7;     /* 兑换 青 */
+    --c-medal:#f5b301; --c-medal-s:#fff6d6;   /* 勋章 金 */
+    --c-reward:#22a06b;                        /* 奖励收入 绿 */
+    --c-task:#2878ff;                          /* 家务 蓝 */
+    --c-health:#ff6b9d; --c-health-s:#ffe7f0;  /* 健康 粉 */
+    --c-sched:#3b82f6; --c-sched-s:#e8f0ff;    /* 日程 蓝 */
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px;}
+  .wrap{max-width:1240px;margin:0 auto;padding:40px 26px 100px;}
+  h1{font-size:30px;margin:0 0 6px;}
+  h2{font-size:22px;margin:48px 0 14px;padding-left:12px;border-left:5px solid var(--brand);}
+  h3{font-size:17px;margin:24px 0 10px;color:var(--brand);}
+  h4{font-size:14.5px;margin:14px 0 6px;color:var(--ink);}
+  p{margin:7px 0;color:var(--sub);}
+  .lead{font-size:16px;color:var(--ink);}
+  .tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;background:var(--soft);color:var(--brand);margin-right:6px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px 22px;margin:14px 0;box-shadow:0 1px 3px rgba(20,40,80,.04);}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--soft);color:var(--ink);font-weight:600;}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:13px;color:#7c5e10;margin:12px 0;}
+  .note.r{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
+  .note.g{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
+  .note.b{background:#eff6ff;border-color:#bfdbfe;color:#1e40af;}
+  code{background:var(--soft);padding:1px 6px;border-radius:6px;font-size:12.5px;color:#b45309;}
+  .mermaid{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;text-align:center;}
+  .swatch{display:inline-flex;flex-direction:column;align-items:center;gap:5px;margin:0 10px 12px 0;}
+  .sw{width:46px;height:46px;border-radius:10px;border:1px solid rgba(0,0,0,.06);}
+  .swatch small{font-size:10.5px;color:var(--muted);text-align:center;max-width:64px;}
+
+  /* ===== 组件库真实渲染 ===== */
+  .comp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin:10px 0;}
+  .comp{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;}
+  .comp .lab{font-size:11px;color:var(--muted);margin-bottom:8px;display:block;}
+  .btn{height:46px;border:0;border-radius:10px;font-size:15px;font-weight:700;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s ease,opacity .12s ease;}
+  .btn.primary{background:var(--c-child);color:#fff;box-shadow:0 8px 18px rgba(40,120,255,.2);}
+  .btn.primary.green{background:var(--c-parent);box-shadow:0 8px 18px rgba(21,150,106,.18);}
+  .btn.ghost{background:#edf1f6;color:#29364a;}
+  .btn.danger{background:var(--c-danger-s);color:#b42318;}
+  .btn.full{width:100%;}
+  .btn[disabled]{background:#e9edf2;color:#98a2b3;box-shadow:none;cursor:not-allowed;}
+  .badge{display:inline-flex;align-items:center;min-height:24px;padding:3px 9px;border-radius:6px;font-size:12px;font-weight:700;margin:3px 6px 3px 0;}
+  .b-c{background:var(--c-child-s);color:var(--c-child-i);}
+  .b-g{background:var(--c-parent-s);color:var(--c-parent);}
+  .b-ac{background:var(--c-accent-s);color:#a8452e;}
+  .b-sh{background:var(--c-shop-s);color:#5b3fd6;}
+  .b-ex{background:var(--c-exch-s);color:#0c8074;}
+  .b-md{background:var(--c-medal-s);color:#9a6b00;}
+  .b-po{background:var(--c-pos-s);color:#08764e;}
+  .b-w{background:var(--c-warn-s);color:#8a5400;}
+  .progress{height:12px;border-radius:999px;background:#e9eef5;overflow:hidden;}
+  .progress > i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--c-child),#5fa0ff);}
+  .progress.warn > i{background:linear-gradient(90deg,var(--c-warn),#f6b65e);}
+  .progress.danger > i{background:linear-gradient(90deg,var(--c-danger),#ff7a7e);}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;font-weight:600;color:var(--ink);}
+  .chip.on{background:var(--c-child-s);border-color:var(--c-child-b);color:var(--c-child-i);}
+  .medal{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;
+         background:radial-gradient(circle at 30% 28%,#ffe9a8,#f5b301 70%,#c98f00);box-shadow:0 6px 14px rgba(245,179,1,.35);color:#7a5200;}
+  .medal.lock{background:#eef1f5;box-shadow:none;color:#aab2c0;}
+  .mini-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--sh-soft);}
+  /* 三态 */
+  .state-box{text-align:center;padding:34px 14px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);font-size:13px;line-height:1.9;}
+  .state-box .em{font-size:30px;display:block;margin-bottom:8px;}
+  .state-box.err{background:var(--c-danger-s);border-color:#ffc9c5;color:#9d241b;}
+  .state-box.load{color:var(--c-child-i);}
+
+  /* ===== 手机屏幕模拟 ===== */
+  .screens{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:22px;margin:16px 0;}
+  .phone{border:9px solid #1f2733;border-radius:38px;background:var(--c-bg);overflow:hidden;box-shadow:var(--sh-card);position:relative;}
+  .phone .statusbar{height:26px;background:#1f2733;color:#fff;font-size:11px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+  .screen{height:660px;overflow:auto;padding:16px 14px 28px;}
+  .screen::-webkit-scrollbar{width:0;}
+  .scr-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
+  .scr-title{font-size:20px;font-weight:800;color:var(--c-ink);}
+  .scr-sub{font-size:12px;color:var(--muted);margin:6px 0 14px;}
+  .bal-card{background:var(--c-child-s);border:1px solid var(--c-child-b);border-radius:18px;padding:18px;box-shadow:var(--sh-soft);}
+  .parent .bal-card{background:var(--c-parent-s);border-color:var(--c-parent-b);}
+  .bal-card .amt{font-size:34px;font-weight:800;color:var(--c-child);font-variant-numeric:tabular-nums;}
+  .parent .bal-card .amt{color:var(--c-parent);}
+  .bal-card .u{font-size:13px;color:var(--muted);margin-left:6px;font-weight:400;}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .muted{color:var(--muted);font-size:13px;}
+  .small{font-size:11.5px;color:var(--muted);}
+  .sec{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0;box-shadow:var(--sh-soft);}
+  .sec-t{font-size:15px;font-weight:800;margin-bottom:10px;}
+  .item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;margin:10px 0;box-shadow:var(--sh-soft);}
+  .price{font-size:18px;font-weight:800;color:var(--c-child);}
+  .notice{background:var(--c-child-s);color:var(--c-child-i);padding:11px 13px;border-radius:12px;font-size:12.5px;line-height:1.6;border:1px solid var(--c-child-b);margin:10px 0;}
+  .parent .notice{background:var(--c-parent-s);color:var(--c-parent);border-color:var(--c-parent-b);}
+  .btn-row{display:flex;gap:10px;margin-top:12px;}
+  .btn-row .btn{flex:1;min-width:0;}
+  .tabs{display:flex;gap:4px;padding:4px;background:#e9eef5;border-radius:10px;margin:12px 0;}
+  .tabs .t{flex:1;text-align:center;padding:8px 4px;font-size:13px;color:var(--muted);border-radius:8px;font-weight:700;}
+  .tabs .t.on{background:#fff;color:var(--c-child);box-shadow:var(--sh-soft);}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:8px;}
+  .cal > div{aspect-ratio:1;text-align:center;font-size:11px;display:flex;align-items:center;justify-content:center;border-radius:8px;color:var(--c-ink);}
+  .cal .dot{position:relative;}
+  .cal .dot::after{content:"";position:absolute;bottom:3px;width:5px;height:5px;border-radius:50%;background:var(--c-medal);}
+  .cal .today{background:var(--c-child-s);color:var(--c-child-i);font-weight:800;}
+  .av{width:40px;height:40px;border-radius:50%;background:var(--c-child-s);display:flex;align-items:center;justify-content:center;font-size:18px;}
+  .phone .ph-foot{height:8px;background:#1f2733;}
+  .toast{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);background:rgba(31,39,51,.92);color:#fff;padding:9px 16px;border-radius:10px;font-size:12.5px;white-space:nowrap;}
+  .locktag{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);background:#f1f5fb;padding:4px 9px;border-radius:8px;}
+  .cap{font-size:12px;color:var(--muted);margin:8px 0 0;text-align:center;}
+  @media(max-width:760px){.screens{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<aside class="note b"><b>设计基线：</b>本稿 100% 复用《成长星球》V0.0.1 小程序既有 design tokens（背景 #f7f9fc、儿童主色蓝 #2878ff、家长主色绿 #15966a、圆角 10/14/18/24、间距 8/12/16/22、阴影两级、动效 .14/.2s、点击区 ≥44px、focus 可见态、prefers-reduced-motion）。V0.0.2 仅<b>扩展</b>分类语义色与勋章/图表 token，不推翻既有体系，保证双版本视觉连续。图标为 emoji 占位，最终以 SVG 图标库替换。</aside>
+<div class="wrap">
+
+  <h1>「成长星球」· V0.0.2 UI+UX 设计稿（P2 生活自主）</h1>
+  <p class="lead">面向 V0.0.1（9 页 · 点餐 MVP）增量设计的 P2 生活自主模块：零花钱看板、家务、健康打卡、日程、购物、奖励兑换、二级监护人、勋章墙。覆盖 <b>UI 视觉规范 + UX 信息架构 + 交互流程 + 三态 + 无障碍</b>，组件与页面均按现状类名落地，便于前端直接复用。</p>
+  <p><span class="tag">沿用 V0.0.1 tokens</span><span class="tag">扩展分类语义色</span><span class="tag">儿童 ≥44px 触控</span><span class="tag">WCAG 2.2 AA</span><span class="tag">高保真可落地</span></p>
+
+  <!-- 设计原则 -->
+  <h2>一、设计原则</h2>
+  <div class="card">
+    <ol style="color:var(--sub);font-size:14px;line-height:2;margin:4px 0;padding-left:20px;">
+      <li><b>角色化双色</b>：儿童端蓝、家长端绿，沿用 V0.0.1 <code>.parent</code> 覆盖机制；V0.0.2 新增功能沿用宿主页角色色，不引入第三主色。</li>
+      <li><b>虚拟属性明示</b>：所有金额/余额统一标注"虚拟单位"，不出现"支付/充值/提现"等真实交易词汇（合规 + G2 零真实支付）。</li>
+      <li><b>赚→花→管可视化</b>：用进度环/条即时反馈额度与连续天数；奖励用勋章给予正反馈，淡化"减法"焦虑。</li>
+      <li><b>儿童友好 + 家长护栏</b>：大点击区、图标+文字双编码、状态显式；敏感操作（购物/兑换/委托）必须家长确认或复核中态。</li>
+      <li><b>连续而不打断</b>：动效仅 transform/opacity，支持减弱动效；加载/空/错三态统一，避免白屏与硬报错。</li>
+    </ol>
+  </div>
+
+  <!-- Design Tokens -->
+  <h2>二、设计语言 / Design Tokens</h2>
+  <h3>2.1 色板（沿用 + 扩展）</h3>
+  <div>
+    <span class="swatch"><span class="sw" style="background:#2878ff"></span><small>儿童主色 #2878ff</small></span>
+    <span class="swatch"><span class="sw" style="background:#15966a"></span><small>家长主色 #15966a</small></span>
+    <span class="swatch"><span class="sw" style="background:#ff7657"></span><small>强调 橙 #ff7657（点餐/餐单）</small></span>
+    <span class="swatch"><span class="sw" style="background:#7c5cff"></span><small>购物 紫 #7c5cff</small></span>
+    <span class="swatch"><span class="sw" style="background:#12b5a5"></span><small>兑换 青 #12b5a5</small></span>
+    <span class="swatch"><span class="sw" style="background:#f5b301"></span><small>勋章 金 #f5b301</small></span>
+    <span class="swatch"><span class="sw" style="background:#ff6b9d"></span><small>健康 粉 #ff6b9d</small></span>
+    <span class="swatch"><span class="sw" style="background:#22a06b"></span><small>正向 绿 #22a06b（奖励收入）</small></span>
+    <span class="swatch"><span class="sw" style="background:#e89016"></span><small>警示 #e89016</small></span>
+    <span class="swatch"><span class="sw" style="background:#e5484d"></span><small>危险 #e5484d</small></span>
+    <span class="swatch"><span class="sw" style="background:#f7f9fc"></span><small>背景 #f7f9fc</small></span>
+    <span class="swatch"><span class="sw" style="background:#172033"></span><small>墨色 #172033</small></span>
+  </div>
+  <div class="note b">分类语义色用于：流水分类标签、预算占比图、各模块入口图标底色。<b>奖励收入（绿）与消费支出（橙/紫/青）严格区分</b>，呼应 F-041"收入不计入支出额度"的语义。</div>
+
+  <h3>2.2 字阶 / 圆角 / 间距 / 阴影 / 动效</h3>
+  <table>
+    <tr><th>类别</th><th>令牌</th><th>值</th><th>用途</th></tr>
+    <tr><td>字阶</td><td>—</td><td>34(余额)/26(页标题)/20(价格·屏标题)/18(区块标题)/16(正文)/14(次要)/12(小字)</td><td>沿用 V0.0.1，标题 800/区块 800/正文 400</td></tr>
+    <tr><td>圆角</td><td>--r-sm/md/lg/xl</td><td>10 / 14 / 18 / 24 px</td><td>按钮 10、卡片 14-18、弹层 24</td></tr>
+    <tr><td>间距</td><td>--s1~--s4</td><td>8 / 12 / 16 / 22 px</td><td>组内 8、卡片内 16、区块间 22</td></tr>
+    <tr><td>阴影</td><td>--sh-soft / --sh-card</td><td>0 4px14 rgba / 0 10px28 rgba</td><td>卡片浮起、手机壳/弹层</td></tr>
+    <tr><td>动效</td><td>--mo-f / --mo</td><td>.14s / .2s ease</td><td>按压 scale(.98)、面板淡入；仅 transform/opacity</td></tr>
+    <tr><td>点击区</td><td>—</td><td>≥44px（按钮 46、图标 44）</td><td>儿童触控安全，沿用现状</td></tr>
+  </table>
+
+  <!-- 组件库 -->
+  <h2>三、组件库（真实渲染 · 复用现状类名）</h2>
+  <h3>3.1 按钮 / 徽章 / 进度</h3>
+  <div class="comp-grid">
+    <div class="comp"><span class="lab">按钮 primary（儿童）</span><div class="btn primary">确认</div></div>
+    <div class="comp"><span class="lab">按钮 primary（家长）</span><div class="btn primary green">保存</div></div>
+    <div class="comp"><span class="lab">按钮 ghost / danger</span><div class="btn ghost">取消</div> <div class="btn danger" style="margin-top:8px">删除</div></div>
+    <div class="comp"><span class="lab">按钮 disabled</span><div class="btn primary" disabled>提交中</div></div>
+    <div class="comp"><span class="lab">分类徽章</span>
+      <span class="badge b-c">点餐</span><span class="badge b-ac">家务奖励</span>
+      <span class="badge b-sh">购物</span><span class="badge b-ex">兑换</span>
+      <span class="badge b-po">发放</span><span class="badge b-md">勋章</span>
+      <span class="badge b-w">复核中</span>
+    </div>
+    <div class="comp"><span class="lab">额度进度（正常/警示/超额）</span>
+      <div class="progress" style="margin-top:6px"><i style="width:42%"></i></div>
+      <div class="progress warn" style="margin-top:8px"><i style="width:78%"></i></div>
+      <div class="progress danger" style="margin-top:8px"><i style="width:96%"></i></div>
+    </div>
+    <div class="comp"><span class="lab">分段标签 chip</span>
+      <span class="chip on">本周</span><span class="chip">本月</span>
+    </div>
+    <div class="comp"><span class="lab">勋章（已得/未解锁）</span>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="medal">🏅</div><div class="medal lock">🔒</div>
+      </div>
+    </div>
+  </div>
+
+  <h3>3.2 卡片 / 列表 / 图表容器 / 弹层</h3>
+  <div class="comp-grid">
+    <div class="comp"><span class="lab">余额卡 .bal-card（儿童/家长）</span>
+      <div class="bal-card" style="margin-top:4px"><div class="small">当前余额</div><div class="amt">128<span class="u">虚拟单位</span></div></div>
+    </div>
+    <div class="comp"><span class="lab">记录行 .item</span>
+      <div class="item" style="margin-top:4px"><div class="row"><span>家务奖励</span><span class="price">+10</span></div><div class="small">今天 18:20 · 流水 L-2031</div></div>
+    </div>
+    <div class="comp"><span class="lab">图表面板（占位）</span>
+      <div class="sec" style="margin:4px 0"><div class="sec-t">本周消费占比</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge b-ac">点餐 45%</span><span class="badge b-sh">购物 30%</span><span class="badge b-ex">兑换 25%</span>
+        </div></div>
+    </div>
+    <div class="comp"><span class="lab">底部操作条 .btn-row</span>
+      <div class="btn-row"><div class="btn ghost">驳回</div><div class="btn primary">确认完成</div></div>
+    </div>
+  </div>
+
+  <h3>3.3 三态（通用组件）</h3>
+  <div class="comp-grid">
+    <div class="comp"><span class="lab">空态 empty</span><div class="state-box"><span class="em">🌱</span>还没有任务<br>让爸妈发布第一个家务吧</div></div>
+    <div class="comp"><span class="lab">加载态 loading</span><div class="state-box load"><span class="em">⏳</span>正在加载…</div></div>
+    <div class="comp"><span class="lab">错误态 error</span><div class="state-box err"><span class="em">⚠️</span>网络开小差了<br>点击重试</div></div>
+  </div>
+
+  <!-- 信息架构 -->
+  <h2>四、信息架构与导航（UX）</h2>
+  <div class="card">
+    <p style="margin-top:0"><b>现状</b>：9 页（home/login/family/profile/menu/confirmation/wallet/notices/privacy），底部导航 <code>app-nav</code> 组件。V0.0.2 在<b>不重构导航</b>前提下增量接入：</p>
+    <table>
+      <tr><th>模块</th><th>接入方式</th><th>页面/入口</th><th>角色可见</th></tr>
+      <tr><td>零花钱看板（F-024~027）</td><td>增强现有 <code>wallet</code> 页</td><td>/pages/wallet（加图表+筛选+发放增强）</td><td>儿童 + 家长</td></tr>
+      <tr><td>家务（F-028~032）</td><td>新增 tab + 子页</td><td>/pages/housework（库/认领/确认）</td><td>儿童 + 家长</td></tr>
+      <tr><td>健康打卡（F-033~035）</td><td>新增 tab</td><td>/pages/health</td><td>儿童 + 家长</td></tr>
+      <tr><td>日程提醒（F-036~038）</td><td>新增 tab（或并入 home）</td><td>/pages/schedule</td><td>儿童 + 家长</td></tr>
+      <tr><td>购物清单（F-039~041）</td><td>新增 tab</td><td>/pages/shopping</td><td>儿童 + 家长</td></tr>
+      <tr><td>奖励兑换（F-042~044）</td><td>新增 tab</td><td>/pages/reward</td><td>儿童 + 家长</td></tr>
+      <tr><td>二级监护人（F-045~047）</td><td>并入 <code>family</code> 页"委托管理"分区</td><td>/pages/family（新增委托卡片）</td><td>家长（委托人受限 UI 复用 family/confirmation）</td></tr>
+      <tr><td>勋章墙（F-048）</td><td>并入 <code>profile</code> 页</td><td>/pages/profile（新增勋章墙区）</td><td>儿童 + 家长</td></tr>
+    </table>
+    <div class="note"><b>导航建议</b>：V0.0.2 新增 tab 较多，底部 <code>app-nav</code> 建议采用"首页 / 家务 / 购物 / 我的"四主 tab + 二级入口（健康、日程、兑换从首页宫格或"我的"进入），避免 tab 过多挤占点击区（儿童端尤其重要）。家长端可在家庭页集中管理。</div>
+  </div>
+
+  <!-- 页面设计稿 -->
+  <h2>五、关键页面设计稿（高保真视觉稿）</h2>
+  <p class="muted">以下为 375×667 小程序屏幕仿真。类名与 V0.0.1 一致，前端可直接套用。</p>
+
+  <div class="screens">
+
+    <!-- 1 零花钱主页 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>成长星球</span></div>
+      <div class="screen">
+        <div class="scr-head"><div class="scr-title">我的零花钱</div><div class="av">🧒</div></div>
+        <div class="scr-sub">儿童端 · 虚拟单位</div>
+        <div class="bal-card"><div class="small">当前余额</div><div class="amt">128<span class="u">虚拟单位</span></div>
+          <div class="row" style="margin-top:10px"><span class="muted">本周已用 52</span><span class="muted">剩余额度 48</span></div></div>
+        <div class="sec"><div class="sec-t">本周额度使用</div>
+          <div class="progress" style="height:10px"><i style="width:52%"></i></div>
+          <div class="small" style="margin-top:6px;color:var(--c-pos)">额度充足，继续加油 💪</div></div>
+        <div class="tabs"><div class="t on">流水</div><div class="t">趋势</div><div class="t">分类</div></div>
+        <div class="sec"><div class="sec-t">收支记录</div>
+          <div class="item"><div class="row"><span><span class="badge b-c">点餐</span> 蔬菜沙拉</span><span class="price">−8</span></div><div class="small">今天 12:05</div></div>
+          <div class="item"><div class="row"><span><span class="badge b-ac">家务奖励</span> 倒垃圾</span><span class="price" style="color:var(--c-pos)">+5</span></div><div class="small">今天 18:20</div></div>
+          <div class="item"><div class="row"><span><span class="badge b-ex">兑换</span> 周末去公园</span><span class="price">−20</span></div><div class="small">昨天 20:10</div></div>
+        </div>
+      </div>
+      <div class="ph-foot"></div>
+    </div>
+
+    <!-- 2 家长零花钱看板 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>成长星球</span></div>
+      <div class="screen parent">
+        <div class="scr-head"><div class="scr-title">零花钱看板</div><div class="av" style="background:var(--c-parent-s);color:var(--c-parent)">👩</div></div>
+        <div class="scr-sub">家长端 · 全量汇总</div>
+        <div class="bal-card"><div class="small">家庭虚拟总额</div><div class="amt">356<span class="u">虚拟单位</span></div>
+          <div class="row" style="margin-top:10px"><span class="muted">本周支出 120</span><span class="muted">本周发放 90</span></div></div>
+        <div class="sec"><div class="sec-t">子女概览</div>
+          <div class="item"><div class="row"><span>👦 小明</span><span class="muted">余额 128 · 已用 52</span></div></div>
+          <div class="item"><div class="row"><span>👧 小红</span><span class="muted">余额 84 · 已用 68</span></div></div></div>
+        <div class="sec"><div class="sec-t">本周消费趋势</div>
+          <div style="display:flex;align-items:flex-end;gap:6px;height:80px;padding:6px 0">
+            <div style="flex:1;background:var(--c-accent);height:40%;border-radius:6px 6px 0 0"></div>
+            <div style="flex:1;background:var(--c-accent);height:65%;border-radius:6px 6px 0 0"></div>
+            <div style="flex:1;background:var(--c-accent);height:50%;border-radius:6px 6px 0 0"></div>
+            <div style="flex:1;background:var(--c-accent);height:80%;border-radius:6px 6px 0 0"></div>
+            <div style="flex:1;background:var(--c-accent);height:55%;border-radius:6px 6px 0 0"></div>
+            <div style="flex:1;background:var(--c-accent);height:35%;border-radius:6px 6px 0 0"></div>
+            <div style="flex:1;background:var(--c-accent);height:60%;border-radius:6px 6px 0 0"></div>
+          </div>
+          <div class="small">周一至周日 · 单位：虚拟单位</div>
+        </div>
+        <div class="btn-row"><div class="btn primary green">发放零花钱</div></div>
+      </div>
+      <div class="ph-foot"></div>
+    </div>
+
+    <!-- 3 家务 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>成长星球</span></div>
+      <div class="screen">
+        <div class="scr-head"><div class="scr-title">家务小任务</div><div class="av">🧹</div></div>
+        <div class="notice">完成任务可得虚拟零花钱 + 勋章 🏅</div>
+        <div class="item"><div class="row"><span>🗑️ 倒垃圾</span><span class="badge b-ac">+5</span></div><div class="small">预估 5 分钟 · 每日</div><div class="btn-row"><div class="btn primary">认领</div></div></div>
+        <div class="item"><div class="row"><span>🧸 整理玩具</span><span class="badge b-ac">+8</span></div><div class="small">预估 10 分钟 · 每日</div><div class="btn-row"><div class="btn primary">认领</div></div></div>
+        <div class="item" style="border-color:var(--c-child-b);background:var(--c-child-s)"><div class="row"><span>🍽️ 摆碗筷</span><span class="badge b-c">进行中</span></div><div class="small">已认领 · 待完成</div><div class="btn-row"><div class="btn primary">标记完成</div></div></div>
+        <div class="item" style="border-color:var(--c-pos);background:var(--c-pos-s)"><div class="row"><span>🌿 浇花</span><span class="badge b-po">待家长确认</span></div><div class="small">已完成提交，等爸妈确认发奖</div></div>
+      </div>
+      <div class="ph-foot"></div>
+    </div>
+
+    <!-- 4 健康打卡 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>成长星球</span></div>
+      <div class="screen">
+        <div class="scr-head"><div class="scr-title">健康打卡</div><div class="av" style="background:var(--c-health-s);color:var(--c-health)">💧</div></div>
+        <div class="notice" style="background:var(--c-health-s);color:#a8326a;border-color:#ffc6dd">健康数据仅在监护人同意范围内记录，可随时撤回</div>
+        <div class="sec" style="border-color:var(--c-health-s)"><div class="sec-t" style="color:var(--c-health)">今日打卡</div>
+          <div class="item"><div class="row"><span>💧 喝水 6 杯</span><span class="badge b-po">已打卡</span></div><div class="btn-row"><div class="btn primary" style="background:var(--c-health);box-shadow:0 8px 18px rgba(255,107,157,.2)">再喝一杯</div></div></div>
+          <div class="item"><div class="row"><span>😴 睡眠 9 小时</span><span class="badge b-w">未打卡</span></div><div class="btn-row"><div class="btn ghost">记一下</div></div></div>
+        </div>
+        <div class="sec"><div class="sec-t">连续打卡 🔥 <span style="color:var(--c-medal)">12 天</span></div>
+          <div class="cal">
+            <div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div><div>日</div>
+            <div class="dot">8</div><div class="dot">9</div><div class="dot">10</div><div class="today">11</div><div>12</div><div>13</div><div>14</div>
+            <div>15</div><div>16</div><div class="dot">17</div><div class="dot">18</div><div class="dot">19</div><div>20</div><div>21</div>
+          </div>
+          <div class="small" style="margin-top:8px;color:var(--c-medal)">连续 12 天！再坚持 3 天解锁「自律之星」🏅</div>
+        </div>
+      </div>
+      <div class="ph-foot"></div>
+    </div>
+
+    <!-- 5 购物清单 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>成长星球</span></div>
+      <div class="screen">
+        <div class="scr-head"><div class="scr-title">购物清单</div><div class="av" style="background:var(--c-shop-s);color:var(--c-shop)">🛒</div></div>
+        <div class="notice" style="background:var(--c-shop-s);color:#5b3fd6;border-color:var(--c-shop-s)">想买什么先加进来，让爸妈确认后用零花钱记账</div>
+        <div class="item"><div class="row"><span>🎨 水彩笔</span><span class="price" style="color:var(--c-shop)">30</span></div><div class="small">预估虚拟价</div><div class="btn-row"><div class="btn primary" style="background:var(--c-shop);box-shadow:0 8px 18px rgba(124,92,255,.2)">提交审批</div></div></div>
+        <div class="item" style="border-color:var(--c-warn);background:var(--c-warn-s)"><div class="row"><span>🧸 玩偶</span><span class="badge b-w">复核中</span></div><div class="small">已超本周额度，等爸妈放行</div></div>
+        <div class="item"><div class="row"><span>📚 绘本</span><span class="badge b-po">已通过</span></div><div class="small">已扣 25 虚拟单位</div></div>
+        <div class="btn-row"><div class="btn ghost">+ 添加想要</div><div class="btn primary" style="background:var(--c-shop);box-shadow:0 8px 18px rgba(124,92,255,.2)">去兑换中心</div></div>
+      </div>
+      <div class="ph-foot"></div>
+    </div>
+
+    <!-- 6 奖励兑换 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>成长星球</span></div>
+      <div class="screen">
+        <div class="scr-head"><div class="scr-title">奖励兑换</div><div class="av" style="background:var(--c-exch-s);color:var(--c-exch)">🎁</div></div>
+        <div class="bal-card" style="background:var(--c-exch-s);border-color:var(--c-exch-s)"><div class="small" style="color:#0c8074">我的可用</div><div class="amt" style="color:var(--c-exch)">128<span class="u">虚拟单位</span></div></div>
+        <div class="item"><div class="row"><span>🎡 周末去公园</span><span class="price" style="color:var(--c-exch)">20</span></div><div class="small">特权类 · 兑换后即时生效</div><div class="btn-row"><div class="btn primary" style="background:var(--c-exch);box-shadow:0 8px 18px rgba(18,181,165,.2)">兑换</div></div></div>
+        <div class="item"><div class="row"><span>🧸 新玩偶</span><span class="price" style="color:var(--c-exch)">60</span></div><div class="small">实物类 · 家长线下履约</div><div class="btn-row"><div class="btn primary" style="background:var(--c-exch);box-shadow:0 8px 18px rgba(18,181,165,.2)">兑换</div></div></div>
+        <div class="item"><div class="row"><span>🍦 冰淇淋券</span><span class="badge b-w">虚拟不足</span></div><div class="small">还差 12 虚拟单位，做任务赚起来！</div></div>
+      </div>
+      <div class="ph-foot"></div>
+    </div>
+
+    <!-- 7 二级监护人 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>成长星球</span></div>
+      <div class="screen parent">
+        <div class="scr-head"><div class="scr-title">委托管理</div><div class="av" style="background:var(--c-parent-s);color:var(--c-parent)">👵</div></div>
+        <div class="notice" style="background:var(--c-parent-s);color:var(--c-parent);border-color:var(--c-parent-b)">可委托祖辈临时审批，范围受限，不可改额度/导出</div>
+        <div class="sec"><div class="sec-t">已授权委托人</div>
+          <div class="item"><div class="row"><span>👵 奶奶</span><span class="badge b-g">审批中</span></div><div class="small">可审批：点餐 · 家务 · 购物</div><div class="small locktag">🔒 不可改额度 / 导出 / 解绑</div><div class="btn-row"><div class="btn ghost">撤销</div><div class="btn primary green">管理范围</div></div></div>
+          <div class="item" style="border-color:var(--c-warn);background:var(--c-warn-s)"><div class="row"><span>👴 外公</span><span class="badge b-w">3 天后到期</span></div><div class="small">临时委托 · 到期自动降级</div></div>
+        </div>
+        <div class="btn-row"><div class="btn primary green">+ 邀请二级监护人</div></div>
+      </div>
+      <div class="ph-foot"></div>
+    </div>
+
+    <!-- 8 勋章墙 -->
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>成长星球</span></div>
+      <div class="screen">
+        <div class="scr-head"><div class="scr-title">我的勋章墙</div><div class="av" style="background:var(--c-medal-s);color:#9a6b00">🏅</div></div>
+        <div class="notice" style="background:var(--c-medal-s);color:#9a6b00;border-color:#ffe08a">集勋章，养成好习惯！</div>
+        <div class="sec"><div class="sec-t">已获得 <span style="color:var(--c-medal)">6</span> 枚</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:space-around;padding:6px 0">
+            <div style="text-align:center"><div class="medal">🧹</div><div class="small">家务达人</div></div>
+            <div style="text-align:center"><div class="medal">💧</div><div class="small">喝水王</div></div>
+            <div style="text-align:center"><div class="medal">🔥</div><div class="small">坚持12天</div></div>
+            <div style="text-align:center"><div class="medal">🛒</div><div class="small">购物能手</div></div>
+          </div>
+        </div>
+        <div class="sec"><div class="sec-t">待解锁</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:space-around;padding:6px 0">
+            <div style="text-align:center"><div class="medal lock">🔒</div><div class="small">自律之星(15天)</div></div>
+            <div style="text-align:center"><div class="medal lock">🔒</div><div class="small">兑换大师</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ph-foot"></div>
+    </div>
+
+  </div>
+  <p class="cap">以上 8 屏为 V0.0.2 核心页面高保真视觉稿（零花钱主页/家长看板/家务/健康/购物/兑换/二级监护人/勋章墙）。</p>
+
+  <!-- 交互流程 -->
+  <h2>六、核心交互流程（UX 状态机）</h2>
+  <h3>6.1 家务：认领 → 完成 → 确认 → 入账</h3>
+  <div class="mermaid">
+stateDiagram-v2
+  [*] --> CLAIMED: 儿童认领
+  CLAIMED --> SUBMITTED: 标记完成
+  SUBMITTED --> CONFIRMED: 家长确认(同事务发奖励)
+  SUBMITTED --> REJECTED: 家长驳回
+  CONFIRMED --> [*]
+  REJECTED --> [*]
+  note right of CONFIRMED
+    发虚拟币 + 勋章 + 流水(REWARD_ADD)
+    失败整体回滚保持 SUBMITTED
+  end note
+  </div>
+
+  <h3>6.2 购物 / 兑换：跨场景额度护栏</h3>
+  <div class="mermaid">
+flowchart TD
+  A[儿童提交购物/兑换] --> B{余额≥消耗?}
+  B -- 否 --> C[拦截:虚拟不足]
+  B -- 是 --> D{累计支出+本单≤周额度?}
+  D -- 是 --> E[审批/兑换通过 扣减+流水]
+  D -- 否 --> F[状态=复核中 需家长放行]
+  F --> G{家长放行?}
+  G -- 是 --> E
+  G -- 否 --> H[拒绝 不扣减]
+  E --> I[通知儿童]
+  </div>
+  <div class="note b">关键 UX 点：奖励发放（REWARD_ADD / MANUAL_GRANT）为"收入"，<b>不触发</b>上述额度判定；只有消费类（CONSUME_DEDUCT / EXCHANGE_DEDUCT）参与。避免"赚钱反而超额"的困惑（F-041 / A-01）。</div>
+
+  <h3>6.3 二级监护人：邀请 → 授权 → 受限操作 → 到期降级</h3>
+  <div class="mermaid">
+flowchart LR
+  P[家长邀请] --> Q[对方接受] --> R[家长确认范围]
+  R --> S[生效:仅可审批点餐/家务/购物]
+  S --> T{到期或撤销?}
+  T -- 到期 --> U[自动降级 通知]
+  T -- 撤销 --> U
+  S -. 越权操作 .-> V[返回 403 不可见]
+  </div>
+
+  <!-- 三态规范 -->
+  <h2>七、三态规范（空 / 加载 / 错误）</h2>
+  <table>
+    <tr><th>状态</th><th>触发</th><th>UI 表现</th><th>文案原则</th><th>操作</th></tr>
+    <tr><td>空态 empty</td><td>无数据（首用/筛选无果）</td><td>居中图标 + 一句引导，配色柔和，不报错</td><td>正向激励（"发布第一个家务吧🌱"）</td><td>提供"去添加"主按钮</td></tr>
+    <tr><td>加载态 loading</td><td>请求中（首屏/翻页/提交）</td><td>骨架屏或 spinner，按钮 disabled 防重复</td><td>不出现白屏；金额类显示占位</td><td>禁用重复提交</td></tr>
+    <tr><td>错误态 error</td><td>网络/服务/校验失败</td><td>红边提示 + 原因 + 重试；不弹系统框</td><td>儿童可读（"网络开小差了"）</td><td>"点击重试"按钮</td></tr>
+    <tr><td>复核中/受限</td><td>超额度/委托人越权</td><td>黄色警示徽章 / 403 友好提示</td><td>说明"等爸妈确认"或"无权限"</td><td>家长端放行 / 引导联系家长</td></tr>
+  </table>
+
+  <!-- 无障碍 -->
+  <h2>八、无障碍与适配</h2>
+  <div class="card">
+    <ul style="color:var(--sub);font-size:13.5px;line-height:2;margin:4px 0;padding-left:20px;">
+      <li><b>触控</b>：所有可点元素 ≥44px（按钮 46 / 图标 44），沿用现状；列表行高 ≥48px。</li>
+      <li><b>对比度</b>：正文墨色 #172033 on #fff 对比 ≥7:1；徽章文字用深底深字（如 #154a9e on #edf5ff），满足 WCAG 2.2 AA。</li>
+      <li><b>双编码</b>：状态不只靠颜色——图标+文字+形状（如"复核中"用 🟡 徽章+文字，不止黄色）。</li>
+      <li><b>动效</b>：仅 transform/opacity，且 <code>@media (prefers-reduced-motion: reduce)</code> 全部关闭（已存于现状 app.wxss）。</li>
+      <li><b>焦点</b>：键盘/指针聚焦有可见 outline（现状已加）；小程序内等价用聚焦态样式。</li>
+      <li><b>隐私</b>：健康打卡在监护人同意范围内采集；撤回后入口置灰并提示（呼应 F-033/NF-5/A-03）。</li>
+      <li><b>包体</b>：图表用轻量 SVG/CSS 实现，图标走 SVG sprite，控制新增资源体积（继承 NF-2）。</li>
+    </ul>
+  </div>
+
+  <!-- 落地清单 -->
+  <h2>九、设计落地清单（给前端）</h2>
+  <div class="card">
+    <h4 style="margin-top:0">9.1 复用现状（无需重做）</h4>
+    <p style="font-size:13.5px;color:var(--sub)"><code>app.wxss</code> 全套 tokens 与基础类（page/header/title/section/item/badge/notice/error/empty/loading/tabs/field/label/button.primary/.parent）；底部 <code>app-nav</code>；钱包余额卡 <code>.balance-card</code>；focus/reduced-motion 适配。</p>
+    <h4>9.2 需新增/扩展</h4>
+    <table>
+      <tr><th>类型</th><th>清单</th><th>对应需求</th></tr>
+      <tr><td>CSS 扩展</td><td>分类语义色变量（紫/青/金/粉）、额度进度条三态、勋章样式、图表面板、日历网格、分段 chip</td><td>全局</td></tr>
+      <tr><td>新页面</td><td>housework / health / schedule / shopping / reward（5 个）；wallet、family、profile 增强</td><td>F-024~F-048</td></tr>
+      <tr><td>新组件</td><td>额度进度环、分类占比图(CSS/SVG)、连续打卡日历、勋章墙、复核中徽章、委托权限卡、底部操作条</td><td>对应模块</td></tr>
+      <tr><td>图标</td><td>用 SVG 图标库替换 emoji 占位（家务/健康/购物/兑换/勋章/日程等），统一线性风格</td><td>全局</td></tr>
+      <tr><td>主题</td><td><code>.parent</code> 覆盖已支持家长绿；新模块入口底色用分类色，文字用深色保证对比</td><td>角色化双色</td></tr>
+    </table>
+    <h4>9.3 待确认视觉点</h4>
+    <ul style="color:var(--sub);font-size:13px;line-height:1.9;margin:4px 0;padding-left:20px;">
+      <li>底部 tab 数量与分布（建议 4 主 tab + 宫格二级入口，待产品拍板）。</li>
+      <li>预算可视化图表形态（柱状/环形/趋势线）——设计稿用 CSS 占位，确认后接入轻量图表库。</li>
+      <li>勋章视觉风格（拟物金币 / 扁平圆形 / 星形），待品牌统一。</li>
+      <li>儿童端与家长端是否共用同一套图标，还是家长端用更"管理感"的图标。</li>
+    </ul>
+  </div>
+
+  <footer style="margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;">
+    成长星球 · V0.0.2 UI+UX 设计稿 ｜ 复用 V0.0.1 design tokens，扩展分类语义色 ｜ 8 核心页面高保真 + 组件库 + 交互流程 + 三态 + 无障碍落地清单。
+  </footer>
+
+</div>
+</body>
+</html>

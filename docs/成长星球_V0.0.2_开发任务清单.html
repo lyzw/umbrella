@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>成长星球 · V0.0.2 开发任务清单（P2 生活自主）</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.8/dist/mermaid.min.js"></script>
+<script>document.addEventListener("DOMContentLoaded",function(){if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:"default"});});</script>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2733; --sub:#5b6776; --muted:#8a94a6;
+    --brand:#3b82f6; --brand2:#22c55e; --brand3:#f59e0b; --brand4:#a855f7;
+    --line:#e6ebf2; --soft:#eef3fb; --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.7;font-size:14.5px;}
+  .wrap{max-width:1200px;margin:0 auto;padding:40px 26px 90px;}
+  h1{font-size:28px;margin:0 0 6px;}
+  h2{font-size:21px;margin:44px 0 12px;padding-left:12px;border-left:5px solid var(--brand);}
+  h3{font-size:16px;margin:22px 0 8px;color:var(--brand);}
+  h4{font-size:14.5px;margin:14px 0 6px;color:var(--ink);}
+  p{margin:7px 0;color:var(--sub);}
+  .lead{font-size:15.5px;color:var(--ink);}
+  .tag{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;background:var(--soft);color:var(--brand);margin-right:6px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 20px;margin:12px 0;box-shadow:0 1px 3px rgba(20,40,80,.04);}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px;}
+  th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top;}
+  th{background:var(--soft);color:var(--ink);font-weight:600;}
+  .pill{padding:1px 8px;border-radius:8px;color:#fff;font-weight:600;font-size:11.5px;}
+  .pp0{background:#64748b;} .pp1{background:var(--brand);} .pp2{background:var(--brand2);} .pp3{background:var(--brand3);}
+  .tcode{font-family:ui-monospace,Menlo,monospace;background:var(--soft);padding:1px 6px;border-radius:6px;color:#9333ea;font-size:12px;font-weight:600;}
+  .fcode{font-family:ui-monospace,Menlo,monospace;background:var(--soft);padding:1px 6px;border-radius:6px;color:#b45309;font-size:11.5px;}
+  .m1{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;}
+  .m2{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
+  .tk{font-family:ui-monospace,Menlo,monospace;background:#f1f5f9;padding:1px 5px;border-radius:5px;font-size:11.5px;color:#334155;}
+  .note{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:12px 16px;font-size:13px;color:#7c5e10;margin:12px 0;}
+  .note.r{background:#fef2f2;border-color:#fecaca;color:#991b1b;}
+  .note.g{background:#f0fdf4;border-color:#bbf7d0;color:#166534;}
+  .note.b{background:#eff6ff;border-color:#bfdbfe;color:#1e40af;}
+  code{background:var(--soft);padding:1px 6px;border-radius:6px;font-size:12.5px;color:#b45309;}
+  .mermaid{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;margin:12px 0;text-align:center;}
+  .toc{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 22px;margin:0 0 28px;}
+  .toc a{color:var(--sub);text-decoration:none;font-size:13px;display:inline-block;margin:2px 14px 2px 0;}
+  .sum{font-size:13px;color:var(--muted);}
+  @media(max-width:760px){.toc a{display:block;}}
+</style>
+</head>
+<body>
+<aside class="note b"><b>说明：</b>本清单基于《成长星球 · V0.0.2 PRD（V1.1）》拆解，F 编号对应 PRD 功能点（F-024~F-048）。任务编号 <span class="tcode">T-001</span> 起，类型分【DB/后端/前端/测试/配置】；"迭代"列 M1=核心闭环（Sprint 1），M2=增强补全（Sprint 2）。工作量以<b>人天（pd）</b>估算，面向 1 后端 + 1 前端 + 0.5 测试的小团队。</aside>
+<div class="wrap">
+
+  <h1>「成长星球」· V0.0.2 开发任务清单（P2 生活自主）</h1>
+  <p class="lead">把 PRD 的 25 个功能点（F-024~F-048）拆解为 <b>35 个可执行任务</b>，按"库表→后端→前端→联调测试"纵向切分，并归并到两个迭代。所有消费类任务（家务发放/购物/兑换）依赖统一的<b>跨场景额度护栏服务 T-033</b> 与<b>勋章服务 T-010</b>。</p>
+  <p>
+    <span class="tag">V0.0.2 = P2 全量</span><span class="tag">35 任务</span>
+    <span class="tag">M1 核心闭环</span><span class="tag">M2 增强补全</span>
+    <span class="tag">约 76 人天</span>
+  </p>
+
+  <nav class="toc">
+    <b>目录：</b>
+    <a href="#s1">1 拆解说明</a><a href="#s2">2 任务总览</a><a href="#s3">3 模块任务明细</a>
+    <a href="#s4">4 迭代计划</a><a href="#s5">5 依赖与关键路径</a><a href="#s6">6 交付物清单</a>
+    <a href="#s7">7 验收与度量</a><a href="#s8">8 风险与对策</a>
+  </nav>
+
+  <!-- 1 -->
+  <h2 id="s1">一、拆解说明</h2>
+  <div class="card">
+    <h4 style="margin-top:0">1.1 拆解维度</h4>
+    <ul style="color:var(--sub);font-size:13.5px;line-height:1.9;margin:4px 0;">
+      <li><b>纵向三刀</b>：每个功能点按 <code>DB schema</code> → <code>后端 API/Service</code> → <code>前端页面/组件</code> 切分；跨模块公共能力（勋章、额度护栏）单独抽任务。</li>
+      <li><b>类型标注</b>：DB（库表/DDL）、后端（接口/逻辑/事务）、前端（页面/组件/状态）、测试（联调/集成/E2E）、配置（权限/通知接入）。</li>
+      <li><b>优先级对齐</b>：任务优先级继承自对应 F 的 P0/P1/P2；P0 全部落在 M1。</li>
+      <li><b>依赖显式</b>：依赖列引用前置任务编号（<span class="tcode">T-xxx</span>）或 PRD 既有功能（<span class="fcode">F-xxx</span>）。</li>
+    </ul>
+    <h4>1.2 迭代划分原则</h4>
+    <ul style="color:var(--sub);font-size:13.5px;line-height:1.9;margin:4px 0;">
+      <li><b>M1（Sprint 1 · 核心闭环）</b>：跑通"赚（家务）→花（购物/兑换）→管（看板）→看护（二级监护人）"最小可用闭环；含基础勋章、跨场景额度护栏、安全/隐私/一致性非功能基线。</li>
+      <li><b>M2（Sprint 2 · 增强补全）</b>：健康打卡、日程提醒、周期任务、预算可视化、流水增强、审核履约、委托时效、手动发放增强，及全量集成测试与 E2E 闭环验证。</li>
+    </ul>
+  </div>
+
+  <!-- 2 -->
+  <h2 id="s2">二、任务总览（T-001 ~ T-035）</h2>
+  <table>
+    <tr><th>任务</th><th>关联需求</th><th>任务名称</th><th>类型</th><th>优先级</th><th>依赖</th><th>工作量</th><th>迭代</th></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">前置与跨模块公共能力</td></tr>
+    <tr><td class="tcode">T-001</td><td>全部</td><td>V0.0.2 全量库表 DDL（任务/打卡/日程/购物/奖励/勋章/委托）</td><td>DB</td><td><span class="pill pp0">P0</span></td><td>—</td><td>2.0</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-010</td><td>F-048</td><td>基础勋章/成就服务（定义/发放幂等/查询/连续）</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-001,F-003</td><td>2.0</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-033</td><td>F-041</td><td>跨场景额度护栏统一服务（日/周支出上限，收入不计入）</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-001,F-009</td><td>2.0</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-034</td><td>NF-1~6</td><td>非功能基线（安全行锁/隐私同意/性能缓存/无障碍）</td><td>后端+前端</td><td><span class="pill pp0">P0</span></td><td>各模块</td><td>2.0</td><td>贯穿</td></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">A. 零花钱管理 UI</td></tr>
+    <tr><td class="tcode">T-002</td><td>F-024</td><td>余额看板聚合接口（儿童端+家长汇总）</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-001,F-008,F-009,F-023</td><td>1.5</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-003</td><td>F-024</td><td>儿童端零花钱主页 + 家长端子女汇总看板</td><td>前端</td><td><span class="pill pp0">P0</span></td><td>T-002</td><td>2.0</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-004</td><td>F-025</td><td>消费预算可视化接口（日/周/月趋势+分类占比）</td><td>后端</td><td><span class="pill pp1">P1</span></td><td>T-001,T-002</td><td>1.5</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-005</td><td>F-025</td><td>趋势图 + 分类占比组件（空态占位）</td><td>前端</td><td><span class="pill pp1">P1</span></td><td>T-004</td><td>2.0</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-006</td><td>F-026</td><td>流水筛选接口（收入/支出/分类/日期）</td><td>后端</td><td><span class="pill pp1">P1</span></td><td>T-001,F-023</td><td>1.0</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-007</td><td>F-026</td><td>流水明细增强 UI（筛选+分类标签）</td><td>前端</td><td><span class="pill pp1">P1</span></td><td>T-006</td><td>1.5</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-008</td><td>F-027</td><td>家长手动发放接口（MANUAL_GRANT+备注必填）</td><td>后端</td><td><span class="pill pp2">P2</span></td><td>T-001,F-008</td><td>1.0</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-009</td><td>F-027</td><td>手动发放入口 UI（备注必填校验）</td><td>前端</td><td><span class="pill pp2">P2</span></td><td>T-008</td><td>1.0</td><td><span class="m2">M2</span></td></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">B. 基础勋章服务（前端展示）</td></tr>
+    <tr><td class="tcode">T-011</td><td>F-048</td><td>儿童端勋章墙 UI（已得/可解锁）</td><td>前端</td><td><span class="pill pp0">P0</span></td><td>T-010</td><td>1.5</td><td><span class="m1">M1</span></td></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">C. 家务小任务</td></tr>
+    <tr><td class="tcode">T-012</td><td>F-028</td><td>家务任务库 CRUD 接口</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-001,F-004</td><td>1.5</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-013</td><td>F-029/030/031</td><td>认领/提交/确认状态机 + 同事务发奖励+勋章+流水</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-010,T-012,F-008,F-019</td><td>2.5</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-015</td><td>F-029/030/031</td><td>家务前端：库浏览/认领/打卡提交/家长确认</td><td>前端</td><td><span class="pill pp0">P0</span></td><td>T-012,T-013</td><td>3.0</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-014</td><td>F-032</td><td>周期任务自动生成（家庭时区，失败可重试）</td><td>后端</td><td><span class="pill pp1">P1</span></td><td>T-013</td><td>1.5</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-016</td><td>F-032</td><td>周期/连续任务展示补充</td><td>前端</td><td><span class="pill pp1">P1</span></td><td>T-014,T-011</td><td>1.0</td><td><span class="m2">M2</span></td></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">D. 健康打卡</td></tr>
+    <tr><td class="tcode">T-017</td><td>F-033</td><td>打卡项配置接口（同意范围约束）</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-001,F-003,F-007</td><td>1.5</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-018</td><td>F-034/035</td><td>打卡提交 + streak 连续 + 勋章</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-010,T-017</td><td>1.5</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-019</td><td>F-033/034/035</td><td>健康前端：打卡项 + 一键打卡 + 日历连续</td><td>前端</td><td><span class="pill pp0">P0</span></td><td>T-017,T-018,T-011</td><td>2.5</td><td><span class="m2">M2</span></td></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">E. 日程提醒</td></tr>
+    <tr><td class="tcode">T-020</td><td>F-036</td><td>日程/提醒配置接口（单次/重复）</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-001,F-004,F-011</td><td>1.5</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-021</td><td>F-038</td><td>提醒投递（站内推送，失败不回滚）</td><td>后端</td><td><span class="pill pp1">P1</span></td><td>T-020,F-011</td><td>1.0</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-022</td><td>F-036/037/038</td><td>日程前端：家长配置 + 儿童日历/列表视图</td><td>前端</td><td><span class="pill pp1">P1</span></td><td>T-020</td><td>2.5</td><td><span class="m2">M2</span></td></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">F. 购物清单</td></tr>
+    <tr><td class="tcode">T-023</td><td>F-039</td><td>购物清单维护接口</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-001,F-004</td><td>1.0</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-024</td><td>F-040/041</td><td>购物确认审批 + 跨场景额度扣减（调用 T-033）</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-023,T-033,F-019,F-009</td><td>2.5</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-025</td><td>F-039/040</td><td>购物前端：清单维护 + 提交审批流程</td><td>前端</td><td><span class="pill pp0">P0</span></td><td>T-023,T-024</td><td>2.5</td><td><span class="m1">M1</span></td></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">G. 奖励兑换中心</td></tr>
+    <tr><td class="tcode">T-026</td><td>F-042</td><td>奖励商品库 CRUD 接口</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-001,F-004</td><td>1.5</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-027</td><td>F-043/044</td><td>兑换扣减 + 兑换单 + 履约状态（调用 T-033）</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-026,T-033,F-008</td><td>2.5</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-028</td><td>F-042/043/044</td><td>兑换前端：奖励库浏览/兑换/履约确认</td><td>前端</td><td><span class="pill pp0">P0</span></td><td>T-026,T-027</td><td>2.5</td><td><span class="m1">M1</span></td></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">H. 二级监护人委托</td></tr>
+    <tr><td class="tcode">T-029</td><td>F-045</td><td>邀请/绑定/确认委托范围接口</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-001,F-004,F-006</td><td>2.0</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-030</td><td>F-046</td><td>权限分级 + 委托范围过滤 + 403（复用 E-009）</td><td>后端</td><td><span class="pill pp0">P0</span></td><td>T-029</td><td>2.0</td><td><span class="m1">M1</span></td></tr>
+    <tr><td class="tcode">T-031</td><td>F-047</td><td>委托时效到期自动降级 + 撤销</td><td>后端</td><td><span class="pill pp1">P1</span></td><td>T-029,T-030</td><td>1.5</td><td><span class="m2">M2</span></td></tr>
+    <tr><td class="tcode">T-032</td><td>F-045/046/047</td><td>二级监护人前端：邀请/管理 + 委托人受限 UI</td><td>前端</td><td><span class="pill pp0">P0</span></td><td>T-029,T-030</td><td>2.5</td><td><span class="m1">M1</span></td></tr>
+
+    <tr style="background:var(--soft);font-weight:600;"><td colspan="8">收尾</td></tr>
+    <tr><td class="tcode">T-035</td><td>G1~G4</td><td>集成测试 + 端到端"赚→花→管"闭环验证</td><td>测试</td><td><span class="pill pp0">P0</span></td><td>全部模块</td><td>3.0</td><td><span class="m2">M2</span></td></tr>
+  </table>
+  <p class="sum">合计 <b>35</b> 个任务，约 <b>76 人天</b>（M1 ≈ 42 pd 含非功能基线；M2 ≈ 34 pd 含集成测试）。</p>
+
+  <!-- 3 -->
+  <h2 id="s3">三、模块任务明细（交付物与验收标准）</h2>
+
+  <h3>3.0 前置与公共能力</h3>
+  <table>
+    <tr><th>任务</th><th>关键交付物</th><th>验收标准</th></tr>
+    <tr><td class="tcode">T-001</td><td>V0.0.2 DDL 脚本 + 回滚脚本；新表含 <code>family_id/child_id</code> 隔离、<code>deleted</code> 软删、<code>create_time/update_time</code>；索引覆盖家庭/儿童查询</td><td>DDL 经评审；可幂等执行与回滚；字段含枚举约束（状态/类型）；不破坏 V0.0.1 既有表</td></tr>
+    <tr><td class="tcode">T-010</td><td>勋章服务：<code>medal_def</code>（定义）、<code>medal_grant</code>（发放记录）接口；发放幂等（同一触发不重复）；连续记录查询</td><td>发放幂等通过并发测试；被家务/健康/兑换调用成功；儿童可查已得勋章</td></tr>
+    <tr><td class="tcode">T-033</td><td>额度护栏服务：<code>checkAndDeduct(consumerType, amount)</code> 校验"累计支出+本单≤日/周上限"，收入类不入；统一 type 枚举</td><td>点餐/购物/兑换共享上限；奖励发放不触发超额；并发扣减无超扣（行锁+版本校验）</td></tr>
+    <tr><td class="tcode">T-034</td><td>安全：钱包扣减复用行锁+版本校验；隐私：健康采集绑定 F-007 同意、撤回应停采并纳入 F-012 出口；性能：聚合查询缓存、P95≤2s；无障碍：对比度/触控≥44px</td><td>越权返回 403；撤回同意后健康数据不可见；看板/图表达标；WCAG 2.2 AA 关键项通过</td></tr>
+  </table>
+
+  <h3>3.1 A. 零花钱管理 UI</h3>
+  <table>
+    <tr><th>任务</th><th>关键交付物</th><th>验收标准</th></tr>
+    <tr><td class="tcode">T-002</td><td><code>GET /wallet/summary/child</code>、<code>GET /wallet/summary/parent</code> 聚合余额/本周已用/剩余额度</td><td>儿童见本人；家长见全量子女汇总；数据来自 V0.0.1 钱包/流水</td></tr>
+    <tr><td class="tcode">T-003</td><td>儿童端零花钱主页（余额/额度进度）、家长端子女汇总看板页</td><td>展示与接口一致；权限过滤正确；空家庭有占位</td></tr>
+    <tr><td class="tcode">T-004</td><td><code>GET /wallet/trend?range=day|week|month</code> 趋势与分类占比</td><td>分类占比与流水一致；空数据返回空结构</td></tr>
+    <tr><td class="tcode">T-005</td><td>趋势折线图 + 分类饼/环图组件（空态占位）</td><td>P95≤2s；空态有引导；移动端自适应</td></tr>
+    <tr><td class="tcode">T-006</td><td><code>GET /wallet/flow?type=in|out&category=&date=</code> 筛选</td><td>可按收入/支出+分类+日期筛选；type 枚举映射正确</td></tr>
+    <tr><td class="tcode">T-007</td><td>流水明细页筛选条 + 分类彩色标签</td><td>筛选交互即时；标签与 type 一致；分页正确</td></tr>
+    <tr><td class="tcode">T-008</td><td><code>POST /wallet/grant</code> 手动发放（MANUAL_GRANT，备注必填）</td><td>写入流水 MANUAL_GRANT；计入余额不计入支出额度；备注非空校验</td></tr>
+    <tr><td class="tcode">T-009</td><td>家长发放入口弹窗（备注输入框，必填校验）</td><td>备注为空拦截提交；发放后余额实时更新</td></tr>
+  </table>
+
+  <h3>3.2 C. 家务小任务</h3>
+  <table>
+    <tr><th>任务</th><th>关键交付物</th><th>验收标准</th></tr>
+    <tr><td class="tcode">T-012</td><td><code>task_template</code> CRUD：名称/时长/奖励额/图标/周期</td><td>可增删改模板；奖励额为虚拟币写入模板</td></tr>
+    <tr><td class="tcode">T-013</td><td>认领→提交→确认状态机；确认同事务：发虚拟币(T-010勋章)+流水+通知；复用 F-019</td><td>确认后原子入账；失败回滚保持 SUBMITTED；同实例不可重复认领</td></tr>
+    <tr><td class="tcode">T-015</td><td>任务库列表/认领页、打卡提交页、家长确认页</td><td>儿童可认领并提交；家长确认后余额/勋章更新</td></tr>
+    <tr><td class="tcode">T-014</td><td>定时任务：按模板+家庭时区生成待认领实例；失败不入账可重试</td><td>到点生成；失败不影响手动任务；时区正确</td></tr>
+    <tr><td class="tcode">T-016</td><td>周期任务标识、连续完成展示补充</td><td>周期任务有视觉区分；与勋章墙联动</td></tr>
+  </table>
+
+  <h3>3.3 D. 健康打卡 / E. 日程提醒</h3>
+  <table>
+    <tr><th>任务</th><th>关键交付物</th><th>验收标准</th></tr>
+    <tr><td class="tcode">T-017</td><td><code>check_item</code> 配置（喝水/睡眠/运动），绑定 F-007 同意范围</td><td>配置在同意范围内；撤回同意后停采隐藏</td></tr>
+    <tr><td class="tcode">T-018</td><td>打卡提交 + streak 连续天数 + 触发连续勋章(T-010)</td><td>同日可设上限；断签重置；连续 N 天发勋章</td></tr>
+    <tr><td class="tcode">T-019</td><td>打卡项页 + 一键打卡 + 日历连续记录</td><td>一键打卡记时间戳；日历展示历史与 streak</td></tr>
+    <tr><td class="tcode">T-020</td><td><code>schedule</code> 配置：单次/重复 + 提醒时间</td><td>到点触发通知中台；重复规则正确</td></tr>
+    <tr><td class="tcode">T-021</td><td>提醒投递：基于 F-011 站内推送</td><td>投递失败不回滚业务（同 E-008）</td></tr>
+    <tr><td class="tcode">T-022</td><td>家长配置页 + 儿童日历/列表视图</td><td>儿童按日期查看；点击看详情</td></tr>
+  </table>
+
+  <h3>3.4 F. 购物清单 / G. 奖励兑换</h3>
+  <table>
+    <tr><th>任务</th><th>关键交付物</th><th>验收标准</th></tr>
+    <tr><td class="tcode">T-023</td><td><code>shopping_item</code> 维护：名称/预估虚拟价/图片</td><td>按家庭/儿童隔离；儿童仅维护本人</td></tr>
+    <tr><td class="tcode">T-024</td><td>提交→审批→扣减(T-033)，复用 F-019 状态机与超额复核</td><td>同意后同事务扣减+流水+通知；超额走复核中</td></tr>
+    <tr><td class="tcode">T-025</td><td>清单页 + 提交审批流程（含复核中态）</td><td>展示审批状态；复核中提示家长放行</td></tr>
+    <tr><td class="tcode">T-026</td><td><code>reward_goods</code> 库：实物/特权/活动 + 消耗虚拟币</td><td>可增删改；消耗额来自余额</td></tr>
+    <tr><td class="tcode">T-027</td><td>兑换扣减(T-033)+兑换单+履约状态（实物待履约/已发放；特权自动生效）</td><td>余额≥消耗才兑换；扣减原子；特权立即生效通知</td></tr>
+    <tr><td class="tcode">T-028</td><td>奖励库浏览/兑换页 + 履约确认（家长线下履约+站内确认，A-06）</td><td>实物类待履约→已发放；特权类即时</td></tr>
+  </table>
+
+  <h3>3.5 H. 二级监护人委托</h3>
+  <table>
+    <tr><th>任务</th><th>关键交付物</th><th>验收标准</th></tr>
+    <tr><td class="tcode">T-029</td><td><code>delegate_relation</code>：邀请→接受→家长确认范围</td><td>绑定复用 F-006；范围写入；数据按范围过滤</td></tr>
+    <tr><td class="tcode">T-030</td><td>权限分级 + 所有查询叠加委托范围过滤；越权返回 403（E-009）</td><td>委托人仅可审批点餐/家务/购物；改额度/导出/解绑不可见且 403</td></tr>
+    <tr><td class="tcode">T-031</td><td>时效到期自动降级 + 家长撤销</td><td>到期失效并通知；撤销即时生效</td></tr>
+    <tr><td class="tcode">T-032</td><td>委托邀请/管理页 + 委托人受限操作 UI</td><td>委托人界面仅显示授权范围功能</td></tr>
+  </table>
+
+  <!-- 4 -->
+  <h2 id="s4">四、迭代计划</h2>
+  <div class="card">
+    <h4 style="margin-top:0;color:var(--brand)">M1 · Sprint 1（核心闭环 · 约 4 周）</h4>
+    <p style="font-size:13.5px;color:var(--sub);margin:4px 0;">目标：跑通"赚→花→管→看护"最小可用闭环，达成 G1/G3/G4 基线。</p>
+    <ul style="font-size:13.5px;color:var(--sub);line-height:1.9;margin:4px 0;">
+      <li>第 1 周：<span class="tcode">T-001</span> DDL → <span class="tcode">T-010</span> 勋章、<span class="tcode">T-033</span> 额度护栏、<span class="tcode">T-002/T-003</span> 看板、<span class="tcode">T-012/T-013/T-015</span> 家务</li>
+      <li>第 2 周：<span class="tcode">T-023/T-024/T-025</span> 购物、<span class="tcode">T-026/T-027/T-028</span> 兑换、<span class="tcode">T-029/T-030/T-032</span> 二级监护人</li>
+      <li>第 3 周：<span class="tcode">T-011</span> 勋章墙、<span class="tcode">T-034</span> 非功能基线（安全/隐私/一致性）、联调</li>
+      <li>第 4 周：M1 模块联调 + 核心路径冒烟</li>
+    </ul>
+    <h4 style="color:var(--brand2)">M2 · Sprint 2（增强补全 · 约 3 周）</h4>
+    <p style="font-size:13.5px;color:var(--sub);margin:4px 0;">目标：补齐健康/日程/可视化/履约/时效，完成全量集成与 E2E 验证。</p>
+    <ul style="font-size:13.5px;color:var(--sub);line-height:1.9;margin:4px 0;">
+      <li>第 1 周：<span class="tcode">T-017/T-018/T-019</span> 健康、<span class="tcode">T-020/T-021/T-022</span> 日程</li>
+      <li>第 2 周：<span class="tcode">T-004/T-005/T-006/T-007</span> 可视化与流水、<span class="tcode">T-014/T-016</span> 周期任务、<span class="tcode">T-008/T-009</span> 发放增强、<span class="tcode">T-031</span> 委托时效</li>
+      <li>第 3 周：<span class="tcode">T-034</span> 性能/无障碍收尾 + <span class="tcode">T-035</span> 集成测试与 E2E 闭环验证</li>
+    </ul>
+  </div>
+
+  <!-- 5 -->
+  <h2 id="s5">五、依赖与关键路径</h2>
+  <div class="mermaid">
+flowchart LR
+  T001[T-001 DDL] --> T010[T-010 勋章]
+  T001 --> T033[T-033 额度护栏]
+  T001 --> T002[T-002 看板接口]
+  T010 --> T013[T-013 家务发放]
+  T033 --> T024[T-024 购物扣减]
+  T033 --> T027[T-027 兑换扣减]
+  T013 --> T015[T-015 家务前端]
+  T024 --> T025[T-025 购物前端]
+  T027 --> T028[T-028 兑换前端]
+  T029[T-029 委托绑定] --> T030[T-030 权限分级]
+  T030 --> T032[T-032 委托前端]
+  T013 --> T035[T-035 E2E 验证]
+  T025 --> T035
+  T028 --> T035
+  T032 --> T035
+  </div>
+  <div class="note b"><b>关键路径：</b><span class="tcode">T-001</span> → <span class="tcode">T-033</span>（额度护栏）→ <span class="tcode">T-024/T-027</span>（购物/兑换扣减）→ <span class="tcode">T-025/T-028</span>（前端）→ <span class="tcode">T-035</span>（E2E）。任一环节延迟将直接阻塞 M1 闭环交付，须优先保障。</div>
+
+  <!-- 6 -->
+  <h2 id="s6">六、交付物清单</h2>
+  <table>
+    <tr><th>类别</th><th>交付物</th><th>对应任务</th></tr>
+    <tr><td>数据库</td><td>V0.0.2 DDL + 回滚脚本（task_template/task_instance/check_item/check_record/schedule/shopping_item/shopping_order/reward_goods/exchange_order/medal_def/medal_grant/delegate_relation）</td><td>T-001</td></tr>
+    <tr><td>后端接口</td><td>钱包/勋章/家务/健康/日程/购物/兑换/委托 共约 20+ REST 接口，含状态机与事务</td><td>T-002~T-034</td></tr>
+    <tr><td>公共服务</td><td>勋章服务、跨场景额度护栏服务（被多模块复用）</td><td>T-010, T-033</td></tr>
+    <tr><td>前端页面</td><td>零花钱主页/看板、勋章墙、家务、健康打卡、日程、购物、兑换、委托管理 共约 12 个页面/组件集</td><td>T-003,T-005,T-007,T-009,T-011,T-015,T-016,T-019,T-022,T-025,T-028,T-032</td></tr>
+    <tr><td>测试</td><td>单元/接口测试、并发扣减测试、越权 403 测试、E2E 闭环脚本</td><td>T-034, T-035</td></tr>
+    <tr><td>文档</td><td>接口文档（Swagger）、本任务清单、联调记录</td><td>全部</td></tr>
+  </table>
+
+  <!-- 7 -->
+  <h2 id="s7">七、验收与度量（对齐 PRD 目标）</h2>
+  <table>
+    <tr><th>PRD 目标</th><th>验证任务</th><th>度量口径</th></tr>
+    <tr><td>G1 闭环成功率 ≥95%</td><td>T-035</td><td>E2E 跑通"家务得币→购物/兑换花币→看板可见"链路成功率</td></tr>
+    <tr><td>G2 零真实支付</td><td>T-024,T-027,T-008</td><td>全量扣减/发放走虚拟记账，无真实支付/物流调用</td></tr>
+    <tr><td>G3 跨场景额度一致</td><td>T-033</td><td>点餐+购物+兑换共享日/周上限；奖励收入不计入（A-01）</td></tr>
+    <tr><td>G4 二级监护人受限</td><td>T-030</td><td>委托人仅可审批点餐/家务/购物；越权 403（A-04、E-009）</td></tr>
+    <tr><td>NF 性能/安全/隐私</td><td>T-034</td><td>图表/日历 P95≤2s；行锁无超扣；健康撤回停采（A-03、NF-5）</td></tr>
+  </table>
+
+  <!-- 8 -->
+  <h2 id="s8">八、风险与对策</h2>
+  <table>
+    <tr><th>风险</th><th>等级</th><th>对策</th></tr>
+    <tr><td>V0.0.1 实际未上线（M1–M7 未退出、前端未提交、真实微信适配器未做）</td><td><span class="pill pp0">高</span></td><td>本清单基于"已上线"规划前提；<b>落地前须回真实状态校准依赖</b>（F-008/F-009/F-019/F-023 等是否就绪），必要时先补 V0.0.1 缺口</td></tr>
+    <tr><td>跨场景额度并发超扣</td><td>中</td><td>T-033 统一复用钱包行锁+版本校验，单点扣减；各场景仅调用不各自实现</td></tr>
+    <tr><td>健康数据隐私合规</td><td>中</td><td>采集前校验 F-007 同意；撤回即停采并隐藏；纳入 F-012 出口（A-03）</td></tr>
+    <tr><td>周期任务/提醒定时漂移</td><td>低</td><td>统一以家庭时区为准；失败不入账、可重试（A-05）</td></tr>
+    <tr><td>二级监护人越权</td><td>中</td><td>所有查询叠加委托范围过滤；高危操作不可见且返回 403（E-009 复用）</td></tr>
+  </table>
+  <div class="note r"><b>重要提示：</b>规划基线假设 V0.0.1 已上线；据 2026-09-20 工作树核查，V0.0.1 实际 M1–M7 未退出、前端未提交、真实微信适配器未做。本任务清单仅作规划，正式排期前需先确认 V0.0.1 真实完成度，否则 T-002/T-013/T-024/T-027/T-029/T-030 等多项对 V0.0.1 功能的依赖无法闭合。</div>
+
+  <footer style="margin-top:50px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;">
+    成长星球 · V0.0.2 开发任务清单 ｜ 对应《V0.0.2 PRD V1.1》F-024~F-048 ｜ 35 任务 / 约 76 人天 / M1+M2。
+  </footer>
+
+</div>
+</body>
+</html>
