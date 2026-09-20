@@ -1,0 +1,5 @@
+.nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: #fff; border-top: 1px solid #dde3eb; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); z-index: 10; }
+.tab { flex: 1; min-width: 0; min-height: 48px; font-size: 14px; line-height: 48px; padding: 0 4px; background: #fff; border-radius: 6px; color: #526174; margin: 0 2px; }
+.tab::after { border: 0; }
+.active { background: #edf3ff; color: #1d4ed8; font-weight: 600; }
+.parent .active { background: #ecf7ef; color: #15803d; }

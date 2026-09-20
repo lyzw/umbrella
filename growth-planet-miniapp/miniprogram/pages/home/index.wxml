@@ -1,0 +1,29 @@
+<view class="page with-nav {{role === 'PARENT' ? 'parent' : ''}}">
+  <view class="header">
+    <view><view class="eyebrow">{{role === 'PARENT' ? '家长空间' : '小当家 · 点餐'}}</view><view class="title">成长星球</view></view>
+    <button bindtap="go" data-page="notices" aria-label="通知中心">消息 {{unread > 0 ? unread : ''}}</button>
+  </view>
+  <view wx:if="{{synthetic}}" class="small">合成数据开发环境</view>
+  <view wx:if="{{active === 'meal' || active === 'home'}}">
+    <view class="section">
+      <view class="section-title">{{role === 'PARENT' ? '今天，一起照顾好每个选择' : '今天想吃什么？'}}</view>
+      <view class="muted">家庭餐单由家长确认，学校餐单可标记想吃。</view>
+      <view class="actions"><button class="primary" bindtap="go" data-page="menu">{{role === 'PARENT' ? '查看儿童餐单' : '查看今日餐单'}}</button></view>
+    </view>
+    <button class="link-row" bindtap="go" data-page="confirmation"><text>{{role === 'PARENT' ? '待审批与历史记录' : '我的确认单'}}</text><text>›</text></button>
+    <button class="link-row" bindtap="go" data-page="wallet"><text>虚拟零花钱</text><text>›</text></button>
+    <button class="link-row" bindtap="go" data-page="family"><text>家庭与绑定</text><text>›</text></button>
+    <view class="notice">虚拟单位，仅用于家庭记账，不支持充值或真实支付。</view>
+  </view>
+  <view wx:elif="{{active === 'tasks' || active === 'learn'}}" class="empty"><view class="section-title">{{active === 'tasks' ? '任务' : '学习'}}</view><view>敬请期待</view></view>
+  <view wx:elif="{{active === 'growth'}}" class="empty"><view class="seedling"><view class="leaf left"></view><view class="leaf right"></view><view class="stem"></view></view><view class="section-title">一颗小小的幼苗</view><view>成长，从今天的每一个选择开始。</view></view>
+  <view wx:elif="{{active === 'me'}}">
+    <button class="link-row" bindtap="go" data-page="family"><text>家庭与绑定</text><text>›</text></button>
+    <button class="link-row" bindtap="go" data-page="profile"><text>{{role === 'PARENT' ? '儿童档案' : '我的口味偏好'}}</text><text>›</text></button>
+    <button class="link-row" bindtap="go" data-page="wallet"><text>零花钱与额度</text><text>›</text></button>
+    <button wx:if="{{role === 'PARENT'}}" class="link-row" bindtap="go" data-page="privacy"><text>同意与数据权利</text><text>›</text></button>
+    <view class="actions"><button bindtap="logout" disabled="{{busy}}">退出登录</button></view>
+  </view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <app-nav role="{{role}}" active="{{active}}" bindchange="changeTab" />
+</view>

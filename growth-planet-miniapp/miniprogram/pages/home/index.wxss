@@ -1,0 +1,5 @@
+.seedling { position: relative; height: 140px; width: 140px; margin: 0 auto 24px; }
+.stem { position: absolute; background: #23844f; height: 90px; width: 6px; left: 67px; top: 40px; border-radius: 3px; }
+.leaf { position: absolute; width: 50px; height: 32px; background: #57a973; top: 34px; z-index: 1; }
+.left { left: 20px; border-radius: 0 28px 0 28px; transform: rotate(12deg); }
+.right { left: 70px; top: 20px; border-radius: 28px 0 28px 0; transform: rotate(-12deg); }

@@ -1,0 +1,48 @@
+<view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <view class="header"><view class="title">家庭与绑定</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
+  <view wx:if="{{role === 'CHILD'}}">
+    <view class="notice">{{binding ? binding.label : '正在查询绑定状态'}}</view>
+    <view wx:if="{{binding.bindStatus === 'NONE' || binding.bindStatus === 'REJECTED'}}" class="field">
+      <text class="label">家长提供的邀请码</text><input value="{{inviteCode}}" bindinput="input" data-field="inviteCode" maxlength="6" />
+      <view class="actions"><button class="primary" disabled="{{busy}}" bindtap="join">申请加入家庭</button></view>
+    </view>
+    <view class="muted" wx:if="{{binding.bindStatus === 'PENDING'}}">申请已送出，请家长在自己的账号中确认。</view>
+    <view class="muted" wx:if="{{binding.bindStatus === 'BOUND'}}">家庭已连接。请家长完成同意与档案后，再查看餐单。</view>
+  </view>
+  <view wx:else>
+    <view wx:if="{{!hasFamily}}" class="section">
+      <text class="label">家庭名称</text><input value="{{familyName}}" data-field="familyName" bindinput="input" maxlength="64" />
+      <view class="actions"><button class="primary" disabled="{{busy}}" bindtap="create">创建家庭</button></view>
+    </view>
+    <view wx:else>
+      <button bindtap="invitation" disabled="{{busy}}">查看当前邀请码</button>
+      <view wx:if="{{invite}}" class="notice"><view>邀请码：{{invite.inviteCode}}</view><view class="small">仅分享给家庭成员，过期后重新获取。</view></view>
+      <view class="section">
+        <view class="section-title">儿童申请与关系</view>
+        <view wx:if="{{!children.length}}" class="empty">尚无申请</view>
+        <button wx:for="{{children}}" wx:key="applyId" class="link-row" bindtap="inspect" data-id="{{item.applyId}}">
+          <text>儿童 {{item.childId}}</text><text>{{item.bindStatus === 'BOUND' ? '已绑定' : item.bindStatus === 'PENDING' ? '待确认' : '已拒绝'}}</text>
+        </button>
+        <view class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
+      </view>
+      <view wx:if="{{selected && consent}}" class="section">
+        <view class="section-title">儿童 {{selected.childId}} · 档案同意</view>
+        <view class="muted">{{consent.agreementText}}</view>
+        <view class="badge">{{consent.currentStatus}}</view>
+        <view wx:if="{{consent.currentStatus !== 'GRANTED'}}">
+          <text class="label">家长自报年龄</text><input type="number" value="{{age}}" bindinput="input" data-field="age" maxlength="3" />
+          <checkbox-group bindchange="agree"><label class="check"><checkbox value="yes" checked="{{agreed}}" />我已阅读并同意本协议</label></checkbox-group>
+          <view class="muted">自报年龄仅为声明，不代表身份或监护关系已核验。</view>
+          <view class="actions"><button class="primary" bindtap="grantConsent" disabled="{{busy || !agreed}}">记录同意</button></view>
+        </view>
+        <view wx:if="{{selected.bindStatus === 'PENDING'}}">
+          <view class="field"><text class="label">家庭关系称呼（选填）</text><input value="{{relationLabel}}" data-field="relationLabel" bindinput="input" maxlength="32" /></view>
+          <view class="actions"><button bindtap="approve" data-approve="no" disabled="{{busy}}">拒绝申请</button><button class="primary" bindtap="approve" data-approve="yes" disabled="{{busy || consent.currentStatus !== 'GRANTED'}}">确认绑定</button></view>
+        </view>
+        <view class="actions" wx:if="{{selected.bindStatus === 'BOUND' && consent.currentStatus === 'GRANTED'}}"><button class="primary" bindtap="profile">维护儿童档案</button></view>
+      </view>
+    </view>
+  </view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view class="actions"><button bindtap="home">返回首页</button></view>
+</view>
