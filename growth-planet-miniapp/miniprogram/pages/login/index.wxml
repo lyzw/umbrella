@@ -1,9 +1,15 @@
-<view class="page">
-  <view class="eyebrow">小当家 · 点餐</view>
-  <view class="title">成长星球</view>
-  <view class="subtitle">今天的选择，一起商量。</view>
+<view class="page login-page">
+  <view class="brand-scene">
+    <view class="planet">
+      <view class="planet-ring"></view>
+      <text class="planet-mark">🌱</text>
+    </view>
+    <view class="eyebrow">小当家 · 点餐</view>
+    <view class="title">成长星球</view>
+    <view class="subtitle">今天的选择，一起商量。</view>
+  </view>
   <view class="notice" wx:if="{{synthetic}}">合成数据开发环境，请勿输入真实儿童资料。</view>
-  <view wx:if="{{!selecting}}" class="section">
+  <view wx:if="{{!selecting}}" class="login-panel">
     <view class="field" wx:if="{{synthetic}}">
       <text class="label">演示账号</text>
       <input value="{{account}}" bindinput="input" data-field="account" maxlength="51" placeholder="parent_demo 或 child_demo" />
@@ -14,7 +20,7 @@
     </checkbox-group>
     <button class="primary" loading="{{busy}}" disabled="{{busy || !accepted}}" bindtap="login">{{synthetic ? '登录开发服务' : '微信登录'}}</button>
   </view>
-  <view wx:else class="section">
+  <view wx:else class="login-panel">
     <view class="section-title">选择你的角色</view>
     <view class="muted">每个账号只能选择一次。家长不能使用儿童身份代为提报。</view>
     <view class="actions">

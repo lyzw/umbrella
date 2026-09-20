@@ -1,30 +1,47 @@
-<view class="page {{role === 'PARENT' ? 'parent' : ''}}">
-  <view class="header"><view class="title">今日餐单</view><picker mode="date" value="{{menuDate}}" bindchange="date" disabled="{{busy}}"><view class="picker">{{menuDate}}</view></picker></view>
-  <picker wx:if="{{role === 'PARENT' && children.length}}" range="{{children}}" range-key="childId" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">儿童 {{childId}} · 只读预览</view></picker>
+<view class="page menu-page {{role === 'PARENT' ? 'parent' : ''}}">
+  <view class="header menu-header">
+    <view><view class="eyebrow">{{role === 'PARENT' ? '儿童餐单预览' : '小当家 · 点餐'}}</view><view class="title">今日餐单</view></view>
+    <picker mode="date" value="{{menuDate}}" bindchange="date" disabled="{{busy}}"><view class="picker date-picker">{{menuDate}}</view></picker>
+  </view>
+  <picker wx:if="{{role === 'PARENT' && children.length}}" range="{{children}}" range-key="childId" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker child-picker">儿童 {{childId}} · 只读预览</view></picker>
   <view class="tabs">
     <button class="{{sourceType === 'FAMILY' ? 'active' : ''}}" bindtap="source" data-source="FAMILY" disabled="{{busy}}">家庭餐单</button>
     <button class="{{sourceType === 'SCHOOL' ? 'active' : ''}}" bindtap="source" data-source="SCHOOL" disabled="{{busy}}">学校餐单</button>
   </view>
-  <view class="row"><picker range="{{meals}}" value="{{mealIndex}}" bindchange="meal" disabled="{{busy}}"><view class="picker">{{meals[mealIndex]}}</view></picker><input value="{{keyword}}" bindinput="search" placeholder="搜索餐食" maxlength="64" disabled="{{busy}}" /></view>
-  <checkbox-group bindchange="filters" class="row"><label class="check"><checkbox value="mild" checked="{{mildOnly}}" disabled="{{busy}}" />无辣</label><label class="check"><checkbox value="favorite" checked="{{favoritesOnly}}" disabled="{{busy}}" />我爱吃</label></checkbox-group>
+  <view class="filter-row">
+    <picker range="{{meals}}" value="{{mealIndex}}" bindchange="meal" disabled="{{busy}}"><view class="picker meal-picker">{{meals[mealIndex]}}⌄</view></picker>
+    <view class="search-box"><text class="search-icon">⌕</text><input value="{{keyword}}" bindinput="search" placeholder="搜索餐食" maxlength="64" disabled="{{busy}}" /></view>
+  </view>
+  <checkbox-group bindchange="filters" class="filter-chips">
+    <label class="filter-chip {{mildOnly ? 'selected' : ''}}"><checkbox value="mild" checked="{{mildOnly}}" disabled="{{busy}}" />无辣</label>
+    <label class="filter-chip {{favoritesOnly ? 'selected' : ''}}"><checkbox value="favorite" checked="{{favoritesOnly}}" disabled="{{busy}}" />我爱吃</label>
+  </checkbox-group>
   <view wx:if="{{sourceType === 'SCHOOL'}}" class="notice">学校餐单仅供查看和标记想吃，不会创建确认单。</view>
   <view wx:if="{{menu && menu.missingDishIds.length}}" class="notice">部分菜品已不可用，请以当前餐单为准。</view>
-  <view wx:if="{{busy}}" class="loading">正在处理</view>
-  <view wx:if="{{error}}" class="error">{{error}}</view>
-  <button wx:if="{{error}}" bindtap="retry" disabled="{{busy}}">重新加载</button>
-  <view wx:if="{{ready && !dishes.length}}" class="empty">没有符合条件的餐食</view>
-  <view wx:for="{{dishes}}" wx:key="dishId" class="item dish">
+  <view wx:if="{{busy && !ready}}" class="skeleton-list">
+    <view wx:for="{{[1, 2, 3]}}" wx:key="*this" class="item dish skeleton-card"><view class="skeleton-image"></view><view class="skeleton-content"><view class="skeleton-line wide"></view><view class="skeleton-line"></view><view class="skeleton-line short"></view></view></view>
+    <view class="loading">正在加载好吃的菜单…</view>
+  </view>
+  <view wx:if="{{error}}" class="error-state">
+    <view class="error-state-icon">!</view>
+    <view class="error-state-title">餐单暂时没有加载出来</view>
+    <view class="muted">{{error}}</view>
+    <button bindtap="retry" disabled="{{busy}}">重新加载</button>
+  </view>
+  <view wx:if="{{ready && !dishes.length && !error}}" class="empty-state">
+    <view class="empty-state-icon">🍽️</view>
+    <view class="section-title">没有符合条件的餐食</view>
+    <view class="muted">换个筛选条件再看看吧。</view>
+  </view>
+  <view wx:for="{{dishes}}" wx:key="dishId" class="item dish {{item.quantity > 0 ? 'selected-dish' : ''}} {{!item.selectable ? 'disabled-dish' : ''}}">
     <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="dish-image" binderror="imageError" data-id="{{item.dishId}}" />
-    <view wx:else class="dish-image fallback">暂无图片</view>
+    <view wx:else class="dish-image fallback"><text class="fallback-icon">🍲</text><text>暂无图片</text></view>
     <view class="dish-content">
-      <view class="section-title">{{item.name}}</view>
+      <view class="dish-title-row"><view class="section-title">{{item.name}}</view><button wx:if="{{role === 'CHILD'}}" class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-id="{{item.dishId}}" disabled="{{busy}}" aria-label="{{item.isFavorite ? '取消想吃' : '标记想吃'}}">{{item.isFavorite ? '♥' : '♡'}}</button></view>
       <view><text class="badge">{{item.spiceLabel}}</text><text class="badge {{item.selectable ? 'safe' : 'warning'}}">{{item.safetyLabel}}</text></view>
       <view class="small">{{item.calories === null ? '热量暂无数据' : item.calories + ' kcal / 份'}}</view>
       <view wx:if="{{item.isDisliked}}" class="small">包含不喜欢的食物</view>
       <view class="price">{{item.virtualPrice}} <text class="small">虚拟单位 / 份</text></view>
-      <view class="actions" wx:if="{{role === 'CHILD'}}">
-        <button bindtap="favorite" data-id="{{item.dishId}}" disabled="{{busy}}">{{item.isFavorite ? '取消收藏' : '想吃'}}</button>
-      </view>
       <view class="stepper" wx:if="{{role === 'CHILD' && sourceType === 'FAMILY'}}">
         <button class="icon-button" bindtap="quantity" data-id="{{item.dishId}}" data-delta="-1" disabled="{{busy || item.quantity === 0}}" aria-label="减少一份">−</button>
         <text class="quantity">{{item.quantity}}</text>
@@ -32,9 +49,9 @@
       </view>
     </view>
   </view>
-  <view class="section" wx:if="{{role === 'CHILD' && sourceType === 'FAMILY' && menu}}">
-    <view class="row"><text>已选 {{count}} 种</text><text class="price">{{total}} <text class="small">虚拟单位</text></text></view>
-    <view class="actions"><button class="primary" bindtap="checkout" disabled="{{busy || !count || !menu.canSubmit || menuDate !== today}}">请家长确认</button></view>
-    <view class="subtitle">提交时不扣款，家长同意后才记账。</view>
+  <view class="checkout-panel" wx:if="{{role === 'CHILD' && sourceType === 'FAMILY' && menu}}">
+    <view class="checkout-summary"><view><view class="small">已选 {{count}} 种</view><view class="checkout-note">家长同意后才记账</view></view><view class="price">{{total}} <text class="small">虚拟单位</text></view></view>
+    <button class="primary" bindtap="checkout" disabled="{{busy || !count || !menu.canSubmit || menuDate !== today}}">请家长确认</button>
   </view>
+  <view wx:if="{{busy && ready}}" class="loading-float">正在处理</view>
 </view>
