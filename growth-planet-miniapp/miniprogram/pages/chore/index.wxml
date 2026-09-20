@@ -1,0 +1,72 @@
+<view class="page">
+  <view class="head">
+    <text class="title">家务小当家</text>
+    <text class="sub">认领任务 · 完成赚钱 · 解锁勋章</text>
+  </view>
+
+  <view wx:if="{{receipt}}" class="toast">{{receipt}}</view>
+  <view wx:if="{{error}}" class="toast err">{{error}}</view>
+
+  <block wx:if="{{role === 'PARENT'}}">
+    <view class="bar">
+      <picker mode="selector" range="{{children}}" range-key="nickname" bindchange="child">
+        <view class="picker">{{children[childIndex].nickname || children[childIndex].childId}}</view>
+      </picker>
+      <button class="btn btn-primary sm" bindtap="toggleForm">{{showForm ? '收起' : '添加任务'}}</button>
+    </view>
+
+    <view wx:if="{{showForm}}" class="card form">
+      <input class="input" placeholder="任务名称（1-64字）" value="{{title}}" bindinput="onTitle" maxlength="64" />
+      <view class="row2">
+        <input class="input" placeholder="奖励(虚拟单位)" value="{{reward}}" bindinput="onReward" />
+        <picker mode="selector" range="{{cycleLabels}}" value="{{cycleIndex}}" bindchange="cycle">
+          <view class="input center">{{cycleLabels[cycleIndex]}}</view>
+        </picker>
+      </view>
+      <button class="btn btn-primary" bindtap="createTask">创建任务</button>
+    </view>
+
+    <view class="sec-title">待确认（{{instances.length}}）</view>
+    <view wx:for="{{instances}}" wx:key="instanceId" class="card">
+      <view class="row">
+        <text class="name">{{item.taskTitle}}</text>
+        <text class="badge {{item.statusClass}}">{{item.statusLabel}}</text>
+      </view>
+      <view class="muted">奖励 {{item.rewardAmount}} · 认领日 {{item.claimDate}}</view>
+      <view class="actions">
+        <button class="btn btn-primary sm" data-id="{{item.instanceId}}" data-version="{{item.version}}" bindtap="confirm">确认完成</button>
+        <button class="btn btn-ghost sm" data-id="{{item.instanceId}}" data-version="{{item.version}}" bindtap="reject">驳回</button>
+      </view>
+    </view>
+    <view wx:if="{{instances.length === 0}}" class="empty">暂无待确认的家务</view>
+  </block>
+
+  <block wx:else>
+    <view class="sec-title">任务库</view>
+    <view wx:for="{{tasks}}" wx:key="taskId" class="card">
+      <view class="row">
+        <text class="name">{{item.icon}} {{item.title}}</text>
+        <text class="badge earn">+{{item.rewardAmount}}</text>
+      </view>
+      <view class="muted">{{item.description || '认真完成就能赚到奖励'}} · {{item.cycleLabel}}</view>
+      <button class="btn btn-primary sm" data-id="{{item.taskId}}" bindtap="claim">认领</button>
+    </view>
+    <view wx:if="{{tasks.length === 0}}" class="empty">家长还没有发布家务任务</view>
+
+    <view class="sec-title">我的家务</view>
+    <view wx:for="{{instances}}" wx:key="instanceId" class="card">
+      <view class="row">
+        <text class="name">{{item.taskTitle}}</text>
+        <text class="badge {{item.statusClass}}">{{item.statusLabel}}</text>
+      </view>
+      <view class="muted">奖励 {{item.rewardAmount}} · {{item.claimDate}}</view>
+      <view class="actions" wx:if="{{item.status === 'CLAIMED'}}">
+        <button class="btn btn-primary sm" data-id="{{item.instanceId}}" bindtap="submit">提交完成</button>
+      </view>
+      <view class="muted" wx:if="{{item.status === 'REJECTED'}}">驳回原因：{{item.rejectReason || '无'}}</view>
+    </view>
+    <view wx:if="{{instances.length === 0}}" class="empty">还没有认领家务，去上面挑一个吧</view>
+  </block>
+
+  <app-nav role="{{role}}" active="{{active}}" bindchange="changeTab" />
+</view>

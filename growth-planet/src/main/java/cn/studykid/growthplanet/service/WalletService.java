@@ -215,6 +215,27 @@ public class WalletService {
         return log;
     }
 
+    /**
+     * 程序化入账（奖励/任务完成等）：复用行锁与版本校验，trans_type=GRANT。
+     * 仅计入余额与流水，不触碰 AllowanceRule 的支出额度，故奖励收入不会触发超额判定（对应 F-041：收入不计支出上限）。
+     * 必须在已持有钱包行锁的事务内调用（MANDATORY）。
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public AllowanceLog credit(Wallet wallet, Long childId, Long familyId, BigDecimal amount, String scene,
+            Long refId, LocalDate usageDate) {
+        if (amount == null || amount.signum() <= 0) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "发放金额必须为正");
+        }
+        BigDecimal after = wallet.getBalance().add(amount);
+        if (after.compareTo(MAX_BALANCE) > 0) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "余额超过存储范围");
+        }
+        updateBalance(wallet, after);
+        AllowanceLog log = ledger(wallet, "GRANT", scene, amount, after, refId, usageDate);
+        logs.insert(log);
+        return log;
+    }
+
     private void updateBalance(Wallet wallet, BigDecimal after) {
         int updated = wallets.update(null, new UpdateWrapper<Wallet>().eq("id", wallet.getId())
                 .eq("version", wallet.getVersion()).eq("status", "NORMAL")

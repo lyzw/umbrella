@@ -1,0 +1,115 @@
+const api = require('../../services/api');
+const ui = require('../../utils/page');
+const { loadChildren } = require('../../services/children');
+const { cents, money } = require('../../utils/domain');
+
+const STATUS = {
+  CLAIMED:   { label: '待完成', cls: 'normal' },
+  SUBMITTED: { label: '待确认', cls: 'warn' },
+  CONFIRMED: { label: '已完成', cls: 'ok' },
+  REJECTED:  { label: '已驳回', cls: 'err' }
+};
+const CYCLE = { ONCE: '一次性', DAILY: '每日', WEEKLY: '每周' };
+
+ui.page({
+  data: {
+    role: '', active: 'chore', busy: false, error: '', receipt: '',
+    children: [], childIndex: 0, childId: '',
+    tasks: [], instances: [],
+    showForm: false, title: '', reward: '', cycleIndex: 0,
+    cycles: ['ONCE', 'DAILY', 'WEEKLY'], cycleLabels: ['一次性', '每日', '每周']
+  },
+  onShow() {
+    if (!ui.guard(this)) return;
+    return ui.run(this, async () => {
+      const children = await loadChildren();
+      this.setData({ children, childId: children[0].childId, childIndex: 0 });
+      await this.read();
+    });
+  },
+  async read() {
+    const { childId, role } = this.data;
+    const tasks = (await api.get('/chore/tasks')).map(t => ({
+      ...t, cycleLabel: CYCLE[t.cycle] || t.cycle
+    }));
+    const rawInstances = await api.get('/chore/instances', {
+      childId, status: role === 'PARENT' ? 'SUBMITTED' : ''
+    });
+    const instances = rawInstances.map(i => ({
+      ...i, statusLabel: (STATUS[i.status] || {}).label || i.status,
+      statusClass: (STATUS[i.status] || {}).cls || 'normal'
+    }));
+    this.setData({ tasks, instances });
+  },
+  onTitle(e) { this.setData({ title: e.detail.value }); },
+  onReward(e) { this.setData({ reward: e.detail.value }); },
+  child(e) {
+    const index = Number(e.detail.value);
+    this.setData({ childIndex: index, childId: this.data.children[index].childId });
+    return ui.run(this, () => this.read());
+  },
+  claim(e) {
+    const id = e.currentTarget.dataset.id;
+    return ui.run(this, async () => {
+      await api.post('/chore/claim', { taskId: id });
+      this.setData({ receipt: '已认领，完成后记得提交哦' });
+      await this.read();
+    });
+  },
+  submit(e) {
+    const id = e.currentTarget.dataset.id;
+    return ui.run(this, async () => {
+      await api.post('/chore/submit', { instanceId: id });
+      this.setData({ receipt: '已提交，等待家长确认' });
+      await this.read();
+    });
+  },
+  confirm(e) {
+    const id = e.currentTarget.dataset.id;
+    const version = Number(e.currentTarget.dataset.version);
+    return ui.run(this, async () => {
+      if (!await ui.confirm('确认完成并发放奖励？')) return;
+      await api.post('/chore/confirm', { id, expectedVersion: version });
+      this.setData({ receipt: '已确认，奖励已发放' });
+      await this.read();
+    });
+  },
+  reject(e) {
+    const id = e.currentTarget.dataset.id;
+    const version = Number(e.currentTarget.dataset.version);
+    return ui.run(this, async () => {
+      if (!await ui.confirm('驳回该家务？儿童可调整后重新提交')) return;
+      await api.post('/chore/reject', { id, expectedVersion: version, reason: '' });
+      this.setData({ receipt: '已驳回' });
+      await this.read();
+    });
+  },
+  toggleForm() {
+    this.setData({ showForm: !this.data.showForm, title: '', reward: '', cycleIndex: 0 });
+  },
+  cycle(e) { this.setData({ cycleIndex: Number(e.detail.value) }); },
+  createTask() {
+    return ui.run(this, async () => {
+      if (this.data.role !== 'PARENT') return;
+      const title = this.data.title.trim();
+      if (!title || title.length > 64) throw new Error('请输入1至64字任务名称');
+      const raw = this.data.reward.trim();
+      if (!raw) throw new Error('请输入奖励金额');
+      const amount = cents(raw);
+      if (amount > 999999) throw new Error('奖励为0.00至9999.99虚拟单位');
+      const body = { title, rewardAmount: money(amount), cycle: this.data.cycles[this.data.cycleIndex], icon: '🧹' };
+      await api.post('/chore/task', body);
+      this.setData({ showForm: false, title: '', reward: '', receipt: '任务已添加' });
+      await this.read();
+    });
+  },
+  changeTab(e) {
+    const key = e.detail.key;
+    if (key === 'meal') return wx.navigateTo({ url: '/pages/menu/index' });
+    if (key === 'wallet' || key === 'approvals') return wx.navigateTo({ url: '/pages/wallet/index' });
+    if (key === 'medal') return wx.navigateTo({ url: '/pages/medal/index' });
+    if (key === 'home') return wx.navigateTo({ url: '/pages/home/index' });
+    this.setData({ active: key });
+  },
+  onHide() { this.setData({ tasks: [], instances: [], receipt: '', error: '' }); }
+});

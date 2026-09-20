@@ -125,6 +125,7 @@
                 <directory>sql</directory>
                 <includes>
                     <include>sprint*.sql</include>
+                    <include>v*.sql</include>
                 </includes>
             </testResource>
         </testResources>

@@ -16,6 +16,8 @@ ui.page({
     const key = e.detail.key;
     if (key === 'approvals') return wx.navigateTo({ url: '/pages/confirmation/index' });
     if (key === 'wallet') return wx.navigateTo({ url: '/pages/wallet/index' });
+    if (key === 'chore') return wx.navigateTo({ url: '/pages/chore/index' });
+    if (key === 'medal') return wx.navigateTo({ url: '/pages/medal/index' });
     this.setData({ active: key });
   },
   logout() {

@@ -8,6 +8,7 @@ spring:
         - classpath:sprint3_catalog.sql
         - classpath:sprint3_confirmation.sql
         - classpath:sprint4_schema.sql
+        - classpath:v002_chore_medal.sql
   # datasource / redis 由 @ServiceConnection（Testcontainers）在集成测试中注入
 
 logging:
