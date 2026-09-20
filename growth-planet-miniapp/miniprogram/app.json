@@ -12,9 +12,9 @@
   ],
   "window": {
     "navigationBarTitleText": "成长星球",
-    "navigationBarBackgroundColor": "#f6f8fb",
+    "navigationBarBackgroundColor": "#f7f9fc",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f6f8fb",
+    "backgroundColor": "#f7f9fc",
     "backgroundTextStyle": "dark"
   },
   "style": "v2",
