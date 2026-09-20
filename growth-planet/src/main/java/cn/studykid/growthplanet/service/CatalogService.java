@@ -115,6 +115,15 @@ public class CatalogService {
 
     public PageResp<DishResp> listDishes(int page, int pageSize, Long categoryId, String status, String keyword) {
         requireRole("ADMIN");
+        return queryDishes(page, pageSize, categoryId, status, keyword);
+    }
+
+    public PageResp<DishResp> listParentDishes(int page, int pageSize, Long categoryId, String keyword) {
+        requireCurrentFamilyParent();
+        return queryDishes(page, pageSize, categoryId, "ON_SALE", keyword);
+    }
+
+    private PageResp<DishResp> queryDishes(int page, int pageSize, Long categoryId, String status, String keyword) {
         long offset = offset(page, pageSize);
         if (categoryId != null) {
             positive(categoryId);
@@ -143,18 +152,12 @@ public class CatalogService {
     }
 
     public MenuUpsertResp upsertFamilyMenu(MenuDailyReq req) {
-        LoginUser ctx = requireRole("PARENT");
+        LoginUser ctx = requireCurrentFamilyParent();
         validateMenu(req);
         if (req.getSchool() != null) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
         }
         Long familyId = ctx.firstFamilyId();
-        if (familyId == null || families.selectOne(new QueryWrapper<Family>()
-                .eq("id", familyId).last("FOR UPDATE")) == null) {
-            throw new BizException(ResultCode.E009_FORBIDDEN);
-        }
-        // Family publication and child authorization always acquire the family lock before catalog locks.
-        authorization.requireParent(familyId);
         return upsertMenu(req, "FAMILY", familyId, null);
     }
 
@@ -186,6 +189,31 @@ public class CatalogService {
         audit.record("MENU_UPSERT", UserContext.userId(), familyId, "MENU", menu.getId(), null,
                 "sourceType=" + sourceType);
         return new MenuUpsertResp(menu.getId());
+    }
+
+    public MenuMaintenanceResp getFamilyMenu(LocalDate menuDate, String mealType) {
+        LoginUser ctx = requireCurrentFamilyParent();
+        validateDateAndMeal(menuDate, mealType);
+        Long familyId = ctx.firstFamilyId();
+        MenuDaily menu = menus.selectOne(menuKey("FAMILY", familyId.toString(), menuDate, mealType)
+                .last("FOR UPDATE"));
+        if (menu == null) {
+            throw new BizException(ResultCode.E404_NOT_FOUND);
+        }
+        Map<Long, Dish> current = lockVisibleDishes(menu.getDishIds());
+        List<DishResp> visible = new ArrayList<>();
+        List<String> missing = new ArrayList<>();
+        for (Long dishId : menu.getDishIds()) {
+            Dish dish = current.get(dishId);
+            if (dish == null) {
+                missing.add(dishId.toString());
+            } else {
+                visible.add(dishResponse(dish));
+            }
+        }
+        audit.record("MENU_MAINTENANCE_QUERY", ctx.getUserId(), familyId, "MENU", menu.getId(), null, null);
+        return MenuMaintenanceResp.builder().menuId(menu.getId()).menuDate(menuDate).mealType(mealType)
+                .status(menu.getStatus()).dishes(visible).missingDishIds(missing).build();
     }
 
     public MenuDailyResp daily(String sourceType, LocalDate menuDate, String mealType, Long childId) {
@@ -458,6 +486,18 @@ public class CatalogService {
     private DishCategoryResp categoryResponse(DishCategory category) {
         return DishCategoryResp.builder().categoryId(category.getId()).name(category.getName())
                 .sort(category.getSort()).status(category.getStatus()).build();
+    }
+
+    private LoginUser requireCurrentFamilyParent() {
+        LoginUser ctx = requireRole("PARENT");
+        Long familyId = ctx.firstFamilyId();
+        if (familyId == null || families.selectOne(new QueryWrapper<Family>()
+                .eq("id", familyId).last("FOR UPDATE")) == null) {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        // Family maintenance always locks and verifies the authenticated membership before catalog/menu locks.
+        authorization.requireParent(familyId);
+        return ctx;
     }
 
     private LoginUser requireRole(String... roles) {

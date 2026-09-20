@@ -68,6 +68,8 @@ an explicit String DTO field, formatted with two decimal places.
 | PUT `/api/admin/dish/{id}` | ADMIN; complete dish body; nullable imageUrl/calories/tags can be cleared |
 | DELETE `/api/admin/dish/{id}` | ADMIN; sets OFF_SALE and logical deletion; missing/deleted row returns 404 |
 | POST `/api/admin/menu-daily` | ADMIN; school plus menu body below; SCHOOL display/favorites only |
+| GET `/api/parent/dish` | PARENT with a current family; page/pageSize, optional positive categoryId and keyword (1-64); returns ON_SALE dishes only |
+| GET `/api/parent/menu-daily` | PARENT with a current family; menuDate and mealType; returns only the authenticated parent's current-family menu |
 | POST `/api/parent/menu-daily` | PARENT; menu body only; school/familyId/ownerKey/sourceType/childId cannot override ownership |
 | GET `/api/menu/daily` | CHILD or PARENT; sourceType, menuDate, mealType; parent must supply authorized childId for preview |
 | POST `/api/menu/mark-favorite` | CHILD self only; positive dishId and required boolean favorite |
@@ -139,6 +141,80 @@ defaults to PUBLISHED and can be DRAFT. Upsert response:
 ```json
 {"code":0,"data":{"menuId":"21"},"message":"success","requestId":"catalog-example"}
 ```
+
+Parent catalog query example:
+
+```http
+GET /api/parent/dish?page=1&pageSize=100&keyword=rice
+Authorization: Bearer <parent-token>
+```
+
+```json
+{
+  "code": 0,
+  "data": {
+    "items": [{
+      "dishId": "11",
+      "categoryId": "1",
+      "name": "Vegetable rice",
+      "imageUrl": null,
+      "virtualPrice": "18.00",
+      "calories": null,
+      "tags": "vegetable",
+      "allergens": [],
+      "allergenStatus": "DECLARED",
+      "spiceLevel": 0,
+      "status": "ON_SALE"
+    }],
+    "total": 1,
+    "page": 1,
+    "pageSize": 100
+  },
+  "message": "success",
+  "requestId": "catalog-example"
+}
+```
+
+Parent current-family menu query example:
+
+```http
+GET /api/parent/menu-daily?menuDate=2026-09-18&mealType=LUNCH
+Authorization: Bearer <parent-token>
+```
+
+```json
+{
+  "code": 0,
+  "data": {
+    "menuId": "21",
+    "menuDate": "2026-09-18",
+    "mealType": "LUNCH",
+    "status": "PUBLISHED",
+    "dishes": [{
+      "dishId": "11",
+      "categoryId": "1",
+      "name": "Vegetable rice",
+      "imageUrl": null,
+      "virtualPrice": "18.00",
+      "calories": null,
+      "tags": "vegetable",
+      "allergens": [],
+      "allergenStatus": "DECLARED",
+      "spiceLevel": 0,
+      "status": "ON_SALE"
+    }],
+    "missingDishIds": ["12"]
+  },
+  "message": "success",
+  "requestId": "catalog-example"
+}
+```
+
+Both parent reads require an authenticated parent with a current bound family.
+Family ownership is always derived from the login context; neither read accepts
+`familyId`. The maintenance query does not require a child profile or consent,
+returns OFF_SALE referenced dishes for explicit cleanup, and reports logically
+deleted references in `missingDishIds`. An absent menu returns 404.
 
 Child menu query example:
 
@@ -246,15 +322,19 @@ favorites/catalog columns, menu IDs or historical references.
 
 `CatalogFlowIT extends BaseIT` covers role isolation, dish/category validation,
 price/ID JSON contracts, pagination, stable menu IDs, ownership injection,
-SCHOOL restriction, parent previews, safety/dislike/missing display, line bounds,
-wrong date/DRAFT/deleted/downlisted dishes, rollback of failed publication,
-favorites default/idempotency/preservation/authorization, missing profile and
-revocation, unpublished allergen catalog, concurrent first publication and
-favorite updates, and both orderings of dish mutation versus validation locks.
+SCHOOL restriction, parent catalog and current-family maintenance reads,
+cross-family isolation, parent previews, safety/dislike/missing display, line
+bounds, wrong date/DRAFT/deleted/downlisted dishes, rollback of failed
+publication, favorites default/idempotency/preservation/authorization, missing
+profile and revocation, unpublished allergen catalog, concurrent first
+publication and favorite updates, and both orderings of dish mutation versus
+validation locks.
 
 It uses the parent's global schema loader and the existing synthetic MySQL/Redis
 Testcontainers setup, not configured business databases. All 14 catalog cases
 passed in the final full integration run, including clearing nullable PUT fields.
+The parent-maintenance additions compile under JDK 21; their focused integration
+run still requires an available Docker/Testcontainers environment.
 
 Operational limits: no business-data migration execution, deployment,
 frontend acceptance, nutritional source verification, ingredient inference,
@@ -290,6 +370,7 @@ Paths below are relative to `growth-planet/`.
 - `src/main/java/cn/studykid/growthplanet/dto/response/DishCategoryResp.java`
 - `src/main/java/cn/studykid/growthplanet/dto/response/DishResp.java`
 - `src/main/java/cn/studykid/growthplanet/dto/response/MenuDailyResp.java`
+- `src/main/java/cn/studykid/growthplanet/dto/response/MenuMaintenanceResp.java`
 - `src/main/java/cn/studykid/growthplanet/dto/response/MenuUpsertResp.java`
 - `src/main/java/cn/studykid/growthplanet/dto/response/ChildPreferencesResp.java` (favorite field only)
 - `src/main/java/cn/studykid/growthplanet/service/impl/AuthServiceImpl.java` (preferencesResponse mapping only)

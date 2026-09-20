@@ -80,6 +80,22 @@ public class MenuController {
         return Result.ok(catalog.upsertFamilyMenu(req));
     }
 
+    @GetMapping("/parent/dish")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<PageResp<DishResp>> parentDishes(@RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize, @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String keyword) {
+        return Result.ok(catalog.listParentDishes(page, pageSize, categoryId, keyword));
+    }
+
+    @GetMapping("/parent/menu-daily")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<MenuMaintenanceResp> familyMenu(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate menuDate,
+            @RequestParam String mealType) {
+        return Result.ok(catalog.getFamilyMenu(menuDate, mealType));
+    }
+
     @GetMapping("/menu/daily")
     @RequireRole({RoleEnum.CHILD, RoleEnum.PARENT})
     public Result<MenuDailyResp> daily(@RequestParam String sourceType,

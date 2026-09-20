@@ -106,6 +106,45 @@ test('家长只读，学校餐单和过期餐单都不能进入提报', () => {
   page.checkout();
   assert.equal(context.takeCart().items[0].dishId, '99');
 });
+test('家长加载当前家庭菜单并仅提交服务端允许的维护字段', async () => {
+  const page = loadPage('menu');
+  const secondDish = { ...dish, dishId: '100', name: '第二道餐食' };
+  const calls = [];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    if (endpoint === '/parent/dish') {
+      return { items: [dish, secondDish], total: 2, page: 1, pageSize: 100 };
+    }
+    return { menuId: '20', menuDate: shanghaiDate(), mealType: 'LUNCH', status: 'PUBLISHED',
+      dishes: [dish], missingDishIds: [] };
+  };
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return { menuId: '20' }; };
+  await page.loadParent();
+  assert.deepEqual(page.selectedDishIds, ['99']);
+  assert.equal(calls.some(call => call.endpoint === '/family/children'), false);
+  page.toggleDish(event({ id: '100' }));
+  await page.saveMenu();
+  assert.deepEqual(sent, { endpoint: '/parent/menu-daily', body: {
+    menuDate: shanghaiDate(), mealType: 'LUNCH', dishIds: ['99', '100'], status: 'PUBLISHED'
+  } });
+  assert.equal(Object.hasOwn(sent.body, 'familyId'), false);
+  assert.equal(page.data.count, 1);
+});
+test('家长菜单限制50项并要求先清理下架或删除引用', () => {
+  const page = loadPage('menu');
+  page.catalogDishes = Array.from({ length: 51 }, (_, index) => ({
+    ...dish, dishId: String(index + 1), name: '餐食' + index
+  }));
+  page.allDishes = [...page.catalogDishes, { ...dish, dishId: 'old', status: 'OFF_SALE' }];
+  page.selectedDishIds = page.catalogDishes.slice(0, 50).map(item => item.dishId).concat('old', 'missing');
+  page.render();
+  assert.equal(page.data.invalidSelectedCount, 2);
+  page.clearUnavailable();
+  assert.equal(page.selectedDishIds.length, 50);
+  page.toggleDish(event({ id: '51' }));
+  assert.match(page.data.error, /最多选择50种/);
+});
 test('晚餐重新提报恢复原餐次及建议，并保留原单关联', async () => {
   const page = loadPage('menu', 'CHILD');
   page.onLoad({ previousConfirmId: '5' });

@@ -212,6 +212,51 @@ class CatalogFlowIT extends BaseIT {
     }
 
     @Test
+    void parentMaintenanceReadsOnlyAvailableCatalogAndCurrentFamilyMenuWithoutChildConsent() throws Exception {
+        var ctx = setupFamily();
+        var other = setupFamily();
+        String admin = adminToken();
+        long categoryId = category(admin);
+        long available = dish(admin, categoryId, "Available", List.of(), "DECLARED");
+        long unavailable = dish(admin, categoryId, "Unavailable", List.of(), "DECLARED");
+        long menuId = familyMenu(ctx, List.of(available, unavailable), today());
+        Dish offSale = dishes.selectById(unavailable);
+        offSale.setStatus("OFF_SALE");
+        dishes.updateById(offSale);
+
+        mockMvc.perform(get("/api/parent/dish").header("Authorization", bearer(ctx.parentToken()))
+                .param("pageSize", "100").param("categoryId", Long.toString(categoryId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.items[0].dishId").value(Long.toString(available)));
+        mockMvc.perform(get("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+                .param("menuDate", today().toString()).param("mealType", "LUNCH"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.menuId").value(Long.toString(menuId)))
+                .andExpect(jsonPath("$.data.dishes[0].dishId").value(Long.toString(available)))
+                .andExpect(jsonPath("$.data.dishes[1].dishId").value(Long.toString(unavailable)));
+
+        mockMvc.perform(get("/api/parent/menu-daily").header("Authorization", bearer(other.parentToken()))
+                .param("menuDate", today().toString()).param("mealType", "LUNCH"))
+                .andExpect(status().isNotFound());
+        for (String token : List.of(ctx.childToken(), other.childToken())) {
+            mockMvc.perform(get("/api/parent/dish").header("Authorization", bearer(token)))
+                    .andExpect(status().isForbidden());
+            mockMvc.perform(get("/api/parent/menu-daily").header("Authorization", bearer(token))
+                    .param("menuDate", today().toString()).param("mealType", "LUNCH"))
+                    .andExpect(status().isForbidden());
+        }
+        String parentWithoutFamily = loginAndSelectRole("catalog-parent-" + UUID.randomUUID(), RoleEnum.PARENT);
+        mockMvc.perform(get("/api/parent/dish").header("Authorization", bearer(parentWithoutFamily)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/parent/dish").header("Authorization", bearer(ctx.parentToken()))
+                .param("categoryId", "0")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+                .param("menuDate", today().toString()).param("mealType", "SNACK"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void schoolOnlyDisplaysAndParentPreviewCannotSubmit() throws Exception {
         var ctx = readyProfile();
         String admin = adminToken();
