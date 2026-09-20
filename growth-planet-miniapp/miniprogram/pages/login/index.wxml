@@ -23,9 +23,17 @@
   <view wx:else class="login-panel">
     <view class="section-title">选择你的角色</view>
     <view class="muted">每个账号只能选择一次。家长不能使用儿童身份代为提报。</view>
-    <view class="actions">
-      <button bindtap="choose" data-role="CHILD" disabled="{{busy}}">我是孩子</button>
-      <button class="primary" bindtap="choose" data-role="PARENT" disabled="{{busy}}">我是家长</button>
+    <view class="role-grid">
+      <button class="role-option child" bindtap="choose" data-role="CHILD" disabled="{{busy}}" aria-label="我是孩子">
+        <view class="role-icon">童</view>
+        <view class="role-title">我是孩子</view>
+        <view class="role-desc">挑选今天的餐食，请爸妈确认</view>
+      </button>
+      <button class="role-option parent" bindtap="choose" data-role="PARENT" disabled="{{busy}}" aria-label="我是家长">
+        <view class="role-icon">长</view>
+        <view class="role-title">我是家长</view>
+        <view class="role-desc">管理餐单、额度与同意</view>
+      </button>
     </view>
   </view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
