@@ -163,4 +163,4 @@ Sprint 2–4 的钱包及审批契约见[接口补充](docs/sprint2-4-api.md)，
 
 ## 边界
 
-历史证据见 [Sprint 1验证](docs/sprint1-verification.md)，本轮见 [Sprint 2–4验证](docs/sprint2-4-verification.md)。本仓库只有后端，五 Tab、页面交互与真实微信授权未交付。真实订阅发送适配器尚未实现且默认关闭；重试框架不能替代平台联调。全量导出、实际删除和恢复演练、性能与实机验收仍待完成。Q-01/Q-06/Q-07 和数据保留策略等审批未关闭，禁止将合成测试结果视为上线批准。
+历史证据见 [Sprint 1验证](docs/sprint1-verification.md)，本轮见 [Sprint 2–4验证](docs/sprint2-4-verification.md)。原生小程序首版已新增至 [growth-planet-miniapp](../growth-planet-miniapp/README.md)，含五入口导航、家庭/档案/点餐审批/钱包/通知/隐私页面；本地测试和原生模板编译证据见[小程序验证记录](../growth-planet-miniapp/docs/verification.md)。真实微信授权、端到端与实机仍未验收，家长菜单编辑所需的家长可访问菜品目录接口尚缺。真实订阅发送适配器尚未实现且默认关闭；重试框架不能替代平台联调。全量导出、实际删除和恢复演练、性能与实机验收仍待完成。Q-01/Q-06/Q-07 和数据保留策略等审批未关闭，禁止将合成测试结果视为上线批准。
