@@ -3,7 +3,7 @@
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:if="{{pendingSubmit}}" class="notice"><view>上次提交结果尚未确认，请先查阅记录，或原样重试。</view><button bindtap="retrySubmit" disabled="{{busy}}">重试上次提报</button></view>
   <view wx:if="{{draft}}">
-    <view class="item" wx:for="{{draft.items}}" wx:key="dishId"><view class="row"><text>{{item.dishName}} × {{item.quantity}}</text><text>{{item.unitPrice}} / 份</text></view></view>
+    <view class="item" wx:for="{{draft.items}}" wx:key="dishId"><view class="row"><text>{{item.dishName}} × {{item.quantity}}</text><text>单价 {{item.unitPrice}} / 份</text></view></view>
     <view class="row"><text>预计合计</text><text class="price">{{draft.total}} 虚拟单位</text></view>
     <view class="field"><text class="label">给家长的备注（选填）</text><textarea bindinput="input" data-field="remark" value="{{remark}}" maxlength="255" disabled="{{pendingSubmit}}" /></view>
     <view class="notice">价格以服务端确认结果为准。提交不扣款，等待家长同意。</view>
@@ -11,7 +11,7 @@
   </view>
   <view wx:elif="{{detail}}">
     <view class="badge">{{detail.label}}</view><view class="subtitle">确认单 {{detail.confirmId}} · {{detail.menuDate}}</view>
-    <view class="item" wx:for="{{detail.items}}" wx:key="dishId"><view>{{item.dishName}} × {{item.quantity}}</view><view class="row"><text class="muted">{{item.note}}</text><text>{{item.subtotal}} 虚拟单位</text></view></view>
+    <view class="item" wx:for="{{detail.items}}" wx:key="dishId"><view>{{item.dishName}} × {{item.quantity}}</view><view class="row"><text class="muted">{{item.note}}</text><text>小计 {{item.subtotal}} 虚拟单位</text></view></view>
     <view class="row"><text>合计</text><text class="amount">{{detail.totalAmount}}</text></view>
     <view class="notice">{{detail.childVisibleNote}}</view>
     <view wx:if="{{detail.balance !== null}}" class="muted">完成后余额 {{detail.balance}} 虚拟单位</view>

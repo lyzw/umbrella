@@ -4,7 +4,7 @@
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:if="{{!records.length && !busy}}" class="empty">暂无消息</view>
   <view wx:for="{{records}}" wx:key="id" class="item">
-    <view class="row"><text>{{item.title}}</text><text class="badge">{{item.read ? '已读' : '未读'}}</text></view>
+    <view class="row"><text>{{item.title}}</text><text class="badge {{item.read ? 'read-badge' : 'unread-badge'}}">{{item.read ? '已读' : '未读'}}</text></view>
     <view class="muted">儿童 {{item.childId}}</view><view class="small">{{item.createTime}}</view>
     <view class="actions"><button wx:if="{{!item.read}}" bindtap="read" data-id="{{item.id}}" disabled="{{busy}}">标记已读</button></view>
   </view>
