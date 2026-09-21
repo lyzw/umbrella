@@ -49,6 +49,19 @@ test('新家长无家庭的403展示建家庭入口，但保留权限提醒', as
   assert.equal(page.data.hasFamily, false);
   assert.match(page.data.error, /尚无可访问的家庭/);
 });
+test('家庭绑定按同意与绑定状态推进四步流程', async () => {
+  const page = loadPage('family');
+  page.data.children = [{ ...child, nickname: '小星', displayName: '小星', bindStatusLabel: '已绑定' }];
+  api.get = async () => ({ currentStatus: 'PENDING', agreementText: '协议', version: 'v1' });
+  await page.inspect(event({ id: child.applyId }));
+  assert.equal(page.data.currentBindingStep, 2);
+  assert.deepEqual(page.data.bindingSteps.map(item => item.status), ['done', 'current', 'upcoming', 'upcoming']);
+
+  api.get = async () => ({ currentStatus: 'GRANTED', agreementText: '协议', version: 'v1' });
+  await page.inspect(event({ id: child.applyId }));
+  assert.equal(page.data.currentBindingStep, 4);
+  assert.deepEqual(page.data.bindingSteps.map(item => item.status), ['done', 'done', 'done', 'current']);
+});
 test('家长同意失效时绝不读取或显示档案', async () => {
   const page = loadPage('profile');
   page.data.childId = child.childId;
@@ -232,6 +245,16 @@ test('E-011绝不自动批准；二次同意使用完整且最新的预览版本
   assert.deepEqual(sent[1], { expectedVersion: 3, explicitConfirm: true, walletVersion: 4,
     ruleVersion: 5, confirmVersion: 3, usageDate: shanghaiDate() });
 });
+test('审批调整面板只改变展示状态，不触发决策请求', () => {
+  const page = loadPage('confirmation');
+  let calls = 0;
+  api.post = async () => { calls++; };
+  page.toggleAdjustment();
+  assert.equal(page.data.showAdjustment, true);
+  page.toggleAdjustment();
+  assert.equal(page.data.showAdjustment, false);
+  assert.equal(calls, 0);
+});
 test('离开确认页停止轮询并清空快照', () => {
   const page = loadPage('confirmation', 'CHILD');
   page.visible = true;
@@ -288,6 +311,53 @@ test('钱包未知发放重试不能生成新键，查询超过31天在本地拒
   await page.retryGrant();
   assert.equal(operations.pending('grant:' + child.childId), null);
 });
+test('钱包首次只加载概览，流水与规则按视图读取', async () => {
+  const page = loadPage('wallet');
+  page.setData({ childId: child.childId, startDate: '2026-09-01', endDate: '2026-09-21' });
+  const calls = [];
+  api.get = async endpoint => {
+    calls.push(endpoint);
+    if (endpoint === '/wallet/overview') return { balance: '20.00' };
+    if (endpoint === '/wallet/board') return { totalBalance: '20.00', children: [] };
+    if (endpoint === '/wallet/stats') {
+      return { spendTrend: [], spendCategories: [], grantCategories: [], totalSpend: '0.00', totalGrant: '0.00' };
+    }
+    if (endpoint === '/wallet/allowance-log') return { items: [], total: 0 };
+    if (endpoint === '/wallet/allowance-rule') {
+      return { singleLimit: '10.00', dailyLimit: '20.00', weeklyLimit: '50.00', version: 1 };
+    }
+    throw new Error('未预期接口 ' + endpoint);
+  };
+
+  await page.read();
+  assert.equal(page.data.view, 'overview');
+  assert.deepEqual(calls, ['/wallet/overview', '/wallet/board', '/wallet/stats']);
+  await page.changeView(event({ view: 'logs' }));
+  assert.equal(page.data.view, 'logs');
+  assert.equal(calls.at(-1), '/wallet/allowance-log');
+  await page.changeView(event({ view: 'rules' }));
+  assert.equal(page.data.view, 'rules');
+  assert.equal(calls.at(-1), '/wallet/allowance-rule');
+});
+test('钱包儿童选择优先显示昵称，家长一级导航不重复压栈', async () => {
+  const page = loadPage('wallet');
+  api.get = async endpoint => {
+    if (endpoint === '/family/children') {
+      return { items: [{ ...child, nickname: '小星' }], total: 1 };
+    }
+    if (endpoint === '/wallet/overview') return { balance: '20.00' };
+    if (endpoint === '/wallet/board') return { totalBalance: '20.00', children: [] };
+    if (endpoint === '/wallet/stats') {
+      return { spendTrend: [], spendCategories: [], grantCategories: [], totalSpend: '0.00', totalGrant: '0.00' };
+    }
+    throw new Error('未预期接口 ' + endpoint);
+  };
+  await page.onShow();
+  assert.equal(page.data.children[0].displayName, '小星');
+  page.changeTab({ detail: { key: 'me' } });
+  page.changeTab({ detail: { key: 'approvals' } });
+  assert.deepEqual(navigation, ['/pages/home/index?tab=me', '/pages/confirmation/index']);
+});
 test('隐私删除需确认并核验，申请受理不显示为完成', async () => {
   const page = loadPage('privacy');
   page.setData({ childId: child.childId, account: 'parent_demo' });
@@ -338,6 +408,34 @@ test('页面离开期间的迟到确认框不会继续写操作', async () => {
   modal.success({ confirm: true });
   assert.equal(await pending, false);
 });
+test('首页只接受当前角色的一级视图，家务页返回对应儿童一级视图', () => {
+  const home = loadPage('home', 'CHILD');
+  home.onLoad({ tab: 'growth' });
+  api.get = async () => ({ unreadCount: 0 });
+  home.onShow();
+  assert.equal(home.data.active, 'growth');
+
+  const chore = loadPage('chore', 'CHILD');
+  chore.changeTab({ detail: { key: 'me' } });
+  assert.deepEqual(navigation, ['/pages/home/index?tab=me']);
+  chore.changeTab({ detail: { key: 'chore' } });
+  assert.deepEqual(navigation, ['/pages/home/index?tab=me']);
+});
+test('勋章列表生成顶层稳定键供视图循环使用', async () => {
+  const page = loadPage('medal');
+  page.data.childId = child.childId;
+  api.get = async (endpoint, query) => {
+    assert.equal(endpoint, '/medal/awards');
+    assert.deepEqual(query, { childId: child.childId });
+    return [{
+      earned: true,
+      progress: 1,
+      definition: { definitionId: 'medal-1', name: '初次完成', description: '完成一次家务', threshold: 1 }
+    }];
+  };
+  await page.read();
+  assert.equal(page.data.medals[0].definitionId, 'medal-1');
+});
 test('请求期间会话到期仍回到登录页，而不是保留受保护页面', async () => {
   const page = loadPage('profile');
   Object.assign(api, methods);
@@ -374,6 +472,7 @@ test('我的菜品：列表按状态筛选，新增只提交服务端允许的�
   assert.deepEqual(page.data.categoryNames, ['主食']);
   assert.deepEqual(page.data.dishes.map(item => item.dishId), ['7']);
   assert.equal(calls[1].query.status, 'ON_SALE');
+  assert.equal(page.data.allergenOptions.find(item => item.code === 'EGG').label, '鸡蛋');
 
   let sent;
   api.post = async (endpoint, body) => { sent = { endpoint, body }; return { dishId: '9' }; };
@@ -400,6 +499,10 @@ test('我的菜品：校验拦截非法价格与未声明过敏原', async () =>
   page.setData({ formVirtualPrice: '8.00', formAllergens: ['EGG'], formAllergenStatus: 'UNKNOWN' });
   await page.save();
   assert.match(page.data.error, /过敏原状态/);
+  assert.equal(posts, 0);
+  page.setData({ formAllergens: [], formAllergenStatus: 'DECLARED', formImageUrl: 'http://example.com/dish.png' });
+  await page.save();
+  assert.match(page.data.error, /HTTPS/);
   assert.equal(posts, 0);
 });
 test('我的菜品：编辑带版本号，上下架与删除需二次确认', async () => {
