@@ -8,7 +8,7 @@ ui.page({
   data: { role: '', busy: false, error: '', children: [], childId: '', childIndex: 0, records: [], page: 1, total: 0,
     status: 'PENDING', statuses: ['待确认', '已完成', '需调整', '已撤回'], statusIndex: 0,
     detail: null, draft: null, remark: '', reason: '', preview: null, suggestions: [], editing: false,
-    pendingSubmit: false, pendingApprove: false, pendingDecision: false },
+    showAdjustment: false, pendingSubmit: false, pendingApprove: false, pendingDecision: false },
   input: ui.input,
   onLoad(query) { this.query = query; },
   onShow() {
@@ -33,7 +33,8 @@ ui.page({
   async readDetail(confirmId) {
     const detail = await api.get('/menu/confirm/' + confirmId);
     const items = (detail.items || []).map(item => ({ ...item, key: dishKey(item) }));
-    this.setData({ detail: { ...detail, items, label: statusLabels[detail.status] }, draft: null, preview: null, editing: false,
+    this.setData({ detail: { ...detail, items, label: statusLabels[detail.status] }, draft: null, preview: null,
+      editing: false, showAdjustment: false,
       pendingApprove: !!operations.pending('approve:' + confirmId), pendingDecision: !!operations.pending('decision:' + confirmId) });
     this.poll();
   },
@@ -103,7 +104,8 @@ ui.page({
     const confirmId = this.data.detail.confirmId, scope = 'approve:' + confirmId;
     try {
       const result = await operations.run(scope, body, value => api.post('/parent/approve/' + confirmId + '/approve', value));
-      this.setData({ preview: null, pendingApprove: false, detail: { ...result, label: statusLabels[result.status] } });
+      this.setData({ preview: null, pendingApprove: false, showAdjustment: false,
+        detail: { ...result, label: statusLabels[result.status] } });
     } catch (error) {
       if (error.code === 'E-011') { this.setData({ preview: error.data }); return; }
       throw error;
@@ -136,13 +138,17 @@ ui.page({
     try {
       const result = await operations.run(scope, command, value =>
         api.post('/parent/approve/' + detail.confirmId + '/' + value.action, value.body));
-      this.setData({ detail: { ...result, label: statusLabels[result.status] }, editing: false, suggestions: [], reason: '', preview: null });
+      this.setData({ detail: { ...result, label: statusLabels[result.status] }, editing: false, showAdjustment: false,
+        suggestions: [], reason: '', preview: null });
     } finally { this.setData({ pendingDecision: !!operations.pending(scope) }); }
   },
   retryDecision() { return ui.run(this, async () => {
     const pending = operations.pending('decision:' + this.data.detail.confirmId);
     if (pending) await this.decide(pending.body.action, pending.body);
   }); },
+  toggleAdjustment() {
+    this.setData({ showAdjustment: !this.data.showAdjustment });
+  },
   editSuggestion() {
     return ui.run(this, async () => {
       const detail = this.data.detail;
@@ -167,11 +173,16 @@ ui.page({
     });
   },
   resubmit() { wx.navigateTo({ url: '/pages/menu/index?previousConfirmId=' + this.data.detail.confirmId }); },
-  backList() { clearTimeout(this.timer); this.setData({ detail: null, draft: null, preview: null }); ui.run(this, () => this.readList()); },
+  backList() {
+    clearTimeout(this.timer);
+    this.setData({ detail: null, draft: null, preview: null, showAdjustment: false, editing: false, suggestions: [], reason: '' });
+    ui.run(this, () => this.readList());
+  },
   onHide() {
     this.visible = false;
     clearTimeout(this.timer);
-    this.setData({ draft: null, detail: null, records: [], suggestions: [], preview: null, remark: '', reason: '' });
+    this.setData({ draft: null, detail: null, records: [], suggestions: [], preview: null, remark: '', reason: '',
+      showAdjustment: false, editing: false });
   },
   onUnload() { this.onHide(); }
 });

@@ -9,3 +9,29 @@
 .amount { font-size: 28px; }
 /* 草稿提交前的总览卡 */
 .item .row { align-items: baseline; }
+.confirmation-page.has-decision-bar { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.limit-preview { margin-bottom: 16px; }
+.adjustment-panel { margin-top: 18px; background: var(--surface); }
+.adjustment-hint { margin: -4px 0 16px; }
+.adjustment-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.suggestion-panel { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.suggestion-item { box-shadow: none; }
+.suggestion-submit { width: 100%; margin-top: 12px; }
+.decision-bar {
+  position: fixed;
+  z-index: 12;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: minmax(112px, .8fr) minmax(160px, 1.2fr);
+  gap: 10px;
+  padding: 10px max(18px, calc((100vw - 760px) / 2 + 18px)) calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, .97);
+  box-shadow: 0 -8px 24px rgba(32, 55, 92, .08);
+}
+@media (max-width: 340px) {
+  .adjustment-actions { grid-template-columns: 1fr; }
+  .decision-bar { grid-template-columns: 1fr 1.2fr; padding-left: 12px; padding-right: 12px; }
+}

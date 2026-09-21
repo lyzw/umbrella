@@ -1,4 +1,4 @@
-<view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+<view class="page confirmation-page {{role === 'PARENT' ? 'parent' : ''}} {{role === 'PARENT' && detail && detail.status === 'PENDING' ? 'has-decision-bar' : ''}}">
   <view class="header"><view class="title">{{role === 'PARENT' ? '餐单审批' : '我的确认单'}}</view><button bindtap="refresh" disabled="{{busy || draft}}">刷新</button></view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:if="{{pendingSubmit}}" class="notice"><view>上次提交结果尚未确认，请先查阅记录，或原样重试。</view><button bindtap="retrySubmit" disabled="{{busy}}">重试上次提报</button></view>
@@ -21,19 +21,30 @@
     </view>
     <view wx:if="{{pendingApprove}}" class="notice"><view>批准结果未知，请原样重试确认。</view><button bindtap="retryApprove" disabled="{{busy}}">重试原批准命令</button></view>
     <view wx:if="{{pendingDecision}}" class="notice"><view>处理结果未知，请原样重试。</view><button bindtap="retryDecision" disabled="{{busy}}">重试原处理命令</button></view>
-    <view wx:if="{{role === 'PARENT' && detail.status === 'PENDING' && !pendingApprove && !pendingDecision}}" class="section">
-      <button class="primary" bindtap="approve" disabled="{{busy}}">同意并记账</button>
-      <view wx:if="{{preview}}" class="notice">
+    <view wx:if="{{role === 'PARENT' && detail.status === 'PENDING' && !pendingApprove && !pendingDecision}}">
+      <view wx:if="{{preview}}" class="notice limit-preview">
         <view class="section-title">本次超出额度</view>
         <view>本次 {{preview.totalAmount}}，余额 {{preview.balance}}</view>
         <view>单笔额度 {{preview.singleLimit}}</view><view>今日已用 {{preview.dailyUsed}} / {{preview.dailyLimit}}</view><view>本周已用 {{preview.weeklyUsed}} / {{preview.weeklyLimit}}</view>
-        <view class="actions"><button bindtap="explicitApprove" disabled="{{busy}}">仍然同意这一次</button></view>
+        <view class="actions"><button class="primary" bindtap="explicitApprove" disabled="{{busy}}">确认超额并同意</button></view>
       </view>
-      <view class="field"><text class="label">给孩子的温和说明</text><textarea value="{{reason}}" data-field="reason" bindinput="input" maxlength="255" /></view>
-      <view class="actions"><button bindtap="reject" disabled="{{busy}}">请孩子调整</button><button bindtap="editSuggestion" disabled="{{busy}}">建议替代餐食</button></view>
-      <view wx:if="{{editing}}" class="section">
-        <view wx:for="{{suggestions}}" wx:key="key" class="item"><view><text>{{item.name}}</text><text class="badge">{{item.sourceType === 'FAMILY' ? '家庭' : '预置'}}</text></view><view class="row"><button class="icon-button" bindtap="suggestion" data-key="{{item.key}}" data-delta="-1" aria-label="减少建议份数">−</button><text>{{item.quantity}}</text><button class="icon-button" bindtap="suggestion" data-key="{{item.key}}" data-delta="1" aria-label="增加建议份数">+</button></view></view>
-        <button bindtap="modify" disabled="{{busy || !suggestions.length}}">发送建议，不扣款</button>
+      <view wx:if="{{showAdjustment}}" class="section adjustment-panel">
+        <view class="section-title">请孩子调整餐单</view>
+        <view class="muted adjustment-hint">说明会展示给孩子，处理后原单不会扣款。</view>
+        <view class="field"><text class="label">给孩子的温和说明</text><textarea value="{{reason}}" data-field="reason" bindinput="input" maxlength="255" placeholder="例如：今天蔬菜有点少，再选一道青菜吧" /></view>
+        <view class="adjustment-actions">
+          <button bindtap="reject" disabled="{{busy}}">直接退回调整</button>
+          <button bindtap="editSuggestion" disabled="{{busy}}">{{editing ? '重新选择替代餐食' : '建议替代餐食'}}</button>
+        </view>
+        <view wx:if="{{editing}}" class="suggestion-panel">
+          <view class="small">选择建议份数，未选择的餐食不会发送给孩子。</view>
+          <view wx:for="{{suggestions}}" wx:key="key" class="item suggestion-item"><view><text>{{item.name}}</text><text class="badge">{{item.sourceType === 'FAMILY' ? '家庭' : '预置'}}</text></view><view class="row"><button class="icon-button" bindtap="suggestion" data-key="{{item.key}}" data-delta="-1" aria-label="减少建议份数">−</button><text>{{item.quantity}}</text><button class="icon-button" bindtap="suggestion" data-key="{{item.key}}" data-delta="1" aria-label="增加建议份数">+</button></view></view>
+          <button class="primary suggestion-submit" bindtap="modify" disabled="{{busy || !suggestions.length}}">发送替代建议</button>
+        </view>
+      </view>
+      <view class="decision-bar">
+        <button bindtap="toggleAdjustment" disabled="{{busy}}">{{showAdjustment ? '收起调整' : '需要调整'}}</button>
+        <button class="primary" bindtap="approve" disabled="{{busy || preview}}">同意并记账</button>
       </view>
     </view>
     <view class="actions"><button bindtap="backList" disabled="{{busy}}">返回记录</button></view>
