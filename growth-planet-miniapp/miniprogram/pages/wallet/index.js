@@ -20,37 +20,57 @@ const decorate = list => (list || []).map(item => {
   const meta = sceneMeta(item.scene);
   return Object.assign({}, item, { sceneLabel: meta.label, badgeClass: meta.badge });
 });
+const emptyStats = () => ({
+  spendTrend: [], spendCategories: [], grantCategories: [], totalSpend: '0.00', totalGrant: '0.00'
+});
+const displayChildren = children => children.map(item =>
+  Object.assign({}, item, { displayName: item.nickname || '儿童 ' + item.childId }));
 
 ui.page({
   data: { role: '', busy: false, error: '', receipt: '', children: [], childIndex: 0, childId: '',
     overview: null, board: null, rule: null,
-    stats: { spendTrend: [], spendCategories: [], grantCategories: [], totalSpend: '0.00', totalGrant: '0.00' },
-    hasTrend: false, range: 'WEEK', tab: 'logs', direction: '', scene: '', sceneOptions: SCENE_OPTIONS,
+    stats: emptyStats(), hasTrend: false, range: 'WEEK', view: 'overview', statsTab: 'trend',
+    overviewLoaded: false, statsLoaded: false, logsLoaded: false, rulesLoaded: false,
+    direction: '', scene: '', sceneOptions: SCENE_OPTIONS,
     singleLimit: '', dailyLimit: '', weeklyLimit: '', amount: '', reason: '', pendingGrant: false,
     records: [], page: 1, total: 0, startDate: '', endDate: '' },
   input: ui.input,
   onShow() {
     if (!ui.guard(this)) return;
     return ui.run(this, async () => {
-      const children = await loadChildren();
+      const children = displayChildren(await loadChildren());
       const index = Math.max(0, children.findIndex(c => c.childId === this.data.childId));
+      const startDate = this.data.startDate || shanghaiDate(new Date(Date.now() - 30 * 86400000));
+      const endDate = this.data.endDate || shanghaiDate();
       this.setData({ children, childIndex: index, childId: children[index].childId,
-        startDate: shanghaiDate(new Date(Date.now() - 30 * 86400000)), endDate: shanghaiDate(), page: 1 });
+        startDate, endDate, page: 1 });
       await this.read();
     });
   },
   async read() {
     const childId = this.data.childId;
-    this.setData({ records: [], overview: null, board: null, rule: null,
-      pendingGrant: !!operations.pending('grant:' + childId) });
-    const query = { childId };
+    this.setData({ pendingGrant: !!operations.pending('grant:' + childId) });
+    if (this.data.view === 'logs') return this.readLogs();
+    if (this.data.view === 'rules') return this.readRules();
+    return this.readOverview();
+  },
+  async readOverview() {
+    const query = { childId: this.data.childId };
     const overview = await api.get('/wallet/overview', query);
-    const rule = await api.get('/wallet/allowance-rule', query);
-    this.setData({ overview, rule, singleLimit: rule.singleLimit, dailyLimit: rule.dailyLimit,
-      weeklyLimit: rule.weeklyLimit });
     // 家长端看板按当前登录家长的家庭在后端派生，familyId 不接受客户端传入。
-    this.setData({ board: this.data.role === 'PARENT' ? await api.get('/wallet/board', {}) : null });
-    await this.readLogs();
+    const board = this.data.role === 'PARENT' ? await api.get('/wallet/board', {}) : null;
+    this.setData({
+      overview, board: board ? Object.assign({}, board, { children: displayChildren(board.children || []) }) : null,
+      overviewLoaded: true
+    });
+    await this.readStats();
+  },
+  async readRules() {
+    const childId = this.data.childId;
+    const query = { childId };
+    const rule = await api.get('/wallet/allowance-rule', query);
+    this.setData({ rule, rulesLoaded: true, singleLimit: rule.singleLimit, dailyLimit: rule.dailyLimit,
+      weeklyLimit: rule.weeklyLimit });
   },
   async readLogs() {
     const { childId, startDate, endDate, page, direction, scene } = this.data;
@@ -60,17 +80,17 @@ ui.page({
     if (direction) query.direction = direction;
     if (scene) query.scene = scene;
     const result = await api.get('/wallet/allowance-log', query);
-    this.setData({ records: decorate(result.items), total: result.total });
+    this.setData({ records: decorate(result.items), total: result.total, logsLoaded: true });
   },
   async readStats() {
     const stats = await api.get('/wallet/stats', { childId: this.data.childId, range: this.data.range });
     const spendTrend = stats.spendTrend || [];
     // 全为 0 视为无数据：展示占位态而非空图（F-025 空态要求）。
     const hasTrend = spendTrend.some(point => Number(point.amount) > 0);
-    this.setData({ hasTrend,
+    this.setData({ hasTrend, statsLoaded: true,
       stats: Object.assign({}, stats, { spendTrend,
         spendCategories: decorate(stats.spendCategories), grantCategories: decorate(stats.grantCategories) }) });
-    if (hasTrend) this.drawTrend();
+    if (hasTrend && this.data.view === 'overview' && this.data.statsTab === 'trend') this.drawTrend();
   },
   drawTrend() {
     const trend = this.data.stats.spendTrend || [];
@@ -94,12 +114,31 @@ ui.page({
       });
     });
   },
-  tab(e) {
-    const tab = e.currentTarget.dataset.tab;
-    this.setData({ tab }, () => { if (tab !== 'logs') ui.run(this, () => this.readStats()); });
+  changeView(e) {
+    const view = e.currentTarget.dataset.view;
+    if (!['overview', 'logs', 'rules'].includes(view) || view === this.data.view) return;
+    if (!this.data.childId) return;
+    this.setData({ view, error: '' });
+    const loaded = view === 'overview' ? this.data.overviewLoaded && this.data.statsLoaded
+      : view === 'logs' ? this.data.logsLoaded : this.data.rulesLoaded;
+    if (loaded) {
+      if (view === 'overview' && this.data.hasTrend && this.data.statsTab === 'trend') this.drawTrend();
+      return;
+    }
+    return ui.run(this, () => this.read());
+  },
+  changeStats(e) {
+    const statsTab = e.currentTarget.dataset.tab;
+    if (!['trend', 'category'].includes(statsTab)) return;
+    this.setData({ statsTab }, () => {
+      if (statsTab === 'trend' && this.data.hasTrend) this.drawTrend();
+    });
   },
   range(e) {
-    this.setData({ range: e.currentTarget.dataset.range }, () => ui.run(this, () => this.readStats()));
+    const range = e.currentTarget.dataset.range;
+    if (!['WEEK', 'MONTH'].includes(range) || range === this.data.range) return;
+    this.setData({ range, statsLoaded: false });
+    return ui.run(this, () => this.readStats());
   },
   filter(e) {
     const { field, value } = e.currentTarget.dataset;
@@ -108,14 +147,24 @@ ui.page({
   },
   child(e) {
     const index = Number(e.detail.value);
-    this.setData({ childIndex: index, childId: this.data.children[index].childId, page: 1, amount: '', reason: '',
-      receipt: '' });
+    const selected = this.data.children[index];
+    if (!selected) return;
+    this.chart = null;
+    this.setData({ childIndex: index, childId: selected.childId, page: 1, amount: '', reason: '', receipt: '',
+      overview: null, board: null, rule: null, records: [], total: 0, stats: emptyStats(), hasTrend: false,
+      overviewLoaded: false, statsLoaded: false, logsLoaded: false, rulesLoaded: false });
     return this.refresh();
   },
   date(e) { this.setData({ [e.currentTarget.dataset.field]: e.detail.value, page: 1, records: [] }); },
   logs() { this.setData({ page: 1, records: [] }); return ui.run(this, () => this.readLogs()); },
   next(e) { this.setData({ page: this.data.page + Number(e.currentTarget.dataset.delta), records: [] }); return ui.run(this, () => this.readLogs()); },
   refresh() { return ui.run(this, () => this.read()); },
+  changeTab(e) {
+    const key = e.detail.key;
+    if (key === 'wallet') return;
+    if (key === 'approvals') return wx.reLaunch({ url: '/pages/confirmation/index' });
+    if (['home', 'me'].includes(key)) return wx.reLaunch({ url: '/pages/home/index?tab=' + key });
+  },
   grant() {
     return ui.run(this, async () => {
       if (this.data.role !== 'PARENT') return;
@@ -164,7 +213,8 @@ ui.page({
     this.chart = null;
     this.setData({ overview: null, board: null, rule: null, records: [], amount: '', reason: '',
       singleLimit: '', dailyLimit: '', weeklyLimit: '', receipt: '',
-      stats: { spendTrend: [], spendCategories: [], grantCategories: [], totalSpend: '0.00', totalGrant: '0.00' },
-      hasTrend: false, tab: 'logs', direction: '', scene: '' });
+      stats: emptyStats(), hasTrend: false, view: 'overview', statsTab: 'trend',
+      overviewLoaded: false, statsLoaded: false, logsLoaded: false, rulesLoaded: false,
+      direction: '', scene: '' });
   }
 });
