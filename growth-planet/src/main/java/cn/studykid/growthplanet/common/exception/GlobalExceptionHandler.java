@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
             audit.record(code);
         } catch (RuntimeException ex) {
             log.error("failure_audit_unavailable requestId={} errorCode={} exceptionType={}",
-                    RequestContext.requestId(), code.getCode(), ex.getClass().getSimpleName());
+                    RequestContext.requestId(), code.getCode(), ex.getClass().getSimpleName(), ex);
         }
     }
 
@@ -101,7 +101,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Result<Void>> handleUnexpected(Exception ex) {
         log.error("unexpected_failure requestId={} exceptionType={}",
-                RequestContext.requestId(), ex.getClass().getSimpleName());
+                RequestContext.requestId(), ex.getClass().getSimpleName(), ex);
         return failure(ResultCode.E500_SYSTEM_ERROR);
     }
 }
