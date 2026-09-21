@@ -4,6 +4,11 @@
     <picker mode="date" value="{{menuDate}}" bindchange="date" disabled="{{busy}}"><view class="picker date-picker">{{menuDate}}</view></picker>
   </view>
   <view wx:if="{{role === 'PARENT'}}" class="notice">这里发布的菜单只属于当前家庭，不会影响其他家庭或学校餐单。</view>
+  <view wx:if="{{role === 'PARENT'}}" class="tabs source-tabs">
+    <button class="{{sourceTab === 'FAMILY' ? 'active' : ''}}" bindtap="sourceTab" data-tab="FAMILY" disabled="{{busy}}">家庭菜品</button>
+    <button class="{{sourceTab === 'PRESET' ? 'active' : ''}}" bindtap="sourceTab" data-tab="PRESET" disabled="{{busy}}">预置菜品</button>
+  </view>
+  <view wx:if="{{role === 'PARENT'}}" class="source-count">已选 <text class="price">{{count}}</text> / 50 道（家庭 + 预置合计）</view>
   <view wx:if="{{role === 'CHILD'}}" class="tabs">
     <button class="{{sourceType === 'FAMILY' ? 'active' : ''}}" bindtap="source" data-source="FAMILY" disabled="{{busy}}">家庭餐单</button>
     <button class="{{sourceType === 'SCHOOL' ? 'active' : ''}}" bindtap="source" data-source="SCHOOL" disabled="{{busy}}">学校餐单</button>
@@ -35,37 +40,42 @@
   <view wx:if="{{ready && !dishes.length && !error}}" class="empty-state">
     <view class="empty-state-icon">🍽️</view>
     <view class="section-title">{{role === 'PARENT' ? '暂无可选餐食' : '没有符合条件的餐食'}}</view>
-    <view class="muted">{{role === 'PARENT' ? '请先由运营维护在售菜品。' : '换个筛选条件再看看吧。'}}</view>
+    <view class="muted">{{role === 'PARENT' ? '可在「我的菜品」录入家庭菜品，或切到预置菜品选择。' : '换个筛选条件再看看吧。'}}</view>
+    <button wx:if="{{role === 'PARENT'}}" bindtap="goDishManage" disabled="{{busy}}">去录入我的菜品</button>
   </view>
-  <view wx:for="{{dishes}}" wx:key="dishId" class="item dish {{item.quantity > 0 || item.selected ? 'selected-dish' : ''}} {{role === 'CHILD' && !item.selectable || role === 'PARENT' && !item.available ? 'disabled-dish' : ''}}">
-    <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="dish-image" binderror="imageError" data-id="{{item.dishId}}" />
+  <view wx:for="{{dishes}}" wx:key="key" class="item dish {{item.quantity > 0 || item.selected ? 'selected-dish' : ''}} {{role === 'CHILD' && !item.selectable || role === 'PARENT' && !item.available ? 'disabled-dish' : ''}}">
+    <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="dish-image" binderror="imageError" data-key="{{item.key}}" />
     <view wx:else class="dish-image fallback"><text class="fallback-icon">🍲</text><text>暂无图片</text></view>
     <view class="dish-content">
       <view class="dish-title-row">
         <view class="section-title">{{item.name}}</view>
-        <button wx:if="{{role === 'CHILD'}}" class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-id="{{item.dishId}}" disabled="{{busy}}" aria-label="{{item.isFavorite ? '取消想吃' : '标记想吃'}}">{{item.isFavorite ? '♥' : '♡'}}</button>
-        <label wx:if="{{role === 'PARENT'}}" class="menu-select-control {{item.selected ? 'selected' : ''}} {{!item.available ? 'disabled' : ''}}" catchtap="toggleDish" data-id="{{item.dishId}}">
+        <button wx:if="{{role === 'CHILD' && item.sourceType === 'PRESET'}}" class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.isFavorite ? '取消想吃' : '标记想吃'}}">{{item.isFavorite ? '♥' : '♡'}}</button>
+        <label wx:if="{{role === 'PARENT'}}" class="menu-select-control {{item.selected ? 'selected' : ''}} {{!item.available ? 'disabled' : ''}}" catchtap="toggleDish" data-key="{{item.key}}">
           <checkbox checked="{{item.selected}}" disabled="{{busy || !item.available}}" />
           <text>{{item.selected ? '已加入' : '加入菜单'}}</text>
         </label>
       </view>
-      <view><text class="badge">{{item.spiceLabel}}</text><text class="badge {{item.selectable ? 'safe' : 'warning'}}">{{item.safetyLabel}}</text></view>
+      <view><text wx:if="{{role === 'PARENT'}}" class="badge">{{item.sourceLabel}}</text><text class="badge">{{item.spiceLabel}}</text><text class="badge {{item.available || item.selectable ? 'safe' : 'warning'}}">{{item.safetyLabel}}</text></view>
       <view class="small">{{item.calories === null ? '热量暂无数据' : item.calories + ' kcal / 份'}}</view>
       <view wx:if="{{item.isDisliked}}" class="small">包含不喜欢的食物</view>
       <view class="price">{{item.virtualPrice}} <text class="small">虚拟单位 / 份</text></view>
       <view class="stepper" wx:if="{{role === 'CHILD' && sourceType === 'FAMILY'}}">
-        <button class="icon-button" bindtap="quantity" data-id="{{item.dishId}}" data-delta="-1" disabled="{{busy || item.quantity === 0}}" aria-label="减少一份">−</button>
+        <button class="icon-button" bindtap="quantity" data-key="{{item.key}}" data-delta="-1" disabled="{{busy || item.quantity === 0}}" aria-label="减少一份">−</button>
         <text class="quantity">{{item.quantity}}</text>
-        <button class="icon-button" bindtap="quantity" data-id="{{item.dishId}}" data-delta="1" disabled="{{busy || !item.selectable || !menu.canSubmit || item.quantity === 9}}" aria-label="增加一份">+</button>
+        <button class="icon-button" bindtap="quantity" data-key="{{item.key}}" data-delta="1" disabled="{{busy || !item.selectable || !menu.canSubmit || item.quantity === 9}}" aria-label="增加一份">+</button>
       </view>
     </view>
   </view>
-  <view class="checkout-panel parent-publish-panel" wx:if="{{role === 'PARENT' && ready}}">
+  <view class="checkout-panel" wx:if="{{role === 'PARENT' && ready}}">
     <view class="checkout-summary">
       <view><view class="small">已选 {{count}} / 50 种</view><view class="checkout-note">{{menu ? '已发布，可继续调整' : '当前日期和餐次尚未发布'}}</view></view>
       <view class="publish-status">{{meals[mealIndex]}}</view>
     </view>
-    <button class="primary" bindtap="saveMenu" disabled="{{busy || !count || invalidSelectedCount}}">发布家庭餐单</button>
+    <view class="parent-actions">
+      <button bindtap="goDishManage" disabled="{{busy}}">我的菜品</button>
+      <button bindtap="saveDraft" disabled="{{busy || !count || invalidSelectedCount}}">存草稿</button>
+      <button class="primary" bindtap="saveMenu" disabled="{{busy || !count || invalidSelectedCount}}">发布家庭餐单</button>
+    </view>
   </view>
   <view class="checkout-panel" wx:if="{{role === 'CHILD' && sourceType === 'FAMILY' && menu}}">
     <view class="checkout-summary"><view><view class="small">已选 {{count}} 种</view><view class="checkout-note">家长同意后才记账</view></view><view class="price">{{total}} <text class="small">虚拟单位</text></view></view>

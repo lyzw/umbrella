@@ -3,7 +3,7 @@ const ui = require('../../utils/page');
 const { loadChildren } = require('../../services/children');
 const { operations } = require('../../services/operations');
 const context = require('../../services/context');
-const { statusLabels, safeDish, id } = require('../../utils/domain');
+const { statusLabels, safeDish, dishRef, dishKey, id } = require('../../utils/domain');
 ui.page({
   data: { role: '', busy: false, error: '', children: [], childId: '', childIndex: 0, records: [], page: 1, total: 0,
     status: 'PENDING', statuses: ['待确认', '已完成', '需调整', '已撤回'], statusIndex: 0,
@@ -32,7 +32,8 @@ ui.page({
   },
   async readDetail(confirmId) {
     const detail = await api.get('/menu/confirm/' + confirmId);
-    this.setData({ detail: { ...detail, label: statusLabels[detail.status] }, draft: null, preview: null, editing: false,
+    const items = (detail.items || []).map(item => ({ ...item, key: dishKey(item) }));
+    this.setData({ detail: { ...detail, items, label: statusLabels[detail.status] }, draft: null, preview: null, editing: false,
       pendingApprove: !!operations.pending('approve:' + confirmId), pendingDecision: !!operations.pending('decision:' + confirmId) });
     this.poll();
   },
@@ -71,7 +72,7 @@ ui.page({
     return ui.run(this, async () => {
       const draft = this.data.draft;
       if (!draft || this.data.role !== 'CHILD') return;
-      const body = { menuId: draft.menuId, items: draft.items.map(item => ({ dishId: item.dishId, quantity: item.quantity })),
+      const body = { menuId: draft.menuId, items: draft.items.map(item => ({ dishRef: item.dishRef, quantity: item.quantity })),
         remark: this.data.remark };
       if (draft.previousConfirmId) body.previousConfirmId = draft.previousConfirmId;
       await this.submitBody(body);
@@ -126,7 +127,7 @@ ui.page({
     const body = original ? original.body : { expectedVersion: detail.version, reason: this.data.reason.trim() };
     if (!original && !body.reason) throw new Error('请填写给孩子的温和说明');
     if (!original && action === 'modify') {
-      body.items = this.data.suggestions.filter(d => d.quantity > 0).map(d => ({ dishId: d.dishId, quantity: d.quantity }));
+      body.items = this.data.suggestions.filter(d => d.quantity > 0).map(d => ({ dishRef: dishRef(d), quantity: d.quantity }));
       if (!body.items.length || body.items.length > 20) throw new Error('请选择1至20种建议餐食');
     }
     if (!original && !await ui.confirm('说明会展示给孩子，原单将标记为需调整，不会扣款。')) return;
@@ -147,11 +148,12 @@ ui.page({
       const detail = this.data.detail;
       const menu = await api.get('/menu/daily', { sourceType: 'FAMILY', menuDate: detail.menuDate, mealType: detail.mealType, childId: detail.childId });
       // Parent previews never set canSelect; suggestions still enforce dish safety.
-      this.setData({ editing: true, suggestions: menu.dishes.filter(safeDish).map(d => ({ ...d, quantity: 0 })) });
+      this.setData({ editing: true, suggestions: menu.dishes.filter(safeDish).map(d => ({ ...d, quantity: 0, key: dishKey(d) })) });
     });
   },
   suggestion(e) {
-    this.setData({ suggestions: this.data.suggestions.map(d => d.dishId === e.currentTarget.dataset.id
+    const key = e.currentTarget.dataset.key;
+    this.setData({ suggestions: this.data.suggestions.map(d => d.key === key
       ? { ...d, quantity: Math.max(0, Math.min(9, d.quantity + Number(e.currentTarget.dataset.delta))) } : d) });
   },
   modify() { return ui.run(this, () => this.decide('modify')); },

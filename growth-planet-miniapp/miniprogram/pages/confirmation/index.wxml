@@ -3,7 +3,7 @@
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:if="{{pendingSubmit}}" class="notice"><view>上次提交结果尚未确认，请先查阅记录，或原样重试。</view><button bindtap="retrySubmit" disabled="{{busy}}">重试上次提报</button></view>
   <view wx:if="{{draft}}">
-    <view class="item" wx:for="{{draft.items}}" wx:key="dishId"><view class="row"><text>{{item.dishName}} × {{item.quantity}}</text><text>单价 {{item.unitPrice}} / 份</text></view></view>
+    <view class="item" wx:for="{{draft.items}}" wx:key="key"><view class="row"><view><text>{{item.dishName}}</text><text class="badge">{{item.dishRef.type === 'FAMILY' ? '家庭' : '预置'}}</text><text> × {{item.quantity}}</text></view><text>单价 {{item.unitPrice}} / 份</text></view></view>
     <view class="row"><text>预计合计</text><text class="price">{{draft.total}} 虚拟单位</text></view>
     <view class="field"><text class="label">给家长的备注（选填）</text><textarea bindinput="input" data-field="remark" value="{{remark}}" maxlength="255" disabled="{{pendingSubmit}}" /></view>
     <view class="notice">价格以服务端确认结果为准。提交不扣款，等待家长同意。</view>
@@ -11,7 +11,7 @@
   </view>
   <view wx:elif="{{detail}}">
     <view class="badge">{{detail.label}}</view><view class="subtitle">确认单 {{detail.confirmId}} · {{detail.menuDate}}</view>
-    <view class="item" wx:for="{{detail.items}}" wx:key="dishId"><view>{{item.dishName}} × {{item.quantity}}</view><view class="row"><text class="muted">{{item.note}}</text><text>小计 {{item.subtotal}} 虚拟单位</text></view></view>
+    <view class="item" wx:for="{{detail.items}}" wx:key="key"><view><text>{{item.dishName}}</text><text class="badge">{{item.sourceType === 'FAMILY' ? '家庭' : '预置'}}</text><text> × {{item.quantity}}</text></view><view class="row"><text class="muted">{{item.note}}</text><text>小计 {{item.subtotal}} 虚拟单位</text></view></view>
     <view class="row"><text>合计</text><text class="amount">{{detail.totalAmount}}</text></view>
     <view class="notice">{{detail.childVisibleNote}}</view>
     <view wx:if="{{detail.balance !== null}}" class="muted">完成后余额 {{detail.balance}} 虚拟单位</view>
@@ -32,7 +32,7 @@
       <view class="field"><text class="label">给孩子的温和说明</text><textarea value="{{reason}}" data-field="reason" bindinput="input" maxlength="255" /></view>
       <view class="actions"><button bindtap="reject" disabled="{{busy}}">请孩子调整</button><button bindtap="editSuggestion" disabled="{{busy}}">建议替代餐食</button></view>
       <view wx:if="{{editing}}" class="section">
-        <view wx:for="{{suggestions}}" wx:key="dishId" class="item"><view>{{item.name}}</view><view class="row"><button class="icon-button" bindtap="suggestion" data-id="{{item.dishId}}" data-delta="-1" aria-label="减少建议份数">−</button><text>{{item.quantity}}</text><button class="icon-button" bindtap="suggestion" data-id="{{item.dishId}}" data-delta="1" aria-label="增加建议份数">+</button></view></view>
+        <view wx:for="{{suggestions}}" wx:key="key" class="item"><view><text>{{item.name}}</text><text class="badge">{{item.sourceType === 'FAMILY' ? '家庭' : '预置'}}</text></view><view class="row"><button class="icon-button" bindtap="suggestion" data-key="{{item.key}}" data-delta="-1" aria-label="减少建议份数">−</button><text>{{item.quantity}}</text><button class="icon-button" bindtap="suggestion" data-key="{{item.key}}" data-delta="1" aria-label="增加建议份数">+</button></view></view>
         <button bindtap="modify" disabled="{{busy || !suggestions.length}}">发送建议，不扣款</button>
       </view>
     </view>

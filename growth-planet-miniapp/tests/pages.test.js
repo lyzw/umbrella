@@ -9,7 +9,7 @@ const { operations } = require('../miniprogram/services/operations');
 const context = require('../miniprogram/services/context');
 const ui = require('../miniprogram/utils/page');
 const { shanghaiDate } = require('../miniprogram/utils/domain');
-const methods = { get: api.get, post: api.post, put: api.put, getDocument: api.getDocument };
+const methods = { get: api.get, post: api.post, put: api.put, del: api.del, getDocument: api.getDocument };
 let modals, navigation;
 function loadPage(name, role = 'PARENT') {
   modals = [];
@@ -37,8 +37,10 @@ function loadPage(name, role = 'PARENT') {
 }
 const event = (dataset = {}, value) => ({ currentTarget: { dataset }, detail: { value } });
 const child = { childId: '9007199254740993', bindStatus: 'BOUND', applyId: '12' };
-const dish = { dishId: '99', name: '合成餐食', virtualPrice: '10.01', spiceLevel: 0,
+const dish = { dishId: '99', name: '合成餐食', virtualPrice: '10.01', spiceLevel: 0, sourceType: 'PRESET',
   canSelect: true, status: 'ON_SALE', allergenStatus: 'DECLARED', allergyConflict: false };
+const familyDish = { dishId: '7', categoryId: '3', name: '家庭番茄炒蛋', virtualPrice: '8.00', spiceLevel: 1,
+  sourceType: 'FAMILY', canSelect: true, status: 'ON_SALE', allergenStatus: 'DECLARED', allergyConflict: false };
 
 test('新家长无家庭的403展示建家庭入口，但保留权限提醒', async () => {
   const page = loadPage('family');
@@ -90,7 +92,7 @@ test('处理中不允许菜单来源或儿童选择变化', () => {
 test('家长只读，学校餐单和过期餐单都不能进入提报', () => {
   const page = loadPage('menu');
   page.allDishes = [dish];
-  page.quantities = { '99': 1 };
+  page.quantities = { 'PRESET:99': 1 };
   page.setData({ count: 1, childId: child.childId, menu: { menuId: '20', canSubmit: true, menuDate: shanghaiDate(), mealType: 'LUNCH' } });
   page.checkout();
   assert.equal(context.takeCart(), null);
@@ -104,7 +106,7 @@ test('家长只读，学校餐单和过期餐单都不能进入提报', () => {
   assert.equal(context.takeCart(), null);
   page.data.menuDate = shanghaiDate();
   page.checkout();
-  assert.equal(context.takeCart().items[0].dishId, '99');
+  assert.deepEqual(context.takeCart().items[0].dishRef, { type: 'PRESET', id: '99' });
 });
 test('家长加载当前家庭菜单并仅提交服务端允许的维护字段', async () => {
   const page = loadPage('menu');
@@ -115,18 +117,26 @@ test('家长加载当前家庭菜单并仅提交服务端允许的维护字段',
     if (endpoint === '/parent/dish') {
       return { items: [dish, secondDish], total: 2, page: 1, pageSize: 100 };
     }
+    if (endpoint === '/parent/family-dish') {
+      return { items: [familyDish], total: 1, page: 1, pageSize: 100 };
+    }
     return { menuId: '20', menuDate: shanghaiDate(), mealType: 'LUNCH', status: 'PUBLISHED',
       dishes: [dish], missingDishIds: [] };
   };
   let sent;
   api.post = async (endpoint, body) => { sent = { endpoint, body }; return { menuId: '20' }; };
   await page.loadParent();
-  assert.deepEqual(page.selectedDishIds, ['99']);
+  assert.deepEqual(page.selectedRefs, [{ type: 'PRESET', id: '99' }]);
   assert.equal(calls.some(call => call.endpoint === '/family/children'), false);
-  page.toggleDish(event({ id: '100' }));
+  // 家庭私有菜品与预置菜品合并进同一份目录，来源由 type 区分。
+  assert.deepEqual(page.catalogDishes.map(item => item.sourceType + ':' + item.dishId), ['FAMILY:7', 'PRESET:99', 'PRESET:100']);
+  page.toggleDish(event({ key: 'FAMILY:7' }));
+  page.toggleDish(event({ key: 'PRESET:100' }));
   await page.saveMenu();
   assert.deepEqual(sent, { endpoint: '/parent/menu-daily', body: {
-    menuDate: shanghaiDate(), mealType: 'LUNCH', dishIds: ['99', '100'], status: 'PUBLISHED'
+    menuDate: shanghaiDate(), mealType: 'LUNCH',
+    dishIds: [{ type: 'PRESET', id: '99' }, { type: 'FAMILY', id: '7' }, { type: 'PRESET', id: '100' }],
+    status: 'PUBLISHED'
   } });
   assert.equal(Object.hasOwn(sent.body, 'familyId'), false);
   assert.equal(page.data.count, 1);
@@ -138,7 +148,7 @@ test('家长首次维护时将空响应或旧版404视为未发布菜单', async
   await page.readParent();
   assert.equal(page.data.menu, null);
   assert.equal(page.data.ready, true);
-  assert.deepEqual(page.selectedDishIds, []);
+  assert.deepEqual(page.selectedRefs, []);
   assert.deepEqual(page.data.dishes.map(item => item.dishId), ['99']);
 
   api.get = async () => {
@@ -147,7 +157,7 @@ test('家长首次维护时将空响应或旧版404视为未发布菜单', async
   await page.readParent();
   assert.equal(page.data.menu, null);
   assert.equal(page.data.ready, true);
-  assert.deepEqual(page.selectedDishIds, []);
+  assert.deepEqual(page.selectedRefs, []);
 });
 test('家长菜单限制50项并要求先清理下架或删除引用', () => {
   const page = loadPage('menu');
@@ -155,12 +165,13 @@ test('家长菜单限制50项并要求先清理下架或删除引用', () => {
     ...dish, dishId: String(index + 1), name: '餐食' + index
   }));
   page.allDishes = [...page.catalogDishes, { ...dish, dishId: 'old', status: 'OFF_SALE' }];
-  page.selectedDishIds = page.catalogDishes.slice(0, 50).map(item => item.dishId).concat('old', 'missing');
+  page.selectedRefs = page.catalogDishes.slice(0, 50).map(item => ({ type: 'PRESET', id: item.dishId }))
+    .concat({ type: 'PRESET', id: 'old' }, { type: 'FAMILY', id: 'missing' });
   page.render();
   assert.equal(page.data.invalidSelectedCount, 2);
   page.clearUnavailable();
-  assert.equal(page.selectedDishIds.length, 50);
-  page.toggleDish(event({ id: '51' }));
+  assert.equal(page.selectedRefs.length, 50);
+  page.toggleDish(event({ key: 'PRESET:51' }));
   assert.match(page.data.error, /最多选择50种/);
 });
 test('晚餐重新提报恢复原餐次及建议，并保留原单关联', async () => {
@@ -184,7 +195,7 @@ test('晚餐重新提报恢复原餐次及建议，并保留原单关联', async
 test('提报只传服务端允许的字段，未知结果保留原键和请求', async () => {
   const page = loadPage('confirmation', 'CHILD');
   page.setData({ childId: child.childId, draft: { menuId: '20', previousConfirmId: '5',
-    items: [{ dishId: '99', quantity: 1, unitPrice: '999.00', allergies: ['PEANUT'] }] } });
+    items: [{ key: 'PRESET:99', dishRef: { type: 'PRESET', id: '99' }, quantity: 1, unitPrice: '999.00', allergies: ['PEANUT'] }] } });
   const sent = [];
   api.post = async (endpoint, body, key) => {
     sent.push({ endpoint, body, key });
@@ -196,7 +207,8 @@ test('提报只传服务端允许的字段，未知结果保留原键和请求',
   assert.equal(page.data.pendingSubmit, true);
   await page.retrySubmit();
   assert.equal(sent[0].key, sent[1].key);
-  assert.deepEqual(sent[0].body, { menuId: '20', items: [{ dishId: '99', quantity: 1 }], remark: '', previousConfirmId: '5' });
+  assert.deepEqual(sent[0].body, { menuId: '20',
+    items: [{ dishRef: { type: 'PRESET', id: '99' }, quantity: 1 }], remark: '', previousConfirmId: '5' });
   assert.equal(page.data.pendingSubmit, false);
 });
 test('E-011绝不自动批准；二次同意使用完整且最新的预览版本', async () => {
@@ -346,4 +358,112 @@ test('合成配置不能在体验版或正式版发起网络请求', async () =>
   wx.request = () => { calls++; };
   await assert.rejects(api.get('/notices'), error => error.status === 403);
   assert.equal(calls, 0);
+});
+test('我的菜品：列表按状态筛选，新增只提交服务端允许的字段', async () => {
+  const page = loadPage('dish-manage');
+  const calls = [];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    if (endpoint === '/parent/dish-category') {
+      return [{ categoryId: '3', name: '主食', status: 'ENABLED' }];
+    }
+    return { items: [{ ...familyDish, version: 0 }], total: 1, page: 1, pageSize: 20 };
+  };
+  await page.loadCategories();
+  await page.read();
+  assert.deepEqual(page.data.categoryNames, ['主食']);
+  assert.deepEqual(page.data.dishes.map(item => item.dishId), ['7']);
+  assert.equal(calls[1].query.status, 'ON_SALE');
+
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return { dishId: '9' }; };
+  page.create();
+  assert.equal(page.data.showForm, true);
+  page.setData({ formName: '番茄炒蛋', formCategoryId: '3', formVirtualPrice: '8.5', formCalories: '220',
+    formTagsText: '家常, 快手', formAllergens: ['EGG'] });
+  await page.save();
+  assert.deepEqual(sent, { endpoint: '/parent/family-dish', body: { categoryId: '3', name: '番茄炒蛋',
+    virtualPrice: '8.5', allergens: ['EGG'], allergenStatus: 'DECLARED', spiceLevel: 0,
+    tags: '家常,快手', calories: 220 } });
+  assert.equal(Object.hasOwn(sent.body, 'familyId'), false);
+  assert.equal(Object.hasOwn(sent.body, 'visibility'), false);
+  assert.equal(page.data.showForm, false);
+});
+test('我的菜品：校验拦截非法价格与未声明过敏原', async () => {
+  const page = loadPage('dish-manage');
+  page.create();
+  page.setData({ formName: '测试菜', formCategoryId: '3', formVirtualPrice: '8.999' });
+  await page.save();
+  assert.match(page.data.error, /最多两位小数/);
+  let posts = 0;
+  api.post = async () => { posts++; };
+  page.setData({ formVirtualPrice: '8.00', formAllergens: ['EGG'], formAllergenStatus: 'UNKNOWN' });
+  await page.save();
+  assert.match(page.data.error, /过敏原状态/);
+  assert.equal(posts, 0);
+});
+test('我的菜品：编辑带版本号，上下架与删除需二次确认', async () => {
+  const page = loadPage('dish-manage');
+  api.get = async endpoint => {
+    if (endpoint === '/parent/dish-category') return [{ categoryId: '3', name: '主食', status: 'ENABLED' }];
+    if (endpoint.endsWith('/references')) return { menuCount: 2 };
+    return { items: [{ ...familyDish, version: 4 }], total: 1, page: 1, pageSize: 20 };
+  };
+  await page.loadCategories();
+  await page.read();
+  const calls = [];
+  api.put = async (endpoint, body) => { calls.push({ method: 'put', endpoint, body }); return { dishId: '7' }; };
+  api.post = async (endpoint, body) => { calls.push({ method: 'post', endpoint, body }); return { dishId: '7' }; };
+  api.del = async (endpoint, query) => { calls.push({ method: 'del', endpoint, query }); };
+
+  page.edit(event({ id: '7' }));
+  assert.equal(page.data.showForm, true);
+  assert.equal(page.data.formVersion, 4);
+  assert.equal(page.data.formAllergenIndex, 0);
+  page.setData({ formName: '改名后的菜' });
+  await page.save();
+  assert.deepEqual(calls[0], { method: 'put', endpoint: '/parent/family-dish/7?expectedVersion=4',
+    body: { categoryId: '3', name: '改名后的菜', virtualPrice: '8.00', allergens: [],
+      allergenStatus: 'DECLARED', spiceLevel: 1 } });
+
+  await page.toggleStatus(event({ id: '7' }));
+  assert.deepEqual(calls[1], { method: 'post',
+    endpoint: '/parent/family-dish/7/status?targetStatus=OFF_SALE&expectedVersion=4', body: undefined });
+
+  await page.remove(event({ id: '7' }));
+  assert.ok(modals.some(options => /2 份菜单引用/.test(options.content)));
+  assert.deepEqual(calls[2], { method: 'del', endpoint: '/parent/family-dish/7', query: { expectedVersion: 4 } });
+});
+test('儿童混合点单：家庭与预置菜品用来源复合键选择并提报', async () => {
+  const page = loadPage('menu', 'CHILD');
+  const calls = [];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    assert.equal(query.sourceType, 'FAMILY');
+    return { menuId: '20', sourceType: 'FAMILY', menuDate: shanghaiDate(), mealType: 'LUNCH',
+      canSubmit: true, dishes: [{ ...dish, canSelect: true }, { ...familyDish, canSelect: true }] };
+  };
+  await page.read();
+  assert.deepEqual(page.data.dishes.map(item => item.key), ['PRESET:99', 'FAMILY:7']);
+  page.quantity(event({ key: 'PRESET:99', delta: 1 }));
+  page.quantity(event({ key: 'FAMILY:7', delta: 1 }));
+  page.quantity(event({ key: 'FAMILY:7', delta: 1 }));
+  assert.equal(page.data.total, '26.01');
+  page.checkout();
+  assert.deepEqual(context.takeCart().items.map(item => item.dishRef),
+    [{ type: 'PRESET', id: '99' }, { type: 'FAMILY', id: '7' }]);
+});
+test('家长建议家庭菜品时重建 dishRef，而不是只传裸 id', async () => {
+  const page = loadPage('confirmation');
+  page.data.detail = { confirmId: '21', childId: child.childId, menuDate: shanghaiDate(), mealType: 'DINNER' };
+  api.get = async () => ({ dishes: [{ ...dish, canSelect: false }, { ...familyDish, canSelect: false }] });
+  await page.editSuggestion();
+  assert.deepEqual(page.data.suggestions.map(d => d.key), ['PRESET:99', 'FAMILY:7']);
+  page.setData({ reason: '换成这两样' });
+  page.suggestion(event({ key: 'FAMILY:7', delta: 1 }));
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return { confirmId: '21', status: 'REJECTED' }; };
+  await page.modify();
+  assert.equal(sent.endpoint, '/parent/approve/21/modify');
+  assert.deepEqual(sent.body.items, [{ dishRef: { type: 'FAMILY', id: '7' }, quantity: 1 }]);
 });

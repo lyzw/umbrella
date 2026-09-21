@@ -9,8 +9,10 @@ function createClient(platform, getSession, clearSession, base, timeout = 12000,
     const cancel = () => reject(Object.assign(new Error('页面或登录状态已变化，请重新查询'), {
       cancelled: true, unknown: method !== 'GET'
     }));
+    // GET/DELETE 通过 query string 传参；POST/PUT 通过 body。
+    const queryInUrl = method === 'GET' || method === 'DELETE';
     let url = base.replace(/\/$/, '') + '/api' + path;
-    if (method === 'GET' && data) {
+    if (queryInUrl && data) {
       const query = Object.keys(data).filter(k => data[k] !== undefined && data[k] !== null && data[k] !== '')
         .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(data[k])).join('&');
       if (query) url += '?' + query;
@@ -19,7 +21,7 @@ function createClient(platform, getSession, clearSession, base, timeout = 12000,
     if (auth) header.Authorization = 'Bearer ' + auth.token;
     if (key) header['Idempotency-Key'] = key;
     platform.request({
-      url, method, header, timeout, data: method === 'GET' ? undefined : data,
+      url, method, header, timeout, data: queryInUrl ? undefined : data,
       success(response) {
         if (stale()) return cancel();
         const body = response.data || {};
@@ -44,7 +46,8 @@ function createClient(platform, getSession, clearSession, base, timeout = 12000,
     get: (path, query) => request('GET', path, query),
     getDocument: path => request('GET', path, undefined, undefined, true),
     post: (path, body, key) => request('POST', path, body, key),
-    put: (path, body) => request('PUT', path, body)
+    put: (path, body) => request('PUT', path, body),
+    del: (path, query) => request('DELETE', path, query)
   };
 }
 module.exports = { createClient };

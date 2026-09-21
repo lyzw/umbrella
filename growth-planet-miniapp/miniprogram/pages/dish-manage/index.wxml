@@ -1,0 +1,105 @@
+<view class="page parent dish-manage-page">
+  <view class="header">
+    <view>
+      <view class="eyebrow">仅当前家庭可见</view>
+      <view class="title">{{showForm ? (isEdit ? '编辑菜品' : '新增菜品') : '我的菜品'}}</view>
+    </view>
+    <button wx:if="{{!showForm}}" class="primary" bindtap="create" disabled="{{busy}}">新增</button>
+  </view>
+  <view wx:if="{{!showForm}}" class="notice">这里录入的菜品属于当前家庭私有，可用于家庭菜单编排，其他家庭不可见。</view>
+
+  <block wx:if="{{!showForm}}">
+    <view class="filter-row">
+      <picker range="{{statusOptions}}" value="{{statusIndex}}" bindchange="filter" disabled="{{busy}}">
+        <view class="picker status-picker">{{statusOptions[statusIndex]}}⌄</view>
+      </picker>
+      <view class="search-box"><text class="search-icon">⌕</text><input value="{{keyword}}" bindinput="search" placeholder="搜索我的菜品" maxlength="64" disabled="{{busy}}" /></view>
+    </view>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <view wx:if="{{busy && !ready}}" class="loading">正在加载我的菜品…</view>
+    <view wx:if="{{ready && !dishes.length}}" class="empty">
+      <view class="empty-icon">🍳</view>
+      <view class="section-title">还没有菜品</view>
+      <view class="muted">点右上角「新增」录入第一道家庭菜品吧。</view>
+    </view>
+    <view wx:for="{{dishes}}" wx:key="dishId" class="item dish-card">
+      <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="dish-thumb" binderror="imageError" data-id="{{item.dishId}}" />
+      <view wx:else class="dish-thumb fallback"><text class="fallback-icon">🍲</text></view>
+      <view class="dish-body">
+        <view class="section-title">{{item.name}}</view>
+        <view>
+          <text class="badge {{item.status === 'ON_SALE' ? 'safe' : 'warning'}}">{{item.statusLabel}}</text>
+          <text class="badge">{{item.spiceLabel}}</text>
+        </view>
+        <view class="small">{{item.allergenLabel}}</view>
+        <view class="price">{{item.virtualPrice}} <text class="small">虚拟单位 / 份</text></view>
+        <view class="dish-actions">
+          <button bindtap="edit" data-id="{{item.dishId}}" disabled="{{busy}}">编辑</button>
+          <button bindtap="toggleStatus" data-id="{{item.dishId}}" disabled="{{busy}}">{{item.toggleLabel}}</button>
+          <button class="danger" bindtap="remove" data-id="{{item.dishId}}" disabled="{{busy}}">删除</button>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{ready && total > pageSize}}" class="pager">
+      <button bindtap="prev" disabled="{{busy || !hasPrev}}">上一页</button>
+      <text class="small">第 {{page}} 页 · 共 {{total}} 条</text>
+      <button bindtap="nextPage" disabled="{{busy || !hasNext}}">下一页</button>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <view class="field">
+      <view class="label">菜品名称</view>
+      <input value="{{formName}}" data-field="formName" bindinput="input" maxlength="64" placeholder="如：番茄炒蛋" disabled="{{busy}}" />
+    </view>
+    <view class="field">
+      <view class="label">分类</view>
+      <picker range="{{categoryNames}}" value="{{formCategoryIndex}}" bindchange="pickCategory" disabled="{{busy}}">
+        <view class="picker">{{formCategoryIndex >= 0 ? categoryNames[formCategoryIndex] : '请选择分类'}}⌄</view>
+      </picker>
+    </view>
+    <view class="field">
+      <view class="label">虚拟价格（元）</view>
+      <input type="digit" value="{{formVirtualPrice}}" data-field="formVirtualPrice" bindinput="input" maxlength="11" placeholder="如 8.00" disabled="{{busy}}" />
+    </view>
+    <view class="field">
+      <view class="label">卡路里（选填，kcal）</view>
+      <input type="number" value="{{formCalories}}" data-field="formCalories" bindinput="input" maxlength="5" placeholder="如 220" disabled="{{busy}}" />
+    </view>
+    <view class="field">
+      <view class="label">辣度</view>
+      <picker range="{{spiceOptions}}" value="{{formSpiceIndex}}" bindchange="pickSpice" disabled="{{busy}}">
+        <view class="picker">{{spiceOptions[formSpiceIndex]}}⌄</view>
+      </picker>
+    </view>
+    <view class="field">
+      <view class="label">标签（选填，逗号分隔，最多 5 项）</view>
+      <input value="{{formTagsText}}" data-field="formTagsText" bindinput="input" maxlength="120" placeholder="如 家常,快手" disabled="{{busy}}" />
+    </view>
+    <view class="field">
+      <view class="label">过敏原</view>
+      <checkbox-group bindchange="allergens">
+        <label wx:for="{{allergenOptions}}" wx:key="code" class="check">
+          <checkbox value="{{item.code}}" checked="{{item.checked}}" disabled="{{busy}}" />
+          <text>{{item.code}}</text>
+        </label>
+      </checkbox-group>
+    </view>
+    <view class="field">
+      <view class="label">过敏原状态</view>
+      <picker range="{{allergenStatusOptions}}" value="{{formAllergenIndex}}" bindchange="pickAllergenStatus" disabled="{{busy}}">
+        <view class="picker">{{allergenStatusOptions[formAllergenIndex]}}⌄</view>
+      </picker>
+      <view class="small">状态为「待确认」时儿童无法点选该菜；确认后设为「已声明」。</view>
+    </view>
+    <view class="field">
+      <view class="label">图片地址（选填，https 链接）</view>
+      <input value="{{formImageUrl}}" data-field="formImageUrl" bindinput="input" maxlength="255" placeholder="https://…" disabled="{{busy}}" />
+    </view>
+    <view class="actions">
+      <button bindtap="closeForm" disabled="{{busy}}">取消</button>
+      <button class="primary" bindtap="save" disabled="{{busy}}">保存</button>
+    </view>
+  </block>
+</view>

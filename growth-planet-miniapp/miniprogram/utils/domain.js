@@ -21,6 +21,10 @@ function filterDishes(dishes, options = {}) {
     && (!options.favoritesOnly || d.isFavorite)
     && (!options.keyword || d.name.includes(options.keyword.trim())));
 }
+// 混合菜品（预置 PRESET / 家庭私有 FAMILY）用 {type,id} 标识，避免两来源自增 id 撞号。
+// dishRef 只接受菜品对象；dishKey 同时兼容菜品对象和 {type,id} 引用，便于目录与已选项统一比对。
+function dishRef(dish) { return { type: dish.sourceType || 'PRESET', id: String(dish.dishId) }; }
+function dishKey(value) { return (value.type || value.sourceType || 'PRESET') + ':' + (value.id !== undefined ? value.id : value.dishId); }
 function id(value) {
   if (typeof value !== 'string' || !/^[1-9]\d{0,18}$/.test(value)) throw new Error('无效的业务编号');
   return value;
@@ -32,4 +36,4 @@ function list(text) {
 }
 const statusLabels = { PENDING: '等待家长确认', COMPLETED: '已完成', REJECTED: '请调整后再提交', CANCELLED: '已撤回',
   NONE: '尚未申请', BOUND: '已绑定', RECEIVED: '已受理', PROCESSING: '办理中', READY: '可查看导出', FAILED: '办理失败', EXPIRED: '已过期' };
-module.exports = { cents, money, shanghaiDate, safeDish, selectable, filterDishes, id, list, statusLabels };
+module.exports = { cents, money, shanghaiDate, safeDish, selectable, filterDishes, dishRef, dishKey, id, list, statusLabels };
