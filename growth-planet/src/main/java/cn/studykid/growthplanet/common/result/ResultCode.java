@@ -22,6 +22,7 @@ public enum ResultCode {
     E010_CONSENT_REVOKED(1010, HttpStatus.CONFLICT, "同意缺失、失效或已撤回"),
     E011_ALLOWANCE_CONFIRM_REQUIRED(1011, HttpStatus.CONFLICT, "额度已变化，请重新确认"),
     E012_IDEMPOTENCY_CONFLICT(1012, HttpStatus.CONFLICT, "请求标识已用于其他内容"),
+    E013_DAILY_LIMIT_REACHED(1013, HttpStatus.CONFLICT, "今日打卡已达上限"),
     E400_INVALID_ARGUMENT(1400, HttpStatus.BAD_REQUEST, "参数不合法"),
     E404_NOT_FOUND(1404, HttpStatus.NOT_FOUND, "资源不存在"),
     E405_METHOD_NOT_ALLOWED(1405, HttpStatus.METHOD_NOT_ALLOWED, "请求方法不支持"),
