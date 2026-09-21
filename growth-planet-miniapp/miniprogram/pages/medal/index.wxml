@@ -1,25 +1,23 @@
-<view class="page">
-  <view class="head">
+<view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <view class="page-heading">
     <text class="title">勋章墙</text>
-    <text class="sub">每一次努力，都被看见</text>
+    <text class="subtitle">每一次努力，都被看见</text>
   </view>
 
-  <view class="bar">
+  <view wx:if="{{children.length}}" class="toolbar">
     <picker mode="selector" range="{{children}}" range-key="nickname" bindchange="child">
-      <view class="picker">{{children[childIndex].nickname || children[childIndex].childId}}</view>
+      <view class="picker compact-picker">{{children[childIndex].nickname || '儿童 ' + children[childIndex].childId}}</view>
     </picker>
   </view>
 
   <view class="grid">
-    <view wx:for="{{medals}}" wx:key="definition.definitionId" class="medal {{item.earned ? 'on' : 'off'}}">
+    <view wx:for="{{medals}}" wx:key="definitionId" class="medal {{item.earned ? 'on' : 'off'}}">
       <view class="icon">{{item.definition.icon}}</view>
-      <view class="m-name">{{item.definition.name}}</view>
-      <view class="m-desc">{{item.definition.description}}</view>
-      <view class="m-state">{{item.earned ? '已点亮' : (item.definition.threshold > 1 ? '进度 ' + item.progress + '/' + item.definition.threshold : '未点亮')}}</view>
+      <view class="medal-name">{{item.definition.name}}</view>
+      <view class="medal-description">{{item.definition.description}}</view>
+      <view class="medal-state">{{item.earned ? '已点亮' : (item.definition.threshold > 1 ? '进度 ' + item.progress + '/' + item.definition.threshold : '未点亮')}}</view>
     </view>
   </view>
 
   <view wx:if="{{medals.length === 0}}" class="empty">还没有勋章，去完成家务解锁吧</view>
-
-  <app-nav role="{{role}}" active="{{active}}" bindchange="changeTab" />
 </view>

@@ -1,36 +1,36 @@
-<view class="page">
-  <view class="head">
+<view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <view class="page-heading">
     <text class="title">日程提醒</text>
-    <text class="sub">作业 · 兴趣班 · 服药，到点提醒不忘记</text>
+    <text class="subtitle">作业 · 兴趣班 · 服药，到点提醒不忘记</text>
   </view>
 
-  <view wx:if="{{receipt}}" class="toast">{{receipt}}</view>
-  <view wx:if="{{error}}" class="toast err">{{error}}</view>
+  <view wx:if="{{receipt}}" class="notice">{{receipt}}</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
 
   <block wx:if="{{role === 'PARENT'}}">
-    <view class="bar">
+    <view wx:if="{{children.length}}" class="toolbar">
       <picker mode="selector" range="{{children}}" range-key="nickname" bindchange="child">
-        <view class="picker">{{children[childIndex].nickname || children[childIndex].childId}}</view>
+        <view class="picker compact-picker">{{children[childIndex].nickname || '儿童 ' + children[childIndex].childId}}</view>
       </picker>
-      <button class="btn btn-primary sm" bindtap="toggleForm">{{showForm ? '收起' : '添加日程'}}</button>
+      <button class="primary compact-action" bindtap="toggleForm">{{showForm ? '收起' : '添加日程'}}</button>
     </view>
 
-    <view wx:if="{{showForm}}" class="card form">
-      <input class="input" placeholder="日程名称（1-64字）" value="{{title}}" bindinput="onTitle" maxlength="64" />
-      <view class="row2">
+    <view wx:if="{{showForm}}" class="form-panel">
+      <input placeholder="日程名称（1-64字）" value="{{title}}" bindinput="onTitle" maxlength="64" />
+      <view class="form-row">
         <picker mode="selector" range="{{categoryLabels}}" value="{{categoryIndex}}" bindchange="category">
-          <view class="input center">{{categoryLabels[categoryIndex]}}</view>
+          <view class="picker">{{categoryLabels[categoryIndex]}}</view>
         </picker>
         <picker mode="time" value="{{time}}" bindchange="time">
-          <view class="input center">{{time}}</view>
+          <view class="picker">{{time}}</view>
         </picker>
       </view>
-      <view class="row2">
+      <view class="form-row">
         <picker mode="date" value="{{date}}" start="{{today}}" bindchange="date">
-          <view class="input center">{{date}}</view>
+          <view class="picker">{{date}}</view>
         </picker>
         <picker mode="selector" range="{{repeatLabels}}" value="{{repeatIndex}}" bindchange="repeat">
-          <view class="input center">{{repeatLabels[repeatIndex]}}</view>
+          <view class="picker">{{repeatLabels[repeatIndex]}}</view>
         </picker>
       </view>
       <view wx:if="{{repeatLabels[repeatIndex] === '每周'}}" class="weekdays">
@@ -41,38 +41,38 @@
         </checkbox-group>
       </view>
       <picker mode="selector" range="{{aheadLabels}}" value="{{aheadIndex}}" bindchange="ahead">
-        <view class="input center">提醒方式：{{aheadLabels[aheadIndex]}}</view>
+        <view class="picker">提醒方式：{{aheadLabels[aheadIndex]}}</view>
       </picker>
-      <button class="btn btn-primary" bindtap="createSchedule">创建日程</button>
+      <button class="primary form-submit" bindtap="createSchedule">创建日程</button>
     </view>
 
-    <view class="sec-title">日程列表（{{schedules.length}}）</view>
-    <view wx:for="{{schedules}}" wx:key="scheduleId" class="card">
+    <view class="section-title list-title">日程列表（{{schedules.length}}）</view>
+    <view wx:for="{{schedules}}" wx:key="scheduleId" class="item">
       <view class="row">
-        <text class="name">{{item.title}}</text>
+        <text class="item-title">{{item.title}}</text>
         <text class="badge {{item.categoryClass}}">{{item.categoryLabel}}</text>
       </view>
       <view class="muted">{{item.scheduleDate}} {{item.scheduleTime}} · {{item.repeatLabel}}{{item.weekdayText}}</view>
       <view class="muted">{{item.remindText}}</view>
-      <button class="btn btn-ghost sm" data-id="{{item.scheduleId}}" bindtap="cancel">取消日程</button>
+      <button class="item-action" data-id="{{item.scheduleId}}" bindtap="cancel">取消日程</button>
     </view>
     <view wx:if="{{schedules.length === 0}}" class="empty">还没有日程，点右上角添加一个吧</view>
   </block>
 
   <block wx:else>
-    <view class="bar">
-      <button class="btn btn-ghost sm" data-delta="-7" bindtap="shiftWeek">上一周</button>
+    <view class="toolbar week-toolbar">
+      <button data-delta="-7" bindtap="shiftWeek">上一周</button>
       <picker mode="date" value="{{from}}" bindchange="jumpTo">
-        <view class="picker">{{from}} 起一周</view>
+        <view class="picker compact-picker">{{from}} 起一周</view>
       </picker>
-      <button class="btn btn-ghost sm" data-delta="7" bindtap="shiftWeek">下一周</button>
+      <button data-delta="7" bindtap="shiftWeek">下一周</button>
     </view>
 
     <block wx:for="{{groups}}" wx:key="date" wx:for-item="group">
-      <view class="sec-title">{{group.label}}</view>
-      <view wx:for="{{group.items}}" wx:key="key" class="card" data-id="{{item.scheduleId}}" bindtap="detail">
+      <view class="section-title list-title">{{group.label}}</view>
+      <view wx:for="{{group.items}}" wx:key="key" class="item tappable-item" data-id="{{item.scheduleId}}" bindtap="detail">
         <view class="row">
-          <text class="name">{{item.time}} {{item.title}}</text>
+          <text class="item-title">{{item.time}} {{item.title}}</text>
           <text class="badge {{item.categoryClass}}">{{item.categoryLabel}}</text>
         </view>
         <view class="muted">{{item.note || '到点会提醒你'}}{{item.reminded ? ' · 已提醒' : ''}}</view>
@@ -80,6 +80,4 @@
     </block>
     <view wx:if="{{groups.length === 0}}" class="empty">这一周还没有日程安排</view>
   </block>
-
-  <app-nav role="{{role}}" active="{{active}}" bindchange="changeTab" />
 </view>

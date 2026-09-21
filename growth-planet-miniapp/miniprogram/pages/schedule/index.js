@@ -46,7 +46,7 @@ function decorate(schedule) {
 
 ui.page({
   data: {
-    role: '', active: '', busy: false, error: '', receipt: '',
+    role: '', busy: false, error: '', receipt: '',
     today: '', from: '',
     children: [], childIndex: 0, childId: '',
     schedules: [], groups: [],
@@ -169,15 +169,6 @@ ui.page({
       this.setData({ receipt: '日程已取消' });
       await this.read();
     });
-  },
-  changeTab(e) {
-    const key = e.detail.key;
-    if (key === 'meal') return wx.navigateTo({ url: '/pages/menu/index' });
-    if (key === 'chore') return wx.navigateTo({ url: '/pages/chore/index' });
-    if (key === 'medal') return wx.navigateTo({ url: '/pages/medal/index' });
-    if (key === 'wallet' || key === 'approvals') return wx.navigateTo({ url: '/pages/wallet/index' });
-    if (key === 'home') return wx.navigateTo({ url: '/pages/home/index' });
-    this.setData({ active: key });
   },
   onHide() { this.setData({ schedules: [], groups: [], receipt: '', error: '' }); }
 });

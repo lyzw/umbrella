@@ -1,38 +1,43 @@
-.page { min-height: 100vh; background: #f7f9fc; padding: 22rpx 22rpx 160rpx; box-sizing: border-box; }
-.head { padding: 12rpx 8rpx 4rpx; }
-.title { font-size: 38rpx; font-weight: 700; color: #1f2d3d; }
-.sub { display: block; font-size: 24rpx; color: #8a94a6; margin-top: 6rpx; }
+.page-heading { margin-bottom: 18px; }
+.page-heading .subtitle { display: block; margin-bottom: 0; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.compact-picker { min-width: 150px; }
+.compact-action { flex: 0 0 auto; }
+.form-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-soft);
+}
+.form-panel > input { margin-bottom: 12px; }
+.form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.form-row picker { min-width: 0; }
+.form-submit { width: 100%; margin-top: 12px; }
+.weekdays { margin-bottom: 12px; }
+.weekdays .wd {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  margin: 0 14px 8px 0;
+  color: #344054;
+  font-size: 14px;
+}
+.list-title { margin-top: 24px; }
+.item-title { min-width: 0; font-size: 16px; font-weight: 800; line-height: 1.45; overflow-wrap: anywhere; }
+.item-action { margin-top: 16px; }
+.tappable-item:active { background: var(--surface-2); }
+.badge.cat-home { color: #154a9e; background: var(--primary-soft); }
+.badge.cat-class { color: #4a32b5; background: var(--c-shop-soft); }
+.badge.cat-med { color: #9d241b; background: var(--danger-soft); }
+.badge.cat-other { color: var(--muted); background: var(--surface-2); }
 
-.toast { margin: 14rpx 8rpx; padding: 16rpx 20rpx; border-radius: 14rpx; background: #e8f0ff; color: #3b82f6; font-size: 26rpx; }
-.toast.err { background: #ffece8; color: #ff7657; }
-
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 12rpx; margin: 12rpx 8rpx; }
-.picker { padding: 14rpx 20rpx; background: #fff; border-radius: 14rpx; font-size: 26rpx; color: #1f2d3d; box-shadow: 0 2rpx 8rpx rgba(31,45,61,.06); }
-
-.card { background: #fff; border-radius: 18rpx; padding: 22rpx; margin: 12rpx 8rpx; box-shadow: 0 2rpx 10rpx rgba(31,45,61,.06); }
-.form .input { margin-bottom: 14rpx; }
-.row { display: flex; align-items: center; justify-content: space-between; }
-.row2 { display: flex; gap: 14rpx; margin-bottom: 14rpx; }
-.row2 .input { flex: 1; }
-.input { background: #f3f6fb; border-radius: 12rpx; padding: 18rpx 20rpx; font-size: 28rpx; color: #1f2d3d; }
-.input.center { display: flex; align-items: center; }
-
-.weekdays { margin-bottom: 14rpx; }
-.weekdays .wd { display: inline-flex; align-items: center; margin: 0 18rpx 10rpx 0; font-size: 26rpx; color: #1f2d3d; }
-
-.sec-title { font-size: 28rpx; font-weight: 600; color: #1f2d3d; margin: 22rpx 8rpx 4rpx; }
-.name { font-size: 30rpx; font-weight: 600; color: #1f2d3d; }
-.muted { font-size: 24rpx; color: #8a94a6; margin-top: 8rpx; }
-.empty { text-align: center; color: #8a94a6; font-size: 26rpx; padding: 40rpx 0; }
-
-.badge { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 20rpx; }
-.badge.cat-home { background: #e8f0ff; color: #3b82f6; }
-.badge.cat-class { background: #ede9fe; color: #6d28d9; }
-.badge.cat-med { background: #ffe4e6; color: #b91c3c; }
-.badge.cat-other { background: #f1f5f9; color: #64748b; }
-
-.btn { border: none; border-radius: 14rpx; font-size: 28rpx; padding: 18rpx 28rpx; background: #3b82f6; color: #fff; }
-.btn.sm { padding: 12rpx 22rpx; font-size: 26rpx; }
-.btn-primary { background: #3b82f6; color: #fff; }
-.btn-ghost { background: #eef1f6; color: #5a6677; }
-.btn { margin-top: 12rpx; }
+@media (max-width: 420px) {
+  .toolbar:not(.week-toolbar) { align-items: stretch; flex-direction: column; }
+  .compact-picker, .compact-action { width: 100%; }
+  .form-row { grid-template-columns: 1fr; }
+  .week-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .week-toolbar picker { grid-column: 1 / -1; grid-row: 1; }
+  .week-toolbar .compact-picker { min-width: 0; text-align: center; }
+}

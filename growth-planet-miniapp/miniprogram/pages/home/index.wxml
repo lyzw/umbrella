@@ -2,7 +2,7 @@
   <view class="home-topbar">
     <view>
       <view class="eyebrow">{{role === 'PARENT' ? '家长空间' : '小当家 · 点餐'}}</view>
-      <view class="title">{{active === 'me' ? '我的' : active === 'growth' ? '成长' : active === 'tasks' ? '任务' : active === 'learn' ? '学习' : '成长星球'}}</view>
+      <view class="title">{{active === 'me' ? '我的' : active === 'growth' ? '成长' : '成长星球'}}</view>
     </view>
     <button class="notification-button" bindtap="go" data-page="notices" aria-label="通知中心">
       <text class="notification-icon">🔔</text>
@@ -18,42 +18,52 @@
         <view class="hero-description">{{role === 'PARENT' ? '查看餐单、审批记录和虚拟零花钱额度。' : '看看今天的家庭和学校餐单，选好后再告诉爸妈。'}}</view>
       </view>
       <view class="hero-visual" aria-hidden="true">{{role === 'PARENT' ? '🛡️' : '🍱'}}</view>
-      <button class="primary hero-action" bindtap="go" data-page="menu">{{role === 'PARENT' ? '查看儿童餐单' : '去确认今日菜单'}}</button>
+      <button class="primary hero-action" bindtap="go" data-page="menu">{{role === 'PARENT' ? '查看家庭菜单' : '去确认今日菜单'}}</button>
     </view>
     <view class="home-list">
-      <button class="home-list-row" bindtap="go" data-page="confirmation">
-        <text class="home-list-icon confirmation-icon">✓</text>
-        <view class="home-list-copy"><text class="home-list-title">{{role === 'PARENT' ? '待审批与历史记录' : '我的确认单'}}</text><text class="home-list-subtitle">{{role === 'PARENT' ? '处理孩子的餐单提报' : '查看爸妈处理到哪一步'}}</text></view>
-        <text class="home-list-arrow">›</text>
-      </button>
-      <button class="home-list-row" bindtap="go" data-page="wallet">
-        <text class="home-list-icon wallet-icon">¥</text>
-        <view class="home-list-copy"><text class="home-list-title">虚拟零花钱</text><text class="home-list-subtitle">{{role === 'PARENT' ? '余额、额度与流水' : '查看余额和使用记录'}}</text></view>
-        <text class="home-list-arrow">›</text>
-      </button>
-      <button class="home-list-row" bindtap="go" data-page="family">
-        <text class="home-list-icon family-icon">家</text>
-        <view class="home-list-copy"><text class="home-list-title">家庭与绑定</text><text class="home-list-subtitle">管理家庭关系和授权状态</text></view>
-        <text class="home-list-arrow">›</text>
-      </button>
-      <button class="home-list-row" bindtap="go" data-page="schedule">
-        <text class="home-list-icon schedule-icon">程</text>
-        <view class="home-list-copy"><text class="home-list-title">日程提醒</text><text class="home-list-subtitle">{{role === 'PARENT' ? '安排作业、兴趣班与服药提醒' : '看看接下来有什么安排'}}</text></view>
-        <text class="home-list-arrow">›</text>
-      </button>
+      <view class="home-list-row" bindtap="go" data-page="confirmation" aria-role="button" hover-class="home-list-row-active">
+        <view class="home-list-row-content">
+          <text class="home-list-icon confirmation-icon">✓</text>
+          <view class="home-list-copy"><text class="home-list-title">{{role === 'PARENT' ? '待审批与历史记录' : '我的确认单'}}</text><text class="home-list-subtitle">{{role === 'PARENT' ? '处理孩子的餐单提报' : '查看爸妈处理到哪一步'}}</text></view>
+          <text class="home-list-arrow">›</text>
+        </view>
+      </view>
+      <view class="home-list-row" bindtap="go" data-page="wallet" aria-role="button" hover-class="home-list-row-active">
+        <view class="home-list-row-content">
+          <text class="home-list-icon wallet-icon">¥</text>
+          <view class="home-list-copy"><text class="home-list-title">虚拟零花钱</text><text class="home-list-subtitle">{{role === 'PARENT' ? '余额、额度与流水' : '查看余额和使用记录'}}</text></view>
+          <text class="home-list-arrow">›</text>
+        </view>
+      </view>
+      <view class="home-list-row" bindtap="go" data-page="family" aria-role="button" hover-class="home-list-row-active">
+        <view class="home-list-row-content">
+          <text class="home-list-icon family-icon">家</text>
+          <view class="home-list-copy"><text class="home-list-title">家庭与绑定</text><text class="home-list-subtitle">管理家庭关系和授权状态</text></view>
+          <text class="home-list-arrow">›</text>
+        </view>
+      </view>
+      <view class="home-list-row" bindtap="go" data-page="schedule" aria-role="button" hover-class="home-list-row-active">
+        <view class="home-list-row-content">
+          <text class="home-list-icon schedule-icon">程</text>
+          <view class="home-list-copy"><text class="home-list-title">日程提醒</text><text class="home-list-subtitle">{{role === 'PARENT' ? '安排作业、兴趣班与服药提醒' : '看看接下来有什么安排'}}</text></view>
+          <text class="home-list-arrow">›</text>
+        </view>
+      </view>
+      <view class="home-list-row" bindtap="go" data-page="medal" aria-role="button" hover-class="home-list-row-active">
+        <view class="home-list-row-content">
+          <text class="home-list-icon medal-icon">勋</text>
+          <view class="home-list-copy"><text class="home-list-title">勋章墙</text><text class="home-list-subtitle">{{role === 'PARENT' ? '查看孩子的成长与解锁进度' : '看看最近点亮了哪些成就'}}</text></view>
+          <text class="home-list-arrow">›</text>
+        </view>
+      </view>
     </view>
     <view class="notice">虚拟单位，仅用于家庭记账，不支持充值或真实支付。</view>
-  </view>
-  <view wx:elif="{{active === 'tasks' || active === 'learn'}}" class="empty-state">
-    <view class="empty-icon">{{active === 'tasks' ? '✓' : '📚'}}</view>
-    <view class="section-title">{{active === 'tasks' ? '任务' : '学习'}}</view>
-    <view class="muted">敬请期待，这里正在认真准备中。</view>
   </view>
   <view wx:elif="{{active === 'growth'}}" class="growth-panel">
     <view class="seedling"><view class="leaf left"></view><view class="leaf right"></view><view class="stem"></view><view class="soil"></view></view>
     <view class="section-title">一颗小小的幼苗</view>
     <view class="muted">成长，从今天的每一个选择开始。</view>
-    <view class="growth-status">V0.0.1 静态成长记录</view>
+    <button class="primary growth-action" bindtap="go" data-page="medal">查看我的勋章</button>
   </view>
   <view wx:elif="{{active === 'me'}}">
     <view class="profile-summary">
@@ -62,12 +72,13 @@
       <text class="profile-badge">已登录</text>
     </view>
     <view class="home-list">
-      <button class="home-list-row" bindtap="go" data-page="profile"><text class="home-list-icon profile-icon">档</text><view class="home-list-copy"><text class="home-list-title">{{role === 'PARENT' ? '儿童档案' : '我的口味偏好'}}</text><text class="home-list-subtitle">忌口、过敏和口味信息</text></view><text class="home-list-arrow">›</text></button>
-      <button class="home-list-row" bindtap="go" data-page="family"><text class="home-list-icon family-icon">家</text><view class="home-list-copy"><text class="home-list-title">家庭与绑定</text><text class="home-list-subtitle">家庭成员与绑定状态</text></view><text class="home-list-arrow">›</text></button>
-      <button wx:if="{{role === 'PARENT'}}" class="home-list-row" bindtap="go" data-page="dish-manage"><text class="home-list-icon dish-icon">菜</text><view class="home-list-copy"><text class="home-list-title">我的菜品</text><text class="home-list-subtitle">录入本家庭私有菜品，仅供自家菜单使用</text></view><text class="home-list-arrow">›</text></button>
-      <button class="home-list-row" bindtap="go" data-page="wallet"><text class="home-list-icon wallet-icon">¥</text><view class="home-list-copy"><text class="home-list-title">零花钱与额度</text><text class="home-list-subtitle">虚拟余额、额度和流水</text></view><text class="home-list-arrow">›</text></button>
-      <button class="home-list-row" bindtap="go" data-page="notices"><text class="home-list-icon notice-icon">铃</text><view class="home-list-copy"><text class="home-list-title">通知中心</text><text class="home-list-subtitle">{{unread > 0 ? unread + ' 条消息待查看' : '暂无未读消息'}}</text></view><text wx:if="{{unread > 0}}" class="row-badge">{{unread}}</text><text wx:else class="home-list-arrow">›</text></button>
-      <button wx:if="{{role === 'PARENT'}}" class="home-list-row" bindtap="go" data-page="privacy"><text class="home-list-icon privacy-icon">权</text><view class="home-list-copy"><text class="home-list-title">同意与数据权利</text><text class="home-list-subtitle">撤回、导出和删除申请</text></view><text class="home-list-arrow">›</text></button>
+      <view class="home-list-row" bindtap="go" data-page="profile" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon profile-icon">档</text><view class="home-list-copy"><text class="home-list-title">{{role === 'PARENT' ? '儿童档案' : '我的口味偏好'}}</text><text class="home-list-subtitle">忌口、过敏和口味信息</text></view><text class="home-list-arrow">›</text></view></view>
+      <view class="home-list-row" bindtap="go" data-page="family" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon family-icon">家</text><view class="home-list-copy"><text class="home-list-title">家庭与绑定</text><text class="home-list-subtitle">家庭成员与绑定状态</text></view><text class="home-list-arrow">›</text></view></view>
+      <view wx:if="{{role === 'PARENT'}}" class="home-list-row" bindtap="go" data-page="dish-manage" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon dish-icon">菜</text><view class="home-list-copy"><text class="home-list-title">我的菜品</text><text class="home-list-subtitle">录入本家庭私有菜品，仅供自家菜单使用</text></view><text class="home-list-arrow">›</text></view></view>
+      <view class="home-list-row" bindtap="go" data-page="wallet" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon wallet-icon">¥</text><view class="home-list-copy"><text class="home-list-title">零花钱与额度</text><text class="home-list-subtitle">虚拟余额、额度和流水</text></view><text class="home-list-arrow">›</text></view></view>
+      <view class="home-list-row" bindtap="go" data-page="medal" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon medal-icon">勋</text><view class="home-list-copy"><text class="home-list-title">勋章墙</text><text class="home-list-subtitle">成长进度和已解锁成就</text></view><text class="home-list-arrow">›</text></view></view>
+      <view class="home-list-row" bindtap="go" data-page="notices" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon notice-icon">铃</text><view class="home-list-copy"><text class="home-list-title">通知中心</text><text class="home-list-subtitle">{{unread > 0 ? unread + ' 条消息待查看' : '暂无未读消息'}}</text></view><text wx:if="{{unread > 0}}" class="row-badge">{{unread}}</text><text wx:else class="home-list-arrow">›</text></view></view>
+      <view wx:if="{{role === 'PARENT'}}" class="home-list-row" bindtap="go" data-page="privacy" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon privacy-icon">权</text><view class="home-list-copy"><text class="home-list-title">同意与数据权利</text><text class="home-list-subtitle">撤回、导出和删除申请</text></view><text class="home-list-arrow">›</text></view></view>
     </view>
     <button class="logout-button" bindtap="logout" disabled="{{busy}}">退出登录</button>
   </view>

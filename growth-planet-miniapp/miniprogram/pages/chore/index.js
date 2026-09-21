@@ -105,11 +105,10 @@ ui.page({
   },
   changeTab(e) {
     const key = e.detail.key;
-    if (key === 'meal') return wx.navigateTo({ url: '/pages/menu/index' });
-    if (key === 'wallet' || key === 'approvals') return wx.navigateTo({ url: '/pages/wallet/index' });
-    if (key === 'medal') return wx.navigateTo({ url: '/pages/medal/index' });
-    if (key === 'home') return wx.navigateTo({ url: '/pages/home/index' });
-    this.setData({ active: key });
+    if (key === 'chore') return;
+    if (['meal', 'growth', 'me'].includes(key)) {
+      return wx.reLaunch({ url: '/pages/home/index?tab=' + key });
+    }
   },
   onHide() { this.setData({ tasks: [], instances: [], receipt: '', error: '' }); }
 });
