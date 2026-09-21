@@ -3,10 +3,31 @@ const ui = require('../../utils/page');
 const { loadChildren } = require('../../services/children');
 const { operations } = require('../../services/operations');
 const { cents, money, shanghaiDate } = require('../../utils/domain');
+const uCharts = require('../../libs/ucharts/u-charts');
+
+// 流水分类：后端只回传 scene 枚举原值，中文与配色统一在此映射（F-025/F-026），避免后端硬编码展示文案。
+const SCENES = {
+  MENU_CONFIRM: { label: '点餐', badge: 'b-c' },
+  CHORE_REWARD: { label: '家务奖励', badge: 'b-ac' },
+  MANUAL: { label: '家长发放', badge: 'b-po' },
+  SHOPPING: { label: '购物', badge: 'b-sh' },
+  EXCHANGE: { label: '兑换', badge: 'b-ex' }
+};
+const SCENE_OPTIONS = [{ value: '', label: '全部分类' }]
+  .concat(Object.keys(SCENES).map(value => ({ value, label: SCENES[value].label })));
+const sceneMeta = scene => SCENES[scene] || { label: '其他', badge: 'b-po' };
+const decorate = list => (list || []).map(item => {
+  const meta = sceneMeta(item.scene);
+  return Object.assign({}, item, { sceneLabel: meta.label, badgeClass: meta.badge });
+});
+
 ui.page({
-  data: { role: '', busy: false, error: '', children: [], childIndex: 0, childId: '', wallet: null, rule: null,
+  data: { role: '', busy: false, error: '', receipt: '', children: [], childIndex: 0, childId: '',
+    overview: null, board: null, rule: null,
+    stats: { spendTrend: [], spendCategories: [], grantCategories: [], totalSpend: '0.00', totalGrant: '0.00' },
+    hasTrend: false, range: 'WEEK', tab: 'logs', direction: '', scene: '', sceneOptions: SCENE_OPTIONS,
     singleLimit: '', dailyLimit: '', weeklyLimit: '', amount: '', reason: '', pendingGrant: false,
-    records: [], page: 1, total: 0, startDate: '', endDate: '', receipt: '' },
+    records: [], page: 1, total: 0, startDate: '', endDate: '' },
   input: ui.input,
   onShow() {
     if (!ui.guard(this)) return;
@@ -19,23 +40,76 @@ ui.page({
     });
   },
   async read() {
-    this.setData({ wallet: null, rule: null, records: [], pendingGrant: !!operations.pending('grant:' + this.data.childId) });
-    const query = { childId: this.data.childId };
-    const wallet = await api.get('/wallet/balance', query);
+    const childId = this.data.childId;
+    this.setData({ records: [], overview: null, board: null, rule: null,
+      pendingGrant: !!operations.pending('grant:' + childId) });
+    const query = { childId };
+    const overview = await api.get('/wallet/overview', query);
     const rule = await api.get('/wallet/allowance-rule', query);
-    this.setData({ wallet, rule, singleLimit: rule.singleLimit, dailyLimit: rule.dailyLimit, weeklyLimit: rule.weeklyLimit });
+    this.setData({ overview, rule, singleLimit: rule.singleLimit, dailyLimit: rule.dailyLimit,
+      weeklyLimit: rule.weeklyLimit });
+    // 家长端看板按当前登录家长的家庭在后端派生，familyId 不接受客户端传入。
+    this.setData({ board: this.data.role === 'PARENT' ? await api.get('/wallet/board', {}) : null });
     await this.readLogs();
   },
   async readLogs() {
-    const { childId, startDate, endDate, page } = this.data;
+    const { childId, startDate, endDate, page, direction, scene } = this.data;
     const days = (Date.parse(endDate) - Date.parse(startDate)) / 86400000;
     if (!Number.isInteger(days) || days < 0 || days > 30) throw new Error('请选择连续1至31天的流水日期');
-    const result = await api.get('/wallet/allowance-log', { childId, startDate, endDate, page, pageSize: 20 });
-    this.setData({ records: result.items, total: result.total });
+    const query = { childId, startDate, endDate, page, pageSize: 20 };
+    if (direction) query.direction = direction;
+    if (scene) query.scene = scene;
+    const result = await api.get('/wallet/allowance-log', query);
+    this.setData({ records: decorate(result.items), total: result.total });
+  },
+  async readStats() {
+    const stats = await api.get('/wallet/stats', { childId: this.data.childId, range: this.data.range });
+    const spendTrend = stats.spendTrend || [];
+    // 全为 0 视为无数据：展示占位态而非空图（F-025 空态要求）。
+    const hasTrend = spendTrend.some(point => Number(point.amount) > 0);
+    this.setData({ hasTrend,
+      stats: Object.assign({}, stats, { spendTrend,
+        spendCategories: decorate(stats.spendCategories), grantCategories: decorate(stats.grantCategories) }) });
+    if (hasTrend) this.drawTrend();
+  },
+  drawTrend() {
+    const trend = this.data.stats.spendTrend || [];
+    const categories = trend.map(point => point.label);
+    const values = trend.map(point => Number(point.amount));
+    wx.createSelectorQuery().select('#trendChart').fields({ node: true, size: true }).exec(result => {
+      const item = result && result[0];
+      if (!item || !item.node) return;
+      const canvas = item.node;
+      const ratio = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 1;
+      // uCharts 以画布物理像素为绘制坐标系（pixelRatio 用于触摸坐标换算），故此处传物理尺寸。
+      canvas.width = item.width * ratio;
+      canvas.height = item.height * ratio;
+      this.chart = new uCharts({
+        type: 'column', context: canvas.getContext('2d'), canvas2d: true, pixelRatio: ratio,
+        width: item.width * ratio, height: item.height * ratio,
+        categories, series: [{ name: '支出', data: values }], color: ['#2878ff'],
+        animation: true, dataLabel: true, legend: { show: false }, padding: [16, 16, 14, 8],
+        xAxis: { disableGrid: true, fontColor: '#667085' },
+        yAxis: { gridType: 'dash', gridColor: '#eef2f7', data: [{ min: 0 }] }
+      });
+    });
+  },
+  tab(e) {
+    const tab = e.currentTarget.dataset.tab;
+    this.setData({ tab }, () => { if (tab !== 'logs') ui.run(this, () => this.readStats()); });
+  },
+  range(e) {
+    this.setData({ range: e.currentTarget.dataset.range }, () => ui.run(this, () => this.readStats()));
+  },
+  filter(e) {
+    const { field, value } = e.currentTarget.dataset;
+    this.setData({ [field]: value, page: 1, records: [] });
+    return ui.run(this, () => this.readLogs());
   },
   child(e) {
     const index = Number(e.detail.value);
-    this.setData({ childIndex: index, childId: this.data.children[index].childId, page: 1, amount: '', reason: '', receipt: '' });
+    this.setData({ childIndex: index, childId: this.data.children[index].childId, page: 1, amount: '', reason: '',
+      receipt: '' });
     return this.refresh();
   },
   date(e) { this.setData({ [e.currentTarget.dataset.field]: e.detail.value, page: 1, records: [] }); },
@@ -86,5 +160,11 @@ ui.page({
       }
     });
   },
-  onHide() { this.setData({ wallet: null, rule: null, records: [], amount: '', reason: '', singleLimit: '', dailyLimit: '', weeklyLimit: '', receipt: '' }); }
+  onHide() {
+    this.chart = null;
+    this.setData({ overview: null, board: null, rule: null, records: [], amount: '', reason: '',
+      singleLimit: '', dailyLimit: '', weeklyLimit: '', receipt: '',
+      stats: { spendTrend: [], spendCategories: [], grantCategories: [], totalSpend: '0.00', totalGrant: '0.00' },
+      hasTrend: false, tab: 'logs', direction: '', scene: '' });
+  }
 });

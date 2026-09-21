@@ -49,7 +49,30 @@ public class WalletController {
     @RequireRole({RoleEnum.CHILD, RoleEnum.PARENT})
     public Result<PageResp<AllowanceLogResp>> logs(@RequestParam @Positive Long childId,
             @RequestParam(required = false) LocalDate startDate, @RequestParam(required = false) LocalDate endDate,
+            @RequestParam(required = false) String direction, @RequestParam(required = false) String scene,
             @RequestParam(defaultValue = "1") int page, @RequestParam(defaultValue = "20") int pageSize) {
-        return Result.ok(service.logs(childId, startDate, endDate, page, pageSize));
+        return Result.ok(service.logs(childId, startDate, endDate, direction, scene, page, pageSize));
+    }
+
+    /** F-024 儿童端零花钱主页：余额、今日/本周已用与上限、本周剩余额度、本月已用与进度。 */
+    @GetMapping("/overview")
+    @RequireRole({RoleEnum.CHILD, RoleEnum.PARENT})
+    public Result<WalletOverviewResp> overview(@RequestParam @Positive Long childId) {
+        return Result.ok(service.overview(childId));
+    }
+
+    /** F-024 家长端零花钱看板：家庭虚拟总额、本周支出/发放与各子女概览。 */
+    @GetMapping("/board")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<WalletBoardResp> board() {
+        return Result.ok(service.board());
+    }
+
+    /** F-025 消费预算可视化：趋势序列与支出/收入分类占比，range 取 WEEK 或 MONTH。 */
+    @GetMapping("/stats")
+    @RequireRole({RoleEnum.CHILD, RoleEnum.PARENT})
+    public Result<WalletStatsResp> stats(@RequestParam @Positive Long childId,
+            @RequestParam(defaultValue = "WEEK") String range) {
+        return Result.ok(service.stats(childId, range));
     }
 }

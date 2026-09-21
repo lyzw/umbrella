@@ -24,3 +24,13 @@
   margin-bottom: 14px;
   box-shadow: var(--shadow-soft);
 }
+/* V0.0.2 看板：余额卡内补一行本周已用 / 剩余额度 */
+.balance-card .row { margin-top: 10px; }
+/* 收入金额用正向色，与支出（主色）区分，呼应“奖励收入”语义 */
+.price.income { color: var(--positive); }
+/* 筛选 chip 容器：与全局 .chip 配合，换行排列 */
+.chips { display: flex; flex-wrap: wrap; margin: 4px 0 10px; }
+/* uCharts 画布需显式尺寸，容器高度由全局 .chart-box 提供 */
+.chart-canvas { width: 100%; height: 100%; }
+/* 家长端看板卡与儿童端余额卡视觉区分（家长主色底） */
+.board-card { background: var(--primary-soft); border-color: var(--primary-border); }

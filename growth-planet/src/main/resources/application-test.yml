@@ -10,6 +10,7 @@ spring:
         - classpath:sprint4_schema.sql
         - classpath:v002_chore_medal.sql
         - classpath:v002_schedule.sql
+        - classpath:v003_wallet_board.sql
   # datasource / redis 由 @ServiceConnection（Testcontainers）在集成测试中注入
 
 logging:

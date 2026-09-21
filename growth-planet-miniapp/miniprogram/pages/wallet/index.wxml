@@ -4,9 +4,97 @@
   <view class="notice">虚拟单位，仅用于家庭记账，不支持充值、提现或真实支付。</view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:if="{{receipt}}" class="notice">{{receipt}}</view>
-  <view wx:if="{{wallet}}" class="balance-card"><text class="label">当前余额</text><view class="amount">{{wallet.balance}}<text class="unit">虚拟单位</text></view></view>
+
+  <view wx:if="{{overview}}" class="balance-card">
+    <text class="label">当前余额</text>
+    <view class="amount">{{overview.balance}}<text class="unit">虚拟单位</text></view>
+    <view class="row"><text class="small">本周已用 {{overview.weekUsed}}</text><text class="small">剩余额度 {{overview.weekRemaining}}</text></view>
+  </view>
+
+  <view wx:if="{{overview}}" class="section">
+    <view class="section-title">本周额度使用</view>
+    <view class="progress {{overview.weekStatus === 'DANGER' ? 'danger' : overview.weekStatus === 'WARN' ? 'warn' : ''}}"><i style="width:{{overview.weekProgress}}%"></i></view>
+    <view class="small">已用 {{overview.weekProgress}}% · 今日 {{overview.todayUsed}}/{{overview.dailyLimit}} · 本月已用 {{overview.monthUsed}}</view>
+  </view>
+
+  <view wx:if="{{role === 'PARENT' && board}}" class="section">
+    <view class="section-title">家庭看板</view>
+    <view class="balance-card board-card">
+      <text class="label">家庭虚拟总额</text>
+      <view class="amount">{{board.totalBalance}}<text class="unit">虚拟单位</text></view>
+      <view class="row"><text class="small">本周支出 {{board.weekSpend}}</text><text class="small">本周发放 {{board.weekGrant}}</text></view>
+    </view>
+    <view class="section-title">子女概览</view>
+    <view wx:if="{{!board.children.length}}" class="empty">还没有绑定儿童</view>
+    <view class="item" wx:for="{{board.children}}" wx:key="childId">
+      <view class="row"><text>儿童 {{item.childId}}</text><text class="small">余额 {{item.balance}} · 本周已用 {{item.weekUsed}}</text></view>
+    </view>
+  </view>
+
+  <view class="tabs">
+    <button class="{{tab === 'logs' ? 'active' : ''}}" bindtap="tab" data-tab="logs">流水</button>
+    <button class="{{tab === 'trend' ? 'active' : ''}}" bindtap="tab" data-tab="trend">趋势</button>
+    <button class="{{tab === 'category' ? 'active' : ''}}" bindtap="tab" data-tab="category">分类</button>
+  </view>
+
+  <view wx:if="{{tab === 'logs'}}" class="section">
+    <view class="section-title">收支记录</view>
+    <view class="chips">
+      <view class="chip {{direction === 'INCOME' ? 'on' : ''}}" bindtap="filter" data-field="direction" data-value="INCOME">收入</view>
+      <view class="chip {{direction === 'EXPENSE' ? 'on' : ''}}" bindtap="filter" data-field="direction" data-value="EXPENSE">支出</view>
+      <view class="chip {{direction === '' ? 'on' : ''}}" bindtap="filter" data-field="direction" data-value="">全部</view>
+    </view>
+    <view class="chips">
+      <view wx:for="{{sceneOptions}}" wx:key="value" class="chip {{scene === item.value ? 'on' : ''}}" bindtap="filter" data-field="scene" data-value="{{item.value}}">{{item.label}}</view>
+    </view>
+    <view class="field"><text class="label">开始日期</text><picker mode="date" value="{{startDate}}" bindchange="date" data-field="startDate" disabled="{{busy}}"><view class="picker">{{startDate}}</view></picker></view>
+    <view class="field"><text class="label">结束日期</text><picker mode="date" value="{{endDate}}" bindchange="date" data-field="endDate" disabled="{{busy}}"><view class="picker">{{endDate}}</view></picker></view>
+    <button bindtap="logs" disabled="{{busy || !childId}}">查询流水</button>
+    <view wx:if="{{!records.length && !busy}}" class="empty">暂无收支记录</view>
+    <view class="item" wx:for="{{records}}" wx:key="logId">
+      <view class="row">
+        <text class="badge {{item.badgeClass}}">{{item.sceneLabel}}</text>
+        <text class="price {{item.transType === 'GRANT' ? 'income' : ''}}">{{item.transType === 'GRANT' ? '+' : '−'}}{{item.amount}}</text>
+      </view>
+      <view class="small">{{item.createTime}} · 流水 {{item.logId}}</view>
+      <view class="small">余额 {{item.balanceAfter}}</view>
+    </view>
+    <view class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
+  </view>
+
+  <view wx:if="{{tab === 'trend'}}" class="section">
+    <view class="section-title">消费趋势</view>
+    <view class="chips">
+      <view class="chip {{range === 'WEEK' ? 'on' : ''}}" bindtap="range" data-range="WEEK">本周</view>
+      <view class="chip {{range === 'MONTH' ? 'on' : ''}}" bindtap="range" data-range="MONTH">本月</view>
+    </view>
+    <view wx:if="{{hasTrend}}" class="chart-box"><canvas type="2d" id="trendChart" class="chart-canvas"></canvas></view>
+    <view wx:else class="chart-empty">还没有消费记录，完成点餐后就能看到趋势啦 🌱</view>
+    <view wx:if="{{hasTrend}}" class="small">合计支出 {{stats.totalSpend}} · 合计收入 {{stats.totalGrant}} 虚拟单位</view>
+  </view>
+
+  <view wx:if="{{tab === 'category'}}" class="section">
+    <view class="section-title">消费占比</view>
+    <view wx:if="{{stats.spendCategories.length}}">
+      <view class="cat-item" wx:for="{{stats.spendCategories}}" wx:key="scene">
+        <view class="cat-head"><text class="badge {{item.badgeClass}}">{{item.label}}</text><text class="small">{{item.amount}} · {{item.percent}}%</text></view>
+        <view class="cat-bar"><i class="{{item.badgeClass}}" style="width:{{item.percent}}%"></i></view>
+      </view>
+    </view>
+    <view wx:else class="chart-empty">本期还没有消费记录</view>
+    <view class="section-title">收入来源</view>
+    <view wx:if="{{stats.grantCategories.length}}">
+      <view class="cat-item" wx:for="{{stats.grantCategories}}" wx:key="scene">
+        <view class="cat-head"><text class="badge {{item.badgeClass}}">{{item.label}}</text><text class="small">{{item.amount}} · {{item.percent}}%</text></view>
+        <view class="cat-bar"><i class="{{item.badgeClass}}" style="width:{{item.percent}}%"></i></view>
+      </view>
+    </view>
+    <view wx:else class="chart-empty">本期还没有收入记录</view>
+  </view>
+
   <view wx:if="{{pendingGrant}}" class="notice"><view>上次发放结果尚未确认，请核对流水或原样重试。</view><button bindtap="retryGrant" disabled="{{busy}}">重试原发放请求</button></view>
-  <view wx:if="{{role === 'PARENT' && wallet}}" class="section">
+
+  <view wx:if="{{role === 'PARENT' && overview}}" class="section">
     <view class="section-title">发放零花钱</view>
     <view class="field"><text class="label">发放金额</text><input type="digit" value="{{amount}}" bindinput="input" data-field="amount" maxlength="7" disabled="{{busy || pendingGrant}}" /></view>
     <view class="field"><text class="label">发放原因</text><input value="{{reason}}" bindinput="input" data-field="reason" maxlength="100" disabled="{{busy || pendingGrant}}" /></view>
@@ -14,22 +102,10 @@
   </view>
   <view wx:if="{{rule}}" class="section">
     <view class="section-title">使用额度</view>
-    <view class="muted">今日已用 {{rule.dailyUsed}} · 本周已用 {{rule.weeklyUsed}}</view>
+    <view class="small">今日已用 {{rule.dailyUsed}} · 本周已用 {{rule.weeklyUsed}}</view>
     <view class="field"><text class="label">单笔额度</text><input type="digit" value="{{singleLimit}}" bindinput="input" data-field="singleLimit" maxlength="7" disabled="{{role !== 'PARENT' || busy}}" /></view>
     <view class="field"><text class="label">每日额度</text><input type="digit" value="{{dailyLimit}}" bindinput="input" data-field="dailyLimit" maxlength="7" disabled="{{role !== 'PARENT' || busy}}" /></view>
     <view class="field"><text class="label">每周额度</text><input type="digit" value="{{weeklyLimit}}" bindinput="input" data-field="weeklyLimit" maxlength="7" disabled="{{role !== 'PARENT' || busy}}" /></view>
     <button wx:if="{{role === 'PARENT'}}" bindtap="saveRule" disabled="{{busy}}">保存额度</button>
-  </view>
-  <view class="section">
-    <view class="section-title">收支记录</view>
-    <view class="field"><text class="label">开始日期</text><picker mode="date" value="{{startDate}}" bindchange="date" data-field="startDate" disabled="{{busy}}"><view class="picker">{{startDate}}</view></picker></view>
-    <view class="field"><text class="label">结束日期</text><picker mode="date" value="{{endDate}}" bindchange="date" data-field="endDate" disabled="{{busy}}"><view class="picker">{{endDate}}</view></picker></view>
-    <button bindtap="logs" disabled="{{busy || !childId}}">查询流水</button>
-    <view wx:if="{{!records.length && !busy}}" class="empty">暂无收支记录</view>
-    <view class="item" wx:for="{{records}}" wx:key="logId">
-      <view class="row"><text>{{item.transType === 'GRANT' ? '家长发放' : '餐单支出'}}</text><text class="price">{{item.transType === 'GRANT' ? '+' : '−'}}{{item.amount}}</text></view>
-      <view class="small">{{item.createTime}} · 流水 {{item.logId}}</view><view class="muted">余额 {{item.balanceAfter}}</view>
-    </view>
-    <view class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
   </view>
 </view>

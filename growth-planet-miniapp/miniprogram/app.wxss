@@ -43,6 +43,19 @@ view, button, input, textarea { box-sizing: border-box; }
   --motion-fast: .14s ease;
   --motion: .2s ease;
   --shadow: 0 10px 28px rgba(32, 55, 92, .08);
+  /* V0.0.2 分类语义色：流水分类标签、预算占比图与模块入口底色共用 */
+  --c-meal: #ff7657;
+  --c-meal-soft: #fff0eb;
+  --c-chore: #22a06b;
+  --c-chore-soft: #e9f8f1;
+  --c-shop: #7c5cff;
+  --c-shop-soft: #f0edff;
+  --c-exchange: #12b5a5;
+  --c-exchange-soft: #e6f8f6;
+  --c-manual: #2878ff;
+  --c-manual-soft: #edf5ff;
+  --c-medal: #f5b301;
+  --c-medal-soft: #fff8e0;
 }
 .parent {
   --primary: #15966a;
@@ -188,6 +201,36 @@ input:focus, textarea:focus, .picker:focus, button:focus-visible, .link-row:focu
 /* 状态徽标语义化 */
 .badge.positive { color: #08764e; background: var(--positive-soft); }
 .badge.danger { color: #9d241b; background: var(--danger-soft); }
+/* V0.0.2 分类徽章：与流水 scene 一一对应（点餐/家务奖励/购物/兑换/发放/勋章） */
+.badge.b-c { color: #b03a1c; background: var(--c-meal-soft); }
+.badge.b-ac { color: #08764e; background: var(--c-chore-soft); }
+.badge.b-sh { color: #4a32b5; background: var(--c-shop-soft); }
+.badge.b-ex { color: #0a6f65; background: var(--c-exchange-soft); }
+.badge.b-po { color: var(--primary-ink); background: var(--c-manual-soft); }
+.badge.b-md { color: #8a6400; background: var(--c-medal-soft); }
+/* V0.0.2 额度进度条三态：正常 / 接近上限 / 超额；宽度由内联 style 驱动 */
+.progress { height: 10px; background: #e9eef5; border-radius: 999px; overflow: hidden; margin: 10px 0 6px; }
+.progress > i { display: block; height: 100%; width: 0; background: var(--positive); border-radius: 999px; transition: width var(--motion); }
+.progress.warn > i { background: var(--warning); }
+.progress.danger > i { background: var(--danger); }
+/* V0.0.2 分段 chip：范围切换（本周/本月、全部/收入/支出） */
+.chip { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 6px 14px;
+  margin: 4px 8px 4px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 999px;
+  color: var(--muted); font-size: 13px; font-weight: 600; }
+.chip.on { background: var(--primary-soft); border-color: var(--primary-border); color: var(--primary-ink); }
+/* V0.0.2 图表面板：趋势柱状由 uCharts 绘制，此处仅提供定高容器与空态 */
+.chart-box { position: relative; width: 100%; height: 200px; }
+.chart-empty { padding: 40px 12px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.8; }
+/* V0.0.2 分类占比条：条宽按占比内联渲染，颜色由分类修饰类决定 */
+.cat-item { margin: 12px 0; }
+.cat-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 14px; }
+.cat-bar { height: 8px; margin-top: 6px; background: #e9eef5; border-radius: 999px; overflow: hidden; }
+.cat-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--primary); }
+.cat-bar > i.b-c { background: var(--c-meal); }
+.cat-bar > i.b-ac { background: var(--c-chore); }
+.cat-bar > i.b-sh { background: var(--c-shop); }
+.cat-bar > i.b-ex { background: var(--c-exchange); }
+.cat-bar > i.b-po { background: var(--c-manual); }
 /* 尊重系统的减弱动效偏好（WXSS 不支持 * 选择器，逐一列出动效载体） */
 @media (prefers-reduced-motion: reduce) {
   page, view, button, input, textarea, text, image,
