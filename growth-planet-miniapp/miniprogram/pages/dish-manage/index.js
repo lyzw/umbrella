@@ -5,6 +5,9 @@ const config = require('../../config');
 const SPICE_LABELS = ['无辣', '微辣', '中辣', '重辣'];
 const STATUS_OPTIONS = [{ label: '在售', value: 'ON_SALE' }, { label: '已下架', value: 'OFF_SALE' }, { label: '全部', value: '' }];
 const ALLERGEN_STATUS = ['已声明（儿童可点单）', '待确认（儿童不可选）'];
+const ALLERGEN_LABELS = { PEANUT: '花生', MILK: '牛奶', EGG: '鸡蛋', FISH: '鱼类', SOY: '大豆', WHEAT: '小麦' };
+const allergenLabel = code => ALLERGEN_LABELS[code] || code;
+const allergenOption = (code, selected = []) => ({ code, label: allergenLabel(code), checked: selected.includes(code) });
 
 function blankForm() {
   return {
@@ -12,7 +15,8 @@ function blankForm() {
     formDishId: '', formVersion: 0,
     formName: '', formImageUrl: '', formCategoryId: '', formCategoryIndex: -1,
     formVirtualPrice: '', formCalories: '', formTagsText: '',
-    formAllergens: [], formAllergenStatus: 'DECLARED', formAllergenIndex: 0, formSpiceIndex: 0
+    formAllergens: [], formAllergenStatus: 'DECLARED', formAllergenIndex: 0, formSpiceIndex: 0,
+    formImageError: false
   };
 }
 
@@ -23,7 +27,7 @@ ui.page({
     keyword: '', statusIndex: 0, statusOptions: STATUS_OPTIONS.map(option => option.label),
     categories: [], categoryNames: [],
     spiceOptions: SPICE_LABELS, allergenStatusOptions: ALLERGEN_STATUS,
-    allergenOptions: config.allergens.map(code => ({ code, checked: false }))
+    allergenOptions: config.allergens.map(code => allergenOption(code))
   }),
   input: ui.input,
   onShow() {
@@ -48,7 +52,8 @@ ui.page({
       ...item,
       statusLabel: item.status === 'ON_SALE' ? '在售' : '已下架',
       spiceLabel: SPICE_LABELS[item.spiceLevel] || '无辣',
-      allergenLabel: item.allergens && item.allergens.length ? item.allergens.join('、') : '未声明过敏原',
+      allergenLabel: item.allergens && item.allergens.length
+        ? item.allergens.map(allergenLabel).join('、') : '未声明过敏原',
       toggleLabel: item.status === 'ON_SALE' ? '下架' : '上架'
     }));
     this.setData({ dishes, total: result.total, ready: true,
@@ -61,7 +66,7 @@ ui.page({
   create() {
     this.setData(Object.assign(blankForm(), {
       showForm: true, isEdit: false,
-      allergenOptions: config.allergens.map(code => ({ code, checked: false }))
+      allergenOptions: config.allergens.map(code => allergenOption(code))
     }));
   },
   edit(e) {
@@ -78,7 +83,8 @@ ui.page({
       formTagsText: dish.tags || '', formAllergens: [...(dish.allergens || [])],
       formAllergenStatus: dish.allergenStatus, formAllergenIndex: dish.allergenStatus === 'DECLARED' ? 0 : 1,
       formSpiceIndex: dish.spiceLevel,
-      allergenOptions: config.allergens.map(code => ({ code, checked: (dish.allergens || []).includes(code) }))
+      allergenOptions: Array.from(new Set([...config.allergens, ...(dish.allergens || [])]))
+        .map(code => allergenOption(code, dish.allergens || []))
     });
   },
   closeForm() { this.setData(blankForm()); },
@@ -93,6 +99,12 @@ ui.page({
     this.setData({ formAllergenIndex: index, formAllergenStatus: index === 0 ? 'DECLARED' : 'UNKNOWN' });
   },
   allergens(e) { this.setData({ formAllergens: e.detail.value }); },
+  imageUrlInput(e) {
+    this.setData({ formImageUrl: e.detail.value, formImageError: false });
+  },
+  clearImage() {
+    this.setData({ formImageUrl: '', formImageError: false });
+  },
   save() {
     return ui.run(this, async () => {
       const name = String(this.data.formName || '').trim();
@@ -120,6 +132,7 @@ ui.page({
         spiceLevel: this.data.formSpiceIndex
       };
       const imageUrl = String(this.data.formImageUrl || '').trim();
+      if (imageUrl && !/^https:\/\/\S+$/i.test(imageUrl)) throw new Error('图片地址必须是有效的 HTTPS 链接');
       if (imageUrl) body.imageUrl = imageUrl;
       if (tags.length) body.tags = tags.join(',');
       if (calories) body.calories = Number(calories);
@@ -162,6 +175,10 @@ ui.page({
     });
   },
   imageError(e) {
+    if (e.currentTarget.dataset.target === 'form') {
+      this.setData({ formImageError: true });
+      return;
+    }
     this.setData({ dishes: this.data.dishes.map(item =>
       item.dishId === e.currentTarget.dataset.id ? { ...item, imageUrl: null } : item) });
   },

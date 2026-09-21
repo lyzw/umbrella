@@ -1,4 +1,4 @@
-<view class="page parent dish-manage-page">
+<view class="page parent dish-manage-page {{showForm ? 'has-form-actions' : ''}}">
   <view class="header">
     <view>
       <view class="eyebrow">仅当前家庭可见</view>
@@ -49,57 +49,75 @@
 
   <block wx:else>
     <view wx:if="{{error}}" class="error">{{error}}</view>
-    <view class="field">
-      <view class="label">菜品名称</view>
-      <input value="{{formName}}" data-field="formName" bindinput="input" maxlength="64" placeholder="如：番茄炒蛋" disabled="{{busy}}" />
+    <view class="form-section">
+      <view class="form-section-heading"><view class="step-number">1</view><view><view class="section-title">基础信息</view><view class="small">用于家庭菜单中识别和计价</view></view></view>
+      <view class="field">
+        <view class="label">菜品名称</view>
+        <input value="{{formName}}" data-field="formName" bindinput="input" maxlength="64" placeholder="如：番茄炒蛋" disabled="{{busy}}" />
+      </view>
+      <view class="field">
+        <view class="label">分类</view>
+        <picker range="{{categoryNames}}" value="{{formCategoryIndex}}" bindchange="pickCategory" disabled="{{busy}}">
+          <view class="picker">{{formCategoryIndex >= 0 ? categoryNames[formCategoryIndex] : '请选择分类'}}⌄</view>
+        </picker>
+      </view>
+      <view class="field">
+        <view class="label">所需虚拟单位</view>
+        <input type="digit" value="{{formVirtualPrice}}" data-field="formVirtualPrice" bindinput="input" maxlength="11" placeholder="如 8.00" disabled="{{busy}}" />
+      </view>
+      <view class="field">
+        <view class="label">图片地址（选填）</view>
+        <input value="{{formImageUrl}}" bindinput="imageUrlInput" maxlength="255" placeholder="请输入 HTTPS 图片链接" disabled="{{busy}}" />
+        <view class="small field-help">当前由服务端保存图片链接，仅支持 HTTPS 地址。</view>
+        <view wx:if="{{formImageUrl}}" class="image-preview">
+          <image wx:if="{{!formImageError}}" src="{{formImageUrl}}" mode="aspectFill" binderror="imageError" data-target="form" />
+          <view wx:else class="image-preview-error">图片无法加载，请检查地址</view>
+          <button bindtap="clearImage" disabled="{{busy}}">清除图片</button>
+        </view>
+      </view>
     </view>
-    <view class="field">
-      <view class="label">分类</view>
-      <picker range="{{categoryNames}}" value="{{formCategoryIndex}}" bindchange="pickCategory" disabled="{{busy}}">
-        <view class="picker">{{formCategoryIndex >= 0 ? categoryNames[formCategoryIndex] : '请选择分类'}}⌄</view>
-      </picker>
+
+    <view class="form-section">
+      <view class="form-section-heading"><view class="step-number">2</view><view><view class="section-title">营养与口味</view><view class="small">帮助孩子和家长更快筛选</view></view></view>
+      <view class="field">
+        <view class="label">卡路里（选填，kcal）</view>
+        <input type="number" value="{{formCalories}}" data-field="formCalories" bindinput="input" maxlength="5" placeholder="如 220" disabled="{{busy}}" />
+      </view>
+      <view class="field">
+        <view class="label">辣度</view>
+        <picker range="{{spiceOptions}}" value="{{formSpiceIndex}}" bindchange="pickSpice" disabled="{{busy}}">
+          <view class="picker">{{spiceOptions[formSpiceIndex]}}⌄</view>
+        </picker>
+      </view>
+      <view class="field">
+        <view class="label">标签（选填，最多 5 项）</view>
+        <input value="{{formTagsText}}" data-field="formTagsText" bindinput="input" maxlength="120" placeholder="如：家常、快手" disabled="{{busy}}" />
+        <view class="small field-help">支持逗号、中文逗号或换行分隔。</view>
+      </view>
     </view>
-    <view class="field">
-      <view class="label">虚拟价格（元）</view>
-      <input type="digit" value="{{formVirtualPrice}}" data-field="formVirtualPrice" bindinput="input" maxlength="11" placeholder="如 8.00" disabled="{{busy}}" />
+
+    <view class="form-section">
+      <view class="form-section-heading"><view class="step-number">3</view><view><view class="section-title">安全信息</view><view class="small">过敏信息会直接影响儿童是否可点选</view></view></view>
+      <view class="field">
+        <view class="label">过敏原</view>
+        <checkbox-group class="allergen-grid" bindchange="allergens">
+          <label wx:for="{{allergenOptions}}" wx:key="code" class="check allergen-option">
+            <checkbox value="{{item.code}}" checked="{{item.checked}}" disabled="{{busy}}" />
+            <text>{{item.label}}</text>
+          </label>
+        </checkbox-group>
+      </view>
+      <view class="field">
+        <view class="label">过敏原状态</view>
+        <picker range="{{allergenStatusOptions}}" value="{{formAllergenIndex}}" bindchange="pickAllergenStatus" disabled="{{busy}}">
+          <view class="picker">{{allergenStatusOptions[formAllergenIndex]}}⌄</view>
+        </picker>
+        <view class="small field-help">状态为「待确认」时儿童无法点选；核对完成后再设为「已声明」。</view>
+      </view>
     </view>
-    <view class="field">
-      <view class="label">卡路里（选填，kcal）</view>
-      <input type="number" value="{{formCalories}}" data-field="formCalories" bindinput="input" maxlength="5" placeholder="如 220" disabled="{{busy}}" />
-    </view>
-    <view class="field">
-      <view class="label">辣度</view>
-      <picker range="{{spiceOptions}}" value="{{formSpiceIndex}}" bindchange="pickSpice" disabled="{{busy}}">
-        <view class="picker">{{spiceOptions[formSpiceIndex]}}⌄</view>
-      </picker>
-    </view>
-    <view class="field">
-      <view class="label">标签（选填，逗号分隔，最多 5 项）</view>
-      <input value="{{formTagsText}}" data-field="formTagsText" bindinput="input" maxlength="120" placeholder="如 家常,快手" disabled="{{busy}}" />
-    </view>
-    <view class="field">
-      <view class="label">过敏原</view>
-      <checkbox-group bindchange="allergens">
-        <label wx:for="{{allergenOptions}}" wx:key="code" class="check">
-          <checkbox value="{{item.code}}" checked="{{item.checked}}" disabled="{{busy}}" />
-          <text>{{item.code}}</text>
-        </label>
-      </checkbox-group>
-    </view>
-    <view class="field">
-      <view class="label">过敏原状态</view>
-      <picker range="{{allergenStatusOptions}}" value="{{formAllergenIndex}}" bindchange="pickAllergenStatus" disabled="{{busy}}">
-        <view class="picker">{{allergenStatusOptions[formAllergenIndex]}}⌄</view>
-      </picker>
-      <view class="small">状态为「待确认」时儿童无法点选该菜；确认后设为「已声明」。</view>
-    </view>
-    <view class="field">
-      <view class="label">图片地址（选填，https 链接）</view>
-      <input value="{{formImageUrl}}" data-field="formImageUrl" bindinput="input" maxlength="255" placeholder="https://…" disabled="{{busy}}" />
-    </view>
-    <view class="actions">
+    <view class="form-actions">
       <button bindtap="closeForm" disabled="{{busy}}">取消</button>
-      <button class="primary" bindtap="save" disabled="{{busy}}">保存</button>
+      <button class="primary" bindtap="save" disabled="{{busy}}" loading="{{busy}}">保存菜品</button>
     </view>
   </block>
 </view>

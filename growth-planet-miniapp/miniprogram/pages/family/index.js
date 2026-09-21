@@ -2,9 +2,30 @@ const api = require('../../services/api');
 const session = require('../../services/session');
 const ui = require('../../utils/page');
 const { statusLabels } = require('../../utils/domain');
+
+function bindingProgress(selected, consent) {
+  if (!selected) return { currentBindingStep: 0, bindingSteps: [] };
+  const consentGranted = consent && consent.currentStatus === 'GRANTED';
+  const bound = selected.bindStatus === 'BOUND';
+  const currentBindingStep = !consentGranted ? 2 : !bound ? 3 : 4;
+  const labels = ['收到申请', '记录同意', '确认绑定', '维护档案'];
+  return {
+    currentBindingStep,
+    bindingSteps: labels.map((label, index) => {
+      const step = index + 1;
+      return {
+        step,
+        label,
+        status: step < currentBindingStep ? 'done' : step === currentBindingStep ? 'current' : 'upcoming'
+      };
+    })
+  };
+}
+
 ui.page({
   data: { role: '', busy: false, error: '', familyName: '', inviteCode: '', invite: null, binding: null, children: [],
-    hasFamily: false, selected: null, consent: null, agreed: false, age: '', relationLabel: '', page: 1, total: 0 },
+    hasFamily: false, selected: null, consent: null, agreed: false, age: '', relationLabel: '', page: 1, total: 0,
+    bindingSteps: [], currentBindingStep: 0 },
   input: ui.input,
   onShow() { if (ui.guard(this)) this.refresh(); },
   refresh() {
@@ -15,7 +36,15 @@ ui.page({
       } else {
         try {
           const result = await api.get('/family/children', { page: this.data.page, pageSize: 20 });
-          this.setData({ hasFamily: true, children: result.items, total: result.total });
+          this.setData({
+            hasFamily: true,
+            children: result.items.map(item => ({
+              ...item,
+              displayName: item.nickname || '儿童 ' + item.childId,
+              bindStatusLabel: item.bindStatus === 'BOUND' ? '已绑定' : item.bindStatus === 'PENDING' ? '待确认' : '已拒绝'
+            })),
+            total: result.total
+          });
         } catch (error) {
           if (error.status === 404 || (error.status === 403 && error.code === 'E-009')) {
             this.setData({ hasFamily: false, children: [] });
@@ -48,10 +77,10 @@ ui.page({
   inspect(e) {
     const selected = this.data.children.find(c => c.applyId === e.currentTarget.dataset.id);
     if (!selected) return;
-    this.setData({ selected, consent: null, agreed: false, age: '' });
+    this.setData({ selected, consent: null, agreed: false, age: '', ...bindingProgress(selected, null) });
     return ui.run(this, async () => {
       const consent = await api.get('/compliance/consent', { childId: selected.childId, consentType: 'PROFILE' });
-      this.setData({ consent });
+      this.setData({ consent, ...bindingProgress(selected, consent) });
     });
   },
   agree(e) { this.setData({ agreed: e.detail.value.includes('yes') }); },
@@ -62,7 +91,8 @@ ui.page({
       const selected = this.data.selected;
       await api.post('/compliance/consent', { childId: selected.childId, applyId: selected.applyId,
         consentType: 'PROFILE', version: this.data.consent.version, selfReportedAge: age, agreed: true });
-      this.setData({ consent: await api.get('/compliance/consent', { childId: selected.childId, consentType: 'PROFILE' }), age: '', agreed: false });
+      const consent = await api.get('/compliance/consent', { childId: selected.childId, consentType: 'PROFILE' });
+      this.setData({ consent, age: '', agreed: false, ...bindingProgress(selected, consent) });
     });
   },
   approve(e) {
@@ -70,13 +100,21 @@ ui.page({
       const approve = e.currentTarget.dataset.approve === 'yes';
       if (!await ui.confirm(approve ? '确认该儿童属于你的家庭？同意记录不代表监护关系已核验。' : '确认拒绝这次绑定申请？')) return;
       await api.post('/family/bind-approve', { applyId: this.data.selected.applyId, approve, relationLabel: this.data.relationLabel.trim() || null });
-      this.setData({ selected: null, consent: null });
+      this.setData({ selected: null, consent: null, bindingSteps: [], currentBindingStep: 0 });
       const result = await api.get('/family/children', { page: this.data.page, pageSize: 20 });
-      this.setData({ children: result.items, total: result.total });
+      this.setData({
+        children: result.items.map(item => ({
+          ...item,
+          displayName: item.nickname || '儿童 ' + item.childId,
+          bindStatusLabel: item.bindStatus === 'BOUND' ? '已绑定' : item.bindStatus === 'PENDING' ? '待确认' : '已拒绝'
+        })),
+        total: result.total
+      });
     });
   },
   profile() { wx.navigateTo({ url: '/pages/profile/index?childId=' + this.data.selected.childId }); },
   home() { wx.reLaunch({ url: '/pages/home/index' }); },
   next(e) { this.setData({ page: this.data.page + Number(e.currentTarget.dataset.delta) }); this.refresh(); },
-  onHide() { this.setData({ consent: null, selected: null, age: '', agreed: false, familyName: '', inviteCode: '', invite: null, relationLabel: '', children: [], binding: null }); }
+  onHide() { this.setData({ consent: null, selected: null, age: '', agreed: false, familyName: '', inviteCode: '',
+    invite: null, relationLabel: '', children: [], binding: null, bindingSteps: [], currentBindingStep: 0 }); }
 });

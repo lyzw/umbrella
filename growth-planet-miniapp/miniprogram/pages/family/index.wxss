@@ -14,3 +14,72 @@
 .notice { overflow-wrap: anywhere; }
 /* 操作按钮组留出稳定间距，点击目标足够大 */
 .actions { margin-top: 16px; }
+.invite-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 0;
+}
+.invite-panel .section-title { margin-bottom: 4px; }
+.invite-panel button { flex: 0 0 auto; }
+.invite-code { text-align: center; }
+.invite-value { font-size: 28px; font-weight: 800; letter-spacing: 4px; margin-bottom: 4px; }
+.member-section { padding: 0; overflow: hidden; }
+.member-section > .section-title { padding: 16px 16px 4px; }
+.member-section > .empty { padding: 34px 16px; }
+.member-section > .actions { padding: 0 16px 16px; }
+.link-row.selected { background: var(--primary-soft); }
+.member-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.member-name { font-size: 15px; font-weight: 700; color: #1f2733; overflow-wrap: anywhere; }
+.flow-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.flow-heading .section-title { margin-bottom: 0; }
+.binding-steps { display: flex; margin: 18px 0 22px; }
+.binding-step { position: relative; flex: 1; min-width: 0; text-align: center; color: var(--muted); }
+.binding-step::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  left: calc(50% + 18px);
+  width: calc(100% - 36px);
+  height: 2px;
+  background: var(--line);
+}
+.binding-step:last-child::after { display: none; }
+.binding-step.done::after { background: var(--primary); }
+.step-marker {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 7px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 26px;
+  font-weight: 800;
+}
+.binding-step.done .step-marker,
+.binding-step.current .step-marker { border-color: var(--primary); background: var(--primary); color: #fff; }
+.binding-step.current .step-marker { box-shadow: 0 0 0 4px var(--primary-soft); }
+.binding-step.done .step-label,
+.binding-step.current .step-label { color: var(--primary-ink); font-weight: 700; }
+.step-label { font-size: 11px; line-height: 1.4; }
+.current-task { padding-top: 18px; border-top: 1px solid var(--line); }
+.agreement-text {
+  max-height: 168px;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: #475467;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.complete-task { padding: 18px 16px; border: 1px solid var(--primary-border); border-radius: var(--radius-md); background: var(--primary-soft); }
+@media (max-width: 340px) {
+  .invite-panel { align-items: stretch; flex-direction: column; }
+  .step-label { font-size: 10px; }
+}
