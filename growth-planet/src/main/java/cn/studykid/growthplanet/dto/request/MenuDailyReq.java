@@ -1,6 +1,8 @@
 package cn.studykid.growthplanet.dto.request;
 
+import cn.studykid.growthplanet.entity.DishRef;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
@@ -16,7 +18,7 @@ public class MenuDailyReq {
     @NotNull @Pattern(regexp = "BREAKFAST|LUNCH|DINNER")
     private String mealType;
     @NotNull @Size(min = 1, max = 50)
-    private List<@NotNull @Positive Long> dishIds;
+    private List<@NotNull @Valid DishRef> dishIds;
     @NotNull @Pattern(regexp = "DRAFT|PUBLISHED")
     private String status = "PUBLISHED";
 

@@ -20,8 +20,9 @@ public class MenuDaily {
     private LocalDate menuDate;
     private String mealType;
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<Long> dishIds;
+    private List<DishRef> dishIds;
     private String status;
+    private Integer version;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
     @TableField(fill = FieldFill.INSERT_UPDATE)

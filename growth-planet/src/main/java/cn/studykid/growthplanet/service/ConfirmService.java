@@ -57,9 +57,11 @@ public class ConfirmService {
         BusinessRequest.requireKey(key);
         FamilyMember member = authorization.lockBoundChild(UserContext.userId());
         authorization.requireConsent(member);
-        List<OrderLineReq> lines = req.getItems().stream().sorted(Comparator.comparing(OrderLineReq::getDishId)).toList();
+        List<OrderLineReq> lines = req.getItems().stream()
+                .sorted(Comparator.comparing(line -> line.getDishRef().getId())).toList();
         String digest = BusinessRequest.hash(List.of(req.getMenuId().toString(),
-                lines.stream().map(line -> List.of(line.getDishId().toString(), line.getQuantity(),
+                lines.stream().map(line -> List.of(line.getDishRef().getType(),
+                        line.getDishRef().getId().toString(), line.getQuantity(),
                         Objects.toString(line.getNote(), ""))).toList(),
                 Objects.toString(req.getRemark(), ""), Objects.toString(req.getPreviousConfirmId(), "")));
         MenuConfirm existing = confirms.findRequest(member.getUserId(), key);
@@ -113,6 +115,7 @@ public class ConfirmService {
             MenuItem item = new MenuItem();
             item.setConfirmId(confirm.getId());
             item.setDishId(dish.getId());
+            item.setSourceType(lines.get(i).getDishRef().getType());
             item.setDishName(dish.getName());
             item.setQuantity(line.getQuantity());
             item.setUnitPrice(dish.getVirtualPrice());
@@ -285,7 +288,10 @@ public class ConfirmService {
     private List<OrderLineReq> orderLines(Long confirmId) {
         return storedItems(confirmId).stream().map(item -> {
             OrderLineReq line = new OrderLineReq();
-            line.setDishId(item.getDishId());
+            DishRef ref = new DishRef();
+            ref.setType(item.getSourceType() == null ? "PRESET" : item.getSourceType());
+            ref.setId(item.getDishId());
+            line.setDishRef(ref);
             line.setQuantity(item.getQuantity());
             line.setNote(item.getNote());
             return line;
@@ -298,13 +304,15 @@ public class ConfirmService {
 
     private ConfirmResp response(MenuConfirm confirm) {
         var lines = storedItems(confirm.getId()).stream().map(item -> new ConfirmResp.Item(
-                item.getDishId().toString(), item.getDishName(), item.getQuantity(), money(item.getUnitPrice()),
+                item.getDishId().toString(), item.getSourceType() == null ? "PRESET" : item.getSourceType(),
+                item.getDishName(), item.getQuantity(), money(item.getUnitPrice()),
                 money(item.getSubtotal()), item.getNote())).toList();
         ConfirmApproval approval = approvals.selectOne(new QueryWrapper<ConfirmApproval>()
                 .eq("confirm_id", confirm.getId()));
         List<ConfirmResp.Suggestion> suggestions = approval == null || approval.getSuggestedItems() == null
                 ? List.of() : approval.getSuggestedItems().stream().map(line ->
-                new ConfirmResp.Suggestion(line.getDishId().toString(), line.getQuantity(), line.getNote())).toList();
+                new ConfirmResp.Suggestion(line.getDishRef().getId().toString(), line.getDishRef().getType(),
+                        line.getQuantity(), line.getNote())).toList();
         String note = switch (confirm.getStatus()) {
             case "PENDING" -> "等待家长确认";
             case "COMPLETED" -> "已确认";

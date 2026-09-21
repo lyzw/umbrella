@@ -12,6 +12,7 @@ public class MenuItem {
     private Long id;
     private Long confirmId;
     private Long dishId;
+    private String sourceType;
     private String dishName;
     private Integer quantity;
     private BigDecimal unitPrice;

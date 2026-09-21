@@ -139,7 +139,7 @@ class ConfirmationFlowIT extends BaseIT {
         long first = submit(fixture, "original", 200).path("confirmId").asLong();
         JsonNode modified = request("POST", "/api/parent/approve/" + first + "/modify",
                 fixture.ctx().parentToken(), Map.of("expectedVersion", 0, "reason", "Synthetic suggestion",
-                        "items", List.of(Map.of("dishId", fixture.dishId().toString(), "quantity", 2))), null, 200);
+                        "items", List.of(Map.of("dishRef", refBody(fixture.dishId()), "quantity", 2))), null, 200);
         assertEquals("REJECTED", modified.path("status").asText());
         assertEquals(1, modified.path("items").get(0).path("quantity").asInt());
         assertEquals(2, modified.path("suggestedItems").get(0).path("quantity").asInt());
@@ -217,7 +217,7 @@ class ConfirmationFlowIT extends BaseIT {
         body.put("remark", "changed");
         request("POST", "/api/menu/confirm", fixture.ctx().childToken(), body, "scope", 409);
         for (int quantity : List.of(0, 10)) {
-            body.put("items", List.of(Map.of("dishId", fixture.dishId().toString(), "quantity", quantity)));
+            body.put("items", List.of(Map.of("dishRef", refBody(fixture.dishId()), "quantity", quantity)));
             request("POST", "/api/menu/confirm", fixture.ctx().childToken(), body, "invalid", 400);
         }
         body = submitBody(fixture);
@@ -420,6 +420,17 @@ class ConfirmationFlowIT extends BaseIT {
         }
     }
 
+    private Map<String, Object> refBody(long id) {
+        return Map.of("type", "PRESET", "id", id);
+    }
+
+    private DishRef dishRef(Long id) {
+        DishRef ref = new DishRef();
+        ref.setType("PRESET");
+        ref.setId(id);
+        return ref;
+    }
+
     private Fixture ready(String price) throws Exception {
         var ctx = setupFamily();
         grant(ctx);
@@ -444,7 +455,7 @@ class ConfirmationFlowIT extends BaseIT {
         menu.setOwnerKey(ctx.familyId().toString());
         menu.setMenuDate(time.today());
         menu.setMealType("LUNCH");
-        menu.setDishIds(List.of(dish.getId()));
+        menu.setDishIds(List.of(dishRef(dish.getId())));
         menus.insert(menu);
         return new Fixture(ctx, menu.getId(), dish.getId());
     }
@@ -456,7 +467,7 @@ class ConfirmationFlowIT extends BaseIT {
 
     private Map<String, Object> submitBody(Fixture fixture) {
         return new LinkedHashMap<>(Map.of("menuId", fixture.menuId().toString(),
-                "items", List.of(Map.of("dishId", fixture.dishId().toString(), "quantity", 1))));
+                "items", List.of(Map.of("dishRef", refBody(fixture.dishId()), "quantity", 1))));
     }
 
     private Map<String, Object> explicit(JsonNode preview) {

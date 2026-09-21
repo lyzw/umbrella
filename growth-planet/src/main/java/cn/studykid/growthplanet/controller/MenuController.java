@@ -12,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -86,6 +87,12 @@ public class MenuController {
             @RequestParam(defaultValue = "20") int pageSize, @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) String keyword) {
         return Result.ok(catalog.listParentDishes(page, pageSize, categoryId, keyword));
+    }
+
+    @GetMapping("/parent/dish-category")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<List<DishCategoryResp>> parentCategories() {
+        return Result.ok(catalog.listParentCategories());
     }
 
     @GetMapping("/parent/menu-daily")

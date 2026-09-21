@@ -11,6 +11,8 @@ spring:
         - classpath:v002_chore_medal.sql
         - classpath:v002_schedule.sql
         - classpath:v003_wallet_board.sql
+        - classpath:v002_family_dish.sql
+        - classpath:v002_menu_dish_ref.sql
   # datasource / redis 由 @ServiceConnection（Testcontainers）在集成测试中注入
 
 logging:

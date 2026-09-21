@@ -6,6 +6,7 @@ import cn.studykid.growthplanet.common.exception.BizException;
 import cn.studykid.growthplanet.config.ComplianceProperties;
 import cn.studykid.growthplanet.dto.request.OrderLineReq;
 import cn.studykid.growthplanet.entity.ChildProfile;
+import cn.studykid.growthplanet.entity.DishRef;
 import cn.studykid.growthplanet.entity.Dish;
 import cn.studykid.growthplanet.entity.MenuDaily;
 import cn.studykid.growthplanet.entity.User;
@@ -186,7 +187,7 @@ class CatalogFlowIT extends BaseIT {
         long second = dish(admin, categoryId, "Soup", List.of(), "DECLARED");
         long menuId = familyMenu(ctx, List.of(first), today());
         assertEquals(menuId, familyMenu(ctx, List.of(second, first, second), today()));
-        assertEquals(List.of(second, first), menus.selectById(menuId).getDishIds());
+        assertEquals(List.of(dishRef(second), dishRef(first)), menus.selectById(menuId).getDishIds());
         assertEquals(ctx.familyId().toString(), menus.selectById(menuId).getOwnerKey());
         long otherMenuId = familyMenu(other, List.of(first), today());
         assertNotEquals(menuId, otherMenuId);
@@ -622,7 +623,19 @@ class CatalogFlowIT extends BaseIT {
     }
 
     private Map<String, Object> menuBody(List<Long> dishIds, LocalDate date) {
-        return new LinkedHashMap<>(Map.of("menuDate", date.toString(), "mealType", "LUNCH", "dishIds", dishIds));
+        var refs = dishIds.stream().map(this::refBody).toList();
+        return new LinkedHashMap<>(Map.of("menuDate", date.toString(), "mealType", "LUNCH", "dishIds", refs));
+    }
+
+    private Map<String, Object> refBody(long id) {
+        return Map.of("type", "PRESET", "id", id);
+    }
+
+    private DishRef dishRef(Long id) {
+        DishRef dishRef = new DishRef();
+        dishRef.setType("PRESET");
+        dishRef.setId(id);
+        return dishRef;
     }
 
     private long familyMenu(FamilyContext ctx, List<Long> dishIds, LocalDate date) throws Exception {
@@ -664,7 +677,7 @@ class CatalogFlowIT extends BaseIT {
 
     private OrderLineReq line(Long dishId, Integer quantity) {
         OrderLineReq line = new OrderLineReq();
-        line.setDishId(dishId);
+        line.setDishRef(dishRef(dishId));
         line.setQuantity(quantity);
         return line;
     }

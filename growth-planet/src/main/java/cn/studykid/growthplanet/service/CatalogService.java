@@ -25,6 +25,7 @@ public class CatalogService {
     private static final Set<String> MEALS = Set.of("BREAKFAST", "LUNCH", "DINNER");
     private final DishCategoryMapper categories;
     private final DishMapper dishes;
+    private final FamilyDishMapper familyDishes;
     private final MenuDailyMapper menus;
     private final FamilyMapper families;
     private final ChildProfileMapper profiles;
@@ -34,11 +35,13 @@ public class CatalogService {
     private final Validator validator;
     private final BusinessTime time;
 
-    public CatalogService(DishCategoryMapper categories, DishMapper dishes, MenuDailyMapper menus,
-            FamilyMapper families, ChildProfileMapper profiles, ChildAuthorizationService authorization,
-            ComplianceProperties policy, AuditService audit, Validator validator, BusinessTime time) {
+    public CatalogService(DishCategoryMapper categories, DishMapper dishes, FamilyDishMapper familyDishes,
+            MenuDailyMapper menus, FamilyMapper families, ChildProfileMapper profiles,
+            ChildAuthorizationService authorization, ComplianceProperties policy, AuditService audit,
+            Validator validator, BusinessTime time) {
         this.categories = categories;
         this.dishes = dishes;
+        this.familyDishes = familyDishes;
         this.menus = menus;
         this.families = families;
         this.profiles = profiles;
@@ -123,6 +126,14 @@ public class CatalogService {
         return queryDishes(page, pageSize, categoryId, "ON_SALE", keyword);
     }
 
+    /** 家长可见的预置分类（ENABLED），供家庭私有菜品类目选择（F-01，不可自建分类）。 */
+    public List<DishCategoryResp> listParentCategories() {
+        requireCurrentFamilyParent();
+        return categories.selectList(new QueryWrapper<DishCategory>()
+                .eq("status", "ENABLED").orderByAsc("sort", "id"))
+                .stream().map(this::categoryResponse).toList();
+    }
+
     private PageResp<DishResp> queryDishes(int page, int pageSize, Long categoryId, String status, String keyword) {
         long offset = offset(page, pageSize);
         if (categoryId != null) {
@@ -178,14 +189,26 @@ public class CatalogService {
             // A logically deleted unique key must not silently create a replacement menu identity.
             throw new BizException(ResultCode.E007_CONCURRENCY_CONFLICT);
         }
-        for (Dish dish : lockDishes(proposed.getDishIds()).values()) {
+        // 混合菜品校验：按 DishRef.type 分流，全部存在且 ON_SALE
+        Map<String, Dish> locked = lockVisibleDishesByRef(proposed.getDishIds(), familyId);
+        if (locked.size() != new HashSet<>(proposed.getDishIds()).size()) {
+            throw new BizException(ResultCode.E404_NOT_FOUND);
+        }
+        for (Dish dish : locked.values()) {
             if (!"ON_SALE".equals(dish.getStatus())) {
                 throw new BizException(ResultCode.E007_CONCURRENCY_CONFLICT);
             }
         }
+        Integer oldVersion = menu.getVersion();
+        int expected = oldVersion == null ? 0 : oldVersion;
         menu.setDishIds(proposed.getDishIds());
         menu.setStatus(proposed.getStatus());
-        requireUpdated(menus.updateById(menu));
+        menu.setVersion(expected + 1);
+        if (menus.update(menu, new UpdateWrapper<MenuDaily>()
+                .eq("id", menu.getId()).eq("version", expected)) != 1) {
+            // 菜单已被他人更新，提示刷新后重试（乐观锁）
+            throw new BizException(ResultCode.E007_CONCURRENCY_CONFLICT);
+        }
         audit.record("MENU_UPSERT", UserContext.userId(), familyId, "MENU", menu.getId(), null,
                 "sourceType=" + sourceType);
         return new MenuUpsertResp(menu.getId());
@@ -202,15 +225,17 @@ public class CatalogService {
             audit.record("MENU_MAINTENANCE_QUERY", ctx.getUserId(), familyId, "MENU", null, null, "empty");
             return null;
         }
-        Map<Long, Dish> current = lockVisibleDishes(menu.getDishIds());
+        Map<String, Dish> current = lockVisibleDishesByRef(menu.getDishIds(), familyId);
         List<DishResp> visible = new ArrayList<>();
         List<String> missing = new ArrayList<>();
-        for (Long dishId : menu.getDishIds()) {
-            Dish dish = current.get(dishId);
+        for (DishRef ref : menu.getDishIds()) {
+            Dish dish = current.get(ref.getType() + ":" + ref.getId());
             if (dish == null) {
-                missing.add(dishId.toString());
+                missing.add(ref.getId().toString());
             } else {
-                visible.add(dishResponse(dish));
+                DishResp resp = dishResponse(dish);
+                resp.setSourceType(ref.getType());
+                visible.add(resp);
             }
         }
         audit.record("MENU_MAINTENANCE_QUERY", ctx.getUserId(), familyId, "MENU", menu.getId(), null, null);
@@ -242,20 +267,23 @@ public class CatalogService {
         if (menu == null) {
             throw new BizException(ResultCode.E404_NOT_FOUND);
         }
-        Map<Long, Dish> current = lockVisibleDishes(menu.getDishIds());
+        Map<String, Dish> current = lockVisibleDishesByRef(menu.getDishIds(), menu.getFamilyId());
         boolean submittable = "CHILD".equals(ctx.getRole()) && "FAMILY".equals(sourceType)
                 && time.today().equals(menuDate);
         List<MenuDailyResp.MenuDishResp> visible = new ArrayList<>();
         List<String> missing = new ArrayList<>();
-        for (Long dishId : menu.getDishIds()) {
-            Dish dish = current.get(dishId);
+        for (DishRef ref : menu.getDishIds()) {
+            Dish dish = current.get(ref.getType() + ":" + ref.getId());
             if (dish == null) {
-                missing.add(dishId.toString());
+                missing.add(ref.getId().toString());
                 continue;
             }
             String safety = safetyStatus(dish, profile);
-            visible.add(MenuDailyResp.MenuDishResp.builder().dish(dishResponse(dish))
-                    .disliked(isDisliked(dish, profile)).favorite(favorites(profile).contains(dishId))
+            DishResp resp = dishResponse(dish);
+            resp.setSourceType(ref.getType());
+            visible.add(MenuDailyResp.MenuDishResp.builder().dish(resp)
+                    .disliked(isDisliked(dish, profile))
+                    .favorite("PRESET".equals(ref.getType()) && favorites(profile).contains(ref.getId()))
                     .allergyConflict(allergyConflict(dish, profile))
                     .canSelect(submittable && "DECLARED".equals(safety)).safetyStatus(safety).build());
         }
@@ -321,10 +349,10 @@ public class CatalogService {
         if (items == null || items.isEmpty() || items.size() > 20) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
         }
-        Set<Long> requested = new LinkedHashSet<>();
+        Set<DishRef> requested = new LinkedHashSet<>();
         for (OrderLineReq item : items) {
             validate(item);
-            if (!requested.add(item.getDishId())) {
+            if (!requested.add(item.getDishRef())) {
                 throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
             }
         }
@@ -341,11 +369,15 @@ public class CatalogService {
         if (menu.getDishIds() == null || !menu.getDishIds().containsAll(requested)) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
         }
-        Map<Long, Dish> locked = lockDishes(requested);
+        Map<String, Dish> locked = lockVisibleDishesByRef(requested, menu.getFamilyId());
+        if (locked.size() != requested.size()) {
+            throw new BizException(ResultCode.E404_NOT_FOUND);
+        }
         List<Dish> ordered = new ArrayList<>();
         for (OrderLineReq item : items) {
-            Dish dish = locked.get(item.getDishId());
-            if (!"DECLARED".equals(safetyStatus(dish, profile))) {
+            DishRef ref = item.getDishRef();
+            Dish dish = locked.get(ref.getType() + ":" + ref.getId());
+            if (dish == null || !"DECLARED".equals(safetyStatus(dish, profile))) {
                 throw new BizException(ResultCode.E007_CONCURRENCY_CONFLICT);
             }
             ordered.add(dish);
@@ -482,7 +514,58 @@ public class CatalogService {
         return DishResp.builder().dishId(dish.getId()).categoryId(dish.getCategoryId()).name(dish.getName())
                 .imageUrl(dish.getImageUrl()).virtualPrice(dish.getVirtualPrice().setScale(2).toPlainString())
                 .calories(dish.getCalories()).tags(dish.getTags()).allergens(dish.getAllergens())
-                .allergenStatus(dish.getAllergenStatus()).spiceLevel(dish.getSpiceLevel()).status(dish.getStatus()).build();
+                .allergenStatus(dish.getAllergenStatus()).spiceLevel(dish.getSpiceLevel())
+                .status(dish.getStatus()).sourceType("PRESET").build();
+    }
+
+    /** 家庭私有菜品 → Dish 临时对象（复制字段，用于统一的安全校验与点单，不持久化）。 */
+    private Dish toDish(FamilyDish fd) {
+        Dish dish = new Dish();
+        dish.setId(fd.getId());
+        dish.setCategoryId(fd.getCategoryId());
+        dish.setName(fd.getName());
+        dish.setImageUrl(fd.getImageUrl());
+        dish.setVirtualPrice(fd.getVirtualPrice());
+        dish.setCalories(fd.getCalories());
+        dish.setTags(fd.getTags());
+        dish.setAllergens(fd.getAllergens());
+        dish.setAllergenStatus(fd.getAllergenStatus());
+        dish.setSpiceLevel(fd.getSpiceLevel());
+        dish.setStatus(fd.getStatus());
+        return dish;
+    }
+
+    /** 家庭私有菜品 → 响应（sourceType=FAMILY）。 */
+    private DishResp familyDishResponse(FamilyDish fd) {
+        DishResp resp = dishResponse(toDish(fd));
+        resp.setSourceType("FAMILY");
+        return resp;
+    }
+
+    /**
+     * 按 DishRef.type 分流加锁：PRESET 查 life_dish，FAMILY 查 life_family_dish（带 family_id 隔离）。
+     * 返回 key="type:id" 的映射，值为 Dish（FAMILY 已通过 toDish 转换）。
+     */
+    private Map<String, Dish> lockVisibleDishesByRef(Collection<DishRef> refs, Long familyId) {
+        Map<String, Dish> locked = new HashMap<>();
+        List<Long> presetIds = refs.stream().filter(r -> "PRESET".equals(r.getType()))
+                .map(DishRef::getId).distinct().sorted().toList();
+        for (Long dishId : presetIds) {
+            Dish dish = dishes.selectOne(new QueryWrapper<Dish>().eq("id", dishId).last("FOR UPDATE"));
+            if (dish != null) {
+                locked.put("PRESET:" + dishId, dish);
+            }
+        }
+        List<Long> familyIds = refs.stream().filter(r -> "FAMILY".equals(r.getType()))
+                .map(DishRef::getId).distinct().sorted().toList();
+        for (Long dishId : familyIds) {
+            FamilyDish fd = familyDishes.selectOne(new QueryWrapper<FamilyDish>()
+                    .eq("id", dishId).eq(familyId != null, "family_id", familyId).last("FOR UPDATE"));
+            if (fd != null) {
+                locked.put("FAMILY:" + dishId, toDish(fd));
+            }
+        }
+        return locked;
     }
 
     private DishCategoryResp categoryResponse(DishCategory category) {
