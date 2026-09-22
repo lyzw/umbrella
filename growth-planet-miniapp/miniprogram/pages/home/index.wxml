@@ -63,6 +63,13 @@
           <text class="home-list-arrow">›</text>
         </view>
       </view>
+      <view class="home-list-row" bindtap="go" data-page="health" aria-role="button" hover-class="home-list-row-active">
+        <view class="home-list-row-content">
+          <text class="home-list-icon health-icon">康</text>
+          <view class="home-list-copy"><text class="home-list-title">健康打卡</text><text class="home-list-subtitle">{{role === 'PARENT' ? '配置打卡项，陪孩子养成好习惯' : '喝水、睡眠、运动，打卡攒连续天数'}}</text></view>
+          <text class="home-list-arrow">›</text>
+        </view>
+      </view>
     </view>
     <view class="notice">虚拟单位，仅用于家庭记账，不支持充值或真实支付。</view>
   </view>

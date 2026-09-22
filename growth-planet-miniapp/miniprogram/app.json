@@ -12,6 +12,7 @@
     "pages/chore/index",
     "pages/medal/index",
     "pages/schedule/index",
+    "pages/health/index",
     "pages/notices/index",
     "pages/privacy/index"
   ],

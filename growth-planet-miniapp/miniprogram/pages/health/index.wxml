@@ -1,0 +1,92 @@
+<view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <view class="page-heading">
+    <text class="title">健康打卡</text>
+    <text class="subtitle">{{role === 'PARENT' ? '配置喝水、睡眠、运动等打卡项，陪孩子养成好习惯' : '一键打卡，攒连续天数，解锁健康勋章'}}</text>
+  </view>
+
+  <view wx:if="{{receipt}}" class="notice">{{receipt}}</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+
+  <block wx:if="{{role === 'PARENT'}}">
+    <view class="toolbar">
+      <text class="muted">共 {{managed.length}} 个打卡项</text>
+      <button class="primary compact-action" bindtap="toggleForm">{{showForm ? '收起' : '添加打卡项'}}</button>
+    </view>
+
+    <view wx:if="{{showForm}}" class="form-panel">
+      <view class="small preset-hint">常用预设，点一下自动填表，仍可修改：</view>
+      <view class="preset-row">
+        <button wx:for="{{presets}}" wx:key="name" class="chip" data-index="{{index}}" bindtap="applyPreset">{{item.label}}</button>
+      </view>
+      <input placeholder="打卡项名称（1-32 字）" value="{{formName}}" bindinput="input" data-field="formName" maxlength="32" />
+      <view class="form-row">
+        <input placeholder="图标（如 💧）" value="{{formIcon}}" bindinput="input" data-field="formIcon" maxlength="64" />
+        <input placeholder="单位（如 杯）" value="{{formUnit}}" bindinput="input" data-field="formUnit" maxlength="8" />
+      </view>
+      <view class="form-row">
+        <input placeholder="每日上限（0 不限）" type="number" value="{{formTarget}}" bindinput="input" data-field="formTarget" maxlength="4" />
+        <input placeholder="排序（小在前）" type="number" value="{{formOrder}}" bindinput="input" data-field="formOrder" maxlength="4" />
+      </view>
+      <view class="small">每日上限填 0 表示不限次数（如洗手），填 6 表示一天最多 6 次（如喝水）。</view>
+      <view class="form-actions">
+        <button class="primary" bindtap="save">{{isEdit ? '保存修改' : '创建打卡项'}}</button>
+        <button bindtap="toggleForm">取消</button>
+      </view>
+    </view>
+
+    <view class="section-title list-title">打卡项配置（{{managed.length}}）</view>
+    <view wx:for="{{managed}}" wx:key="key" class="item">
+      <view class="row">
+        <text class="item-title">{{item.icon}} {{item.name}}</text>
+        <text class="badge normal">{{item.targetText}}</text>
+      </view>
+      <view class="muted">排序 {{item.sortOrder}} · 单位 {{item.unitText}}</view>
+      <view class="actions">
+        <button data-id="{{item.itemId}}" bindtap="edit">编辑</button>
+        <button class="danger" data-id="{{item.itemId}}" bindtap="remove">删除</button>
+      </view>
+    </view>
+    <view wx:if="{{managed.length === 0}}" class="empty">还没有打卡项，点右上角添加，或用预设一键创建</view>
+    <view class="notice">健康打卡属敏感信息：仅在孩子已授权同意的范围内采集，撤回同意后自动停采并隐藏。</view>
+  </block>
+
+  <block wx:else>
+    <view class="streak-card">
+      <view class="streak-copy">
+        <text class="streak-label">连续打卡</text>
+        <text class="streak-value">{{streak}}<text class="streak-unit">天</text></text>
+        <text class="muted">今日已完成 {{doneCount}} / {{totalCount}} 项</text>
+      </view>
+      <view class="streak-visual" aria-hidden="true">🔥</view>
+    </view>
+
+    <view class="section-title list-title">今日打卡</view>
+    <view wx:for="{{checkItems}}" wx:key="key" class="item">
+      <view class="row">
+        <text class="item-title">{{item.icon}} {{item.name}}</text>
+        <text class="badge {{item.reached ? 'ok' : 'normal'}}">{{item.limitText}}</text>
+      </view>
+      <view class="progress"><i style="width: {{item.percent}}%"></i></view>
+      <view class="muted">今日 {{item.targetText}}</view>
+      <button class="primary item-action" data-id="{{item.itemId}}" bindtap="checkIn" disabled="{{item.reached}}">{{item.actionLabel}}</button>
+    </view>
+    <view wx:if="{{checkItems.length === 0}}" class="empty">家里还没有打卡项，请家长到「健康打卡」添加</view>
+
+    <view class="section-title list-title">打卡日历</view>
+    <view class="toolbar month-toolbar">
+      <button class="compact-action" data-delta="-1" bindtap="shiftMonth" aria-label="上一个月">上月</button>
+      <text class="month-label">{{monthLabel}}</text>
+      <button class="compact-action" data-delta="1" bindtap="shiftMonth" disabled="{{!canNextMonth}}" aria-label="下一个月">下月</button>
+    </view>
+    <view class="calendar">
+      <view class="calendar-head">
+        <text wx:for="{{weekLabels}}" wx:key="*this" class="calendar-week">{{item}}</text>
+      </view>
+      <view class="calendar-grid">
+        <view wx:for="{{cells}}" wx:key="key" class="calendar-cell {{item.pad ? 'pad' : ''}} {{item.checked ? 'checked' : ''}} {{item.today ? 'today' : ''}} {{item.future ? 'future' : ''}}">{{item.label}}</view>
+      </view>
+    </view>
+    <view class="muted calendar-summary">本月打卡 {{monthChecked}} 天 · 当前连续 {{streak}} 天</view>
+    <view class="notice">健康数据属敏感信息，仅在家长同意范围内采集；撤回同意后将停止采集并隐藏。</view>
+  </block>
+</view>

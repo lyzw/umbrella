@@ -56,6 +56,8 @@ view, button, input, textarea { box-sizing: border-box; }
   --c-manual-soft: #edf5ff;
   --c-medal: #f5b301;
   --c-medal-soft: #fff8e0;
+  --c-health: #ff6b9d;
+  --c-health-soft: #ffeef5;
 }
 .parent {
   --primary: #15966a;

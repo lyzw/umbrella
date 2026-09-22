@@ -570,6 +570,133 @@ test('家长建议家庭菜品时重建 dishRef，而不是只传裸 id', async 
   assert.equal(sent.endpoint, '/parent/approve/21/modify');
   assert.deepEqual(sent.body.items, [{ dishRef: { type: 'FAMILY', id: '7' }, quantity: 1 }]);
 });
+test('健康打卡：家长用预设建项，提交体不含 familyId', async () => {
+  const page = loadPage('health');
+  api.get = async endpoint => {
+    assert.equal(endpoint, '/parent/check-item');
+    return [{ itemId: '11', familyId: '5', name: '喝水', icon: '💧', unit: '杯', dailyTarget: 6, sortOrder: 1, version: 0 }];
+  };
+  await page.read();
+  assert.deepEqual(page.data.managed.map(item => item.key), ['11']);
+  assert.equal(page.data.managed[0].targetText, '每日上限 6杯');
+
+  page.toggleForm();
+  assert.equal(page.data.showForm, true);
+  assert.equal(page.data.formOrder, '2');
+
+  page.applyPreset(event({ index: 1 }));
+  assert.equal(page.data.formName, '睡眠');
+  assert.equal(page.data.formIcon, '😴');
+  assert.equal(page.data.formTarget, '1');
+
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return { itemId: '12' }; };
+  await page.save();
+  assert.deepEqual(sent, { endpoint: '/parent/check-item',
+    body: { name: '睡眠', dailyTarget: 1, sortOrder: 2, icon: '😴', unit: '小时' } });
+  assert.equal(Object.hasOwn(sent.body, 'familyId'), false);
+  assert.equal(page.data.showForm, false);
+  assert.match(page.data.receipt, /孩子现在就能打卡/);
+});
+test('健康打卡：编辑校验上限并带 expectedVersion，删除需二次确认', async () => {
+  const page = loadPage('health');
+  api.get = async () => [{ itemId: '11', name: '喝水', icon: '💧', unit: '杯', dailyTarget: 6, sortOrder: 1, version: 3 }];
+  await page.read();
+  const calls = [];
+  api.put = async (endpoint, body) => { calls.push({ method: 'put', endpoint, body }); return {}; };
+  api.del = async (endpoint, query) => { calls.push({ method: 'del', endpoint, query }); };
+
+  page.edit(event({ id: '11' }));
+  assert.equal(page.data.isEdit, true);
+  assert.equal(page.data.formVersion, 3);
+  page.setData({ formTarget: '6.5' });
+  await page.save();
+  assert.match(page.data.error, /0-9999/);
+  assert.equal(calls.length, 0);
+
+  page.setData({ formTarget: '8' });
+  await page.save();
+  assert.deepEqual(calls[0], { method: 'put', endpoint: '/parent/check-item/11?expectedVersion=3',
+    body: { name: '喝水', dailyTarget: 8, sortOrder: 1, icon: '💧', unit: '杯' } });
+
+  await page.remove(event({ id: '11' }));
+  assert.ok(modals.some(options => /历史打卡记录仍会保留/.test(options.content)));
+  assert.deepEqual(calls[1], { method: 'del', endpoint: '/parent/check-item/11', query: { expectedVersion: 3 } });
+});
+test('健康打卡：儿童打卡刷新今日次数与连续天数，达上限标记已完成', async () => {
+  const page = loadPage('health', 'CHILD');
+  const calls = [];
+  let todayRows = [{ itemId: '11', itemName: '喝水', count: 1, dailyTarget: 2, reached: false },
+    { itemId: '12', itemName: '洗手', count: 3, dailyTarget: 0, reached: false }];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    if (endpoint === '/child/check-in/items') {
+      return [{ itemId: '11', name: '喝水', icon: '💧', unit: '杯', dailyTarget: 2, sortOrder: 1 },
+        { itemId: '12', name: '洗手', icon: '🧼', unit: '次', dailyTarget: 0, sortOrder: 2 }];
+    }
+    if (endpoint === '/child/check-in/today') return todayRows;
+    assert.equal(endpoint, '/child/check-in/calendar');
+    return { childId: child.childId, currentStreak: 2, checkedDates: [shanghaiDate()] };
+  };
+  await page.onShow();
+  assert.deepEqual(page.data.checkItems.map(item => item.key), ['11', '12']);
+  assert.equal(page.data.checkItems[0].targetText, '1 / 2杯');
+  assert.equal(page.data.checkItems[0].percent, 50);
+  assert.equal(page.data.checkItems[1].limitText, '不限次数');
+  assert.equal(page.data.doneCount, 1);
+  assert.equal(page.data.streak, 2);
+  assert.equal(page.data.monthChecked, 1);
+
+  let sent;
+  api.post = async (endpoint, body) => {
+    sent = { endpoint, body };
+    todayRows = [{ itemId: '11', itemName: '喝水', count: 2, dailyTarget: 2, reached: true },
+      { itemId: '12', itemName: '洗手', count: 3, dailyTarget: 0, reached: false }];
+    return { recordId: '31', itemId: '11', itemName: '喝水' };
+  };
+  await page.checkIn(event({ id: '11' }));
+  assert.deepEqual(sent, { endpoint: '/child/check-in?itemId=11', body: {} });
+  assert.equal(page.data.checkItems[0].reached, true);
+  assert.equal(page.data.checkItems[0].actionLabel, '今日已完成');
+  assert.equal(page.data.checkItems[0].percent, 100);
+  assert.equal(page.data.doneCount, 2);
+  assert.match(page.data.receipt, /「喝水」打卡成功，已连续打卡 2 天/);
+  assert.equal(calls.at(-1).endpoint, '/child/check-in/calendar');
+});
+test('健康打卡：日历格子按周日起排，且不能翻到未来月份', async () => {
+  const page = loadPage('health', 'CHILD');
+  const months = [];
+  api.get = async (endpoint, query) => {
+    if (endpoint === '/child/check-in/items') return [];
+    if (endpoint === '/child/check-in/today') return [];
+    months.push(query.month);
+    return { childId: child.childId, currentStreak: 0, checkedDates: [query.month + '-15'] };
+  };
+  await page.onShow();
+  const today = shanghaiDate();
+  const [year, month] = today.split('-').map(Number);
+  const prevMonth = month === 1 ? (year - 1) + '-12' : year + '-' + String(month - 1).padStart(2, '0');
+  assert.equal(page.data.month, today.slice(0, 7));
+  assert.equal(page.data.canNextMonth, false);
+  assert.equal(page.data.checkItems.length, 0);
+  assert.equal(page.data.monthChecked, 1);
+  assert.equal(page.data.cells.find(cell => cell.checked).key, today.slice(0, 7) + '-15');
+
+  await page.shiftMonth(event({ delta: 1 }));
+  assert.deepEqual(months, [today.slice(0, 7)]);
+  assert.equal(page.data.month, today.slice(0, 7));
+  await page.shiftMonth(event({ delta: -1 }));
+  assert.deepEqual(months, [today.slice(0, 7), prevMonth]);
+  assert.equal(page.data.canNextMonth, true);
+  assert.equal(page.data.monthLabel, prevMonth.slice(0, 4) + ' 年 ' + Number(prevMonth.slice(5)) + ' 月');
+  assert.equal(page.data.cells.find(cell => cell.checked).key, prevMonth + '-15');
+
+  page.setData({ month: '2026-02' });
+  await page.readChild();
+  assert.equal(page.data.cells.filter(cell => cell.pad).length, 0);
+  assert.equal(page.data.cells.length, 28);
+  assert.equal(page.data.cells.filter(cell => cell.future).length, 0);
+});
 test('菜单页：分类 chips 按 categoryId 聚合，可切换过滤', async () => {
   const page = loadPage('menu', 'CHILD');
   api.get = async endpoint => {
