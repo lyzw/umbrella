@@ -28,6 +28,13 @@
           <text class="home-list-arrow">›</text>
         </view>
       </view>
+      <view wx:if="{{role === 'PARENT'}}" class="home-list-row" bindtap="go" data-page="want-eat" aria-role="button" hover-class="home-list-row-active">
+        <view class="home-list-row-content">
+          <text class="home-list-icon confirmation-icon">想</text>
+          <view class="home-list-copy"><text class="home-list-title">孩子想吃</text><text class="home-list-subtitle">按日看孩子标记的想吃清单，采买与烹饪</text></view>
+          <text class="home-list-arrow">›</text>
+        </view>
+      </view>
       <view class="home-list-row" bindtap="go" data-page="wallet" aria-role="button" hover-class="home-list-row-active">
         <view class="home-list-row-content">
           <text class="home-list-icon wallet-icon">¥</text>

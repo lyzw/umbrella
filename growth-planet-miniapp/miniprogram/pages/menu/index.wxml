@@ -13,6 +13,17 @@
     <button class="{{sourceType === 'FAMILY' ? 'active' : ''}}" bindtap="source" data-source="FAMILY" disabled="{{busy}}">家庭餐单</button>
     <button class="{{sourceType === 'SCHOOL' ? 'active' : ''}}" bindtap="source" data-source="SCHOOL" disabled="{{busy}}">学校餐单</button>
   </view>
+  <view wx:if="{{role === 'CHILD' && frequent.length}}" class="quick-section">
+    <view class="quick-head"><text class="quick-title">孩子常吃</text><text class="small">点一下加入今天的想吃</text></view>
+    <scroll-view class="quick-scroll" scroll-x="true" enable-flex="true">
+      <view wx:for="{{frequent}}" wx:key="key" class="quick-card {{item.available ? '' : 'quick-card-disabled'}} {{item.isFavorite ? 'quick-card-active' : ''}}" bindtap="quickFavorite" data-key="{{item.key}}">
+        <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="quick-image" />
+        <view wx:else class="quick-image quick-fallback">🍲</view>
+        <view class="quick-name">{{item.name}}</view>
+        <view class="quick-meta">{{item.isFavorite ? '今天已想吃' : item.available ? '加入想吃' : '今日餐单暂无'}}</view>
+      </view>
+    </scroll-view>
+  </view>
   <view class="filter-row">
     <picker range="{{meals}}" value="{{mealIndex}}" bindchange="meal" disabled="{{busy}}"><view class="picker meal-picker">{{meals[mealIndex]}}⌄</view></picker>
     <view class="search-box"><text class="search-icon">⌕</text><input value="{{keyword}}" bindinput="search" placeholder="搜索餐食" maxlength="64" disabled="{{busy}}" /></view>
@@ -21,6 +32,9 @@
     <label class="filter-chip {{mildOnly ? 'selected' : ''}}"><checkbox value="mild" checked="{{mildOnly}}" disabled="{{busy}}" />无辣</label>
     <label wx:if="{{role === 'CHILD'}}" class="filter-chip {{favoritesOnly ? 'selected' : ''}}"><checkbox value="favorite" checked="{{favoritesOnly}}" disabled="{{busy}}" />我爱吃</label>
   </checkbox-group>
+  <scroll-view wx:if="{{categories.length > 2}}" class="category-chips" scroll-x="true" enable-flex="true">
+    <view wx:for="{{categories}}" wx:key="id" class="category-chip {{categoryId === item.id ? 'selected' : ''}}" bindtap="category" data-id="{{item.id}}">{{item.name}}<text class="category-count">{{item.count}}</text></view>
+  </scroll-view>
   <view wx:if="{{role === 'CHILD' && sourceType === 'SCHOOL'}}" class="notice">学校餐单仅供查看和标记想吃，不会创建确认单。</view>
   <view wx:if="{{menu && menu.missingDishIds.length}}" class="notice">部分菜品已不可用，请以当前餐单为准。</view>
   <view wx:if="{{role === 'PARENT' && invalidSelectedCount}}" class="notice warning-notice">
@@ -49,13 +63,13 @@
     <view class="dish-content">
       <view class="dish-title-row">
         <view class="section-title">{{item.name}}</view>
-        <button wx:if="{{role === 'CHILD' && item.sourceType === 'PRESET'}}" class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.isFavorite ? '取消想吃' : '标记想吃'}}">{{item.isFavorite ? '♥' : '♡'}}</button>
+        <button wx:if="{{role === 'CHILD'}}" class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.isFavorite ? '取消想吃' : '标记想吃'}}">{{item.isFavorite ? '♥' : '♡'}}</button>
         <label wx:if="{{role === 'PARENT'}}" class="menu-select-control {{item.selected ? 'selected' : ''}} {{!item.available ? 'disabled' : ''}}" catchtap="toggleDish" data-key="{{item.key}}">
           <checkbox checked="{{item.selected}}" disabled="{{busy || !item.available}}" />
           <text>{{item.selected ? '已加入' : '加入菜单'}}</text>
         </label>
       </view>
-      <view><text wx:if="{{role === 'PARENT'}}" class="badge">{{item.sourceLabel}}</text><text class="badge">{{item.spiceLabel}}</text><text class="badge {{item.available || item.selectable ? 'safe' : 'warning'}}">{{item.safetyLabel}}</text></view>
+      <view><text wx:if="{{role === 'PARENT'}}" class="badge">{{item.sourceLabel}}</text><text wx:if="{{item.categoryName}}" class="badge">{{item.categoryName}}</text><text class="badge">{{item.spiceLabel}}</text><text class="badge {{item.available || item.selectable ? 'safe' : 'warning'}}">{{item.safetyLabel}}</text></view>
       <view class="small">{{item.calories === null ? '热量暂无数据' : item.calories + ' kcal / 份'}}</view>
       <view wx:if="{{item.isDisliked}}" class="small">包含不喜欢的食物</view>
       <view class="price">{{item.virtualPrice}} <text class="small">虚拟单位 / 份</text></view>

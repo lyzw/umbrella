@@ -1,0 +1,60 @@
+<view class="page parent">
+  <view class="page-heading">
+    <text class="title">孩子想吃</text>
+    <text class="subtitle">按日期与餐次查看孩子标记的想吃清单，据此采购、烹饪，并标记处理进度</text>
+  </view>
+
+  <view wx:if="{{receipt}}" class="notice">{{receipt}}</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+
+  <view class="toolbar">
+    <picker wx:if="{{children.length > 1}}" range="{{childLabels}}" value="{{childIndex}}" bindchange="switchChild" disabled="{{busy}}">
+      <view class="picker">{{childLabels[childIndex]}}⌄</view>
+    </picker>
+    <text wx:else class="muted">{{childLabels[childIndex]}}</text>
+    <view class="range-nav">
+      <button class="compact-action" data-delta="-1" bindtap="shiftRange" aria-label="上一周">上一周</button>
+      <button class="compact-action" data-delta="1" bindtap="shiftRange" aria-label="下一周">下一周</button>
+    </view>
+  </view>
+  <view class="small range-label">{{rangeLabel}}</view>
+  <view wx:if="{{expiredCount > 0}}" class="notice">有 {{expiredCount}} 条过期未处理的想吃标记，往前翻可查看</view>
+
+  <block wx:if="{{ready}}">
+    <view wx:for="{{days}}" wx:key="menuDate" class="day-block">
+      <view class="section-title day-title">{{item.dateLabel}}</view>
+      <view wx:for="{{item.meals}}" wx:key="mealType" wx:for-item="meal" class="meal-block">
+        <view class="row">
+          <text class="meal-title">{{meal.mealLabel}}</text>
+          <text class="badge normal">{{meal.sourceLabel}}</text>
+        </view>
+        <view wx:for="{{meal.items}}" wx:key="key" wx:for-item="dish" class="item">
+          <view class="row">
+            <text class="item-title">{{dish.displayName}}</text>
+            <text class="badge {{dish.statusClass}}">{{dish.statusLabel}}</text>
+          </view>
+          <view wx:if="{{dish.flags}}" class="small flag-line">{{dish.flags}}</view>
+          <view class="small">{{dish.type === 'FAMILY' ? '家庭私有菜品' : '公共菜品'}}</view>
+          <view class="actions">
+            <button wx:for="{{dish.actions}}" wx:key="status" wx:for-item="action"
+              data-id="{{dish.wantEatId}}" data-status="{{action.status}}" data-version="{{dish.version}}"
+              bindtap="mark">{{action.label}}</button>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{days.length === 0}}" class="empty">这段时间孩子还没有标记想吃的菜，可以前后翻一周看看</view>
+
+    <view class="section-title list-title">采购汇总（{{totalItems}} 道菜）</view>
+    <view wx:for="{{summary}}" wx:key="key" class="item">
+      <view class="row">
+        <text class="item-title">{{item.name || '（菜品信息不可用）'}}</text>
+        <text class="badge normal">{{item.countText}}</text>
+      </view>
+      <view class="small">{{item.datesText}}</view>
+    </view>
+    <view wx:if="{{summary.length === 0}}" class="empty">本期没有需要采购的菜品</view>
+
+    <view class="notice">「想吃」是孩子按天按餐的意愿标记，与「确认单」是两件事；采购汇总仅按菜品去重，不含食材用量。</view>
+  </block>
+</view>

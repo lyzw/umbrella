@@ -570,3 +570,124 @@ test('家长建议家庭菜品时重建 dishRef，而不是只传裸 id', async 
   assert.equal(sent.endpoint, '/parent/approve/21/modify');
   assert.deepEqual(sent.body.items, [{ dishRef: { type: 'FAMILY', id: '7' }, quantity: 1 }]);
 });
+test('菜单页：分类 chips 按 categoryId 聚合，可切换过滤', async () => {
+  const page = loadPage('menu', 'CHILD');
+  api.get = async endpoint => {
+    if (endpoint === '/child/frequent-dish') return { dishes: [] };
+    return { menuId: '20', sourceType: 'FAMILY', menuDate: shanghaiDate(), mealType: 'LUNCH', canSubmit: true,
+      dishes: [{ ...dish, dishId: '99', categoryId: '3', categoryName: '主食', canSelect: true },
+        { ...dish, dishId: '100', categoryId: '4', categoryName: '汤羹', canSelect: true }] };
+  };
+  await page.read();
+  assert.deepEqual(page.data.categories.map(item => item.id), ['', '3', '4']);
+  assert.deepEqual(page.data.categories.map(item => item.name), ['全部', '主食', '汤羹']);
+  assert.deepEqual(page.data.categories.map(item => item.count), [2, 1, 1]);
+  assert.deepEqual(page.data.dishes.map(item => item.dishId), ['99', '100']);
+
+  page.category(event({ id: '4' }));
+  assert.equal(page.data.categoryId, '4');
+  assert.deepEqual(page.data.dishes.map(item => item.dishId), ['100']);
+  page.category(event({ id: '' }));
+  assert.deepEqual(page.data.dishes.map(item => item.dishId), ['99', '100']);
+  // 搜索与分类叠加时两者都生效
+  page.setData({ categoryId: '3', keyword: '不存在' });
+  page.render();
+  assert.deepEqual(page.data.dishes, []);
+});
+test('菜单页：常吃快捷区只允许标记今日餐单已有的菜品', async () => {
+  const page = loadPage('menu', 'CHILD');
+  const calls = [];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    if (endpoint === '/child/frequent-dish') {
+      return { dishes: [
+        { type: 'PRESET', id: '99', name: '合成餐食', count: 4, categoryId: '3', categoryName: '主食' },
+        { type: 'FAMILY', id: '7', name: '家庭番茄炒蛋', count: 2, categoryId: '3', categoryName: '主食' }
+      ] };
+    }
+    return { menuId: '20', sourceType: 'FAMILY', menuDate: shanghaiDate(), mealType: 'LUNCH',
+      canSubmit: true, dishes: [{ ...dish, canSelect: true, categoryName: '主食' }] };
+  };
+  await page.read();
+  assert.deepEqual(calls.map(call => call.endpoint), ['/menu/daily', '/child/frequent-dish']);
+  assert.equal(calls[1].query.limit, 6);
+  assert.deepEqual(page.data.frequent.map(item => item.key), ['PRESET:99', 'FAMILY:7']);
+  // 今日餐单里没有 FAMILY:7，标记它后端会 404，所以前端直接置为不可点。
+  assert.equal(page.data.frequent[0].available, true);
+  assert.equal(page.data.frequent[1].available, false);
+
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return { wantEat: [] }; };
+  await page.quickFavorite(event({ key: 'PRESET:99' }));
+  assert.deepEqual(sent, { endpoint: '/menu/mark-favorite', body: {
+    dishId: '99', dishType: 'PRESET', favorite: true,
+    menuId: '20', menuDate: shanghaiDate(), mealType: 'LUNCH' } });
+
+  sent = null;
+  const toasts = [];
+  global.wx.showToast = options => toasts.push(options.title);
+  await page.quickFavorite(event({ key: 'FAMILY:7' }));
+  assert.equal(sent, null);
+  assert.deepEqual(toasts, ['今日餐单暂无可标记的菜品']);
+});
+test('菜单页：常吃快捷区接口失败时静默降级，不影响主流程', async () => {
+  const page = loadPage('menu', 'CHILD');
+  api.get = async endpoint => {
+    if (endpoint === '/child/frequent-dish') throw Object.assign(new Error('服务不可用'), { status: 500 });
+    return { menuId: '20', sourceType: 'FAMILY', menuDate: shanghaiDate(), mealType: 'LUNCH',
+      canSubmit: true, dishes: [{ ...dish, canSelect: true }] };
+  };
+  await page.read();
+  assert.deepEqual(page.data.frequent, []);
+  assert.equal(page.data.ready, true);
+  assert.deepEqual(page.data.dishes.map(item => item.key), ['PRESET:99']);
+});
+test('家长想吃看板：按日期与餐次分组，状态流转回传乐观锁版本', async () => {
+  const page = loadPage('want-eat');
+  const today = shanghaiDate();
+  page.setData({ today, from: today, to: today, childId: child.childId });
+  api.get = async (endpoint, query) => {
+    assert.equal(endpoint, '/parent/want-eat');
+    assert.deepEqual(query, { childId: child.childId, from: today, to: today });
+    return { childId: child.childId, from: today, to: today, today, expiredCount: 1,
+      days: [{ menuDate: today, meals: [{ mealType: 'LUNCH', sourceType: 'FAMILY', menuId: '20',
+        items: [{ wantEatId: '31', type: 'PRESET', id: '99', name: '合成餐食', status: 'MARKED',
+          version: 0, expired: false, allergyConflict: false, disliked: true, missing: false }] }] }],
+      summary: { totalItems: 1, dishes: [{ type: 'PRESET', id: '99', name: '合成餐食', count: 1, dates: [today] }] } };
+  };
+  await page.read();
+  assert.equal(page.data.ready, true);
+  assert.equal(page.data.expiredCount, 1);
+  assert.equal(page.data.rangeLabel, today);
+  const dish0 = page.data.days[0].meals[0].items[0];
+  assert.equal(dish0.statusLabel, '未处理');
+  assert.equal(dish0.flags, '孩子忌口');
+  assert.equal(page.data.summary[0].countText, '共 1 天');
+
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return { wantEat: [] }; };
+  await page.mark(event({ id: '31', status: 'COOKED', version: '0' }));
+  assert.deepEqual(sent, { endpoint: '/parent/want-eat/31/status',
+    body: { status: 'COOKED', expectedVersion: 0 } });
+  assert.match(page.data.receipt, /已做/);
+
+  page.onHide();
+  assert.deepEqual(page.data.days, []);
+  assert.equal(page.data.ready, false);
+});
+test('家长想吃看板：菜品已下架时保留行占位并标注', async () => {
+  const page = loadPage('want-eat');
+  const today = shanghaiDate();
+  page.setData({ today, from: today, to: today, childId: child.childId });
+  api.get = async () => ({ childId: child.childId, from: today, to: today, today, expiredCount: 0,
+    days: [{ menuDate: today, meals: [{ mealType: 'DINNER', sourceType: 'FAMILY', menuId: '20',
+      items: [{ wantEatId: '32', type: 'FAMILY', id: '7', name: null, status: 'ADOPTED',
+        version: 2, expired: true, allergyConflict: false, disliked: false, missing: true }] }] }],
+    summary: { totalItems: 0, dishes: [] } });
+  await page.read();
+  const dish0 = page.data.days[0].meals[0].items[0];
+  assert.equal(dish0.displayName, '（菜品信息不可用）');
+  assert.equal(dish0.statusLabel, '已采购');
+  assert.equal(dish0.flags, '菜品已下架 · 已过期');
+  assert.deepEqual(dish0.actions.map(action => action.status), ['COOKED', 'MARKED']);
+});

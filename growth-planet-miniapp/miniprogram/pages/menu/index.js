@@ -11,7 +11,8 @@ ui.page({
   data: { role: '', busy: false, error: '', children: [], childIndex: 0, childId: '', sourceType: 'FAMILY',
     menuDate: shanghaiDate(), today: shanghaiDate(), mealType: 'LUNCH', meals: ['早餐', '午餐', '晚餐'], mealIndex: 1,
     menu: null, dishes: [], mildOnly: false, favoritesOnly: false, keyword: '', total: '0.00', count: 0,
-    sourceTab: 'FAMILY', missingCount: 0, missingDishIds: [], invalidSelectedCount: 0, ready: false },
+    sourceTab: 'FAMILY', missingCount: 0, missingDishIds: [], invalidSelectedCount: 0, ready: false,
+    categories: [], categoryId: '', frequent: [] },
   onLoad(query) { this.previousConfirmId = query.previousConfirmId || null; },
   onShow() {
     if (!ui.guard(this)) return;
@@ -20,6 +21,7 @@ ui.page({
     this.catalogDishes = [];
     this.selectedRefs = [];
     this.tabPinned = false;
+    this.frequentDishes = [];
     ui.run(this, async () => {
       if (this.data.role === 'PARENT') {
         await this.loadParent();
@@ -70,6 +72,7 @@ ui.page({
     const menu = await api.get('/menu/daily', { sourceType, menuDate, mealType, childId });
     this.allDishes = menu.dishes || [];
     this.setData({ menu, ready: true });
+    await this.loadFrequent();
     if (this.previousConfirmId && sourceType === 'FAMILY' && this.data.role === 'CHILD') {
       const previous = await api.get('/menu/confirm/' + this.previousConfirmId);
       if (!['REJECTED', 'CANCELLED'].includes(previous.status)) throw new Error('仅拒绝或撤回的确认单可重新提报');
@@ -82,6 +85,33 @@ ui.page({
       });
     }
     this.render();
+  },
+  // 派生「常吃」快捷区：取近 30 天每日想吃归纳出的高频菜，降低孩子的选择成本。
+  async loadFrequent() {
+    if (this.data.role !== 'CHILD') { this.frequentDishes = []; return; }
+    try {
+      const result = await api.get('/child/frequent-dish', { childId: this.data.childId, limit: 6 });
+      this.frequentDishes = (result.dishes || []).map(item => ({
+        ...item, key: dishKey(item), countText: '近30天 ' + item.count + ' 次'
+      }));
+    } catch (error) {
+      this.frequentDishes = []; // 快捷区为增强体验，失败时静默降级不影响主流程。
+    }
+  },
+  buildCategories(dishes) {
+    const seen = new Map();
+    dishes.forEach(dish => {
+      const key = dish.categoryId == null ? '' : String(dish.categoryId);
+      if (!seen.has(key)) seen.set(key, { id: key, name: dish.categoryName || '未分类', count: 0 });
+      seen.get(key).count += 1;
+    });
+    return [{ id: '', name: '全部', count: dishes.length }, ...Array.from(seen.values())];
+  },
+  decorateFrequent(dishes) {
+    return (this.frequentDishes || []).map(item => {
+      const match = dishes.find(dish => dishKey(dish) === item.key);
+      return { ...item, available: Boolean(match && match.selectable), isFavorite: Boolean(match && match.isFavorite) };
+    });
   },
   async readParent() {
     this.selectedRefs = [];
@@ -127,9 +157,17 @@ ui.page({
       const visible = all.filter(dish => dish.sourceType === sourceTab);
       const invalidSelectedCount = this.selectedRefs.filter(ref => !catalogKeys.has(dishKey(ref))).length
         + (Number(this.data.missingCount) || 0);
+      const categories = this.buildCategories(visible);
+      const categoryId = categories.some(item => item.id === this.data.categoryId) ? this.data.categoryId : '';
+      const inCategory = categoryId
+        ? visible.filter(dish => (dish.categoryId == null ? '' : String(dish.categoryId)) === categoryId)
+        : visible;
       this.setData({
         sourceTab,
-        dishes: filterDishes(visible, { mildOnly: this.data.mildOnly, keyword: this.data.keyword }),
+        categories,
+        categoryId,
+        frequent: [],
+        dishes: filterDishes(inCategory, { mildOnly: this.data.mildOnly, keyword: this.data.keyword }),
         count: this.selectedRefs.length,
         invalidSelectedCount
       });
@@ -137,23 +175,30 @@ ui.page({
     }
     const all = this.allDishes.map(dish => ({
       ...dish, key: dishKey(dish), quantity: this.quantities[dishKey(dish)] || 0, selectable: selectable(dish),
+      categoryName: dish.categoryName || '',
       safetyLabel: dish.allergyConflict ? '含过敏原，不可选择' : dish.allergenStatus !== 'DECLARED'
         ? '过敏信息待确认' : dish.status !== 'ON_SALE' ? '已下架' : '过敏信息已声明',
       spiceLabel: SPICE[dish.spiceLevel]
     }));
+    const categories = this.buildCategories(all);
+    const categoryId = categories.some(item => item.id === this.data.categoryId) ? this.data.categoryId : '';
+    const inCategory = categoryId
+      ? all.filter(dish => (dish.categoryId == null ? '' : String(dish.categoryId)) === categoryId)
+      : all;
     const selected = all.filter(d => d.quantity > 0);
     const total = selected.reduce((sum, d) => sum + cents(d.virtualPrice) * d.quantity, 0);
-    this.setData({ dishes: filterDishes(all, this.data), total: money(total), count: selected.length });
+    this.setData({ dishes: filterDishes(inCategory, this.data), categories, categoryId,
+      frequent: this.decorateFrequent(all), total: money(total), count: selected.length });
   },
   source(e) {
     if (this.data.busy || this.data.role === 'PARENT') return;
-    this.setData({ sourceType: e.currentTarget.dataset.source });
+    this.setData({ sourceType: e.currentTarget.dataset.source, categoryId: '' });
     ui.run(this, () => this.read());
   },
   sourceTab(e) {
     if (this.data.busy || this.data.role !== 'PARENT') return;
     this.tabPinned = true;
-    this.setData({ sourceTab: e.currentTarget.dataset.tab });
+    this.setData({ sourceTab: e.currentTarget.dataset.tab, categoryId: '' });
     this.render();
   },
   date(e) { this.setData({ menuDate: e.detail.value }); ui.run(this, () => this.read()); },
@@ -220,11 +265,16 @@ ui.page({
     return ui.run(this, async () => {
       const key = e.currentTarget.dataset.key;
       const dish = this.allDishes.find(d => dishKey(d) === key);
-      if (!dish || this.data.role !== 'CHILD' || dish.sourceType !== 'PRESET') return;
-      const result = await api.post('/menu/mark-favorite', { dishId: dish.dishId, favorite: !dish.isFavorite });
-      this.allDishes = this.allDishes.map(d => d.sourceType === 'PRESET'
-        ? { ...d, isFavorite: result.favoriteDishIds.includes(d.dishId) } : d);
-      this.render();
+      if (!dish || this.data.role !== 'CHILD' || !this.data.menu) return;
+      await api.post('/menu/mark-favorite', {
+        dishId: dish.dishId,
+        dishType: dish.sourceType,
+        favorite: !dish.isFavorite,
+        menuId: this.data.menu.menuId,
+        menuDate: this.data.menuDate,
+        mealType: this.data.mealType
+      });
+      await this.read();
     });
   },
   checkout() {
@@ -242,6 +292,30 @@ ui.page({
     wx.navigateTo({ url: '/pages/confirmation/index?compose=1' });
   },
   goDishManage() { wx.navigateTo({ url: '/pages/dish-manage/index' }); },
+  category(e) {
+    this.setData({ categoryId: e.currentTarget.dataset.id || '' });
+    this.render();
+  },
+  quickFavorite(e) {
+    return ui.run(this, async () => {
+      const key = e.currentTarget.dataset.key;
+      const item = (this.frequentDishes || []).find(row => row.key === key);
+      const dish = this.allDishes.find(row => dishKey(row) === key);
+      if (!item || !dish || !selectable(dish)) {
+        wx.showToast({ title: '今日餐单暂无可标记的菜品', icon: 'none' });
+        return;
+      }
+      await api.post('/menu/mark-favorite', {
+        dishId: item.id,
+        dishType: item.type,
+        favorite: !dish.isFavorite,
+        menuId: this.data.menu.menuId,
+        menuDate: this.data.menuDate,
+        mealType: this.data.mealType
+      });
+      await this.read();
+    });
+  },
   retry() { ui.run(this, () => this.data.role === 'PARENT' ? this.loadParent() : this.read()); },
   imageError(e) {
     const key = e.currentTarget.dataset.key;
@@ -255,7 +329,8 @@ ui.page({
     this.catalogDishes = [];
     this.selectedRefs = [];
     this.tabPinned = false;
+    this.frequentDishes = [];
     this.setData({ dishes: [], menu: null, missingCount: 0, missingDishIds: [], invalidSelectedCount: 0,
-      total: '0.00', count: 0, ready: false });
+      total: '0.00', count: 0, ready: false, categories: [], categoryId: '', frequent: [] });
   }
 });

@@ -13,6 +13,22 @@
 .search-box input { padding-left: 40px; }
 .search-icon { position: absolute; left: 14px; top: 0; z-index: 1; color: #687386; font-size: 20px; line-height: 48px; }
 .filter-chips { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px; }
+.quick-section { margin: 4px 0 12px; }
+.quick-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.quick-title { font-size: 15px; font-weight: 700; color: #1f2733; }
+.quick-scroll { white-space: nowrap; width: 100%; }
+.quick-card { display: inline-flex; flex-direction: column; align-items: center; width: 96px; margin-right: 10px; padding: 10px 8px; border: 1px solid #e6ebf2; border-radius: var(--radius-md); background: #fff; vertical-align: top; box-shadow: var(--shadow-soft); }
+.quick-card-active { border-color: var(--primary-border); background: var(--primary-soft); }
+.quick-card-disabled { opacity: .55; }
+.quick-image { width: 56px; height: 56px; border-radius: 50%; }
+.quick-fallback { display: flex; align-items: center; justify-content: center; background: #eef3fb; font-size: 26px; }
+.quick-name { width: 100%; margin-top: 7px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; text-align: center; color: #1f2733; }
+.quick-meta { margin-top: 3px; font-size: 11px; color: #687386; }
+.category-chips { display: flex; gap: 8px; margin: 8px 0 4px; white-space: nowrap; }
+.category-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 38px; padding: 6px 13px; border: 1px solid #e6ebf2; border-radius: 19px; background: #fff; color: #5b6776; font-size: 13px; font-weight: 600; }
+.category-chip.selected { color: var(--primary); background: var(--primary-soft); border-color: var(--primary-border); }
+.category-count { font-size: 11px; color: #8a95a8; font-weight: 500; }
+.category-chip.selected .category-count { color: var(--primary); }
 .filter-chip { min-height: 40px; padding: 7px 13px; border: 1px solid #e6ebf2; border-radius: 20px; background: #fff; color: #5b6776; font-size: 13px; font-weight: 600; display: flex; align-items: center; }
 .filter-chip checkbox { width: 0; height: 0; opacity: 0; margin: 0; }
 .filter-chip.selected { color: var(--primary); background: var(--primary-soft); border-color: var(--primary-border); }
