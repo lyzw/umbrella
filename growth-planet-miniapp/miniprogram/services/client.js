@@ -11,7 +11,8 @@ function createClient(platform, getSession, clearSession, base, timeout = 12000,
     }));
     // GET/DELETE 通过 query string 传参；POST/PUT 通过 body。
     const queryInUrl = method === 'GET' || method === 'DELETE';
-    let url = base.replace(/\/$/, '') + '/api' + path;
+    // C 端接口前缀统一为 /api/mini（2026-09-22 多模块改造）。
+    let url = base.replace(/\/$/, '') + '/api/mini' + path;
     if (queryInUrl && data) {
       const query = Object.keys(data).filter(k => data[k] !== undefined && data[k] !== null && data[k] !== '')
         .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(data[k])).join('&');

@@ -1,6 +1,6 @@
 # growth-planet-admin · 成长星球运营后台（里程碑 A）
 
-Vue 3 + Vite + Element Plus。对接后端 `growth-planet` 的 `/api/console/**` 独立后台接口（与 C 端 `/api/**`、旧 `/api/admin/**` 完全隔离）。
+Vue 3 + Vite + Element Plus。对接后端 `growth-planet` 的 `/api/admin/**` 独立后台接口（与 C 端 `/api/mini/**` 物理隔离）。
 
 ## 启动
 
