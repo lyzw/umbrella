@@ -49,3 +49,6 @@ wx:
 compliance:
   collection-enabled: false
   self-attestation-accepted: false
+  # 若把 collection-enabled 改为 true，必须同时提供 grades / allergens / schools / approval-reference /
+  # catalog-reference / agreement-text，否则启动即失败（ComplianceProperties#validateCatalogOnStartup），
+  # 避免过敏原目录为空导致全体菜品 UNKNOWN、儿童端静默不可点菜。

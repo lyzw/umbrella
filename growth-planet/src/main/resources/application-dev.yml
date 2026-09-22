@@ -23,3 +23,4 @@ compliance:
   agreement-text: "合成演示协议，仅用于测试 PROFILE 同意及撤回，不可采集真实儿童资料。"
   grades: [一年级, 二年级, 三年级, 四年级, 五年级, 六年级]
   allergens: [PEANUT, MILK, EGG]
+  schools: [合成第一小学, 合成第二小学, 合成第三小学]

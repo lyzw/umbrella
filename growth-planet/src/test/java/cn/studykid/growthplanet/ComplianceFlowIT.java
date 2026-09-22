@@ -47,8 +47,10 @@ class ComplianceFlowIT extends BaseIT {
         } finally {
             policy.setAgreementVersion("v1");
         }
+        // 年级、过敏原、学校三者共用同一发布目录机制（学校为 R4-lite 新增：校名是学校菜单的归属键文本）。
         for (String invalid : new String[]{profileJson(ctx).replace("三年级", "未发布年级"),
-                profileJson(ctx).replace("PEANUT", "UNKNOWN_CODE")}) {
+                profileJson(ctx).replace("PEANUT", "UNKNOWN_CODE"),
+                profileJson(ctx).replace("合成学校", "未登记小学")}) {
             mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
                     .contentType(JSON).content(invalid)).andExpect(status().isBadRequest());
         }
@@ -57,6 +59,39 @@ class ComplianceFlowIT extends BaseIT {
         mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isConflict());
         assertEquals(0, profiles.selectCount(new QueryWrapper<ChildProfile>().eq("user_id", childUserId(ctx))));
+    }
+
+    @Test
+    void collectionRequiresCompleteCatalogsBeforeStartup() {
+        // R5-d：开启采集却缺目录 ⇒ 启动即失败。否则过敏原目录为空会让 validAllergens 恒 false、
+        // 全体菜品被判 UNKNOWN，孩子端静默不可点菜而没有任何提示。
+        boolean enabled = policy.isCollectionEnabled();
+        java.util.List<String> grades = policy.getGrades();
+        java.util.List<String> allergens = policy.getAllergens();
+        java.util.List<String> schools = policy.getSchools();
+        try {
+            policy.setCollectionEnabled(false);
+            policy.setGrades(java.util.List.of());
+            policy.setAllergens(java.util.List.of());
+            policy.setSchools(java.util.List.of());
+            // 未开启采集：保持"可以启动"的既有行为，不因目录为空而拒绝启动。
+            policy.validateCatalogOnStartup();
+            policy.setCollectionEnabled(true);
+            IllegalStateException error = assertThrows(IllegalStateException.class, policy::validateCatalogOnStartup);
+            assertTrue(error.getMessage().contains("compliance.grades"));
+            assertTrue(error.getMessage().contains("compliance.allergens"));
+            assertTrue(error.getMessage().contains("compliance.schools"));
+            // 三个目录齐备（含学校目录，R4-lite）后即可启动。
+            policy.setGrades(java.util.List.of("三年级"));
+            policy.setAllergens(java.util.List.of("PEANUT"));
+            policy.setSchools(java.util.List.of("合成学校"));
+            policy.validateCatalogOnStartup();
+        } finally {
+            policy.setCollectionEnabled(enabled);
+            policy.setGrades(grades);
+            policy.setAllergens(allergens);
+            policy.setSchools(schools);
+        }
     }
 
     @Test

@@ -65,8 +65,9 @@ public class MenuController {
     @RequireRole(RoleEnum.ADMIN)
     public Result<PageResp<DishResp>> dishes(@RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize, @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) String status, @RequestParam(required = false) String keyword) {
-        return Result.ok(catalog.listDishes(page, pageSize, categoryId, status, keyword));
+            @RequestParam(required = false) String status, @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String allergenStatus) {
+        return Result.ok(catalog.listDishes(page, pageSize, categoryId, status, keyword, allergenStatus));
     }
 
     @PostMapping("/admin/menu-daily")

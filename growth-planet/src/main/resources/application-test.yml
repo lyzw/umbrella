@@ -33,3 +33,6 @@ compliance:
   agreement-text: "合成测试协议，不适用于真实儿童数据。"
   grades: [一年级, 二年级, 三年级, 四年级, 五年级, 六年级]
   allergens: [PEANUT, MILK, EGG]
+  # 必须包含「合成学校」：BaseIT 的共享档案与 CatalogFlowIT 的学校菜单用例都用该值，
+  # 缺了会让所有依赖 readyProfile() 的集成测试整片 E400。
+  schools: [合成学校, 合成第一小学, 合成第二小学]

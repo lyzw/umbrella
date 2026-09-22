@@ -147,14 +147,16 @@ public class CatalogService {
         return dishResponse(dish);
     }
 
-    public PageResp<DishResp> listDishes(int page, int pageSize, Long categoryId, String status, String keyword) {
+    /** 管理端菜品列表；allergenStatus 用于筛出「未声明」待补全清单（R5-a）。 */
+    public PageResp<DishResp> listDishes(int page, int pageSize, Long categoryId, String status, String keyword,
+            String allergenStatus) {
         requireRole("ADMIN");
-        return queryDishes(page, pageSize, categoryId, status, keyword);
+        return queryDishes(page, pageSize, categoryId, status, keyword, allergenStatus);
     }
 
     public PageResp<DishResp> listParentDishes(int page, int pageSize, Long categoryId, String keyword) {
         requireCurrentFamilyParent();
-        return queryDishes(page, pageSize, categoryId, "ON_SALE", keyword);
+        return queryDishes(page, pageSize, categoryId, "ON_SALE", keyword, null);
     }
 
     /** 家长可见的预置分类（ENABLED），供家庭私有菜品类目选择（F-01，不可自建分类）。 */
@@ -165,18 +167,21 @@ public class CatalogService {
                 .stream().map(this::categoryResponse).toList();
     }
 
-    private PageResp<DishResp> queryDishes(int page, int pageSize, Long categoryId, String status, String keyword) {
+    private PageResp<DishResp> queryDishes(int page, int pageSize, Long categoryId, String status, String keyword,
+            String allergenStatus) {
         long offset = offset(page, pageSize);
         if (categoryId != null) {
             positive(categoryId);
         }
         if (status != null && !Set.of("ON_SALE", "OFF_SALE").contains(status)
+                || allergenStatus != null && !Set.of("UNKNOWN", "DECLARED").contains(allergenStatus)
                 || keyword != null && (keyword.isBlank() || keyword.length() > 64)) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
         }
         QueryWrapper<Dish> query = new QueryWrapper<Dish>()
                 .eq(categoryId != null, "category_id", categoryId)
                 .eq(status != null, "status", status)
+                .eq(allergenStatus != null, "allergen_status", allergenStatus)
                 .like(keyword != null, "name", keyword);
         long total = dishes.selectCount(query);
         List<DishResp> items = dishes.selectList(query.orderByAsc("id")
@@ -190,7 +195,13 @@ public class CatalogService {
         if (req.getSchool() == null || req.getSchool().isBlank()) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
         }
-        return upsertMenu(req, "SCHOOL", null, req.getSchool().trim());
+        String school = req.getSchool().trim();
+        // R4-lite：校名必须来自发布目录。校名仍是 SCHOOL 菜单的归属键文本，若管理员手输错字，
+        // 与家长档案里的校名逐字不一致 ⇒ 该校孩子看不到菜单（daily/recommend/menuIndex 均按文本比对）。
+        if (!policy.getSchools().contains(school)) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "学校不在发布目录");
+        }
+        return upsertMenu(req, "SCHOOL", null, school);
     }
 
     public MenuUpsertResp upsertFamilyMenu(MenuDailyReq req) {
@@ -1128,6 +1139,11 @@ public class CatalogService {
         DishCategory category = categories.selectById(req.getCategoryId());
         if (category == null || !"ENABLED".equals(category.getStatus()) || !validAllergens(req.getAllergens())) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        }
+        // R5-c：上架即对儿童可见 ⇒ 必须先声明过敏原。未声明只能存在于下架态（保留草稿式录入体验），
+        // 避免「未登记过敏原」的菜悄悄上线让孩子点不了（safetyStatus 会判 UNKNOWN、canSelect=false）。
+        if ("ON_SALE".equals(req.getStatus()) && !"DECLARED".equals(req.getAllergenStatus())) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "上架菜品必须先声明过敏原");
         }
         if (req.getImageUrl() != null) {
             try {

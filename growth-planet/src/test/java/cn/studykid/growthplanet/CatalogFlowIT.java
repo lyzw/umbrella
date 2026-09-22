@@ -287,12 +287,82 @@ class CatalogFlowIT extends BaseIT {
     }
 
     @Test
+    void schoolNameMustComeFromPublishedDirectoryOnBothSides() throws Exception {
+        var ctx = readyProfile();
+        String admin = adminToken();
+        long dishId = dish(admin, category(admin), "Rice", List.of(), "DECLARED");
+        // 录入侧：校名不在发布目录 ⇒ 拒绝。校名是 SCHOOL 菜单的归属键文本，手输错字会让该校孩子看不到菜单。
+        var body = menuBody(List.of(dishId), today());
+        body.put("school", "未登记小学");
+        mockMvc.perform(post("/api/admin/menu-daily").header("Authorization", bearer(admin))
+                .contentType(JSON).content(json(body))).andExpect(status().isBadRequest());
+        // 目录内校名可发布，且与家长档案同值时孩子能取到（展示闭环），但依旧不可下单。
+        body.put("school", profile(ctx).getSchool());
+        long menuId = id(mockMvc.perform(post("/api/admin/menu-daily").header("Authorization", bearer(admin))
+                .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "menuId");
+        daily(ctx.childToken(), "SCHOOL", null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.menuId").value(Long.toString(menuId)))
+                .andExpect(jsonPath("$.data.canSubmit").value(false));
+        // 档案侧：校名不在发布目录 ⇒ 拒绝（与年级、过敏原同一白名单机制）。
+        String rejected = profileJson(ctx).replace("\"school\":\"合成学校\"", "\"school\":\"未登记小学\"");
+        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+                .contentType(JSON).content(rejected)).andExpect(status().isBadRequest());
+        // 已在目录内的校名不受影响。
+        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+                .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
+    }
+
+    @Test
+    void adminListsDishesPendingAllergenDeclaration() throws Exception {
+        String admin = adminToken();
+        long categoryId = category(admin);
+        long declared = dish(admin, categoryId, "DeclaredOnly", List.of("MILK"), "DECLARED");
+        // 未声明的菜只能存在于下架态（R5-c），仍必须能被管理员筛出来补全。
+        long pending = dish(admin, categoryId, "PendingOnly", List.of(), "UNKNOWN", "OFF_SALE");
+        mockMvc.perform(get("/api/admin/dish").param("allergenStatus", "UNKNOWN").param("keyword", "PendingOnly")
+                .header("Authorization", bearer(admin))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.items[0].dishId").value(Long.toString(pending)))
+                .andExpect(jsonPath("$.data.items[0].allergenStatus").value("UNKNOWN"));
+        mockMvc.perform(get("/api/admin/dish").param("allergenStatus", "DECLARED").param("keyword", "PendingOnly")
+                .header("Authorization", bearer(admin))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(0));
+        mockMvc.perform(get("/api/admin/dish").param("allergenStatus", "DECLARED").param("keyword", "DeclaredOnly")
+                .header("Authorization", bearer(admin))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].dishId").value(Long.toString(declared)));
+        mockMvc.perform(get("/api/admin/dish").param("allergenStatus", "SAFE")
+                .header("Authorization", bearer(admin))).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void onSaleRequiresDeclaredAllergen() throws Exception {
+        String admin = adminToken();
+        long categoryId = category(admin);
+        // 直接上架未声明的菜 ⇒ 拒绝（否则孩子端静默点不了：safetyStatus=UNKNOWN、canSelect=false）。
+        mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
+                .contentType(JSON).content(json(dishBody(categoryId, "Draft", List.of(), "UNKNOWN", "ON_SALE"))))
+                .andExpect(status().isBadRequest());
+        long draft = dish(admin, categoryId, "Draft", List.of(), "UNKNOWN", "OFF_SALE");
+        // 未声明菜品不允许改为上架
+        mockMvc.perform(put("/api/admin/dish/{id}", draft).header("Authorization", bearer(admin))
+                .contentType(JSON).content(json(dishBody(categoryId, "Draft", List.of(), "UNKNOWN", "ON_SALE"))))
+                .andExpect(status().isBadRequest());
+        assertEquals("OFF_SALE", dishes.selectById(draft).getStatus());
+        // 补上声明后即可上架
+        mockMvc.perform(put("/api/admin/dish/{id}", draft).header("Authorization", bearer(admin))
+                .contentType(JSON).content(json(dishBody(categoryId, "Draft", List.of(), "DECLARED", "ON_SALE"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.allergenStatus").value("DECLARED"));
+        assertEquals("ON_SALE", dishes.selectById(draft).getStatus());
+    }
+
+    @Test
     void displayExplainsUnknownAllergyDislikeAndMissingDishes() throws Exception {
         var ctx = readyProfile();
         String admin = adminToken();
         long categoryId = category(admin);
         long safe = dish(admin, categoryId, "Carrot stew", List.of(), "DECLARED");
-        long unknown = dish(admin, categoryId, "Unknown", List.of(), "UNKNOWN");
+        long unknown = unknownDish(admin, categoryId, "Unknown");
         long allergic = dish(admin, categoryId, "Peanut dish", List.of("PEANUT"), "DECLARED");
         long removed = dish(admin, categoryId, "Removed", List.of(), "DECLARED");
         long offSale = dish(admin, categoryId, "Unavailable", List.of(), "DECLARED");
@@ -329,7 +399,7 @@ class CatalogFlowIT extends BaseIT {
         long categoryId = category(admin);
         long first = dish(admin, categoryId, "First", List.of(), "DECLARED");
         long second = dish(admin, categoryId, "Second", List.of("MILK"), "DECLARED");
-        long unknown = dish(admin, categoryId, "Unknown", List.of(), "UNKNOWN");
+        long unknown = unknownDish(admin, categoryId, "Unknown");
         long allergic = dish(admin, categoryId, "Peanut", List.of("PEANUT"), "DECLARED");
         long outside = dish(admin, categoryId, "Outside", List.of(), "DECLARED");
         long menuId = familyMenu(ctx, List.of(first, second, unknown, allergic), today());
@@ -411,7 +481,7 @@ class CatalogFlowIT extends BaseIT {
         var ctx = readyProfile();
         var other = readyProfile();
         String admin = adminToken();
-        long dishId = dish(admin, category(admin), "Want-eatable", List.of(), "UNKNOWN");
+        long dishId = unknownDish(admin, category(admin), "Want-eatable");
         long menuId = familyMenu(ctx, List.of(dishId), today());
         // 幂等：标记两次仍只有一行
         for (int attempt = 0; attempt < 2; attempt++) {
@@ -732,15 +802,38 @@ class CatalogFlowIT extends BaseIT {
 
     private long dish(String admin, long categoryId, String name, List<String> allergens, String allergenStatus)
             throws Exception {
+        return dish(admin, categoryId, name, allergens, allergenStatus, "ON_SALE");
+    }
+
+    private long dish(String admin, long categoryId, String name, List<String> allergens, String allergenStatus,
+            String status) throws Exception {
         return id(mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
-                .contentType(JSON).content(json(dishBody(categoryId, name, allergens, allergenStatus))))
+                .contentType(JSON).content(json(dishBody(categoryId, name, allergens, allergenStatus, status))))
                 .andExpect(status().isOk()).andReturn(), "dishId");
     }
 
     private Map<String, Object> dishBody(long categoryId, String name, List<String> allergens, String allergenStatus) {
+        return dishBody(categoryId, name, allergens, allergenStatus, "ON_SALE");
+    }
+
+    private Map<String, Object> dishBody(long categoryId, String name, List<String> allergens, String allergenStatus,
+            String status) {
         return new LinkedHashMap<>(Map.of("categoryId", Long.toString(categoryId), "name", name,
                 "virtualPrice", "18.00", "allergens", allergens, "allergenStatus", allergenStatus,
-                "spiceLevel", 0, "status", "ON_SALE"));
+                "spiceLevel", 0, "status", status));
+    }
+
+    /**
+     * 构造「已上架但过敏信息未知」的菜品。R5-c 生效后该组合无法经 API 创建（ON_SALE 必须先 DECLARED），
+     * 故先以 OFF_SALE 合法创建，再直接改库模拟「历史行 / 发布目录漂移」，
+     * 以保留孩子端 UNKNOWN 展示路径（safetyStatus=UNKNOWN、canSelect=false）的覆盖。
+     */
+    private long unknownDish(String admin, long categoryId, String name) throws Exception {
+        long id = dish(admin, categoryId, name, List.of(), "UNKNOWN", "OFF_SALE");
+        Dish row = dishes.selectById(id);
+        row.setStatus("ON_SALE");
+        dishes.updateById(row);
+        return id;
     }
 
     private Map<String, Object> menuBody(List<Long> dishIds, LocalDate date) {
