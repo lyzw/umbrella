@@ -814,3 +814,18 @@ CREATE TABLE life_wish_menu (
 -- wish_id > 0     ：已被该心愿单的上一次提交收录（撤回后保留，用于回显"上次提交了哪些"）
 ALTER TABLE usr_child_want_eat ADD COLUMN wish_id BIGINT NOT NULL DEFAULT 0 COMMENT '被收编的心愿单 id，0=未收编';
 ALTER TABLE usr_child_want_eat ADD KEY idx_want_eat_wish (wish_id);
+
+-- ============ sys_compliance_checklist（运营合规清单，里程碑 A 批次 4 / M5）============
+CREATE TABLE sys_compliance_checklist (
+  id          BIGINT       NOT NULL AUTO_INCREMENT,
+  item_key    VARCHAR(64)  NOT NULL                    COMMENT '清单项静态键（播种后不变）',
+  item_text   VARCHAR(255) NOT NULL                    COMMENT '清单项描述',
+  checked     TINYINT      NOT NULL DEFAULT 0          COMMENT '0=未勾检 1=已勾检',
+  checked_by  BIGINT       DEFAULT NULL                COMMENT '最近勾检人（后台 admin_id）',
+  checked_at  DATETIME     DEFAULT NULL                COMMENT '最近勾检时间',
+  create_time DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  delete_at   BIGINT       NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_item_key (item_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='运营合规清单（M5 合规与隐私中心）';

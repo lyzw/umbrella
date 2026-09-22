@@ -77,6 +77,7 @@ public class AdminDataInitializer implements CommandLineRunner {
         Map<String, SysRole> roleMap = ensureRoles();
         seedPermissionMatrix(roleMap);
         ensureBootstrapSuperAdmin(roleMap.get("SA"));
+        seedComplianceChecklist();
     }
 
     private boolean adminSchemaPresent() {
@@ -206,6 +207,13 @@ public class AdminDataInitializer implements CommandLineRunner {
         supplementPerm(roleMap, "CP", AdminResource.WALLET, "view");
         // RA：审批记录 查看=SA,OP,DC,CP,RA。
         supplementPerm(roleMap, "RA", AdminResource.APPROVAL, "view");
+
+        // M5 补播：隐私域（同意留痕/隐私工单/核验记录/合规清单）查看列 = SA,CP,RA（DC/OP/CR 不可见）。
+        // CP 已在基线授予 view/approve，SA 运行时旁路；此处补齐 RA 的只读视角。
+        supplementPerm(roleMap, "RA", AdminResource.CONSENT, "view");
+        supplementPerm(roleMap, "RA", AdminResource.PRIVACY_TICKET, "view");
+        supplementPerm(roleMap, "RA", AdminResource.VERIFY, "view");
+        supplementPerm(roleMap, "RA", AdminResource.COMPLIANCE, "view");
     }
 
     /** 按（角色×资源×动作）粒度补播：仅当该权限点尚不存在时插入，用于存量角色的差量基线。 */
@@ -300,6 +308,46 @@ public class AdminDataInitializer implements CommandLineRunner {
                     + "CONSOLE_BOOTSTRAP_PASSWORD 或控制台立即修改！");
         }
     }
+
+    // ==================== 合规清单默认项（M5） ====================
+
+    /** 幂等播种合规清单默认项（按 item_key 去重，不覆盖控制台中的手工勾检状态）。 */
+    private void seedComplianceChecklist() {
+        if (!complianceSchemaPresent()) {
+            log.warn("[admin-init] 未检测到 sys_compliance_checklist 表，跳过合规清单播种（请确认已执行 v010_compliance_checklist.sql）");
+            return;
+        }
+        for (String[] item : COMPLIANCE_SEED) {
+            String key = item[0];
+            Long existing = jdbc.queryForObject(
+                    "SELECT COUNT(*) FROM sys_compliance_checklist WHERE item_key = ? AND delete_at = 0",
+                    Long.class, key);
+            if (existing != null && existing > 0) {
+                continue;
+            }
+            jdbc.update(
+                    "INSERT INTO sys_compliance_checklist (item_key, item_text, checked, create_time) "
+                            + "VALUES (?, ?, 0, CURRENT_TIMESTAMP)",
+                    key, item[1]);
+        }
+    }
+
+    private boolean complianceSchemaPresent() {
+        Integer count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.TABLES "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_compliance_checklist'",
+                Integer.class);
+        return count != null && count > 0;
+    }
+
+    /** M5 合规清单静态默认项：key + 描述。仅播种基线，勾检状态由运营在控制台维护。 */
+    private static final String[][] COMPLIANCE_SEED = {
+            {"AGE_VERIFY", "已核验儿童年龄（≥8 岁）与监护人身份真实性"},
+            {"CONSENT_VALID", "监护人同意书（ORDER/PROFILE）在有效期内且未被撤回"},
+            {"DATA_MINIMIZE", "数据导出/删除仅针对授权范围（家庭/孩子），不含无关家庭成员"},
+            {"RETENTION", "敏感数据留存符合最小必要与留存期要求"},
+            {"BREACH_SELFCHECK", "本周期已完成数据安全与越权访问自查"},
+    };
 
     private boolean isProductionLike() {
         for (String profile : environment.getActiveProfiles()) {
