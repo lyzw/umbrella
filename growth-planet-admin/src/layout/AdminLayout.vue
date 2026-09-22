@@ -14,6 +14,13 @@
           <el-menu-item index="/accounts">后台账号</el-menu-item>
           <el-menu-item index="/role-perms">角色权限矩阵</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu v-if="canSeeAudit" index="audit">
+          <template #title>
+            <el-icon><Document /></el-icon><span>审计与日志</span>
+          </template>
+          <el-menu-item index="/audit-logs">操作日志</el-menu-item>
+          <el-menu-item index="/c-audit-logs">C 端关键操作</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -36,7 +43,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Monitor, User } from '@element-plus/icons-vue'
+import { Monitor, User, Document } from '@element-plus/icons-vue'
 import { auth, doLogout, hasPerm } from '../stores/auth'
 
 const route = useRoute()
@@ -44,6 +51,8 @@ const router = useRouter()
 const activeMenu = computed(() => route.path)
 // 后台账号菜单：拥有「后台账号:view」权限才可见（SA 全可见）
 const canSeeAccounts = computed(() => hasPerm('后台账号', 'view'))
+// 审计菜单：拥有「操作日志:view」或「C端关键操作:view」权限可见
+const canSeeAudit = computed(() => hasPerm('操作日志', 'view') || hasPerm('C端关键操作', 'view'))
 
 async function onLogout() {
   await doLogout()

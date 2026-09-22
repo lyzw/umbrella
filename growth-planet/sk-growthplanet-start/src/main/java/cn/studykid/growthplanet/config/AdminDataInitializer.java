@@ -180,6 +180,37 @@ public class AdminDataInitializer implements CommandLineRunner {
         grant(roleMap, seeded, "RA", AdminResource.AUDIT_LOG, "view", "export");
         grant(roleMap, seeded, "RA", AdminResource.C_AUDIT, "view", "export");
         grant(roleMap, seeded, "RA", AdminResource.HELP, "view");
+
+        // M6 补播：详设 §3.4 规定「操作日志/C 端关键操作 查看=全部角色」。
+        // 上面的 grant 按角色粒度幂等会跳过已播种角色，这里按（角色×资源）粒度补齐 M6 基线查看权限，
+        // 不触碰各角色已有的其他权限点（不覆盖控制台手工调整）。
+        for (String roleCode : new String[]{"OP", "CR", "DC", "CP"}) {
+            supplement(roleMap, roleCode, AdminResource.AUDIT_LOG, "view");
+            supplement(roleMap, roleCode, AdminResource.C_AUDIT, "view");
+        }
+    }
+
+    /** 按（角色×资源）粒度补播：仅当该角色在该资源上尚无任何权限点时插入，用于存量角色的新增基线资源。 */
+    private void supplement(Map<String, SysRole> roleMap, String roleCode,
+                            String resource, String... actions) {
+        SysRole role = roleMap.get(roleCode);
+        if (role == null) {
+            return;
+        }
+        long existing = rolePermissions.selectCount(new LambdaQueryWrapper<SysRolePermission>()
+                .eq(SysRolePermission::getRoleId, role.getId())
+                .eq(SysRolePermission::getResource, resource));
+        if (existing > 0) {
+            return;
+        }
+        for (String action : actions) {
+            SysRolePermission perm = new SysRolePermission();
+            perm.setRoleId(role.getId());
+            perm.setResource(resource);
+            perm.setAction(action);
+            rolePermissions.insert(perm);
+            log.info("[admin-init] 已为角色 {} 补播权限点 {}:{}（§3.4 基线）", roleCode, resource, action);
+        }
     }
 
     /** 为角色授予资源上的若干操作；角色已播种过则整体跳过（幂等，按角色粒度）。 */
