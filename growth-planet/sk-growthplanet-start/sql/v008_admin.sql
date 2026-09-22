@@ -71,7 +71,7 @@ CREATE TABLE `sys_admin_user` (
 DROP TABLE IF EXISTS `sys_admin_login_log`;
 CREATE TABLE `sys_admin_login_log` (
   `id`          BIGINT       NOT NULL AUTO_INCREMENT,
-  `admin_id`    BIGINT       NOT NULL,
+  `admin_id`    BIGINT       DEFAULT NULL COMMENT '关联管理员 id；账号不存在/未知时为 NULL（记录失败尝试）',
   `username`    VARCHAR(64)  NOT NULL,
   `ip`          VARCHAR(64)  DEFAULT NULL,
   `result`      VARCHAR(16)  NOT NULL COMMENT 'SUCCESS/FAILURE',
