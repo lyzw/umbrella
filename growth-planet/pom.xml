@@ -12,171 +12,82 @@
     </parent>
 
     <groupId>cn.studykid.growthplanet</groupId>
-    <artifactId>growth-planet</artifactId>
+    <artifactId>sk-growthplanet</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>growth-planet</name>
-    <description>成长星球 V0.0.1 Sprint 1（地基可运行）后端工程</description>
+    <packaging>pom</packaging>
+    <name>sk-growthplanet</name>
+    <description>成长星球后端多模块聚合父 POM（core / miniapp / admin / start）</description>
+
+    <modules>
+        <module>sk-growthplanet-core</module>
+        <module>sk-growthplanet-miniapp</module>
+        <module>sk-growthplanet-admin</module>
+        <module>sk-growthplanet-start</module>
+    </modules>
 
     <properties>
         <java.version>21</java.version>
         <mybatis-plus.version>3.5.17</mybatis-plus.version>
         <jjwt.version>0.12.7</jjwt.version>
         <testcontainers.version>1.20.4</testcontainers.version>
+        <jackson2.version>2.21.5</jackson2.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <dependencies>
-        <!-- Web (Spring MVC, Jakarta EE 11) -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-
-        <!-- Jakarta 校验 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-validation</artifactId>
-        </dependency>
-
-        <!-- MyBatis-Plus 专用 Spring Boot 4 starter（3.5.15+ 兼容 SB4 / Spring Framework 7） -->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
-            <version>${mybatis-plus.version}</version>
-        </dependency>
-
-        <!-- MySQL 驱动（坐标 mysql-connector-j，由 SB4 BOM 管理解析到 9.x） -->
-        <dependency>
-            <groupId>com.mysql</groupId>
-            <artifactId>mysql-connector-j</artifactId>
-        </dependency>
-
-        <!-- Redis 基础连接（Lettuce），不作为授权判断依据 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
-        </dependency>
-
-        <!-- JWT (jjwt 0.12.x) -->
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>${jjwt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <!-- MyBatis-Plus JacksonTypeHandler（实体 JSON 字段：allergies/dislikes/tastes）依赖 Jackson 2（com.fasterxml.jackson）。
-             Spring Boot 4 默认仅提供 Jackson 3（tools.jackson），此处显式引入 Jackson 2 databind 以支撑类型处理器反序列化。 -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.21.5</version>
-        </dependency>
-
-        <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- 测试 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <!-- Testcontainers（集成测试用真实 MySQL + Redis，避免 H2 不支持 JSON/函数） -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-testcontainers</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>mysql</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${testcontainers.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <!-- 内部模块 -->
+            <dependency>
+                <groupId>cn.studykid.growthplanet</groupId>
+                <artifactId>sk-growthplanet-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.studykid.growthplanet</groupId>
+                <artifactId>sk-growthplanet-miniapp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.studykid.growthplanet</groupId>
+                <artifactId>sk-growthplanet-admin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- MyBatis-Plus JacksonTypeHandler（实体 JSON 字段）依赖 Jackson 2（SB4 默认仅提供 Jackson 3） -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson2.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-            </testResource>
-            <testResource>
-                <directory>sql</directory>
-                <includes>
-                    <include>sprint*.sql</include>
-                    <include>v*.sql</include>
-                </includes>
-            </testResource>
-        </testResources>
-        <finalName>growth-planet</finalName>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-            <!-- 默认 test 作用域仅执行纯逻辑单元测试，集成测试（*IT / LogicDeleteTest）置于 integration profile -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>**/*IT.java</exclude>
-                        <exclude>**/LogicDeleteTest.java</exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+                <!-- 默认 test 作用域仅执行纯逻辑单元测试，集成测试（*IT / LogicDeleteTest）置于 start 模块 integration profile -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>**/*IT.java</exclude>
+                            <exclude>**/LogicDeleteTest.java</exclude>
+                        </excludes>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
-
-    <profiles>
-        <profile>
-            <id>integration</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <excludes>
-                                <exclude>none</exclude>
-                            </excludes>
-                            <includes>
-                                <include>**/*Test.java</include>
-                                <include>**/*IT.java</include>
-                            </includes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>cn.studykid.growthplanet</groupId>
+        <artifactId>sk-growthplanet</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>sk-growthplanet-admin</artifactId>
+    <name>sk-growthplanet-admin</name>
+    <description>成长星球后台运营端接口层（仅 Controller + Admin 拦截器/Web 配置），前缀 /api/admin</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>cn.studykid.growthplanet</groupId>
+            <artifactId>sk-growthplanet-core</artifactId>
+        </dependency>
+
+        <!-- lombok 在 core 中为 optional 不传递，本模块编译期注解处理需显式声明 -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>
