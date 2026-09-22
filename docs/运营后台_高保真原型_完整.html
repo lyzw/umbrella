@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成长星球 · 运营后台 高保真原型（完整版 M0–M10）</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--brand:#2f6df6;--brand2:#5b8def;--ink:#1f2933;--sub:#6b7785;--line:#e6ebf2;--bg:#f5f7fa;--soft:#eef3ff;--green:#3aa675;--red:#e5534b;--amber:#f5a623;--purple:#8b5cf6}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+  /* ============ 登录门户 ============ */
+  #login{position:fixed;inset:0;background:linear-gradient(135deg,#0f1f3d,#1d335f);display:flex;align-items:center;justify-content:center;z-index:50}
+  #login .box{width:380px;background:#fff;border-radius:16px;padding:34px 32px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  #login .lg-logo{font-size:20px;font-weight:800;color:#11203f;display:flex;align-items:center;gap:10px}
+  #login .lg-logo span{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#2f6df6,#5b8def);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px}
+  #login .lg-sub{font-size:12px;color:var(--sub);margin:6px 0 22px}
+  #login .field{margin-bottom:14px}
+  #login .field label{display:block;font-size:12px;color:var(--sub);margin-bottom:6px}
+  #login .field input,#login .field select{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px 12px;font-size:14px}
+  #login .btn{width:100%;background:var(--brand);color:#fff;border:none;border-radius:9px;padding:12px;font-size:15px;cursor:pointer;margin-top:6px}
+  #login .cap{font-size:11px;color:var(--sub);background:var(--soft);border-radius:8px;padding:10px 12px;margin-top:16px;line-height:1.6}
+  #login .err{display:none;color:var(--red);font-size:12px;margin-top:8px}
+  /* ============ 外壳 ============ */
+  .app{display:none;height:100vh}
+  .app.on{display:flex}
+  .side{width:216px;background:#11203f;color:#cdd8ee;display:flex;flex-direction:column;flex-shrink:0}
+  .side .logo{padding:18px 18px 14px;font-size:15px;font-weight:700;color:#fff;border-bottom:1px solid #20335c}
+  .side .logo small{display:block;font-size:11px;color:#7f93bd;font-weight:400;margin-top:2px}
+  .side nav{flex:1;overflow-y:auto;padding:8px 0}
+  .side nav .grp{font-size:11px;color:#6c80ab;padding:12px 18px 4px}
+  .side nav a{display:flex;align-items:center;gap:9px;padding:9px 18px;color:#cdd8ee;text-decoration:none;font-size:13px;border-left:3px solid transparent;cursor:pointer}
+  .side nav a:hover{background:#18294d;color:#fff}
+  .side nav a.active{background:#1d335f;border-left-color:var(--brand2);color:#fff}
+  .side nav a .dot{width:6px;height:6px;border-radius:50%;background:#42577f}
+  .side nav a.active .dot{background:var(--brand2)}
+  .side .me{padding:12px 18px;border-top:1px solid #20335c;font-size:12px;color:#9fb0d4}
+  .side .me b{color:#fff}
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 22px;gap:14px}
+  .topbar .crumb{font-size:13px;color:var(--sub)} .topbar .crumb b{color:var(--ink)}
+  .topbar .search{flex:1;max-width:340px;margin-left:auto;position:relative}
+  .topbar .search input{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 12px 7px 30px;font-size:13px;background:#fafbfd}
+  .topbar .search::before{content:"⌕";position:absolute;left:10px;top:6px;color:#9aa7b8;font-size:15px}
+  .topbar .rolesw{font-size:12px;color:var(--sub)}
+  .topbar .rolesw select{border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;margin-left:6px}
+  .topbar .bell{position:relative;font-size:17px;color:var(--sub);cursor:pointer}
+  .topbar .bell .badge{position:absolute;top:-4px;right:-5px;background:var(--red);color:#fff;font-size:10px;border-radius:999px;padding:0 4px}
+  .topbar .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#2f6df6,#5b8def);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+  .content{flex:1;overflow-y:auto;padding:22px 26px}
+  .page-h{display:flex;align-items:center;margin-bottom:6px}
+  .page-h h1{font-size:19px}
+  .page-h .btn{margin-left:auto}
+  .desc{color:var(--sub);font-size:12.5px;margin-bottom:14px;line-height:1.6}
+  .tabs{display:flex;gap:4px;margin:10px 0 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .tabs .t{padding:9px 15px;font-size:13px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent}
+  .tabs .t.on{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+  .panel{display:none} .panel.on{display:block}
+  /* filter + table */
+  .filter{display:flex;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .filter input,.filter select{border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:13px;background:#fafbfd;color:var(--ink)}
+  .filter .btn-ghost{background:#fff;border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;color:var(--sub)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
+  th{background:#f7f9fc;color:var(--sub);font-weight:600;font-size:12px}
+  tbody tr:hover{background:#fafcff}
+  .pill{display:inline-block;border-radius:6px;padding:2px 9px;font-size:11px;font-weight:600}
+  .pill.sa{background:#11203f;color:#fff}.pill.op{background:var(--soft);color:var(--brand)}
+  .pill.cr{background:#e7f6ee;color:var(--green)}.pill.dc{background:#fff3e0;color:#b9770e}
+  .pill.cp{background:#fdeaef;color:#c0347d}.pill.ra{background:#eef1f5;color:#5a6b82}
+  .pill.ok{background:#e7f6ee;color:var(--green)}.pill.warn{background:#fff3e0;color:#b9770e}
+  .pill.bad{background:#fdeaef;color:var(--red)}.pill.info{background:var(--soft);color:var(--brand)}
+  .st{font-size:12px}.st.on{color:var(--green)}.st.off{color:var(--red)}.st.pend{color:var(--amber)}
+  .link{color:var(--brand);cursor:pointer;text-decoration:none;margin-right:10px;font-size:13px}
+  .btn{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer}
+  .btn:hover{background:#2560e0}
+  .btn-line{background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;color:var(--sub)}
+  .pager{display:flex;justify-content:flex-end;gap:6px;padding:12px 14px;color:var(--sub);font-size:12px;align-items:center}
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .stat .l{font-size:12px;color:var(--sub)}
+  .stat .v{font-size:25px;font-weight:800;margin:6px 0 2px}
+  .stat .s{font-size:11px}
+  .stat .s.up{color:var(--green)} .stat .s.down{color:var(--red)}
+  /* drawer */
+  .mask{position:fixed;inset:0;background:rgba(17,32,63,.35);display:none;z-index:20}
+  .mask.on{display:block}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:440px;max-width:92vw;background:#fff;box-shadow:-8px 0 30px rgba(0,0,0,.12);transform:translateX(100%);transition:.25s;z-index:21;display:flex;flex-direction:column}
+  .drawer.on{transform:translateX(0)}
+  .drawer .dh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;font-size:15px;font-weight:600}
+  .drawer .dh .x{margin-left:auto;cursor:pointer;color:var(--sub);font-size:18px}
+  .drawer .db{padding:18px 20px;overflow-y:auto;flex:1}
+  .field{margin-bottom:15px}
+  .field label{display:block;font-size:12px;color:var(--sub);margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit}
+  .field textarea{resize:vertical;min-height:74px}
+  .seg{display:flex;gap:8px}
+  .seg label{border:1px solid var(--line);border-radius:8px;padding:8px 14px;font-size:13px;cursor:pointer;flex:1;text-align:center}
+  .seg input{display:none}
+  .drawer .df{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+  .hint{font-size:11px;color:var(--sub);background:var(--soft);border-radius:8px;padding:9px 11px;margin-top:4px;line-height:1.6}
+  .note{font-size:12px;color:#5a6b82;background:#f3f6fb;border-left:3px solid var(--brand);border-radius:6px;padding:10px 12px;margin:10px 0;line-height:1.6}
+  /* role permission matrix */
+  .rpm{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:auto}
+  .rpm table{font-size:12.5px;min-width:760px}
+  .rpm th,.rpm td{padding:9px 12px}
+  .rpm .res{font-weight:600;color:var(--ink)}
+  .chk{width:16px;height:16px;accent-color:var(--brand)}
+  .rolebar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .rolebar .rb{border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;background:#fff}
+  .rolebar .rb.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+  .tag-ind{font-size:11px;color:#9aa7b8;margin-left:6px}
+  /* charts */
+  .grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px}
+  .panelbox{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .panelbox h3{font-size:14px;margin-bottom:14px}
+  .bar{display:flex;align-items:flex-end;gap:14px;height:180px;padding:0 6px}
+  .bar .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+  .bar .col .fill{width:100%;background:linear-gradient(180deg,#5b8def,#2f6df6);border-radius:6px 6px 0 0;min-height:4px}
+  .bar .col .lab{font-size:11px;color:var(--sub);margin-top:6px}
+  .bar .col .num{font-size:11px;color:var(--ink);font-weight:700;margin-bottom:3px}
+  .donut{width:150px;height:150px;border-radius:50%;margin:6px auto 10px;background:conic-gradient(var(--brand) 0 42%,var(--green) 42% 70%,var(--amber) 70% 86%,#cdd8ee 86% 100%)}
+  .legend{font-size:12px;color:var(--sub);line-height:1.9}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .list{list-style:none;font-size:13px}
+  .list li{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);align-items:center}
+  .list li .t{color:var(--ink)} .list li .m{color:var(--sub);font-size:12px}
+  .todo{background:#fff;border:1px solid var(--line);border-radius:12px;padding:6px 16px}
+  .todo .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .todo .row:last-child{border-bottom:none}
+  .todo .pri{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px}
+  .todo .pri.h{background:#fdeaef;color:var(--red)} .todo .pri.m{background:#fff3e0;color:#b9770e} .todo .pri.l{background:var(--soft);color:var(--brand)}
+  .work-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+  .wcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer}
+  .wcard:hover{border-color:var(--brand2)}
+  .wcard .ic{font-size:22px}
+  .wcard .ti{font-size:14px;font-weight:600;margin:8px 0 4px}
+  .wcard .de{font-size:12px;color:var(--sub);line-height:1.5}
+  .wcard .nu{font-size:20px;font-weight:800;color:var(--brand);margin-top:8px}
+</style>
+</head>
+<body>
+
+<!-- ============ 登录门户 ============ -->
+<div id="login">
+  <div class="box">
+    <div class="lg-logo"><span>星</span>成长星球 · 运营后台</div>
+    <div class="lg-sub">Growth Planet Admin Console</div>
+    <div class="field"><label>登录账号</label><input id="lgUser" placeholder="如 admin.zhou（独立后台账号）"></div>
+    <div class="field"><label>密码</label><input id="lgPwd" type="password" placeholder="请输入密码"></div>
+    <div class="field"><label>角色</label>
+      <select id="lgRole"><option>超级管理员 SA</option><option>运营管理员 OP</option><option>内容审核员 CR</option><option>数据运营/客服 DC</option><option>合规/隐私专员 CP</option><option>只读审计员 RA</option></select>
+    </div>
+    <button class="btn" onclick="doLogin()">登 录</button>
+    <div class="err" id="lgErr">账号或密码错误，请重试</div>
+    <div class="cap">🔐 后台账号独立于小程序 C 端（usr_user），通过 sys_admin_user 鉴权，登录态与 token 隔离；全部操作记入 sys_audit_log。</div>
+  </div>
+</div>
+
+<!-- ============ 应用外壳 ============ -->
+<div class="app" id="app">
+  <aside class="side">
+    <div class="logo">成长星球 · 运营后台<small>Growth Planet Admin</small></div>
+    <nav id="nav">
+      <div class="grp">概览</div>
+      <a data-view="workbench"><span class="dot"></span>工作台</a>
+      <a data-view="dashboard"><span class="dot"></span>数据看板</a>
+      <div class="grp">运营管理</div>
+      <a data-view="users"><span class="dot"></span>用户与权限</a>
+      <a data-view="content"><span class="dot"></span>内容管理</a>
+      <a data-view="bizdata"><span class="dot"></span>业务数据管理</a>
+      <a data-view="privacy"><span class="dot"></span>合规与隐私</a>
+      <div class="grp">治理</div>
+      <a data-view="audit"><span class="dot"></span>操作审计</a>
+      <a data-view="notify"><span class="dot"></span>消息通知</a>
+      <a data-view="monitor"><span class="dot"></span>监控告警</a>
+      <a data-view="config"><span class="dot"></span>系统配置</a>
+      <a data-view="help"><span class="dot"></span>帮助手册</a>
+    </nav>
+    <div class="me">当前角色：<b id="meRole">超级管理员(SA)</b><br>登录态与小程序账号隔离</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="crumb" id="crumb">工作台 / <b id="crumbNow">首页</b></div>
+      <div class="search"><input placeholder="全局搜索 家庭 / 孩子 / 工单 / 日志"></div>
+      <div class="rolesw">视图角色
+        <select id="roleSw" onchange="switchRole(this.value)">
+          <option value="SA">超级管理员 SA</option><option value="OP">运营管理员 OP</option>
+          <option value="CR">内容审核员 CR</option><option value="DC">数据客服 DC</option>
+          <option value="CP">合规隐私 CP</option><option value="RA">只读审计 RA</option>
+        </select>
+      </div>
+      <div class="bell">🔔<span class="badge" id="bellBadge">3</span></div>
+      <div class="av">管</div>
+    </div>
+    <div class="content" id="content"><!-- 动态渲染 --></div>
+  </main>
+</div>
+
+<!-- 抽屉 -->
+<div class="mask" id="mask" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="dh"><span id="drawerTitle">标题</span><span class="x" onclick="closeDrawer()">×</span></div>
+  <div class="db" id="drawerBody"></div>
+  <div class="df" id="drawerFoot"></div>
+</div>
+
+<script>
+/* ============ 通用渲染助手 ============ */
+function table(headers, rows){
+  let h='<thead><tr>'+headers.map(x=>`<th>${x}</th>`).join('')+'</tr></thead>';
+  let b=rows.map(r=>'<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>').join('');
+  return `<div class="card"><table>${h}${b}</table><div class="pager">共 ${rows.length} 条 · 第 1/1 页 <button class="btn-ghost">上一页</button><button class="btn-ghost">下一页</button></div></div>`;
+}
+function filterBar(fields){
+  return `<div class="filter">`+fields.map(f=>{
+    if(f.type==='select') return `<select><option>${f.ph}</option>${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`;
+    return `<input style="width:${f.w||160}px" placeholder="${f.ph}">`;
+  }).join('')+`<button class="btn-ghost">查询</button><button class="btn-ghost">重置</button></div>`;
+}
+function statCards(cards){
+  return `<div class="stats">`+cards.map(c=>`<div class="stat"><div class="l">${c.l}</div><div class="v">${c.v}</div><div class="s ${c.t||''}">${c.s||''}</div></div>`).join('')+`</div>`;
+}
+function tabs(list){
+  return `<div class="tabs">`+list.map((t,i)=>`<div class="t ${i===0?'on':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${t.t}</div>`).join('')+`</div>`;
+}
+function panel(k, html, on){return `<div class="panel ${on?'on':''}" id="panel-${k}">${html}</div>`;}
+
+/* ============ 视图注册表 ============ */
+const VIEWS = {};
+
+/* ---- M0 工作台 ---- */
+VIEWS.workbench = function(){
+  return `
+  <div class="page-h"><h1>工作台</h1></div>
+  <div class="desc">运营人员每日入口：待办、关键指标速览、快捷入口。所有指标与全量看板（M1）同源。</div>
+  ${statCards([
+    {l:'今日活跃家庭',v:'1,284',s:'↑ 6.2% 较昨日',t:'up'},
+    {l:'待处理隐私工单',v:'3',s:'需 CP 闭环',t:''},
+    {l:'待审核 UGC',v:'12',s:'需 CR 处置',t:''},
+    {l:'今日告警',v:'2',s:'1 高危',t:'down'},
+  ])}
+  <div class="grid2">
+    <div class="todo">
+      <div class="row"><span class="pri h">高</span><div style="flex:1"><div class="t">隐私工单 #PV-2048 待核验导出</div><div class="m">钱合规 · 超时 1.2 天</div></div><span class="link" onclick="renderView('privacy')">去处理</span></div>
+      <div class="row"><span class="pri h">高</span><div style="flex:1"><div class="t">UGC 图像命中高危词库 #UG-771</div><div class="m">赵审核 · 机审拦截待人审</div></div><span class="link" onclick="renderView('content')">去处理</span></div>
+      <div class="row"><span class="pri m">中</span><div style="flex:1"><div class="t">确认单 #CF-3392 超额复核</div><div class="m">林运营提交 · 待 SA/CP 复核</div></div><span class="link" onclick="renderView('bizdata')">去处理</span></div>
+      <div class="row"><span class="pri l">低</span><div style="flex:1"><div class="t">家庭 #F-10231 申诉待回复</div><div class="m">吴客服 · 2 小时前</div></div><span class="link">查看</span></div>
+    </div>
+    <div class="panelbox">
+      <h3>近 7 日活跃家庭趋势</h3>
+      <div class="bar">
+        ${[820,910,870,1010,1180,1230,1284].map((v,i)=>{const hgt=Math.round(v/1284*150);return `<div class="col"><div class="num">${v}</div><div class="fill" style="height:${hgt}px"></div><div class="lab">${['一','二','三','四','五','六','日'][i]}</div></div>`;}).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="work-grid">
+    ${[['👥','用户与权限','账号/角色/RBAC 矩阵','users'],['🍱','内容管理','菜品/菜单/UGC 审核','content'],['📊','业务数据','家庭/确认单/钱包','bizdata'],['🔐','合规隐私','同意/隐私工单','privacy'],['🧾','操作审计','全量日志追溯','audit'],['⚙️','系统配置','枚举/参数/开关','config']].map(c=>`<div class="wcard" onclick="renderView('${c[3]}')"><div class="ic">${c[0]}</div><div class="ti">${c[1]}</div><div class="de">${c[2]}</div></div>`).join('')}
+  </div>`;
+};
+
+/* ---- M1 数据看板 ---- */
+VIEWS.dashboard = function(){
+  return `
+  <div class="page-h"><h1>数据看板</h1><button class="btn">导出报表（脱敏）</button></div>
+  <div class="desc">运营总览与分域指标。口径见详细设计文档 §8；含明文导出需 CP 审批并记录审计（M6）。</div>
+  ${statCards([
+    {l:'累计家庭',v:'8,642',s:'↑ 3.1%',t:'up'},
+    {l:'累计孩子',v:'12,907',s:'↑ 2.4%',t:'up'},
+    {l:'本月确认单',v:'36,418',s:'↑ 8.7%',t:'up'},
+    {l:'本月零钱发放',v:'¥186,420',s:'↑ 5.0%',t:'up'},
+  ])}
+  <div class="grid2">
+    <div class="panelbox">
+      <h3>各域活跃分布</h3>
+      <div class="bar">
+        ${[['餐食',72],['家务',54],['零钱',61],['勋章',38],['健康',45],['日程',29]].map(c=>`<div class="col"><div class="num">${c[1]}</div><div class="fill" style="height:${c[1]*1.8}px"></div><div class="lab">${c[0]}</div></div>`).join('')}
+      </div>
+    </div>
+    <div class="panelbox">
+      <h3>家庭规模构成</h3>
+      <div class="donut"></div>
+      <div class="legend">
+        <div><i style="background:var(--brand)"></i>1 孩家庭 42%</div>
+        <div><i style="background:var(--green)"></i>2 孩家庭 28%</div>
+        <div><i style="background:var(--amber)"></i>学校/机构 16%</div>
+        <div><i style="background:#cdd8ee"></i>其他 14%</div>
+      </div>
+    </div>
+  </div>
+  ${tabs([{k:'overview',t:'总览'},{k:'meal',t:'餐食域'},{k:'wallet',t:'零钱域'},{k:'growth',t:'成长域'}])}
+  ${panel('overview',`<div class="panelbox"><h3>核心转化漏斗</h3>
+    <div class="list">
+      <li><span class="t">注册家庭</span><span class="m">8,642</span></li>
+      <li><span class="t">完成首单确认</span><span class="m">6,110（70.7%）</span></li>
+      <li><span class="t">周活家庭</span><span class="m">3,902（45.1%）</span></li>
+      <li><span class="t">勋章获取 ≥1</span><span class="m">5,233（60.5%）</span></li>
+    </div></div>`, true)}
+  ${panel('meal','<div class="card"><table><thead><tr><th>指标</th><th>今日</th><th>7 日均值</th><th>环比</th></tr></thead><tbody><tr><td>每日想吃标记</td><td>9,842</td><td>9,210</td><td class="st on">↑ 6.9%</td></tr><tr><td>确认单生成</td><td>1,284</td><td>1,190</td><td class="st on">↑ 7.9%</td></tr><tr><td>心愿菜单提交</td><td>402</td><td>360</td><td class="st on">↑ 11.7%</td></tr></tbody></table></div>')}
+  ${panel('wallet','<div class="card"><table><thead><tr><th>指标</th><th>本月</th><th>环比</th></tr></thead><tbody><tr><td>零钱发放</td><td>¥186,420</td><td class="st on">↑ 5.0%</td></tr><tr><td>任务奖励占比</td><td>62%</td><td class="st pend">— 持平</td></tr><tr><td>超额复核单数</td><td>38</td><td class="st off">↑ 12.4%</td></tr></tbody></table></div>')}
+  ${panel('growth','<div class="card"><table><thead><tr><th>指标</th><th>累计</th><th>活跃率</th></tr></thead><tbody><tr><td>勋章定义</td><td>86</td><td>—</td></tr><tr><td>已颁发</td><td>41,205</td><td>—</td></tr><tr><td>家务任务完成</td><td>298,441</td><td>74%</td></tr></tbody></table></div>')}
+  `;
+};
+
+/* ---- M2 用户与权限 ---- */
+const perms = {
+  "工作台首页":                 {v:["SA","OP","CR","DC","CP","RA"]},
+  "运营看板":                   {v:["SA","OP","CR","DC","CP","RA"], x:["SA","OP","DC"]},
+  "报表导出":                   {v:["SA","OP","DC","CP","RA"], x:["SA","OP","DC"]},
+  "后台账号":                   {v:["SA"], c:["SA"], e:["SA"], d:["SA"], k:["SA"]},
+  "角色权限":                   {v:["SA"], c:["SA"], e:["SA"], k:["SA"]},
+  "家庭/成员查询":             {v:["SA","OP","DC"], e:["SA","OP","DC"], a:["SA"]},
+  "账号风控":                   {v:["SA","OP","DC"], a:["SA","OP"]},
+  "菜品库":                     {v:["SA","OP","CR"], c:["SA","OP"], e:["SA","OP"], d:["SA","OP"], k:["SA","OP"]},
+  "菜单编排":                   {v:["SA","OP","CR"], c:["SA","OP"], e:["SA","OP"], d:["SA","OP"], k:["SA","OP"]},
+  "任务/奖励/勋章库":          {v:["SA","OP","CR"], c:["SA","OP"], e:["SA","OP"], d:["SA","OP"], k:["SA","OP"]},
+  "心愿菜单配置":              {v:["SA","OP"], e:["SA","OP"], k:["SA","OP"]},
+  "UGC审核队列":               {v:["SA","CR"], d:["SA","CR"], a:["SA","CR"]},
+  "词库管理":                   {v:["SA","OP","CR"], c:["SA","OP","CR"], e:["SA","OP","CR"], d:["SA","OP","CR"], k:["SA","OP","CR"]},
+  "每日想吃":                   {v:["SA","OP","DC","CP"], x:["SA","OP","DC"]},
+  "确认单":                     {v:["SA","OP","DC","CP"], x:["SA","OP","DC"], a:["SA","OP"]},
+  "审批记录":                   {v:["SA","OP","DC","CP","RA"], x:["SA","OP","DC"]},
+  "钱包与流水":                 {v:["SA","OP","DC","CP"], e:["SA","OP"], x:["SA","OP","DC"]},
+  "家务健康":                   {v:["SA","OP","DC"], e:["SA","OP"], x:["SA","OP","DC"]},
+  "勋章发放/家庭设置":         {v:["SA","OP","DC"], e:["SA","OP"], x:["SA","OP","DC"], k:["SA","OP"]},
+  "同意留痕":                   {v:["SA","DC","CP","RA"], x:["CP"]},
+  "隐私工单":                   {v:["SA","CP","RA"], x:["CP"], a:["SA","CP"]},
+  "核验记录":                   {v:["SA","CP","RA"]},
+  "合规清单":                   {v:["SA","CP","RA"], e:["SA","CP"], k:["SA","CP"]},
+  "操作日志":                   {v:["SA","OP","CR","DC","CP","RA"], x:["SA","RA"]},
+  "通知模板":                   {v:["SA","OP","DC"], c:["SA","OP"], e:["SA","OP"], d:["SA","OP"], k:["SA","OP"]},
+  "告警规则":                   {v:["SA","OP","CR"], c:["SA","OP"], e:["SA","OP"], d:["SA","OP"], k:["SA"]},
+  "告警列表":                   {v:["SA","OP","CR","DC","CP","RA"], a:["SA","OP","CR"]},
+  "通道配置":                   {v:["SA"], e:["SA"], k:["SA"]},
+  "全局参数/枚举/开关":        {v:["SA"], e:["SA"], k:["SA"]},
+  "帮助手册":                   {v:["SA","OP","CR","DC","CP","RA"], c:["SA","OP","CR","DC","CP","RA"], e:["SA","OP","CR","DC","CP","RA"], d:["SA","OP","CR","DC","CP","RA"]}
+};
+const ops=["v","c","e","d","x","a","k"], opName={v:"查看",c:"新建",e:"编辑",d:"删除",x:"导出",a:"审批",k:"配置"};
+VIEWS.users = function(){
+  return `
+  <div class="page-h"><h1 id="uTitle">后台账号</h1><button class="btn" onclick="openAccDrawer('new')">+ 新建账号</button></div>
+  ${tabs([{k:'acc',t:'后台账号'},{k:'role',t:'角色与权限'}])}
+  ${panel('acc',`
+    ${filterBar([{ph:'账号 / 姓名'},{type:'select',ph:'全部角色',opts:['超级管理员','运营管理员','内容审核员','数据运营','合规隐私','只读审计']},{type:'select',ph:'全部状态',opts:['启用','禁用']}])}
+    ${table(['账号','姓名','角色','状态','最后登录','创建人','操作'],[
+      ['admin.zhou','周运营','<span class="pill sa">SA</span>','<span class="st on">● 启用</span>','2026-09-22 13:40','系统','<span class="link" onclick="openAccDrawer(\'edit\')">编辑</span><span class="link">禁用</span>'],
+      ['op.lin','林运营','<span class="pill op">OP</span>','<span class="st on">● 启用</span>','2026-09-22 11:02','admin.zhou','<span class="link" onclick="openAccDrawer(\'edit\')">编辑</span><span class="link">禁用</span>'],
+      ['cr.zhao','赵审核','<span class="pill cr">CR</span>','<span class="st on">● 启用</span>','2026-09-21 18:30','admin.zhou','<span class="link" onclick="openAccDrawer(\'edit\')">编辑</span><span class="link">禁用</span>'],
+      ['dc.wu','吴客服','<span class="pill dc">DC</span>','<span class="st off">● 禁用</span>','2026-09-18 09:12','admin.zhou','<span class="link" onclick="openAccDrawer(\'edit\')">编辑</span><span class="link">启用</span>'],
+      ['cp.qian','钱合规','<span class="pill cp">CP</span>','<span class="st on">● 启用</span>','2026-09-22 09:50','admin.zhou','<span class="link" onclick="openAccDrawer(\'edit\')">编辑</span><span class="link">禁用</span>'],
+      ['ra.sun','孙审计','<span class="pill ra">RA</span>','<span class="st on">● 启用</span>','2026-09-20 14:05','admin.zhou','<span class="link" onclick="openAccDrawer(\'edit\')">编辑</span><span class="link">禁用</span>'],
+    ])}
+    <div class="hint">本表为独立后台账号（sys_admin_user），与小程序 C 端用户（usr_user）无任何关联；删除/禁用均写入操作审计（M6）。</div>
+  `,true)}
+  ${panel('role',`
+    <div class="rolebar" id="roleBar">
+      ${['SA','OP','CR','DC','CP','RA'].map((r,i)=>`<div class="rb ${i===0?'on':''}" data-role="${r}" onclick="selRole('${r}')">${r==='SA'?'超级管理员 SA':r==='OP'?'运营 OP':r==='CR'?'内容审核 CR':r==='DC'?'数据客服 DC':r==='CP'?'合规隐私 CP':'只读审计 RA'}</div>`).join('')}
+      <span class="tag-ind">点击切换查看该角色授权点（勾选=拥有，仅 SA 可编辑保存）</span>
+    </div>
+    <div class="rpm"><table id="rpmTable"><thead><tr><th>资源 / 模块</th><th>查看</th><th>新建</th><th>编辑</th><th>删除</th><th>导出</th><th>审批</th><th>配置</th></tr></thead><tbody></tbody></table></div>
+    <div class="hint">该矩阵即详细设计 §3.4「细粒度权限点矩阵」可视化，落 sys_role_permission(resource, action)。</div>
+  `)}
+  `;
+};
+
+/* ---- M3 内容管理 ---- */
+VIEWS.content = function(){
+  return `
+  <div class="page-h"><h1 id="cTitle">内容管理</h1><button class="btn" onclick="openGeneric('新建内容','')">+ 新建</button></div>
+  ${tabs([{k:'dish',t:'菜品库'},{k:'cat',t:'菜品分类'},{k:'menu',t:'菜单编排'},{k:'task',t:'任务/奖励库'},{k:'medal',t:'勋章配置'},{k:'wish',t:'心愿菜单'},{k:'ugc',t:'UGC 审核'},{k:'word',t:'词库管理'}])}
+  ${panel('dish',`
+    ${filterBar([{ph:'菜品名'},{type:'select',ph:'全部分类',opts:['主食','荤菜','素菜','汤羹','点心','水果']},{type:'select',ph:'全部状态',opts:['上架','下架']}])}
+    ${table(['菜品ID','名称','分类','热量(kcal)','过敏原','状态','操作'],[
+      ['D-1001','番茄炒蛋','荤菜','142','鸡蛋','<span class="pill ok">上架</span>','<span class="link">编辑</span><span class="link">下架</span>'],
+      ['D-1002','清炒西兰花','素菜','54','—','<span class="pill ok">上架</span>','<span class="link">编辑</span><span class="link">下架</span>'],
+      ['D-1003','虾仁蒸蛋','荤菜','128','鸡蛋/虾','<span class="pill ok">上架</span>','<span class="link">编辑</span><span class="link">下架</span>'],
+      ['D-1004','牛奶布丁','点心','210','牛奶','<span class="pill warn">下架</span>','<span class="link">编辑</span><span class="link">上架</span>'],
+      ['D-1005','南瓜小米粥','主食','88','—','<span class="pill ok">上架</span>','<span class="link">编辑</span><span class="link">下架</span>'],
+    ])}
+    <div class="hint">字段对照 life_dish（name/category/calorie/allergen/status）。过敏原须声明（R5 治理），未声明则 canSelect=false。</div>
+  `,true)}
+  ${panel('cat','<div class="card"><table><thead><tr><th>分类ID</th><th>名称</th><th>排序</th><th>菜品数</th><th>状态</th></tr></thead><tbody><tr><td>C-01</td><td>主食</td><td>1</td><td>128</td><td class="st on">启用</td></tr><tr><td>C-02</td><td>荤菜</td><td>2</td><td>204</td><td class="st on">启用</td></tr><tr><td>C-03</td><td>素菜</td><td>3</td><td>176</td><td class="st on">启用</td></tr></tbody></table></div>')}
+  ${panel('menu','<div class="note">菜单编排：按 家庭/学校 维度生成每日餐单（life_menu_daily + life_menu_item）。SCHOOL 归属仅展示、不可下单（canSelect=false）。</div>'+table(['餐单ID','归属','日期','餐次','菜品数','状态'],[['MD-3301','家庭 F-10231','2026-09-22','午餐',4,'<span class="pill ok">已发布</span>'],['MD-3302','学校 阳光小学','2026-09-22','晚餐',6,'<span class="pill info">仅展示</span>']]))}
+  ${panel('task','<div class="card"><table><thead><tr><th>任务ID</th><th>名称</th><th>类型</th><th>奖励(零钱)</th><th>状态</th></tr></thead><tbody><tr><td>T-501</td><td>整理书桌</td><td>家务</td><td>2</td><td class="st on">启用</td></tr><tr><td>T-502</td><td>跳绳 100 个</td><td>健康</td><td>1</td><td class="st on">启用</td></tr><tr><td>T-503</td><td>读完一本绘本</td><td>成长</td><td>3</td><td class="st on">启用</td></tr></tbody></table></div>')}
+  ${panel('medal','<div class="card"><table><thead><tr><th>勋章ID</th><th>名称</th><th>图标</th><th>获取条件</th><th>已颁发</th></tr></thead><tbody><tr><td>M-01</td><td>自理小能手</td><td>🏅</td><td>连续 7 天完成家务</td><td>3,210</td></tr><tr><td>M-02</td><td>运动之星</td><td>⭐</td><td>月运动打卡 20 天</td><td>1,880</td></tr><tr><td>M-03</td><td>阅读达人</td><td>📚</td><td>累计阅读 30 本</td><td>2,540</td></tr></tbody></table></div>')}
+  ${panel('wish','<div class="note">心愿菜单：孩子端提交想吃心愿（life_wish_menu，复用想吃表）。后台可配置开放时段与上限。</div>'+table(['配置项','当前值','说明'],[['每日提交上限','3 条/孩','防止刷量'],['开放时段','08:00–20:00','可下单时段'],['学校心愿','关闭','学校场景仅展示']]))}
+  ${panel('ugc',`
+    ${filterBar([{ph:'内容ID'},{type:'select',ph:'全部状态',opts:['待审核','已通过','已拒绝']},{type:'select',ph:'风险等级',opts:['低','中','高']}])}
+    ${table(['内容ID','来源','类型','机审风险','状态','处置'],[
+      ['UG-771','孩子 U-8821','图片','<span class="pill bad">高</span>','<span class="pill warn">待审核</span>','<span class="link">通过</span><span class="link">拒绝</span>'],
+      ['UG-769','孩子 U-7790','文本','<span class="pill info">低</span>','<span class="pill ok">已通过</span>','<span class="link">查看</span>'],
+      ['UG-762','孩子 U-6612','文本','<span class="pill warn">中</span>','<span class="pill bad">已拒绝</span>','<span class="link">查看</span>'],
+    ])}
+    <div class="hint">UGC 状态机：PENDING → APPROVED / REJECTED（CR 处置，SA 可兜底）。命中高危词库转人工。</div>
+  `)}
+  ${panel('word','<div class="card"><table><thead><tr><th>词库</th><th>词数</th><th>级别</th><th>状态</th></tr></thead><tbody><tr><td>政治敏感</td><td>128</td><td>高危</td><td class="st on">启用</td></tr><tr><td>辱骂</td><td>96</td><td>中</td><td class="st on">启用</td></tr><tr><td>广告引流</td><td>54</td><td>低</td><td class="st on">启用</td></tr></tbody></table></div>')}
+  `;
+};
+
+/* ---- M4 业务数据管理 ---- */
+VIEWS.bizdata = function(){
+  return `
+  <div class="page-h"><h1 id="bTitle">业务数据管理</h1></div>
+  <div class="note">⚠️ 此处对 C 端数据均为只读为主；人工干预（改余额/补发/冻结）须二次确认并记录审计，且受 RBAC 限制（OP 提交复核，SA/CP 执行）。</div>
+  ${tabs([{k:'fam',t:'家庭与成员'},{k:'want',t:'每日想吃'},{k:'confirm',t:'确认单'},{k:'approval',t:'审批记录'},{k:'wallet',t:'钱包与流水'},{k:'chore',t:'家务健康'},{k:'award',t:'勋章发放'}])}
+  ${panel('fam',`
+    ${filterBar([{ph:'家庭ID / 名称'},{type:'select',ph:'全部类型',opts:['普通家庭','学校/机构']},{type:'select',ph:'全部状态',opts:['正常','冻结']}])}
+    ${table(['家庭ID','名称','类型','成员','孩子','状态','操作'],[
+      ['F-10231','周家','普通家庭','2 家长 1 孩子','1','<span class="pill ok">正常</span>','<span class="link">详情</span>'],
+      ['F-10232','阳光小学·三年级','学校/机构','—','186','<span class="pill ok">正常</span>','<span class="link">详情</span>'],
+      ['F-10240','李家','普通家庭','2 家长 2 孩子','2','<span class="pill bad">冻结</span>','<span class="link">解冻</span>'],
+    ])}
+  `,true)}
+  ${panel('want','<div class="card"><table><thead><tr><th>标记ID</th><th>孩子</th><th>日期</th><th>餐次</th><th>菜品</th><th>来源</th></tr></thead><tbody><tr><td>W-9001</td><td>U-8821</td><td>2026-09-22</td><td>午餐</td><td>番茄炒蛋</td><td>今日餐单</td></tr><tr><td>W-9002</td><td>U-8821</td><td>2026-09-22</td><td>晚餐</td><td>南瓜小米粥</td><td>常吃派生</td></tr></tbody></table></div>')}
+  ${panel('confirm',`
+    ${filterBar([{ph:'确认单号'},{type:'select',ph:'全部状态',opts:['待复核','已确认','已拒绝','已取消']}])}
+    ${table(['确认单号','家庭','日期','金额','状态','操作'],[
+      ['CF-3392','F-10231','2026-09-22','¥38.5','<span class="pill warn">待复核</span>','<span class="link">详情</span><span class="link">复核</span>'],
+      ['CF-3390','F-10235','2026-09-22','¥52.0','<span class="pill ok">已确认</span>','<span class="link">详情</span>'],
+      ['CF-3381','F-10240','2026-09-21','¥19.0','<span class="pill bad">已拒绝</span>','<span class="link">详情</span>'],
+    ])}
+    <div class="hint">确认单状态机：PENDING_APPROVAL → CONFIRMED / REJECTED / CANCELLED。超额需 SA/CP 复核（OP 仅提交）。POST /menu/confirm 须带 Idempotency-Key。</div>
+  `)}
+  ${panel('approval','<div class="card"><table><thead><tr><th>审批ID</th><th>类型</th><th>发起人</th><th>对象</th><th>状态</th><th>时间</th></tr></thead><tbody><tr><td>AP-771</td><td>超额复核</td><td>op.lin</td><td>CF-3392</td><td class="st pend">待 SA/CP</td><td>2026-09-22 10:12</td></tr><tr><td>AP-765</td><td>家庭解冻</td><td>op.lin</td><td>F-10240</td><td class="st on">已通过</td><td>2026-09-21 15:40</td></tr></tbody></table></div>')}
+  ${panel('wallet',`
+    ${filterBar([{ph:'家庭 / 孩子'},{type:'select',ph:'流水类型',opts:['任务奖励','零花钱','消费','人工调整']}])}
+    ${table(['账户','余额','最近流水','金额','类型','时间'],[
+      ['U-8821','¥24.0','任务奖励·整理书桌','+2.0','任务奖励','2026-09-22 09:30'],
+      ['U-7790','¥51.5','零花钱·周发放','+10.0','零花钱','2026-09-21 20:00'],
+      ['U-6612','¥8.0','人工调整（补发）','+3.0','人工调整','2026-09-20 14:10'],
+    ])}
+    <div class="hint">钱包 life_wallet + 流水 life_allowance_log。人工调整须 OP 提交、SA 执行并记审计。</div>
+  `)}
+  ${panel('chore','<div class="card"><table><thead><tr><th>实例ID</th><th>孩子</th><th>任务</th><th>打卡</th><th>状态</th></tr></thead><tbody><tr><td>CI-3301</td><td>U-8821</td><td>整理书桌</td><td>2026-09-22</td><td class="st on">已完成</td></tr><tr><td>CI-3302</td><td>U-8821</td><td>跳绳100个</td><td>—</td><td class="st pend">待完成</td></tr></tbody></table></div>')}
+  ${panel('award','<div class="card"><table><thead><tr><th>颁发ID</th><th>孩子</th><th>勋章</th><th>方式</th><th>时间</th></tr></thead><tbody><tr><td>AW-501</td><td>U-8821</td><td>自理小能手</td><td>系统自动</td><td>2026-09-22</td></tr><tr><td>AW-498</td><td>U-6612</td><td>运动之星</td><td>人工补发</td><td>2026-09-20</td></tr></tbody></table></div>')}
+  `;
+};
+
+/* ---- M5 合规与隐私 ---- */
+VIEWS.privacy = function(){
+  return `
+  <div class="page-h"><h1 id="pTitle">合规与隐私</h1></div>
+  <div class="note">隐私域数据隔离：仅 SA/CP/RA 可见；导出/核验需 CP 操作并记审计。监护人同意是数据出口的前置条件。</div>
+  ${tabs([{k:'consent',t:'同意留痕'},{k:'ticket',t:'隐私工单'},{k:'verify',t:'核验记录'},{k:'compliance',t:'合规清单'}])}
+  ${panel('consent',`
+    ${filterBar([{ph:'家庭 / 孩子'},{type:'select',ph:'同意类型',opts:['数据收集','画像分析','第三方共享']}])}
+    ${table(['记录ID','主体','同意类型','状态','版本','时间'],[
+      ['CT-2201','F-10231','数据收集','<span class="pill ok">已同意</span>','v2.1','2026-09-01'],
+      ['CT-2202','F-10240','画像分析','<span class="pill bad">已撤回</span>','v2.1','2026-08-20'],
+      ['CT-2203','F-10235','第三方共享','<span class="pill warn">待确认</span>','v2.1','—'],
+    ])}
+    <div class="hint">同意留痕 usr_consent_log；撤回后相关数据处理须联动（数据出口前置校验）。</div>
+  `,true)}
+  ${panel('ticket',`
+    ${filterBar([{ph:'工单号'},{type:'select',ph:'全部状态',opts:['待核验','已批准','已驳回','已导出']}])}
+    ${table(['工单号','申请人','类型','数据范围','状态','SLA'],[
+      ['PV-2048','钱合规','数据导出','家庭 F-10231 90 天','<span class="pill warn">待核验</span>','超时 1.2 天'],
+      ['PV-2045','钱合规','删除账户','孩子 U-6612','<span class="pill ok">已批准</span>','—'],
+      ['PV-2040','孙审计','调取日志','操作审计 M6','<span class="pill bad">已驳回</span>','—'],
+    ])}
+    <div class="hint">隐私工单状态机：SUBMITTED → VERIFYING → APPROVED/REJECTED → EXPORTED。对照 sys_privacy_request。</div>
+  `)}
+  ${panel('verify','<div class="card"><table><thead><tr><th>核验ID</th><th>工单</th><th>核验人</th><th>结果</th><th>时间</th></tr></thead><tbody><tr><td>VF-301</td><td>PV-2045</td><td>钱合规</td><td class="st on">通过</td><td>2026-09-21</td></tr><tr><td>VF-298</td><td>PV-2040</td><td>钱合规</td><td class="st off">不通过</td><td>2026-09-20</td></tr></tbody></table></div>')}
+  ${panel('compliance','<div class="card"><table><thead><tr><th>检查项</th><th>要求</th><th>状态</th></tr></thead><tbody><tr><td>未成年人数据最小化</td><td>仅收集必要字段</td><td class="st on">符合</td></tr><tr><td>监护人同意留存</td><td>可追溯 ≥ 留存期</td><td class="st on">符合</td></tr><tr><td>敏感字段脱敏</td><td>导出默认脱敏</td><td class="st pend">部分待补</td></tr></tbody></table></div>')}
+  `;
+};
+
+/* ---- M6 操作审计 ---- */
+VIEWS.audit = function(){
+  return `
+  <div class="page-h"><h1>操作审计</h1><button class="btn">导出（SA/RA）</button></div>
+  <div class="desc">全量后台操作与 C 端关键操作均落 sys_audit_log，不可绕过。任何写操作自动记录操作人/对象/前后值。</div>
+  ${filterBar([{ph:'操作人 / 账号'},{type:'select',ph:'模块',opts:['用户权限','内容管理','业务数据','合规隐私','系统配置']},{type:'select',ph:'动作',opts:['CREATE','UPDATE','DELETE','EXPORT','APPROVE']},{ph:'时间范围'}])}
+  ${table(['日志ID','时间','操作人','角色','模块','动作','对象','IP'],[
+    ['AL-99201','2026-09-22 13:40','admin.zhou','SA','用户权限','CREATE','账号 op.lin','10.2.3.4'],
+    ['AL-99198','2026-09-22 11:02','op.lin','OP','业务数据','APPROVE','确认单 CF-3390','10.2.3.9'],
+    ['AL-99190','2026-09-22 09:50','cp.qian','CP','合规隐私','EXPORT','隐私工单 PV-2045','10.2.4.1'],
+    ['AL-99185','2026-09-21 18:30','cr.zhao','CR','内容管理','UPDATE','UGC UG-762 拒绝','10.2.5.2'],
+    ['AL-99180','2026-09-21 15:40','op.lin','OP','业务数据','APPROVE','家庭解冻 F-10240','10.2.3.9'],
+  ])}
+  <div class="hint">sys_audit_log 字段：operator / role / module / action / target / before_val / after_val / ip / ts。明文导出需 CP 审批。</div>
+  `;
+};
+
+/* ---- M7 消息通知 ---- */
+VIEWS.notify = function(){
+  return `
+  <div class="page-h"><h1 id="nTitle">消息通知</h1></div>
+  ${tabs([{k:'tpl',t:'通知模板'},{k:'stat',t:'触达统计'}])}
+  ${panel('tpl',`
+    ${filterBar([{ph:'模板名'},{type:'select',ph:'渠道',opts:['微信模板','短信','站内']},{type:'select',ph:'全部状态',opts:['启用','停用']}])}
+    ${table(['模板ID','名称','渠道','触发场景','状态','操作'],[
+      ['NT-01','确认单生成提醒','微信模板','家长确认下单','<span class="pill ok">启用</span>','<span class="link">编辑</span>'],
+      ['NT-02','任务完成奖励','微信模板','孩子完成任务','<span class="pill ok">启用</span>','<span class="link">编辑</span>'],
+      ['NT-03','隐私工单超时','站内','SLA 预警','<span class="pill ok">启用</span>','<span class="link">编辑</span>'],
+    ])}
+    <div class="hint">通知模板 sys_notice；订阅关系 sys_notice_subscription。敏感场景（隐私超时）默认开启且不可降级。</div>
+  `,true)}
+  ${panel('stat','<div class="card"><table><thead><tr><th>模板</th><th>发送量</th><th>到达率</th><th>点击率</th></tr></thead><tbody><tr><td>NT-01 确认单提醒</td><td>36,418</td><td>98.2%</td><td>41.3%</td></tr><tr><td>NT-02 任务奖励</td><td>298,441</td><td>97.5%</td><td>52.0%</td></tr><tr><td>NT-03 隐私超时</td><td>12</td><td>100%</td><td>—</td></tr></tbody></table></div>')}
+  `;
+};
+
+/* ---- M8 监控告警 ---- */
+VIEWS.monitor = function(){
+  return `
+  <div class="page-h"><h1 id="mTitle">监控告警</h1></div>
+  ${tabs([{k:'rule',t:'告警规则'},{k:'alert',t:'告警列表'},{k:'chan',t:'通道配置'}])}
+  ${panel('rule',`
+    ${filterBar([{ph:'规则名'},{type:'select',ph:'等级',opts:['高','中','低']}])}
+    ${table(['规则ID','名称','指标','阈值','等级','状态'],[
+      ['AR-01','确认单积压','待复核确认单数','> 50','<span class="pill bad">高</span>','<span class="st on">启用</span>'],
+      ['AR-02','UGC 高危激增','小时高危命中','> 20','<span class="pill bad">高</span>','<span class="st on">启用</span>'],
+      ['AR-03','隐私工单超时','SLA 剩余','< 4h','<span class="pill warn">中</span>','<span class="st on">启用</span>'],
+    ])}
+  `,true)}
+  ${panel('alert',`
+    ${table(['告警ID','规则','对象','等级','状态','时间','操作'],[
+      ['AL-5501','AR-02 UGC激增','频道 儿童图片','<span class="pill bad">高</span>','<span class="pill warn">待处置</span>','2026-09-22 14:02','<span class="link">认领</span>'],
+      ['AL-5498','AR-03 隐私超时','PV-2048','<span class="pill warn">中</span>','<span class="pill ok">已通知</span>','2026-09-22 09:00','<span class="link">详情</span>'],
+      ['AL-5480','AR-01 确认单积压','—','<span class="pill bad">高</span>','<span class="pill ok">已恢复</span>','2026-09-21 22:10','<span class="link">详情</span>'],
+    ])}
+    <div class="hint">告警闭环：TRIGGERED → ACK(认领) → RESOLVED/SUPPRESSED。处置动作受 RBAC（SA/OP/CR 可认领）。</div>
+  `)}
+  ${panel('chan','<div class="card"><table><thead><tr><th>通道</th><th>类型</th><th>接收人</th><th>状态</th></tr></thead><tbody><tr><td>飞书运维群</td><td>Webhook</td><td>SA/OP</td><td class="st on">启用</td></tr><tr><td>短信网关</td><td>SMS</td><td>CP</td><td class="st on">启用</td></tr><tr><td>邮件</td><td>Email</td><td>RA</td><td class="st off">停用</td></tr></tbody></table></div>')}
+  `;
+};
+
+/* ---- M9 系统配置 ---- */
+VIEWS.config = function(){
+  return `
+  <div class="page-h"><h1 id="gTitle">系统配置</h1><span class="pill sa" style="margin-left:auto">仅 SA 可改</span></div>
+  ${tabs([{k:'param',t:'全局参数'},{k:'enum',t:'枚举字典'},{k:'switch',t:'功能开关'}])}
+  ${panel('param',`
+    ${table(['参数KEY','说明','当前值','操作'],[
+      ['allowance.daily.limit','单孩每日零花钱上限','¥20','<span class="link">编辑</span>'],
+      ['confirm.timeout.min','确认单自动取消(分)','30','<span class="link">编辑</span>'],
+      ['wish.daily.limit','每日心愿提交上限','3','<span class="link">编辑</span>'],
+    ])}
+  `,true)}
+  ${panel('enum','<div class="card"><table><thead><tr><th>枚举</th><th>值域</th><th>说明</th></tr></thead><tbody><tr><td>meal_type</td><td>BREAKFAST/LUNCH/DINNER</td><td>餐次</td></tr><tr><td>confirm_status</td><td>PENDING_APPROVAL/CONFIRMED/REJECTED/CANCELLED</td><td>确认单</td></tr><tr><td>privacy_ticket_status</td><td>SUBMITTED/VERIFYING/APPROVED/REJECTED/EXPORTED</td><td>隐私工单</td></tr></tbody></table></div>')}
+  ${panel('switch','<div class="card"><table><thead><tr><th>开关</th><th>说明</th><th>状态</th><th>操作</th></tr></thead><tbody><tr><td>school.menu.display.only</td><td>学校菜单仅展示不可下单</td><td class="st on">开</td><td><span class="link">关闭</span></td></tr><tr><td>ugc.auto.block.high</td><td>高危 UGC 自动拦截转人工</td><td class="st on">开</td><td><span class="link">关闭</span></td></tr><tr><td>export.need.approve</td><td>明文导出需 CP 审批</td><td class="st on">开</td><td><span class="link">关闭</span></td></tr></tbody></table></div>')}
+  `;
+};
+
+/* ---- M10 帮助手册 ---- */
+VIEWS.help = function(){
+  return `
+  <div class="page-h"><h1>帮助手册</h1><button class="btn">新建文档</button></div>
+  <div class="desc">面向运营人员的使用手册与 FAQ，全部角色可读可维护。</div>
+  <div class="work-grid">
+    ${[['📘','后台账号与 RBAC','6 角色、授权点、独立账号体系','op'],['🍱','内容管理操作指南','菜品/菜单/UGC 审核 SOP','op'],['🔐','隐私工单处理 SOP','同意核验与数据出口闭环','cp'],['🧾','审计与导出规范','脱敏、审批、留存要求','ra'],['🚨','告警处置流程','认领/恢复/升级','op'],['❓','常见问题 FAQ','高频咨询与排查','all']].map(c=>`<div class="wcard" onclick="openGeneric('${c[1]}','${c[2]}')"><div class="ic">${c[0]}</div><div class="ti">${c[1]}</div><div class="de">${c[2]}</div></div>`).join('')}
+  </div>`;
+};
+
+/* ============ 交互逻辑 ============ */
+const viewName = {workbench:'工作台',dashboard:'数据看板',users:'用户与权限',content:'内容管理',bizdata:'业务数据管理',privacy:'合规与隐私',audit:'操作审计',notify:'消息通知',monitor:'监控告警',config:'系统配置',help:'帮助手册'};
+function renderView(key){
+  document.getElementById('content').innerHTML = VIEWS[key]();
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active',a.dataset.view===key));
+  document.getElementById('crumbNow').textContent = viewName[key];
+  if(key==='users'){selRole('SA');}
+  window.scrollTo(0,0);
+}
+function switchTab(k){
+  const root=document.getElementById('content');
+  root.querySelectorAll('.tabs .t').forEach(e=>e.classList.toggle('on',e.dataset.tab===k));
+  root.querySelectorAll('.panel').forEach(p=>p.classList.toggle('on',p.id==='panel-'+k));
+  const titles={acc:'后台账号',role:'角色与权限',dish:'菜品库',cat:'菜品分类',menu:'菜单编排',task:'任务/奖励库',medal:'勋章配置',wish:'心愿菜单',ugc:'UGC 审核',word:'词库管理',fam:'家庭与成员',want:'每日想吃',confirm:'确认单',approval:'审批记录',wallet:'钱包与流水',chore:'家务健康',award:'勋章发放',consent:'同意留痕',ticket:'隐私工单',verify:'核验记录',compliance:'合规清单',tpl:'通知模板',stat:'触达统计',rule:'告警规则',alert:'告警列表',chan:'通道配置',param:'全局参数',enum:'枚举字典',switch:'功能开关'};
+  const h=document.querySelector('.page-h h1'); if(h&&titles[k]) h.textContent=titles[k];
+}
+function openDrawer(title,body,foot){document.getElementById('drawerTitle').textContent=title;document.getElementById('drawerBody').innerHTML=body;document.getElementById('drawerFoot').innerHTML=foot||'<button class="btn-line" onclick="closeDrawer()">取消</button><button class="btn" onclick="closeDrawer()">保存（记录审计）</button>';document.getElementById('mask').classList.add('on');document.getElementById('drawer').classList.add('on');}
+function closeDrawer(){document.getElementById('mask').classList.remove('on');document.getElementById('drawer').classList.remove('on');}
+function openAccDrawer(mode){
+  openDrawer(mode==='new'?'新建后台账号':'编辑后台账号',
+    `<div class="field"><label>登录账号（唯一）</label><input placeholder="如 op.wang"></div>
+     <div class="field"><label>姓名</label><input placeholder="运营人员姓名"></div>
+     <div class="field"><label>角色</label><select><option>运营管理员 OP</option><option>内容审核员 CR</option><option>数据运营/客服 DC</option><option>合规/隐私专员 CP</option><option>只读审计员 RA</option><option>超级管理员 SA</option></select></div>
+     <div class="field"><label>初始密码</label><input type="password" placeholder="至少 8 位，含字母数字"></div>
+     <div class="field"><label>状态</label><div class="seg"><label><input type="radio" name="st" checked><span>启用</span></label><label><input type="radio" name="st"><span>禁用</span></label></div></div>
+     <div class="hint">账号独立于小程序体系（sys_admin_user）。创建/修改触发二次确认并写入操作审计（M6）。</div>`);
+}
+function openGeneric(title,desc){
+  openDrawer(title,`<div class="field"><label>标题</label><input value="${title}"></div><div class="field"><label>正文</label><textarea placeholder="请输入内容…">${desc||''}</textarea></div><div class="hint">保存将记录操作审计（M6）。</div>`);
+}
+function selRole(r){
+  document.querySelectorAll('#roleBar .rb').forEach(e=>e.classList.toggle('on',e.dataset.role===r));
+  const tb=document.querySelector('#rpmTable tbody'); if(!tb) return; tb.innerHTML='';
+  for(const res in perms){
+    const p=perms[res]; let cells='<td class="res">'+res+'</td>';
+    ops.forEach(o=>{const has=p[o]&&p[o].includes(r);
+      cells+=`<td>${has?'<input type="checkbox" class="chk" checked '+(r==='SA'?'':'disabled')+'>':'<span style="color:#c4cdda">—</span>'}</td>`;});
+    tb.innerHTML+=`<tr>${cells}</tr>`;
+  }
+}
+function doLogin(){
+  const u=document.getElementById('lgUser').value.trim();
+  const p=document.getElementById('lgPwd').value;
+  if(!u||!p){document.getElementById('lgErr').style.display='block';return;}
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').classList.add('on');
+  renderView('workbench');
+}
+function switchRole(v){
+  const map={SA:'超级管理员(SA)',OP:'运营管理员(OP)',CR:'内容审核员(CR)',DC:'数据运营/客服(DC)',CP:'合规/隐私专员(CP)',RA:'只读审计员(RA)'};
+  document.getElementById('meRole').textContent=map[v];
+  const badge=v==='CP'?3:v==='CR'?12:v==='SA'?3:2;
+  document.getElementById('bellBadge').textContent=badge;
+}
+/* 侧边导航绑定 */
+document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>renderView(a.dataset.view)));
+/* 初始化 */
+renderView('workbench');
+</script>
+</body>
+</html>

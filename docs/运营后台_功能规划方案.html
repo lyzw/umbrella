@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成长星球 · 运营后台系统 功能规划方案</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2933; --sub:#52606d; --line:#e4e9f0;
+    --brand:#2f6df6; --brand2:#5b8def; --accent:#13b5b1; --warn:#f5a623; --danger:#e5534b;
+    --p0:#e5534b; --p1:#f5a623; --p2:#3aa675; --soft:#eef3ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+  .wrap{max-width:1180px;margin:0 auto;padding:40px 28px 80px}
+  header.hero{background:linear-gradient(120deg,#2f6df6,#5b8def);color:#fff;border-radius:18px;padding:38px 40px;box-shadow:0 10px 30px rgba(47,109,246,.18)}
+  header.hero h1{margin:0 0 8px;font-size:28px;letter-spacing:.5px}
+  header.hero p{margin:4px 0;opacity:.95;font-size:14px}
+  .tag{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:3px 12px;font-size:12px;margin:8px 8px 0 0}
+  h2{font-size:21px;margin:42px 0 14px;padding-left:12px;border-left:5px solid var(--brand)}
+  h3{font-size:16px;margin:24px 0 10px;color:var(--brand)}
+  h4{font-size:14px;margin:16px 0 8px;color:var(--sub)}
+  p{font-size:14px;color:var(--ink)}
+  .muted{color:var(--sub)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:14px 0;box-shadow:0 2px 8px rgba(31,41,51,.04)}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--soft);color:var(--brand);font-weight:600}
+  tr:nth-child(even) td{background:#fafcff}
+  .pill{display:inline-block;border-radius:6px;padding:2px 9px;font-size:11px;font-weight:600;white-space:nowrap}
+  .p0{background:#fdecea;color:var(--p0)} .p1{background:#fef3e0;color:#b9770e} .p2{background:#e7f6ee;color:var(--p2)}
+  .role{background:var(--soft);border-radius:14px;padding:16px 18px;border:1px solid var(--line)}
+  .role b{color:var(--brand)}
+  .flow{background:#0f1b33;color:#dfe7f5;border-radius:14px;padding:18px 20px;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;line-height:1.9;overflow-x:auto}
+  .flow .n{color:#7fd1ff} .flow .ok{color:#6ee7a8} .flow .warn{color:#ffd166}
+  ul.tight{margin:6px 0;padding-left:20px} ul.tight li{margin:4px 0;font-size:13.5px}
+  .note{background:#fff8e6;border-left:4px solid var(--warn);padding:12px 16px;border-radius:0 10px 10px 0;font-size:13px;margin:12px 0}
+  .svgbox{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px;overflow-x:auto}
+  .toc{columns:2;font-size:13px} .toc a{color:var(--brand);text-decoration:none}
+  .footer{margin-top:50px;color:var(--sub);font-size:12px;text-align:center}
+  .kpi{display:flex;gap:12px;flex-wrap:wrap}
+  .kpi .b{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .kpi .b .v{font-size:22px;font-weight:700;color:var(--brand)}
+  .kpi .b .l{font-size:12px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>成长星球 · 运营后台系统 功能规划方案</h1>
+  <p>版本：V1.0（规划稿） · 适用对象：产品 / 运营 / 研发 / 合规 · 日期：2026-09-22</p>
+  <p>面向对象：本文档仅做功能规划（模块、职责、信息架构、优先级、关键流程），不涉技术选型与代码实现。</p>
+  <div>
+    <span class="tag">运营数据看板</span><span class="tag">用户与权限</span><span class="tag">内容管理(CMS)</span>
+    <span class="tag">业务数据管理</span><span class="tag">合规与隐私</span><span class="tag">操作日志审计</span>
+    <span class="tag">监控告警</span><span class="tag">消息通知</span>
+  </div>
+</header>
+
+<div class="card">
+  <b>目录</b>
+  <div class="toc">
+    <a href="#t1">一、背景与后台核心目标</a><br>
+    <a href="#t2">二、后台用户角色</a><br>
+    <a href="#t3">三、功能模块全景清单</a><br>
+    <a href="#t4">四、各模块职责与相互关联</a><br>
+    <a href="#t5">五、整体信息架构与页面层级</a><br>
+    <a href="#t6">六、关键业务流程说明</a><br>
+    <a href="#t7">七、优先级建议与实施里程碑</a><br>
+    <a href="#t8">八、范围、边界与后续</a><br>
+  </div>
+</div>
+
+<!-- ============ 一 ============ -->
+<h2 id="t1">一、背景与后台核心目标</h2>
+<div class="card">
+  <p><b>成长星球</b>是面向 6–12 岁儿童的「生活与学习自主力养成平台」，以家长虚拟额度护栏 + 孩子自主决策的模拟记账模式运转（无真实支付风险）。载体为微信小程序，已落地首模块「小当家·点餐」并扩展到零花钱、家务、勋章、日程、健康打卡、奖励、监护人委托等域，且已规划学校/学生场景与心愿菜单。</p>
+  <p>当前 C 端功能已较完整，但<b>缺乏统一的管理与运营入口</b>：菜品/菜单/任务/奖励等内容靠代码或数据库直改，用户与家庭的异常无统一处置台，合规隐私（监护人同意、数据出口）与操作审计无系统化支撑。运营后台正是为补齐这一能力。</p>
+
+  <h3>后台四大核心目标</h3>
+  <div class="grid g4">
+    <div class="role"><b>1. 内容可控</b><br><span class="muted">菜品/菜单/任务/奖励/勋章等内容的统一配置、审核与上下线，保障未成年人内容安全。</span></div>
+    <div class="role"><b>2. 业务可观测</b><br><span class="muted">家庭、孩子、虚拟币流水、餐食确认单等关键指标一眼可见，支撑运营决策。</span></div>
+    <div class="role"><b>3. 风险可管</b><br><span class="muted">用户/家庭异常处置、内容风控、超额与异常流水告警、隐私工单闭环。</span></div>
+    <div class="role"><b>4. 合规可审</b><br><span class="muted">监护人同意留痕、数据导出/删除工单、后台操作全审计，满足未成年人保护要求。</span></div>
+  </div>
+
+  <h4>关键运营指标（看板关注）</h4>
+  <div class="kpi">
+    <div class="b"><div class="v">家庭数</div><div class="l">累计 / 新增 / 活跃</div></div>
+    <div class="b"><div class="v">孩子数</div><div class="l">绑定儿童账户</div></div>
+    <div class="b"><div class="v">虚拟币</div><div class="l">发放 / 消耗 / 沉淀</div></div>
+    <div class="b"><div class="v">确认单</div><div class="l">待审 / 通过 / 超额</div></div>
+    <div class="b"><div class="v">内容风险</div><div class="l">待审 / 命中 / 拦截</div></div>
+    <div class="b"><div class="v">隐私工单</div><div class="l">待核验 / 超时</div></div>
+  </div>
+</div>
+
+<!-- ============ 二 ============ -->
+<h2 id="t2">二、后台用户角色</h2>
+<div class="card">
+  <p class="muted">后台用户（运营侧）与 C 端用户（家长/孩子/学生/教师）是两套体系。后台通过 RBAC 控制运营人员能看/能改什么；C 端用户由「用户与权限管理」模块查询与处置，但不在后台直接以家长身份操作。</p>
+  <div class="grid g3">
+    <div class="role"><b>超级管理员</b><br><span class="muted">系统最高权限：角色与权限模型维护、全局配置、审计查看、所有模块读写。</span></div>
+    <div class="role"><b>运营管理员</b><br><span class="muted">日常内容配置（菜品/菜单/任务/奖励/勋章）、业务数据查询与人工干预、看板查看。</span></div>
+    <div class="role"><b>内容审核员</b><br><span class="muted">UGC（家庭私有菜、心愿菜单）机审+人审、敏感词/图像风控、未成年人保护词库命中处理。</span></div>
+    <div class="role"><b>数据运营 / 客服</b><br><span class="muted">看板与报表、家庭/孩子工单协助、通知下发统计；只读为主，可有限写。</span></div>
+    <div class="role"><b>合规 / 隐私专员</b><br><span class="muted">监护人同意留痕核验、数据导出/删除工单处理、合规清单检查，独立留痕。</span></div>
+    <div class="role"><b>只读审计员</b><br><span class="muted">仅查看操作日志、审计与看板，无写权限，用于外部审计/巡检。</span></div>
+  </div>
+  <div class="note">权限原则：<b>最小权限 + 职责分离</b>。合规/隐私操作与运营写操作分离；所有写操作强制进入操作审计日志；敏感操作（删家庭、导出数据、改额度上限）需二次确认或审批。</div>
+</div>
+
+<!-- ============ 三 ============ -->
+<h2 id="t3">三、功能模块全景清单</h2>
+<div class="card">
+  <table>
+    <thead><tr><th style="width:34px">#</th><th>模块</th><th>核心职责</th><th>优先级</th></tr></thead>
+    <tbody>
+      <tr><td>M0</td><td>登录与工作台门户</td><td>运营账号登录/鉴权、个人待办与概览首页</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>M1</td><td>数据看板与报表</td><td>运营总览、业务域看板、自定义报表与导出</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>M2</td><td>用户与权限管理</td><td>后台账号/角色(RBAC)、C端用户与家庭处置、账号风控</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>M3</td><td>内容管理（CMS）</td><td>菜品/分类/菜单编排/任务/奖励/勋章/心愿库 + 内容风控</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>M4</td><td>业务数据管理</td><td>餐食/零花钱/家务/健康/勋章等域数据查询、详情、导出与人工干预</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>M5</td><td>合规与隐私中心</td><td>监护人同意留痕、隐私工单(导出/删除)、合规清单</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>M6</td><td>操作日志与审计</td><td>后台与C端关键操作全留痕、查询/回放/导出</td><td><span class="pill p0">P0</span></td></tr>
+      <tr><td>M7</td><td>消息与通知中心</td><td>通知模板、订阅管理、推送下发与触达统计</td><td><span class="pill p1">P1</span></td></tr>
+      <tr><td>M8</td><td>监控与告警</td><td>业务异常告警（超额/异常流水/内容风险/工单积压）、规则与通道</td><td><span class="pill p1">P1</span></td></tr>
+      <tr><td>M9</td><td>系统配置</td><td>全局参数、枚举字典、功能开关/灰度</td><td><span class="pill p1">P1</span></td></tr>
+      <tr><td>M10</td><td>帮助与运营手册</td><td>运营 SOP、FAQ、公告</td><td><span class="pill p2">P2</span></td></tr>
+    </tbody>
+  </table>
+  <p class="muted">说明：P0 = 上线必备（MVP）；P1 = 增长期增强；P2 = 成熟期补充。优先级论证见第七节。</p>
+</div>
+
+<!-- ============ 四 ============ -->
+<h2 id="t4">四、各模块职责与相互关联</h2>
+
+<div class="card">
+  <h3>M1 · 数据看板与报表</h3>
+  <ul class="tight">
+    <li><b>运营总览</b>：家庭/孩子/活跃、虚拟币发放与消耗、确认单量与通过率、内容风险与隐私工单积压。</li>
+    <li><b>业务域看板</b>：餐食（想吃热度、确认单、超额）、零花钱（余额分布、额度使用）、家务/健康（完成率、连续天数）、勋章（发放与获得率）。</li>
+    <li><b>自定义报表</b>：按时间/家庭/学校维度筛选，支持导出（受数据权限与脱敏约束）。</li>
+  </ul>
+  <p class="muted">关联：数据来自 M4 各域 + M8 告警汇总；导出受 M2 数据权限与 M5 脱敏约束；看板指标驱动 M8 告警阈值设定。</p>
+</div>
+
+<div class="card">
+  <h3>M2 · 用户与权限管理</h3>
+  <ul class="tight">
+    <li><b>后台账号</b>：运营人员 CRUD、状态（启用/禁用）、密码与登录策略。</li>
+    <li><b>角色与权限（RBAC）</b>：预置角色（见第二节）+ 自定义角色，按模块/操作粒度授权。</li>
+    <li><b>C端用户与家庭</b>：家庭查询、成员关系、绑定与监护人委托关系查看；异常账号冻结/解绑协助。</li>
+    <li><b>账号风控</b>：异常登录、批量注册、风险家庭标记，联动 M8 告警。</li>
+  </ul>
+  <p class="muted">关联：是所有写操作的权限闸门；每次变更写入 M6 审计；风控事件推送 M8；C端家庭数据查看/干预落到 M4。</p>
+</div>
+
+<div class="card">
+  <h3>M3 · 内容管理（CMS）</h3>
+  <ul class="tight">
+    <li><b>菜品库</b>：菜品增删改、图文、虚拟价格、热量、标签、过敏原声明（关联 R5 过敏原治理）。</li>
+    <li><b>菜品分类</b>：分类树维护。</li>
+    <li><b>菜单编排</b>：按日/按餐编排（FAMILY 可提报 / SCHOOL 仅展示收藏，对应 F-014/F-015）；周食谱模板。</li>
+    <li><b>任务库 / 书单库</b>：家务与学习任务模板（关联 V0.0.2 家务域）。</li>
+    <li><b>奖励兑换库</b>：奖励项与履约配置。</li>
+    <li><b>勋章 / 活动配置</b>：勋章定义（life_medal_definition）、成就规则、运营活动。</li>
+    <li><b>心愿菜单与派生</b>：爱吃/常点派生视图配置、心愿菜单（P3）管理。</li>
+    <li><b>内容风控</b>：UGC（家庭私有菜 life_family_dish、心愿）机审+人审、敏感词/图像审核、未成年人保护词库。</li>
+  </ul>
+  <p class="muted">关联：发布的内容进入 M4 业务数据被孩子端消费；UGC 审核流见第六节；风控命中推送 M8 与内容审核员待办；过敏原声明是合规项，关联 M5。</p>
+</div>
+
+<div class="card">
+  <h3>M4 · 业务数据管理</h3>
+  <ul class="tight">
+    <li><b>餐食业务</b>：每日想吃(usr_child_want_eat)、确认单(life_menu_confirm)+审批态、确认单项与心愿菜单查询/导出。</li>
+    <li><b>零花钱</b>：钱包(life_wallet)、额度规则(life_allowance_rule)、流水(life_allowance_log) 查询与异常流水人工干预。</li>
+    <li><b>家务 / 健康 / 日程</b>：任务实例(life_chore_instance)、打卡记录(life_check_record)、连续记录(life_chore_streak)、日程(life_schedule)。</li>
+    <li><b>勋章发放</b>：发放记录(life_medal_award) 查询与补发。</li>
+    <li><b>家庭设置</b>：usr_family_setting 等配置查看与有限修改。</li>
+  </ul>
+  <p class="muted">关联：只读为主，写操作（补发、干预）需 M2 权限并写入 M6；数据来自 M3 内容；异常数据（超额/异常流水）触发 M8。所有导出受 M5 脱敏与 M2 数据范围约束。</p>
+</div>
+
+<div class="card">
+  <h3>M5 · 合规与隐私中心</h3>
+  <ul class="tight">
+    <li><b>监护人同意留痕</b>：usr_consent_log 查看与核验，确保未成年账户合规。</li>
+    <li><b>隐私工单</b>：数据导出(sys_privacy_request)/删除申请、核验(sys_privacy_verification) 全流程闭环。</li>
+    <li><b>合规清单</b>：未成年人保护检查项、数据保留策略、审计就绪状态。</li>
+  </ul>
+  <p class="muted">关联：工单由 C端发起，在 M5 闭环并写入 M6；超时/积压触发 M8 告警；导出内容受 M9 脱敏策略约束。</p>
+</div>
+
+<div class="card">
+  <h3>M6 · 操作日志与审计</h3>
+  <ul class="tight">
+    <li><b>后台操作日志</b>：sys_audit_log，记录谁/何时/在哪个模块/做了什么/影响对象，支持查询、回放、导出。</li>
+    <li><b>C端关键操作</b>：监护人委托、解绑、额度变更、数据出口等高风险动作留痕。</li>
+    <li><b>登录与会话</b>：后台登录、会话、权限变更日志。</li>
+  </ul>
+  <p class="muted">关联：由 M2/M3/M4/M5 所有写操作自动写入（不可绕过）；是合规(M5)与告警(M8)的取证来源；只读审计员专看此模块。</p>
+</div>
+
+<div class="card">
+  <h3>M7 · 消息与通知中心（P1）</h3>
+  <ul class="tight">
+    <li><b>通知模板</b>：sys_notice 模板管理（站内/订阅消息）。</li>
+    <li><b>订阅管理</b>：sys_notice_subscription 配置与统计。</li>
+    <li><b>触达统计</b>：下发量、到达、红点/打开率。</li>
+  </ul>
+  <p class="muted">关联：运营公告、审核结果通知、告警(M8)触达均经此模块；模板被 M3/M5/M8 复用。</p>
+</div>
+
+<div class="card">
+  <h3>M8 · 监控与告警（P1）</h3>
+  <ul class="tight">
+    <li><b>业务异常告警</b>：超额确认单、异常大额虚拟发放、内容风险堆积、隐私工单超时。</li>
+    <li><b>规则配置</b>：阈值、触发条件、静默期。</li>
+    <li><b>告警通道</b>：站内(M7)、企微/邮件（通道接入方式不在此文档范围）。</li>
+  </ul>
+  <p class="muted">关联：数据源为 M1 指标、M4 异常、M5 工单、M6；告警处置形成工单回流对应模块；规则可由 M9 功能开关控制。</p>
+</div>
+
+<div class="card">
+  <h3>M9 · 系统配置（P1）　M10 · 帮助与运营手册（P2）</h3>
+  <ul class="tight">
+    <li><b>M9</b>：虚拟币名称/默认额度上限、学校目录（校名目录化治理）、枚举字典、功能开关与灰度。</li>
+    <li><b>M10</b>：运营 SOP、FAQ、版本公告，降低培训成本。</li>
+  </ul>
+</div>
+
+<div class="note"><b>模块关联总览：</b> M2 是权限闸门 → 所有写操作经 M2 授权并落 M6 审计；M3 生产内容、M4 承载与处置业务数据；M5 负责合规闭环；M1 汇总可视、M8 基于异常触发告警并经 M7 触达；M9 提供全局参数。数据流向：内容(M3) → 业务数据(M4) → 指标(M1) → 异常(M8) → 告警(M7) → 处置(回流各模块)。</div>
+
+<!-- ============ 五 ============ -->
+<h2 id="t5">五、整体信息架构与页面层级</h2>
+<div class="card">
+  <p class="muted">以下为后台站点地图（信息架构）。第一级为工作台与九大模块；第二级为各模块子页面；部分页面含第三级明细。</p>
+  <div class="svgbox">
+  <svg viewBox="0 0 1080 760" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,PingFang SC,Microsoft YaHei,sans-serif" font-size="13">
+    <!-- 连接线 -->
+    <g stroke="#c4d0e3" stroke-width="1.4" fill="none">
+      <path d="M200,60 H300 V110"/><path d="M300,110 V150"/>
+      <path d="M300,150 H180 V200"/><path d="M300,150 H420 V200"/><path d="M300,150 H660 V200"/><path d="M300,150 H900 V200"/>
+      <path d="M180,200 V250"/><path d="M420,200 V250"/><path d="M660,200 V250"/><path d="M900,200 V250"/>
+      <path d="M180,250 H90 V300"/><path d="M180,250 H270 V300"/>
+      <path d="M420,250 H330 V300"/><path d="M420,250 H510 V300"/>
+      <path d="M660,250 H570 V300"/><path d="M660,250 H750 V300"/>
+      <path d="M900,250 H810 V300"/><path d="M900,250 H990 V300"/>
+    </g>
+    <!-- 根 -->
+    <g><rect x="120" y="30" width="160" height="44" rx="10" fill="#2f6df6"/><text x="200" y="57" fill="#fff" text-anchor="middle" font-weight="700">运营后台</text></g>
+    <g><rect x="230" y="110" width="140" height="40" rx="10" fill="#5b8def"/><text x="300" y="135" fill="#fff" text-anchor="middle">工作台门户 M0</text></g>
+    <!-- 一级模块 -->
+    <g><rect x="60" y="200" width="120" height="50" rx="9" fill="#eef3ff" stroke="#2f6df6"/><text x="120" y="222" text-anchor="middle" font-weight="600">数据看板 M1</text><text x="120" y="240" text-anchor="middle" font-size="10" fill="#52606d">P0</text></g>
+    <g><rect x="360" y="200" width="120" height="50" rx="9" fill="#eef3ff" stroke="#2f6df6"/><text x="420" y="222" text-anchor="middle" font-weight="600">用户权限 M2</text><text x="420" y="240" text-anchor="middle" font-size="10" fill="#52606d">P0</text></g>
+    <g><rect x="600" y="200" width="120" height="50" rx="9" fill="#eef3ff" stroke="#2f6df6"/><text x="660" y="222" text-anchor="middle" font-weight="600">内容管理 M3</text><text x="660" y="240" text-anchor="middle" font-size="10" fill="#52606d">P0</text></g>
+    <g><rect x="840" y="200" width="120" height="50" rx="9" fill="#eef3ff" stroke="#2f6df6"/><text x="900" y="222" text-anchor="middle" font-weight="600">业务数据 M4</text><text x="900" y="240" text-anchor="middle" font-size="10" fill="#52606d">P0</text></g>
+    <g><rect x="60" y="300" width="120" height="50" rx="9" fill="#eef3ff" stroke="#13b5b1"/><text x="120" y="322" text-anchor="middle" font-weight="600">合规隐私 M5</text><text x="120" y="340" text-anchor="middle" font-size="10" fill="#52606d">P0</text></g>
+    <g><rect x="310" y="300" width="120" height="50" rx="9" fill="#eef3ff" stroke="#13b5b1"/><text x="370" y="322" text-anchor="middle" font-weight="600">操作审计 M6</text><text x="370" y="340" text-anchor="middle" font-size="10" fill="#52606d">P0</text></g>
+    <g><rect x="560" y="300" width="120" height="50" rx="9" fill="#fff3e0" stroke="#f5a623"/><text x="620" y="322" text-anchor="middle" font-weight="600">消息通知 M7</text><text x="620" y="340" text-anchor="middle" font-size="10" fill="#52606d">P1</text></g>
+    <g><rect x="810" y="300" width="120" height="50" rx="9" fill="#fff3e0" stroke="#f5a623"/><text x="870" y="322" text-anchor="middle" font-weight="600">监控告警 M8</text><text x="870" y="340" text-anchor="middle" font-size="10" fill="#52606d">P1</text></g>
+    <g><rect x="60" y="430" width="120" height="50" rx="9" fill="#fff3e0" stroke="#f5a623"/><text x="120" y="452" text-anchor="middle" font-weight="600">系统配置 M9</text><text x="120" y="470" text-anchor="middle" font-size="10" fill="#52606d">P1</text></g>
+    <g><rect x="310" y="430" width="120" height="50" rx="9" fill="#e7f6ee" stroke="#3aa675"/><text x="370" y="452" text-anchor="middle" font-weight="600">帮助手册 M10</text><text x="370" y="470" text-anchor="middle" font-size="10" fill="#52606d">P2</text></g>
+
+    <!-- 二级页面列表 -->
+    <g font-size="11" fill="#33415c">
+      <text x="30" y="540">M1: 总览 / 餐食 / 零花钱 / 家务健康 / 勋章 / 自定义报表</text>
+      <text x="30" y="560">M2: 后台账号 / 角色权限 / 家庭查询 / 账号风控</text>
+      <text x="30" y="580">M3: 菜品库 / 分类 / 菜单编排 / 任务库 / 奖励库 / 勋章配置 / 心愿 / 内容风控</text>
+      <text x="30" y="600">M4: 餐食数据 / 钱包流水 / 家务健康 / 勋章发放 / 家庭设置 (查询·导出·干预)</text>
+      <text x="30" y="620">M5: 同意留痕 / 隐私工单 / 合规清单　　M6: 操作日志 / C端关键操作 / 登录会话</text>
+      <text x="30" y="640">M7: 通知模板 / 订阅 / 触达统计　　M8: 告警规则 / 告警列表 / 通道配置</text>
+      <text x="30" y="660">M9: 全局参数 / 枚举字典 / 功能开关　　M10: SOP / FAQ / 公告</text>
+    </g>
+    <!-- 三级提示 -->
+    <g><rect x="700" y="540" width="330" height="120" rx="10" fill="#fafcff" stroke="#e4e9f0"/>
+      <text x="716" y="562" font-size="11" font-weight="700" fill="#2f6df6">页面层级约定</text>
+      <text x="716" y="584" font-size="11" fill="#33415c">L1 模块导航（左侧）</text>
+      <text x="716" y="604" font-size="11" fill="#33415c">L2 列表 / 看板页（筛选+表格）</text>
+      <text x="716" y="624" font-size="11" fill="#33415c">L3 详情 / 表单 / 审批抽屉</text>
+      <text x="716" y="644" font-size="11" fill="#33415c">L4 操作确认 / 审计回执</text>
+      <text x="716" y="664" font-size="10" fill="#8a97a8">写操作强制确认+审计回执</text>
+    </g>
+  </svg>
+  </div>
+  <p class="muted">导航结构：顶部全局搜索 + 左侧模块树（按角色权限动态渲染）；列表页(L2)承载筛选/批量，详情与表单以抽屉(L3)呈现，敏感写操作弹确认(L4)并出具审计回执。</p>
+</div>
+
+<!-- ============ 六 ============ -->
+<h2 id="t6">六、关键业务流程说明</h2>
+
+<div class="card">
+  <h3>流程 1 · 内容生产主链路（菜品→菜单→想吃→确认单）</h3>
+  <div class="flow">
+<span class="n">运营(M3)</span> 配置菜品库(图文/价格/热量/过敏原) → 编排每日/每周菜单(FAMILY可提报·SCHOOL仅展示)
+   │
+   ▼
+<span class="n">家长/学校(C端)</span> 发布当日菜单 / 孩子标记<span class="ok">每日想吃</span>(usr_child_want_eat) 与心愿
+   │
+   ▼
+<span class="n">孩子</span> 选菜 → 生成<span class="warn">确认单</span>(life_menu_confirm) → 家长审批(状态机)
+   │
+   ▼
+<span class="n">后台(M4)</span> 可查确认单/超额复核(M8告警) · 异常人工干预(写M6审计)
+   └─ 数据回流 <span class="n">M1看板</span>(想吃热度/确认单量/超额率)
+  </div>
+</div>
+
+<div class="card">
+  <h3>流程 2 · UGC 内容审核流（机审 + 人审）</h3>
+  <div class="flow">
+<span class="n">用户提报</span> 家庭私有菜(life_family_dish) / 心愿菜单
+   │
+   ▼
+<span class="ok">机审</span> 敏感词 + 图像风控 + 未成年人保护词库
+   ├─ 命中高危 → 自动拦截 + 进M8告警 + 通知(M7)
+   └─ 待定/低危 → 进<span class="n">内容审核员</span>待办(M3)
+        │
+        ▼
+   <span class="n">人审</span> 通过(上架) / 驳回(原因回写+M7通知用户)
+        │
+        ▼
+   全部动作写入 <span class="ok">M6审计</span>
+  </div>
+</div>
+
+<div class="card">
+  <h3>流程 3 · 隐私数据出口工单流（合规闭环）</h3>
+  <div class="flow">
+<span class="n">C端申请</span> 导出(sys_privacy_request) / 删除 本人数据
+   │
+   ▼
+<span class="warn">M5合规专员</span> 核验监护人身份(sys_privacy_verification) + 同意留痕(usr_consent_log)
+   ├─ 超时 → <span class="warn">M8告警</span>(工单积压) + M7提醒
+   └─ 通过 → 执行导出/删除(受M9脱敏) → 工单完结
+        │
+        ▼
+   全流程写入 <span class="ok">M6审计</span> · 仅合规专员与只读审计员可见明细
+  </div>
+</div>
+
+<div class="card">
+  <h3>流程 4 · 异常监控告警闭环</h3>
+  <div class="flow">
+<span class="n">M8规则引擎</span> 监听 M1指标 / M4异常流水 / M5工单 / M6
+   │  例：超额确认单 · 异常大额发放 · 内容风险堆积 · 隐私工单超时
+   ▼
+<span class="warn">触发告警</span> → 经M7通道(站内/企微/邮件)推送责任人
+   │
+   ▼
+<span class="n">责任人处置</span> → 跳转对应模块处理(审批/冻结/核验)
+   │
+   ▼
+<span class="ok">闭环</span> 告警标记已处理 · 处置动作写M6 · 指标回落
+  </div>
+</div>
+
+<div class="card">
+  <h3>流程 5 · 后台权限与审计（横切所有写操作）</h3>
+  <div class="flow">
+<span class="n">运营登录(M0)</span> → <span class="n">M2鉴权(RBAC)</span> 判定模块/操作权限
+   │  无权限 → 拒绝 + 记录尝试(M6)
+   ▼ 有权限
+执行写操作(M3/M4/M5…) → <span class="warn">敏感操作二次确认(L4)</span>
+   │
+   ▼
+<span class="ok">M6审计</span> 自动落库(谁/何时/何模块/何对象/前后值) → 不可绕过
+   └─ 只读审计员可查不可改，满足外部审计
+  </div>
+</div>
+
+<!-- ============ 七 ============ -->
+<h2 id="t7">七、优先级建议与实施里程碑</h2>
+<div class="card">
+  <table>
+    <thead><tr><th>优先级</th><th>范围</th><th>理由</th><th>建议里程碑</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill p0">P0</span></td><td>M0+M1(总览)+M2+M3(基础)+M4(查询导出)+M5+M6</td><td>合规与风控是上线前提；无后台则内容靠直改、审计缺失、隐私工单无法闭环</td><td>里程碑 A（基础可用）</td></tr>
+      <tr><td><span class="pill p1">P1</span></td><td>M1高级报表 + M3内容风控 + M7 + M8 + M9</td><td>增长期需要主动风控、通知触达与可配置化，降低人工成本</td><td>里程碑 B（运营增强）</td></tr>
+      <tr><td><span class="pill p2">P2</span></td><td>M10 + AI洞察看板 + UGC深度运营</td><td>成熟期提效与智能化，非阻塞项</td><td>里程碑 C（智能运营）</td></tr>
+    </tbody>
+  </table>
+  <h4>分期建议</h4>
+  <ul class="tight">
+    <li><b>里程碑 A（MVP·必交付）</b>：账号权限、内容基础配置、业务数据查询导出、合规隐私闭环、操作审计。先解决"能管、能审、能合规"。</li>
+    <li><b>里程碑 B（增强）</b>：内容风控人审台、告警引擎、通知中心、系统配置。解决"主动防风险、可配置"。</li>
+    <li><b>里程碑 C（进阶）</b>：运营手册、AI 数据洞察与异常预测。解决"提效与智能化"。</li>
+  </ul>
+</div>
+
+<!-- ============ 八 ============ -->
+<h2 id="t8">八、范围、边界与后续</h2>
+<div class="card">
+  <h4>明确边界</h4>
+  <ul class="tight">
+    <li><b>不做</b>：具体技术选型、前端框架、后端语言、数据库与部署方案（本文档不涉及实现）。</li>
+    <li><b>不做</b>：C 端业务功能本身（点餐/打卡/兑换逻辑由小程序侧实现），后台仅做管理与观测。</li>
+    <li><b>不做</b>：以家长身份替用户操作；后台对 C 端数据以查询/导出/有限人工干预为主，写操作须最小化并全审计。</li>
+    <li><b>关联但独立</b>：成长树/AI 推荐(P4)、学习域/教师家校互通(P3) 的后台配置可后续在 M3 扩展，本规划预留接入位。</li>
+  </ul>
+  <h4>后续可细化</h4>
+  <ul class="tight">
+    <li>各模块页面字段与交互原型（进入 UIUX 阶段）。</li>
+    <li>RBAC 权限矩阵细表（模块 × 操作 × 角色）。</li>
+    <li>数据脱敏与字段级权限规则。</li>
+    <li>与现有表（sys_audit_log / usr_consent_log / sys_privacy_* 等）的字段映射核对。</li>
+  </ul>
+  <div class="note">本规划已对照现有数据库实体（usr_*/life_*/sys_* 表）与 V0.0.1/V0.0.2 功能域，确保模块划分落在真实功能之上，而非凭空设计。</div>
+</div>
+
+<div class="footer">成长星球 · 运营后台功能规划方案（V1.0 规划稿） · 仅功能规划，未含技术选型与实现</div>
+
+</div>
+</body>
+</html>

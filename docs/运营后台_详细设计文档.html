@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成长星球 · 运营后台系统 详细设计文档</title>
+<style>
+  :root{
+    --bg:#f6f8fb;--card:#fff;--ink:#1f2933;--sub:#52606d;--line:#e4e9f0;
+    --brand:#2f6df6;--brand2:#5b8def;--accent:#13b5b1;--warn:#f5a623;--danger:#e5534b;
+    --p0:#e5534b;--p1:#f5a623;--p2:#3aa675;--soft:#eef3ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+  .wrap{max-width:1220px;margin:0 auto;padding:36px 28px 90px}
+  header.hero{background:linear-gradient(120deg,#1f3a8a,#2f6df6);color:#fff;border-radius:18px;padding:34px 40px;box-shadow:0 10px 30px rgba(31,58,138,.2)}
+  header.hero h1{margin:0 0 6px;font-size:27px}
+  header.hero p{margin:3px 0;opacity:.95;font-size:13.5px}
+  .tag{display:inline-block;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.32);border-radius:999px;padding:3px 11px;font-size:12px;margin:7px 7px 0 0}
+  h2{font-size:21px;margin:40px 0 12px;padding-left:12px;border-left:5px solid var(--brand);counter-increment:h2}
+  h2::before{content:counter(h2) ". ";color:var(--brand)}
+  h3{font-size:16px;margin:22px 0 8px;color:var(--brand)}
+  h4{font-size:14px;margin:14px 0 6px;color:var(--sub)}
+  p{font-size:13.5px}
+  .muted{color:var(--sub)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:12px 0;box-shadow:0 2px 8px rgba(31,41,51,.04)}
+  .grid{display:grid;gap:14px}.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:920px){.g2,.g3{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:var(--soft);color:var(--brand);font-weight:600}
+  tr:nth-child(even) td{background:#fafcff}
+  .pill{display:inline-block;border-radius:6px;padding:2px 9px;font-size:11px;font-weight:700;white-space:nowrap}
+  .p0{background:#fdecea;color:var(--p0)}.p1{background:#fef3e0;color:#b9770e}.p2{background:#e7f6ee;color:var(--p2)}
+  .op{background:#eef3ff;color:var(--brand);border-radius:5px;padding:1px 6px;font-size:11px;font-weight:600}
+  .flow{background:#0f1b33;color:#dfe7f5;border-radius:14px;padding:16px 18px;font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12px;line-height:1.85;overflow-x:auto}
+  .flow .n{color:#7fd1ff}.flow .ok{color:#6ee7a8}.flow .warn{color:#ffd166}.flow .x{color:#ff8e8e}
+  ul.tight{margin:6px 0;padding-left:20px}ul.tight li{margin:3px 0;font-size:13px}
+  .note{background:#fff8e6;border-left:4px solid var(--warn);padding:11px 15px;border-radius:0 10px 10px 0;font-size:12.5px;margin:10px 0}
+  .tip{background:#eaf3ff;border-left:4px solid var(--brand);padding:11px 15px;border-radius:0 10px 10px 0;font-size:12.5px;margin:10px 0}
+  .map{background:#f3f8f4;border:1px solid #cfe7d8;border-radius:10px;padding:10px 14px;font-size:12px;color:#2c5a3e;margin:8px 0}
+  .toc{columns:2;font-size:12.5px}.toc a{color:var(--brand);text-decoration:none}
+  .legend span{margin-right:14px;font-size:12px}
+  .footer{margin-top:48px;color:var(--sub);font-size:12px;text-align:center}
+  .secnum{color:var(--brand);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>成长星球 · 运营后台系统 详细设计文档</h1>
+  <p>版本：V1.0（详细设计稿） · 关联文档：《运营后台_功能规划方案.html》 · 日期：2026-09-22</p>
+  <p>本文为功能详细设计（页面/字段/状态机/权限矩阵/流程），不含技术选型与代码；字段已对照现有数据库 DDL。</p>
+  <div>
+    <span class="tag">RBAC 权限矩阵</span><span class="tag">页面字段级设计</span><span class="tag">状态机</span>
+    <span class="tag">审计模型</span><span class="tag">数据脱敏</span><span class="tag">指标口径</span>
+  </div>
+</header>
+
+<div class="card">
+  <b>目录</b>
+  <div class="toc">
+    <a href="#c1">一、引言与设计范围</a><br>
+    <a href="#c2">二、总体设计原则</a><br>
+    <a href="#c3">三、角色与权限模型(RBAC)</a><br>
+    <a href="#c4">四、模块详细设计 M0–M10</a><br>
+    <a href="#c5">五、关键业务流程详细</a><br>
+    <a href="#c6">六、审计模型</a><br>
+    <a href="#c7">七、数据脱敏与合规规则</a><br>
+    <a href="#c8">八、看板指标口径</a><br>
+    <a href="#c9">九、全量页面清单</a><br>
+    <a href="#c10">十、实施优先级细化</a><br>
+    <a href="#c11">十一、未决问题与后续</a><br>
+  </div>
+</div>
+
+<!-- ============ 一 ============ -->
+<h2 id="c1">引言与设计范围</h2>
+<div class="card">
+  <p>本详细设计承接《运营后台_功能规划方案.html》，在 10 个模块（M0–M10）基础上细化到<b>页面层级、列表/详情/表单字段、操作与校验、状态机、权限矩阵、审计与脱敏规则、指标口径</b>，使研发与 UI 可据此进入实现与高保真设计。</p>
+  <div class="tip"><b>字段来源标注：</b>正文中标注 <span class="op">DDL</span> 的字段来自现有数据库表（已抽取核对）；标注 <span class="pill p1">设计建议</span> 的枚举/字段为本次设计新增或待确认，实现前需与产品对齐。</div>
+  <h4>范围边界（重申）</h4>
+  <ul class="tight">
+    <li>后台只做<b>管理与观测</b>；C 端业务逻辑（点餐/打卡/兑换）由小程序实现，后台以查询/导出/有限人工干预为主。</li>
+    <li>所有对 C 端数据的写操作须最小化、带二次确认、并写入审计（M6）。</li>
+    <li>不含：技术栈、前后端框架、部署、具体接口契约（进入研发阶段再定）。</li>
+  </ul>
+</div>
+
+<!-- ============ 二 ============ -->
+<h2 id="c2">总体设计原则</h2>
+<div class="card">
+  <div class="grid g2">
+    <div><h4>2.1 设计原则</h4><ul class="tight">
+      <li><b>最小权限</b>：角色默认无权限，按需授予；敏感操作分离（运营≠合规）。</li>
+      <li><b>审计不可绕过</b>：写操作统一经审计中间件落 <span class="op">sys_audit_log</span>，无白名单。</li>
+      <li><b>数据脱敏</b>：手机号/姓名/孩子信息按角色与场景脱敏展示。</li>
+      <li><b>合规优先</b>：未成年人保护、监护人同意、数据出口优先于运营便利。</li>
+      <li><b>读写分离</b>：列表只读，写走抽屉+确认，降误操作。</li>
+    </ul></div>
+    <div><h4>2.2 交互与导航规范</h4><ul class="tight">
+      <li><b>L1 模块导航</b>：左侧模块树，按角色权限动态渲染。</li>
+      <li><b>L2 列表/看板页</b>：表格+筛选+批量，分页默认 20 条。</li>
+      <li><b>L3 详情/表单/审批</b>：右侧抽屉或独立页，字段分组。</li>
+      <li><b>L4 操作确认</b>：敏感写操作弹确认框，附影响范围。</li>
+      <li><b>审计回执</b>：写成功后提示"已记录，审计编号 #id"。</li>
+      <li>全局顶部：搜索（家庭/孩子/工单号）、待办小红点、角色切换 Guard。</li>
+    </ul></div>
+  </div>
+  <h4>2.3 状态字段统一约定</h4>
+  <p class="muted">各表已有 <span class="op">status</span> 字段（如 <span class="op">life_dish.status</span>、<span class="op">sys_notice.status</span>、<span class="op">usr_user.status</span>）。后台统一语义：<b>ACTIVE/ONLINE=启用上架</b>、<b>OFFLINE/DISABLED=停用下架</b>、<b>PENDING=待处理</b>、<b>DONE/COMPLETED=完成</b>。<span class="pill p1">设计建议</span> 对缺失状态（确认单、隐私工单）补齐枚举，详见各模块状态机。</p>
+</div>
+
+<!-- ============ 三 ============ -->
+<h2 id="c3">角色与权限模型（RBAC）</h2>
+
+<div class="card">
+  <h3>3.1 角色定义</h3>
+  <table>
+    <thead><tr><th>角色</th><th>代码</th><th>职责</th><th>数据范围</th></tr></thead>
+    <tbody>
+      <tr><td>超级管理员</td><td>SA</td><td>角色与权限维护、全局配置、全部读写、审计查看</td><td>全部</td></tr>
+      <tr><td>运营管理员</td><td>OP</td><td>内容配置、业务数据查询与人工干预、看板</td><td>全部（写受限）</td></tr>
+      <tr><td>内容审核员</td><td>CR</td><td>UGC 机审+人审、敏感词/图像风控处置</td><td>内容域</td></tr>
+      <tr><td>数据运营/客服</td><td>DC</td><td>看板报表、家庭/孩子工单协助、通知统计</td><td>按学校/家庭授权</td></tr>
+      <tr><td>合规/隐私专员</td><td>CP</td><td>监护人同意核验、隐私工单闭环、合规清单</td><td>隐私域（隔离）</td></tr>
+      <tr><td>只读审计员</td><td>RA</td><td>仅查看审计/日志/看板，无写</td><td>只读</td></tr>
+    </tbody>
+  </table>
+
+  <h3>3.1.1 后台账号体系（已确认：独立于小程序账号）</h3>
+  <div class="map"><b>决策（2026-09-22 用户确认）：</b>后台运营账号与 C 端小程序账号（<span class="op">usr_user</span>，角色 PARENT/CHILD/DELEGATE）完全分离，独立建表、独立登录态、独立 token，杜绝运营越权与 C 端账号污染。</div>
+  <table>
+    <thead><tr><th>表</th><th>字段（设计）</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>sys_admin_user</td><td>id、username、name、role_id、status(ACTIVE/DISABLED)、last_login_ip、last_login_time、creator_id、create_time</td><td>后台运营人员账号，与 usr_user 无外键</td></tr>
+      <tr><td>sys_role</td><td>id、code(SA/OP/CR/DC/CP/RA)、name、remark、create_time</td><td>角色定义，code 对应 3.1</td></tr>
+      <tr><td>sys_role_permission</td><td>id、role_id、resource、action(view/create/edit/delete/export/approve/config)</td><td>角色×资源×操作授权点（见 3.4）</td></tr>
+    </tbody>
+  </table>
+  <div class="note">登录链路：小程序走微信 openid（usr_user）；后台走 username+密码（sys_admin_user），两套会话隔离。预置仅 SA 可创建首个账号并分配角色。</div>
+</div>
+
+<div class="card">
+  <h3>3.2 权限矩阵（功能域 × 角色）</h3>
+  <p class="muted">图例：● 全权(读写+配置) / ✓ 可写 / △ 仅审批 / ○ 只读 / — 无权限。</p>
+  <div class="legend"><span>● 全权</span><span>✓ 可写</span><span>△ 仅审批</span><span>○ 只读</span><span>— 无</span></div>
+  <table>
+    <thead><tr><th>功能域</th><th>SA</th><th>OP</th><th>CR</th><th>DC</th><th>CP</th><th>RA</th></tr></thead>
+    <tbody>
+      <tr><td>看板总览 M1</td><td>●</td><td>●</td><td>○</td><td>○</td><td>○</td><td>○</td></tr>
+      <tr><td>报表导出 M1</td><td>●</td><td>✓</td><td>—</td><td>✓</td><td>○</td><td>○</td></tr>
+      <tr><td>后台账号 M2</td><td>●</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>角色权限 M2</td><td>●</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>家庭/用户查询 M2·M4</td><td>●</td><td>✓</td><td>○</td><td>✓</td><td>○</td><td>○</td></tr>
+      <tr><td>账号风控 M2</td><td>●</td><td>△</td><td>—</td><td>○</td><td>—</td><td>○</td></tr>
+      <tr><td>菜品库/分类 M3</td><td>●</td><td>✓</td><td>○</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>菜单编排 M3</td><td>●</td><td>✓</td><td>○</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>任务/奖励/勋章库 M3</td><td>●</td><td>✓</td><td>○</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>内容风控审核 M3</td><td>●</td><td>—</td><td>△</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>业务数据查询导出 M4</td><td>●</td><td>✓</td><td>—</td><td>✓</td><td>○</td><td>○</td></tr>
+      <tr><td>业务人工干预 M4</td><td>●</td><td>△</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>隐私工单 M5</td><td>●</td><td>—</td><td>—</td><td>—</td><td>△</td><td>○</td></tr>
+      <tr><td>同意留痕 M5</td><td>●</td><td>—</td><td>—</td><td>○</td><td>○</td><td>○</td></tr>
+      <tr><td>操作审计 M6</td><td>●</td><td>○</td><td>○</td><td>○</td><td>○</td><td>○</td></tr>
+      <tr><td>通知模板/订阅 M7</td><td>●</td><td>✓</td><td>—</td><td>✓</td><td>—</td><td>—</td></tr>
+      <tr><td>告警规则/列表 M8</td><td>●</td><td>✓</td><td>○</td><td>○</td><td>○</td><td>○</td></tr>
+      <tr><td>系统配置 M9</td><td>●</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>帮助手册 M10</td><td>●</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+    </tbody>
+  </table>
+  <div class="note"><b>职责分离：</b>后台账号/角色/系统配置仅 SA；隐私工单仅 CP 可闭环（合规隔离）；业务人工干预（改余额、补发勋章）OP 需 △ 审批（SA/合规复核）；内容审核 CR 仅审批不配置。</div>
+</div>
+
+<div class="card">
+  <h3>3.3 数据权限与字段级脱敏</h3>
+  <ul class="tight">
+    <li><b>范围权限</b>：SA=全部；DC=被授权的学校/家庭子集；CP=隐私域隔离（仅本人处理的工单及关联家庭）；其余为全局只读或受限写。</li>
+    <li><b>字段脱敏</b>：<span class="op">usr_user.phone</span>、孩子昵称、<span class="op">usr_child_profile.allergies</span> 等敏感字段，对 OP/CR/DC 默认脱敏（如 138****0000），仅 CP 在处理隐私工单时按场景解密查看。</li>
+    <li><b>导出脱敏</b>：报表导出默认脱敏；含明文导出需 CP 审批并记审计（M6）。</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h3>3.4 细粒度权限点矩阵（资源 × 操作 × 角色）</h3>
+  <p class="muted">将 3.2 的"功能域能力"展开为<b>具体授权点</b>。操作列：查看 / 新建 / 编辑 / 删除 / 导出 / 审批 / 配置。单元格填写拥有该操作的角色代码（SA/OP/CR/DC/CP/RA），"—"表示无权限；"全部"=六个角色均可。</p>
+  <div class="note"><b>关于审批列：</b>OP 拥有的审批为"提交复核"（如冻结家庭、超额复核、人工干预改余额/补发），最终执行需 SA 或合规(CP)复核闭环，详见各模块状态机。CR 的审批仅限 UGC 内容审核。</div>
+  <div style="overflow-x:auto">
+  <table>
+    <thead><tr><th>模块</th><th>资源</th><th>查看</th><th>新建</th><th>编辑</th><th>删除</th><th>导出</th><th>审批</th><th>配置</th></tr></thead>
+    <tbody>
+      <tr><td>M0</td><td>工作台首页</td><td>全部</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td rowspan="2">M1</td><td>运营看板(总览/各域)</td><td>全部</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>报表导出</td><td>全部</td><td>—</td><td>—</td><td>—</td><td>SA,OP,DC</td><td>—</td><td>—</td></tr>
+      <tr><td rowspan="4">M2</td><td>后台账号</td><td>SA</td><td>SA</td><td>SA</td><td>SA</td><td>—</td><td>—</td><td>SA</td></tr>
+      <tr><td>角色权限</td><td>SA</td><td>SA</td><td>SA</td><td>—</td><td>—</td><td>—</td><td>SA</td></tr>
+      <tr><td>家庭/成员查询</td><td>SA,OP,DC</td><td>—</td><td>SA,OP,DC</td><td>—</td><td>—</td><td>SA</td><td>—</td></tr>
+      <tr><td>账号风控</td><td>SA,OP,DC</td><td>—</td><td>—</td><td>—</td><td>—</td><td>SA,OP</td><td>—</td></tr>
+      <tr><td rowspan="8">M3</td><td>菜品库</td><td>SA,OP,CR</td><td>SA,OP</td><td>SA,OP</td><td>SA,OP</td><td>—</td><td>—</td><td>SA,OP</td></tr>
+      <tr><td>菜品分类</td><td>SA,OP,CR</td><td>SA,OP</td><td>SA,OP</td><td>SA,OP</td><td>—</td><td>—</td><td>SA,OP</td></tr>
+      <tr><td>菜单编排</td><td>SA,OP,CR</td><td>SA,OP</td><td>SA,OP</td><td>SA,OP</td><td>—</td><td>—</td><td>SA,OP</td></tr>
+      <tr><td>任务库/奖励库</td><td>SA,OP,CR</td><td>SA,OP</td><td>SA,OP</td><td>SA,OP</td><td>—</td><td>—</td><td>SA,OP</td></tr>
+      <tr><td>勋章配置</td><td>SA,OP,CR</td><td>SA,OP</td><td>SA,OP</td><td>SA,OP</td><td>—</td><td>—</td><td>SA,OP</td></tr>
+      <tr><td>心愿菜单配置</td><td>SA,OP</td><td>—</td><td>SA,OP</td><td>—</td><td>—</td><td>—</td><td>SA,OP</td></tr>
+      <tr><td>UGC审核队列</td><td>SA,CR</td><td>—</td><td>—</td><td>SA,CR</td><td>—</td><td>SA,CR</td><td>—</td></tr>
+      <tr><td>词库管理</td><td>SA,OP,CR</td><td>SA,OP,CR</td><td>SA,OP,CR</td><td>SA,OP,CR</td><td>—</td><td>—</td><td>SA,OP,CR</td></tr>
+      <tr><td rowspan="6">M4</td><td>每日想吃</td><td>SA,OP,DC,CP</td><td>—</td><td>—</td><td>—</td><td>SA,OP,DC</td><td>—</td><td>—</td></tr>
+      <tr><td>确认单</td><td>SA,OP,DC,CP</td><td>—</td><td>—</td><td>—</td><td>SA,OP,DC</td><td>SA,OP</td><td>—</td></tr>
+      <tr><td>审批记录</td><td>SA,OP,DC,CP,RA</td><td>—</td><td>—</td><td>—</td><td>SA,OP,DC</td><td>—</td><td>—</td></tr>
+      <tr><td>钱包与流水</td><td>SA,OP,DC,CP</td><td>—</td><td>SA,OP</td><td>—</td><td>SA,OP,DC</td><td>—</td><td>—</td></tr>
+      <tr><td>家务健康</td><td>SA,OP,DC</td><td>—</td><td>SA,OP</td><td>—</td><td>SA,OP,DC</td><td>—</td><td>—</td></tr>
+      <tr><td>勋章发放/家庭设置</td><td>SA,OP,DC</td><td>—</td><td>SA,OP</td><td>—</td><td>SA,OP,DC</td><td>—</td><td>SA,OP</td></tr>
+      <tr><td rowspan="4">M5</td><td>同意留痕</td><td>SA,DC,CP,RA</td><td>—</td><td>—</td><td>—</td><td>CP</td><td>—</td><td>—</td></tr>
+      <tr><td>隐私工单</td><td>SA,CP,RA</td><td>—</td><td>—</td><td>—</td><td>CP</td><td>SA,CP</td><td>—</td></tr>
+      <tr><td>核验记录</td><td>SA,CP,RA</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>合规清单</td><td>SA,CP,RA</td><td>—</td><td>SA,CP</td><td>—</td><td>—</td><td>—</td><td>SA,CP</td></tr>
+      <tr><td rowspan="2">M6</td><td>操作日志</td><td>全部</td><td>—</td><td>—</td><td>—</td><td>SA,RA</td><td>—</td><td>—</td></tr>
+      <tr><td>C端关键操作</td><td>全部</td><td>—</td><td>—</td><td>—</td><td>SA,RA</td><td>—</td><td>—</td></tr>
+      <tr><td rowspan="2">M7</td><td>通知模板</td><td>SA,OP,DC</td><td>SA,OP</td><td>SA,OP</td><td>SA,OP</td><td>—</td><td>—</td><td>SA,OP</td></tr>
+      <tr><td>触达统计</td><td>SA,OP,DC</td><td>—</td><td>SA,OP</td><td>—</td><td>SA,OP,DC</td><td>—</td><td>—</td></tr>
+      <tr><td rowspan="3">M8</td><td>告警规则</td><td>SA,OP,CR</td><td>SA,OP</td><td>SA,OP</td><td>SA,OP</td><td>—</td><td>—</td><td>SA</td></tr>
+      <tr><td>告警列表</td><td>全部</td><td>—</td><td>—</td><td>—</td><td>—</td><td>SA,OP,CR</td><td>—</td></tr>
+      <tr><td>通道配置</td><td>SA</td><td>—</td><td>SA</td><td>—</td><td>—</td><td>—</td><td>SA</td></tr>
+      <tr><td rowspan="3">M9</td><td>全局参数</td><td>SA</td><td>—</td><td>SA</td><td>—</td><td>—</td><td>—</td><td>SA</td></tr>
+      <tr><td>枚举字典</td><td>SA</td><td>—</td><td>SA</td><td>—</td><td>—</td><td>—</td><td>SA</td></tr>
+      <tr><td>功能开关</td><td>SA,OP</td><td>—</td><td>SA</td><td>—</td><td>—</td><td>—</td><td>SA</td></tr>
+      <tr><td>M10</td><td>手册/FAQ</td><td>全部</td><td>全部</td><td>全部</td><td>全部</td><td>—</td><td>—</td><td>全部</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">该矩阵即 sys_role_permission 的初始化数据来源；实现时以"资源+操作"为最小授权单元，角色可自定义继承预置角色。</p>
+</div>
+
+<!-- ============ 四 ============ -->
+<h2 id="c4">模块详细设计（M0–M10）</h2>
+<p class="muted">每个模块含：目标 / 页面清单 / 字段与操作 / 状态机 / 数据映射 / 关联。P0 模块细化到字段级，P1/P2 适度。</p>
+
+<!-- M0 -->
+<div class="card">
+  <h3>M0 · 登录与工作台门户 <span class="pill p0">P0</span></h3>
+  <h4>页面清单</h4>
+  <table><thead><tr><th>页面</th><th>层级</th><th>主要字段/内容</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>登录</td><td>L2</td><td>账号、密码、验证码；<span class="op">usr_user</span>（后台账号另表，见 4.2 备注）</td><td>登录、忘记密码</td></tr>
+    <tr><td>工作台首页</td><td>L2</td><td>待办卡片（待审确认单/待审UGC/隐私工单/告警）、核心KPI、最近审计</td><td>跳转各模块、查看详情</td></tr>
+  </tbody></table>
+  <div class="map"><b>数据映射：</b>登录鉴权独立后台账号体系（建议表 sys_admin_user，<span class="pill p1">设计建议</span>）；待办聚合自 M3/M5/M8。</div>
+  <div class="note"><b>已确认：</b>后台运营账号独立于小程序 <span class="op">usr_user</span> 体系，使用独立的 sys_admin_user / sys_role / sys_role_permission（见 3.1.1）。登录态、token 与 C 端完全隔离，避免运营越权与账号污染。</div>
+</div>
+
+<!-- M1 -->
+<div class="card">
+  <h3>M1 · 数据看板与报表 <span class="pill p0">P0</span></h3>
+  <h4>页面清单</h4>
+  <table><thead><tr><th>页面</th><th>层级</th><th>主要指标/字段</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>运营总览</td><td>L2</td><td>家庭数(累计/新增/活跃)、孩子数、虚拟币(发放/消耗/沉淀)、确认单(待审/通过/超额)、内容风险、隐私工单积压</td><td>时间筛选、导出</td></tr>
+    <tr><td>餐食看板</td><td>L2</td><td>想吃热度Top、确认单量、超额率、SCHOOL vs FAMILY 占比</td><td>按日/周/校筛选</td></tr>
+    <tr><td>零花钱看板</td><td>L2</td><td>余额分布、额度使用率、流水趋势（<span class="op">life_wallet</span>/<span class="op">life_allowance_log</span>）</td><td>按家庭筛选</td></tr>
+    <tr><td>家务健康看板</td><td>L2</td><td>任务完成率、连续天数分布（<span class="op">life_chore_streak</span>）、打卡覆盖</td><td>—</td></tr>
+    <tr><td>勋章看板</td><td>L2</td><td>发放量、获得率、热门勋章（<span class="op">life_medal_award</span>/<span class="op">life_medal_definition</span>）</td><td>—</td></tr>
+    <tr><td>自定义报表</td><td>L2</td><td>维度(时间/家庭/学校/孩子)×指标，结果表格</td><td>筛选、导出(脱敏)</td></tr>
+  </tbody></table>
+  <p class="muted">指标口径见第八节。所有看板数据来自 M4 各域聚合，导出受 3.3 脱敏约束。</p>
+</div>
+
+<!-- M2 -->
+<div class="card">
+  <h3>M2 · 用户与权限管理 <span class="pill p0">P0</span></h3>
+  <h4>页面清单</h4>
+  <table><thead><tr><th>页面</th><th>层级</th><th>主要字段</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>后台账号</td><td>L2</td><td>账号、姓名、角色、状态、最后登录、创建时间 <span class="pill p1">设计建议</span> sys_admin_user</td><td>新建/编辑/禁用/启用/重置密码(SA)</td></tr>
+    <tr><td>角色权限</td><td>L2</td><td>角色名、权限点清单(按3.2矩阵)、成员数</td><td>新建角色/授权(SA)</td></tr>
+    <tr><td>家庭查询</td><td>L2</td><td>家庭名<span class="op">usr_family.family_name</span>、邀请码、owner、成员数、创建时间、状态</td><td>查看成员/详情、冻结协助</td></tr>
+    <tr><td>成员详情</td><td>L3</td><td>成员角色<span class="op">usr_family_member.role</span>(PARENT/CHILD/DELEGATE)、绑定状态<span class="op">bind_status</span>、监护人状态<span class="op">guardian_status</span>、关系<span class="op">relation_label</span></td><td>查看、协助解绑(△审批)</td></tr>
+    <tr><td>账号风控</td><td>L2</td><td>风险标记、异常登录、批量注册、封禁历史</td><td>冻结/解冻(△审批)、加入黑名单</td></tr>
+  </tbody></table>
+  <div class="map"><b>数据映射：</b>usr_family、usr_family_member、usr_user（C端）；后台账号 sys_admin_user/ sys_role <span class="pill p1">设计建议</span>。所有写操作落 <span class="op">sys_audit_log</span>。</div>
+  <div class="note">风控"冻结家庭"属敏感操作：需 △ 审批（SA/合规），冻结后该家庭 C 端登录受限，操作记入审计并触发 M8 告警。</div>
+</div>
+
+<!-- M3 -->
+<div class="card">
+  <h3>M3 · 内容管理（CMS） <span class="pill p0">P0</span></h3>
+  <h4>3.3.1 菜品库</h4>
+  <table><thead><tr><th>页面</th><th>层级</th><th>字段（来自 life_dish <span class="op">DDL</span>）</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>菜品列表</td><td>L2</td><td>id、name、category_id、virtual_price、calories、allergen_status、status、create_time</td><td>筛选(分类/状态/过敏原)、搜索</td></tr>
+    <tr><td>菜品详情/编辑</td><td>L3</td><td>category_id、name、image_url、virtual_price、calories、tags、allergens、allergen_status、spice_level、status</td><td>新建/编辑/上架下架(OP)；删除需△</td></tr>
+  </tbody></table>
+  <div class="map"><b>映射：</b>life_dish。过敏原 <span class="op">allergen_status</span>（对应 R5 过敏原治理：UNKNOWN/DECLARED）；下架菜品孩子端 <span class="op">canSelect=false</span>，关联 M5 合规。</div>
+
+  <h4>3.3.2 菜单编排</h4>
+  <table><thead><tr><th>页面</th><th>层级</th><th>字段（life_menu_daily <span class="op">DDL</span>）</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>每日菜单</td><td>L2</td><td>source_type(FAMILY/SCHOOL)、owner_key、school、family_id、menu_date、meal_type、dish_ids、status</td><td>按日/餐编排、发布</td></tr>
+    <tr><td>周食谱模板</td><td>L3</td><td>按周×餐次固化菜品集合，复制发布</td><td>新建/套用(<span class="pill p1">设计建议</span>)</td></tr>
+  </tbody></table>
+  <div class="note">F-014/F-015：SCHOOL 来源仅展示收藏（孩子端 canSelect=false）；FAMILY 来源家长可提报。后台负责 SCHOOL 菜单维护与 FAMILY 模板下发。</div>
+
+  <h4>3.3.3 任务 / 奖励 / 勋章库</h4>
+  <table><thead><tr><th>页面</th><th>层级</th><th>字段</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>任务库</td><td>L2</td><td>life_chore_task：title、description、icon、estimated_minutes、reward_amount、cycle、sort_order、status</td><td>模板增删改(OP)</td></tr>
+    <tr><td>奖励库</td><td>L2</td><td>奖励项、虚拟价、履约方式 <span class="pill p1">设计建议</span></td><td>增删改</td></tr>
+    <tr><td>勋章配置</td><td>L2</td><td>life_medal_definition：code、name、description、icon、category、condition_type、threshold、sort_order、status</td><td>新增/启停/编辑</td></tr>
+    <tr><td>心愿菜单</td><td>L2</td><td>life_wish_menu：child_id、menu_date、max_dishes、dish_count、status；usr_family_setting.wish_menu_enabled</td><td>开关/上限配置(OP)</td></tr>
+  </tbody></table>
+
+  <h4>3.3.4 内容风控（审核台）</h4>
+  <table><thead><tr><th>页面</th><th>层级</th><th>字段</th><th>操作（CR）</th></tr></thead>
+  <tbody>
+    <tr><td>UGC审核队列</td><td>L2</td><td>life_family_dish：family_id、name、visibility、status、allergen_status；命中词/图像风险标记</td><td>通过/驳回(△)</td></tr>
+    <tr><td>词库管理</td><td>L2</td><td>敏感词、未成年人保护词库、图像规则 <span class="pill p1">设计建议</span></td><td>维护(OP/CR)</td></tr>
+  </tbody></table>
+  <div class="map"><b>状态机（UGC）：</b>PENDING(机审待定) → APPROVED(上架) / REJECTED(驳回，写原因)。高危机审直接 REJECTED+告警。</div>
+</div>
+
+<!-- M4 -->
+<div class="card">
+  <h3>M4 · 业务数据管理 <span class="pill p0">P0</span></h3>
+  <table><thead><tr><th>子域</th><th>页面</th><th>主要字段（DDL）</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>餐食</td><td>每日想吃</td><td>usr_child_want_eat：child_id、menu_date、meal_type、source_type、dish_type、dish_id、status、wish_id</td><td>查询/导出</td></tr>
+    <tr><td>餐食</td><td>确认单</td><td>life_menu_confirm：confirm_no、child_id、total_amount、status、is_over_limit、submit_time；明细 life_menu_item</td><td>查看/导出/超额复核(△)</td></tr>
+    <tr><td>餐食</td><td>审批记录</td><td>life_confirm_approval：action、before/after_status、is_over_limit、reason</td><td>只读</td></tr>
+    <tr><td>零花钱</td><td>钱包与流水</td><td>life_wallet：balance、status；life_allowance_rule：single/daily/weekly_limit、used；life_allowance_log：trans_type、amount、balance_before/after</td><td>查询/导出/异常干预(△)</td></tr>
+    <tr><td>家务健康</td><td>任务/打卡</td><td>life_chore_instance：status、reward_granted；life_check_record：item_name、check_date；life_schedule</td><td>查询/补发奖励(△)</td></tr>
+    <tr><td>勋章</td><td>发放记录</td><td>life_medal_award：definition_id、child_id、consecutive_count、awarded_at</td><td>查询/补发(△)</td></tr>
+    <tr><td>家庭</td><td>家庭设置</td><td>usr_family_setting：wish_menu_enabled、wish_menu_max_dishes</td><td>有限修改(OP)</td></tr>
+  </tbody></table>
+  <div class="note">人工干预（改余额、补发）属 △ 审批操作：填写原因→SA/合规复核→执行→记审计。严禁以运营身份替用户日常操作。</div>
+</div>
+
+<!-- M5 -->
+<div class="card">
+  <h3>M5 · 合规与隐私中心 <span class="pill p0">P0</span></h3>
+  <table><thead><tr><th>页面</th><th>层级</th><th>字段（DDL）</th><th>操作（CP）</th></tr></thead>
+  <tbody>
+    <tr><td>同意留痕</td><td>L2</td><td>usr_consent_log：user_id、child_id、consent_type、action(GRANT/REVOKE)、guardian_status、signed_at、expire_at、version</td><td>查询/核验</td></tr>
+    <tr><td>隐私工单</td><td>L2</td><td>sys_privacy_request：requester_id、child_id、request_type(EXPORT/DELETE)、status、due_at、verified_at、operator_id</td><td>核验/执行/驳回(△)</td></tr>
+    <tr><td>核验记录</td><td>L3</td><td>sys_privacy_verification：code_hash、requester_id、request_id、verified_at</td><td>只读</td></tr>
+    <tr><td>合规清单</td><td>L2</td><td>未成年人保护检查项、数据保留策略、审计就绪</td><td>查看/勾检 <span class="pill p1">设计建议</span></td></tr>
+  </tbody></table>
+  <div class="map"><b>映射：</b>usr_consent_log、sys_privacy_request、sys_privacy_verification。状态机见第五节流程3。</div>
+</div>
+
+<!-- M6 -->
+<div class="card">
+  <h3>M6 · 操作日志与审计 <span class="pill p0">P0</span></h3>
+  <table><thead><tr><th>页面</th><th>层级</th><th>字段（sys_audit_log <span class="op">DDL</span>）</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>操作日志</td><td>L2</td><td>id、actor_user_id、family_id、action、target_type、target_id、ip、detail、request_id、result、error_code、create_time</td><td>筛选/查询/导出(RA只读)</td></tr>
+    <tr><td>日志详情</td><td>L3</td><td>上述字段全量 + detail(JSON前后值)</td><td>只读回放</td></tr>
+    <tr><td>C端关键操作</td><td>L2</td><td>同结构，target_type=家庭/解绑/额度变更/数据出口</td><td>只读</td></tr>
+  </tbody></table>
+  <div class="map"><b>映射：</b>sys_audit_log（已有表，AUTO_INCREMENT 已到 885，说明运行中已落审计）。所有后台写操作经统一中间件写入，无白名单。</div>
+</div>
+
+<!-- M7 -->
+<div class="card">
+  <h3>M7 · 消息与通知中心 <span class="pill p1">P1</span></h3>
+  <table><thead><tr><th>页面</th><th>层级</th><th>字段（DDL）</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>通知模板</td><td>L2</td><td>sys_notice：event_key、event_type、channel、status；模板内容 <span class="pill p1">设计建议</span></td><td>新建/编辑(OP)</td></tr>
+    <tr><td>触达统计</td><td>L2</td><td>sys_notice：status(PENDING/SENT/FAILED/READ)、attempt_count、read_at、last_error；sys_notice_subscription：status、authorized_at</td><td>查询/重发</td></tr>
+  </tbody></table>
+  <div class="map"><b>映射：</b>sys_notice、sys_notice_subscription。被 M3/M5/M8 复用（审核结果、告警、工单通知）。</div>
+</div>
+
+<!-- M8 -->
+<div class="card">
+  <h3>M8 · 监控与告警 <span class="pill p1">P1</span></h3>
+  <table><thead><tr><th>页面</th><th>层级</th><th>关键内容</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>告警规则</td><td>L2</td><td>规则名、指标源、阈值、触发条件、静默期、通道 <span class="pill p1">设计建议</span></td><td>新建/编辑(OP)</td></tr>
+    <tr><td>告警列表</td><td>L2</td><td>告警级别、对象(家庭/工单)、触发时间、状态(待处理/已处理)、处理人</td><td>认领/处理/闭环</td></tr>
+    <tr><td>通道配置</td><td>L2</td><td>站内(M7)/企微/邮件 接入参数</td><td>配置(SA)</td></tr>
+  </tbody></table>
+  <div class="note">预置规则：超额确认单(is_over_limit)、异常大额发放(allowance_log 大额)、内容风险堆积、隐私工单超时(due_at)。</div>
+</div>
+
+<!-- M9 -->
+<div class="card">
+  <h3>M9 · 系统配置 <span class="pill p1">P1</span>　M10 · 帮助手册 <span class="pill p2">P2</span></h3>
+  <table><thead><tr><th>页面</th><th>层级</th><th>关键内容</th><th>操作</th></tr></thead>
+  <tbody>
+    <tr><td>全局参数</td><td>L2</td><td>虚拟币名称、默认额度上限、学校目录(校名目录化)、保留期</td><td>编辑(SA)</td></tr>
+    <tr><td>枚举字典</td><td>L2</td><td>meal_type/source_type/trans_type 等枚举维护 <span class="pill p1">设计建议</span></td><td>编辑(SA)</td></tr>
+    <tr><td>功能开关</td><td>L2</td><td>灰度开关(如心愿菜单全量)</td><td>编辑(SA)</td></tr>
+    <tr><td>运营手册</td><td>L2</td><td>SOP/FAQ/公告</td><td>编辑(各角色)</td></tr>
+  </tbody></table>
+</div>
+
+<!-- ============ 五 ============ -->
+<h2 id="c5">关键业务流程详细</h2>
+
+<div class="card">
+  <h3>流程1 · 内容主链路（菜品→菜单→想吃→确认单）</h3>
+  <div class="flow">
+<span class="n">[OP] M3</span> 配置菜品(life_dish) + 编排菜单(life_menu_daily, FAMILY可提报/SCHOOL仅展示)
+   │  写操作 → 落 <span class="ok">sys_audit_log</span>
+   ▼
+<span class="n">[家长/学校 C端]</span> 发布当日菜单 → 孩子标记 <span class="ok">usr_child_want_eat</span>(每日想吃) + <span class="ok">life_wish_menu</span>(心愿)
+   ▼
+<span class="n">[孩子 C端]</span> 选菜 → 生成 <span class="warn">life_menu_confirm</span>(status=PENDING, is_over_limit 计算)
+   │
+   ▼
+<span class="n">[家长 C端]</span> 审批 → <span class="ok">life_confirm_approval</span>(before→after, reason)
+   ├─ 超额 → <span class="warn">M8告警</span> + 异步复核
+   └─ 通过 → 虚拟记账(life_wallet/allowance_log)
+   ▼
+<span class="n">[OP] M4</span> 可查确认单/明细/超额复核；异常人工干预(△审批) → 落审计
+   └─ 指标回流 <span class="n">M1看板</span>
+  </div>
+  <div class="map">确认单状态机(建议)：PENDING → APPROVED / REJECTED → (APPROVED) COMPLETED；CANCELLED 任意可撤。</div>
+</div>
+
+<div class="card">
+  <h3>流程2 · UGC 内容审核（机审+人审）</h3>
+  <div class="flow">
+<span class="n">[用户]</span> 提报家庭私有菜(life_family_dish, status=PENDING, visibility=私有)
+   ▼
+<span class="ok">机审</span> 敏感词 + 图像风控 + 未成年人保护词库
+   ├─ 高危命中 → <span class="x">自动 REJECTED</span> + <span class="warn">M8告警</span> + <span class="n">M7通知</span>用户
+   └─ 待定/低危 → 进 <span class="n">[CR] 审核队列</span>
+        ▼
+   <span class="n">[CR] 人审 △</span>：APPROVED(上架, visibility可转公开) / REJECTED(原因回写 + M7通知)
+        ▼
+   全部动作 → <span class="ok">sys_audit_log</span>（含前后值）
+  </div>
+</div>
+
+<div class="card">
+  <h3>流程3 · 隐私数据出口工单闭环</h3>
+  <div class="flow">
+<span class="n">[C端申请]</span> sys_privacy_request(request_type=EXPORT/DELETE, status=PENDING, due_at=时限)
+   ▼
+<span class="warn">[CP] 核验</span> → sys_privacy_verification(code_hash) + 查 usr_consent_log(guardian_status)
+   ├─ 超时(due_at) → <span class="warn">M8告警</span>(工单积压) + M7提醒
+   ├─ 核验不通过 → REJECTED(写 reason)
+   └─ 通过 → status=VERIFIED → 执行导出/删除(受M9脱敏)
+        ▼
+   status=DONE + operator_id + evidence_ref + 落 <span class="ok">sys_audit_log</span>
+   └─ 仅 CP 与 RA 可见明细（隐私隔离）
+  </div>
+  <div class="map">隐私工单状态机(建议)：PENDING → VERIFYING → VERIFIED → PROCESSING → DONE / REJECTED / EXPIRED。</div>
+</div>
+
+<div class="card">
+  <h3>流程4 · 异常监控告警闭环　流程5 · 权限审计横切</h3>
+  <div class="flow">
+<span class="n">[M8]</span> 规则监听 M1指标/M4异常流水/M5工单/M6
+   → 触发 → <span class="warn">告警</span> 经 <span class="n">M7</span> 推送责任人 → <span class="n">处置</span> 跳转模块 → <span class="ok">闭环</span>(标记已处理+落审计)
+
+<span class="n">[任意写操作]</span> M2鉴权(RBAC) → 无权限拒绝(记尝试) → 有权限执行
+   → <span class="warn">L4二次确认</span>(敏感) → <span class="ok">sys_audit_log</span>(actor/action/target/detail/ip/result) 不可绕过
+   → RA 可查不可改
+  </div>
+</div>
+
+<!-- ============ 六 ============ -->
+<h2 id="c6">审计模型</h2>
+<div class="card">
+  <table><thead><tr><th>字段（sys_audit_log <span class="op">DDL</span>）</th><th>语义</th><th>示例</th></tr></thead>
+  <tbody>
+    <tr><td>actor_user_id</td><td>操作人(后台账号)</td><td>12</td></tr>
+    <tr><td>family_id</td><td>影响家庭(可空)</td><td>88</td></tr>
+    <tr><td>action</td><td>动作枚举</td><td>UPDATE_DISH / FREEZE_FAMILY / EXPORT_PRIVACY</td></tr>
+    <tr><td>target_type / target_id</td><td>对象类型与ID</td><td>DISH / 1024</td></tr>
+    <tr><td>ip</td><td>操作来源IP</td><td>10.x / 公网</td></tr>
+    <tr><td>detail</td><td>变更前后值(JSON)</td><td>{"before":{...},"after":{...}}</td></tr>
+    <tr><td>request_id</td><td>请求链路ID(关联日志)</td><td>req-xxxx</td></tr>
+    <tr><td>result / error_code</td><td>成功/失败与错误码</td><td>SUCCESS / E007</td></tr>
+    <tr><td>create_time / delete_at</td><td>时间 / 软删</td><td>—</td></tr>
+  </tbody></table>
+  <div class="note"><b>记录范围：</b>所有后台写操作（CRUD/审批/导出/冻结/配置变更）+ C端关键操作（监护人委托、解绑、额度变更、数据出口）。建议新增枚举 action 字典与 target_type 字典（M9），便于筛选。</div>
+</div>
+
+<!-- ============ 七 ============ -->
+<h2 id="c7">数据脱敏与合规规则</h2>
+<div class="card">
+  <table><thead><tr><th>字段</th><th>所属表</th><th>脱敏规则</th><th>明文可见角色</th></tr></thead>
+  <tbody>
+    <tr><td>phone</td><td>usr_user</td><td>138****0000</td><td>CP(隐私工单场景)</td></tr>
+    <tr><td>nickname / 孩子名</td><td>usr_child_profile / usr_family_member</td><td>张*</td><td>DC(工单)/CP</td></tr>
+    <tr><td>allergies</td><td>usr_child_profile</td><td>仅家长可改；后台默认掩码</td><td>CP</td></tr>
+    <tr><td>detail(审计)</td><td>sys_audit_log</td><td>含PII时掩码</td><td>RA/SA</td></tr>
+  </tbody></table>
+  <h4>合规检查清单（M5）</h4>
+  <ul class="tight">
+    <li>未成年账户须有有效 <span class="op">usr_consent_log</span>（guardian_status 有效、未过期）。</li>
+    <li>数据出口工单 100% 经核验与审计，保留 evidence_ref。</li>
+    <li>过敏原声明：菜品 <span class="op">allergen_status</span> 不允许 UNKNOWN 直接对孩子可点（关联 R5）。</li>
+    <li>导出含明文需 CP 审批 + 审计留痕 + 保留期后清理。</li>
+  </ul>
+</div>
+
+<!-- ============ 八 ============ -->
+<h2 id="c8">看板指标口径</h2>
+<div class="card">
+  <table><thead><tr><th>指标</th><th>口径/公式</th><th>数据源</th></tr></thead>
+  <tbody>
+    <tr><td>活跃家庭</td><td>近7天有确认单/打卡/想吃的家庭数</td><td>life_menu_confirm / life_check_record / usr_child_want_eat</td></tr>
+    <tr><td>虚拟币发放</td><td>Σ allowance_log amount where trans_type=GRANT</td><td>life_allowance_log</td></tr>
+    <tr><td>虚拟币消耗</td><td>Σ amount where trans_type in (CONSUME/EXCHANGE)</td><td>life_allowance_log</td></tr>
+    <tr><td>确认单超额率</td><td>is_over_limit=true 数 / 确认单总数</td><td>life_menu_confirm</td></tr>
+    <tr><td>内容风险命中</td><td>机审高危+人审驳回数</td><td>life_family_dish / 审核日志</td></tr>
+    <tr><td>隐私工单积压</td><td>status in (PENDING,VERIFYING,PROCESSING)</td><td>sys_privacy_request</td></tr>
+  </tbody></table>
+</div>
+
+<!-- ============ 九 ============ -->
+<h2 id="c9">全量页面清单（汇总）</h2>
+<div class="card">
+  <table><thead><tr><th>模块</th><th>页面</th><th>层级</th><th>必需角色</th><th>优先级</th></tr></thead>
+  <tbody>
+    <tr><td>M0</td><td>登录 / 工作台</td><td>L2</td><td>全部</td><td>P0</td></tr>
+    <tr><td>M1</td><td>总览/餐食/零花钱/家务健康/勋章/报表</td><td>L2</td><td>SA,OP,DC,CP,RA</td><td>P0</td></tr>
+    <tr><td>M2</td><td>后台账号/角色权限/家庭查询/成员详情/风控</td><td>L2/L3</td><td>SA,OP,DC</td><td>P0</td></tr>
+    <tr><td>M3</td><td>菜品库/分类/菜单编排/任务库/奖励库/勋章配置/心愿/审核台/词库</td><td>L2/L3</td><td>SA,OP,CR</td><td>P0</td></tr>
+    <tr><td>M4</td><td>想吃/确认单/审批记录/钱包流水/家务健康/勋章发放/家庭设置</td><td>L2/L3</td><td>SA,OP,DC,CP</td><td>P0</td></tr>
+    <tr><td>M5</td><td>同意留痕/隐私工单/核验记录/合规清单</td><td>L2/L3</td><td>SA,CP,RA</td><td>P0</td></tr>
+    <tr><td>M6</td><td>操作日志/日志详情/C端关键操作</td><td>L2/L3</td><td>SA,RA,(其余只读)</td><td>P0</td></tr>
+    <tr><td>M7</td><td>通知模板/触达统计</td><td>L2</td><td>SA,OP,DC</td><td>P1</td></tr>
+    <tr><td>M8</td><td>告警规则/告警列表/通道配置</td><td>L2</td><td>SA,OP,CR</td><td>P1</td></tr>
+    <tr><td>M9</td><td>全局参数/枚举字典/功能开关</td><td>L2</td><td>SA</td><td>P1</td></tr>
+    <tr><td>M10</td><td>运营手册/FAQ/公告</td><td>L2</td><td>全部</td><td>P2</td></tr>
+  </tbody></table>
+</div>
+
+<!-- ============ 十 ============ -->
+<h2 id="c10">实施优先级细化</h2>
+<div class="card">
+  <table><thead><tr><th>里程碑</th><th>范围</th><th>关键功能点</th></tr></thead>
+  <tbody>
+    <tr><td><b>A（MVP）</b></td><td>M0+M1(总览)+M2+M3(基础)+M4(查导出)+M5+M6</td><td>后台账号体系、RBAC、菜品/菜单/任务/勋章配置、业务数据查询导出、隐私工单闭环、操作审计全量落库</td></tr>
+    <tr><td><b>B（增强）</b></td><td>M1报表+M3风控台+M7+M8+M9</td><td>UGC人审台、告警规则引擎、通知触达、全局配置与灰度</td></tr>
+    <tr><td><b>C（进阶）</b></td><td>M10 + AI洞察</td><td>运营手册、异常预测看板</td></tr>
+  </tbody></table>
+  <div class="note">建议研发顺序：先 M6 审计中间件（横切底座）→ M2 账号权限 → M4 数据查询 → M3 内容配置 → M5 隐私 → M1 看板 → M7/M8/M9。</div>
+</div>
+
+<!-- ============ 十一 ============ -->
+<h2 id="c11">未决问题与后续</h2>
+<div class="card">
+  <ul class="tight">
+    <li><b>后台账号体系</b>：<span class="pill p0">已确认</span> 独立于小程序账号（sys_admin_user/sys_role/sys_role_permission），见 3.1.1。无需再决策。</li>
+    <li><b>确认单/隐私工单 status 枚举</b>：现有 DDL 未含完整枚举值，需与研发确认后固化（本文给出建议状态机）。</li>
+    <li><b>告警通道</b>：企微/邮件接入方式不在本文范围，需技术侧补充。</li>
+    <li><b>字段级脱敏</b>：具体脱敏算法与密钥管理待安全设计确定。</li>
+    <li><b>后续扩展</b>：成长树/AI 推荐(P4)、学习域/教师家校(P3) 的后台配置，在 M3 预留接入位。</li>
+  </ul>
+  <div class="tip">本文档已对照现有 DDL（usr_*/life_*/sys_* 共 30 张表字段）完成字段级对齐；标注 <span class="pill p1">设计建议</span> 处为需产品/研发确认的增量设计，不视为现状。</div>
+</div>
+
+<div class="footer">成长星球 · 运营后台详细设计文档（V1.0） · 功能详细设计，未含技术选型与代码实现</div>
+
+</div>
+</body>
+</html>
