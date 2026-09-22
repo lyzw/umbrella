@@ -188,6 +188,46 @@ public class AdminDataInitializer implements CommandLineRunner {
             supplement(roleMap, roleCode, AdminResource.AUDIT_LOG, "view");
             supplement(roleMap, roleCode, AdminResource.C_AUDIT, "view");
         }
+
+        // M4 补播：详设 §3.4 M4 行与初始化基线的差量（按「角色×资源×动作」粒度，见 supplementPerm）。
+        // OP：超额确认单复核走 approve（§3.4 确认单 审批列=SA,OP）。
+        supplementPerm(roleMap, "OP", AdminResource.CONFIRM, "approve");
+        // DC：M4 导出列=SA,OP,DC（基线只给了 view）。
+        supplementPerm(roleMap, "DC", AdminResource.WANT_EAT, "export");
+        supplementPerm(roleMap, "DC", AdminResource.CONFIRM, "export");
+        supplementPerm(roleMap, "DC", AdminResource.APPROVAL, "export");
+        supplementPerm(roleMap, "DC", AdminResource.WALLET, "export");
+        supplementPerm(roleMap, "DC", AdminResource.CHORE_HEALTH, "export");
+        supplementPerm(roleMap, "DC", AdminResource.MEDAL_AWARD, "export");
+        // CP：M4 查看列含 CP。
+        supplementPerm(roleMap, "CP", AdminResource.WANT_EAT, "view");
+        supplementPerm(roleMap, "CP", AdminResource.CONFIRM, "view");
+        supplementPerm(roleMap, "CP", AdminResource.APPROVAL, "view");
+        supplementPerm(roleMap, "CP", AdminResource.WALLET, "view");
+        // RA：审批记录 查看=SA,OP,DC,CP,RA。
+        supplementPerm(roleMap, "RA", AdminResource.APPROVAL, "view");
+    }
+
+    /** 按（角色×资源×动作）粒度补播：仅当该权限点尚不存在时插入，用于存量角色的差量基线。 */
+    private void supplementPerm(Map<String, SysRole> roleMap, String roleCode,
+                                String resource, String action) {
+        SysRole role = roleMap.get(roleCode);
+        if (role == null) {
+            return;
+        }
+        long existing = rolePermissions.selectCount(new LambdaQueryWrapper<SysRolePermission>()
+                .eq(SysRolePermission::getRoleId, role.getId())
+                .eq(SysRolePermission::getResource, resource)
+                .eq(SysRolePermission::getAction, action));
+        if (existing > 0) {
+            return;
+        }
+        SysRolePermission perm = new SysRolePermission();
+        perm.setRoleId(role.getId());
+        perm.setResource(resource);
+        perm.setAction(action);
+        rolePermissions.insert(perm);
+        log.info("[admin-init] 已为角色 {} 补播权限点 {}:{}（§3.4 基线差量）", roleCode, resource, action);
     }
 
     /** 按（角色×资源）粒度补播：仅当该角色在该资源上尚无任何权限点时插入，用于存量角色的新增基线资源。 */
