@@ -42,6 +42,7 @@ public class AdminDataInitializer implements CommandLineRunner {
     private final AdminUserMapper adminUsers;
     private final AdminPasswordEncoder passwordEncoder;
     private final Environment environment;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private final String bootstrapUsername;
     private final String bootstrapPassword;
@@ -50,6 +51,7 @@ public class AdminDataInitializer implements CommandLineRunner {
     public AdminDataInitializer(RoleMapper roles, RolePermissionMapper rolePermissions,
                                 AdminUserMapper adminUsers, AdminPasswordEncoder passwordEncoder,
                                 Environment environment,
+                                org.springframework.jdbc.core.JdbcTemplate jdbc,
                                 @Value("${console.bootstrap.username:admin.zhou}") String bootstrapUsername,
                                 @Value("${console.bootstrap.password:admin123}") String bootstrapPassword,
                                 @Value("${console.bootstrap.name:超级管理员}") String bootstrapName) {
@@ -58,6 +60,7 @@ public class AdminDataInitializer implements CommandLineRunner {
         this.adminUsers = adminUsers;
         this.passwordEncoder = passwordEncoder;
         this.environment = environment;
+        this.jdbc = jdbc;
         this.bootstrapUsername = bootstrapUsername;
         this.bootstrapPassword = bootstrapPassword;
         this.bootstrapName = bootstrapName;
@@ -65,9 +68,23 @@ public class AdminDataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        // sys_role 表不存在时跳过（例如仅装载 legacy 基础表结构的迁移回归容器）：
+        // 初始化器只对已建后台表结构的库负责，避免这类上下文启动即失败。
+        if (!adminSchemaPresent()) {
+            log.warn("[admin-init] 未检测到 sys_role 表，跳过后台数据播种（请确认已执行 v008_admin.sql）");
+            return;
+        }
         Map<String, SysRole> roleMap = ensureRoles();
         seedPermissionMatrix(roleMap);
         ensureBootstrapSuperAdmin(roleMap.get("SA"));
+    }
+
+    private boolean adminSchemaPresent() {
+        Integer count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.TABLES "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_role'",
+                Integer.class);
+        return count != null && count > 0;
     }
 
     // ==================== 角色 ====================

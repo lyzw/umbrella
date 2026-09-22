@@ -28,6 +28,8 @@ class ProductionConfigGuardTest {
         environment.setActiveProfiles("prod");
         var jwt = new JwtProperties();
         jwt.setSecret("fixture-random-key-012345678901234567890123456789");
+        // 运营后台引入独立 admin 账号体系后，prod 守卫同时要求独立 admin 密钥（30 分钟 TTL 为默认值）。
+        jwt.setAdminSecret("fixture-random-admin-key-012345678901234567890123456789");
         var policy = new ComplianceProperties();
         var guard = new ProductionConfigGuard(environment, jwt, policy);
         assertDoesNotThrow(guard::validate);

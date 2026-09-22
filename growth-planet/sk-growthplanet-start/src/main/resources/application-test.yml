@@ -3,20 +3,10 @@ spring:
     init:
       mode: always
       schema-locations:
-        - classpath:sprint1_schema.sql
-        - classpath:sprint2_schema.sql
-        - classpath:sprint3_catalog.sql
-        - classpath:sprint3_confirmation.sql
-        - classpath:sprint4_schema.sql
-        - classpath:v002_chore_medal.sql
-        - classpath:v002_schedule.sql
-        - classpath:v003_wallet_board.sql
-        - classpath:v002_family_dish.sql
-        - classpath:v002_menu_dish_ref.sql
-        - classpath:v004_health_check.sql
-        - classpath:v005_child_want_eat.sql
-        - classpath:v006_want_eat_medal.sql
-        - classpath:v007_wish_menu.sql
+        # 测试库汇总建表脚本（sprint1~v007 迁移脚本按原顺序拼接，纯 DDL+勋章种子）。
+        # 原 Navicat 整库 dump 保留于 sql/growth_planet_full_dump.sql，含业务数据，不用于测试。
+        - classpath:growth_planet.sql
+        # 后台运营端 4 张表 + 首个 SA 播种（v008，独立维护）
         - classpath:v008_admin.sql
   # datasource / redis 由 @ServiceConnection（Testcontainers）在集成测试中注入
 

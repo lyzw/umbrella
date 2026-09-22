@@ -2,7 +2,7 @@ package cn.studykid.growthplanet;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DuplicateKeyException;
@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** Runs one-time incremental DDL only against BaseIT's isolated MySQL container. */
-@TestPropertySource(properties = "spring.sql.init.schema-locations=classpath:sprint1_schema.sql")
+@TestPropertySource(properties = "spring.sql.init.schema-locations=classpath:legacy/sprint1_schema.sql")
 class Sprint234MigrationIT extends BaseIT {
     private static final List<String> BASE_TABLES = List.of(
             "usr_user", "usr_family", "usr_family_member", "usr_child_profile",
@@ -311,6 +311,6 @@ class Sprint234MigrationIT extends BaseIT {
     }
 
     private void executeScript(String name) {
-        new ResourceDatabasePopulator(new FileSystemResource("sql/" + name)).execute(dataSource);
+        new ResourceDatabasePopulator(new ClassPathResource("legacy/" + name)).execute(dataSource);
     }
 }

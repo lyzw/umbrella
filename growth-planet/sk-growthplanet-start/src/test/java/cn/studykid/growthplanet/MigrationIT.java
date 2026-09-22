@@ -2,7 +2,7 @@ package cn.studykid.growthplanet;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /** 仅在 BaseIT 创建的隔离容器中重建旧六表结构，不能用于业务库。 */
-@TestPropertySource(properties = "spring.sql.init.schema-locations=classpath:sprint1_schema.sql")
+@TestPropertySource(properties = "spring.sql.init.schema-locations=classpath:legacy/sprint1_schema.sql")
 class MigrationIT extends BaseIT {
     @Autowired DataSource dataSource;
     @Autowired JdbcTemplate jdbc;
@@ -77,7 +77,7 @@ class MigrationIT extends BaseIT {
     }
 
     private void executeScript(String name) {
-        new ResourceDatabasePopulator(new FileSystemResource("sql/migrations/" + name)).execute(dataSource);
+        new ResourceDatabasePopulator(new ClassPathResource("legacy/" + name)).execute(dataSource);
     }
 
     private List<Map<String, Object>> columns() {
