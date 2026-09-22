@@ -37,4 +37,5 @@
     </view>
   </view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:if="{{synthetic}}" class="dev-link" bindtap="goDev">测试入口：儿童快速登录</view>
 </view>

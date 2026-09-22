@@ -1,0 +1,15 @@
+.dev-page { min-height: 100vh; padding: 24px 18px 40px; }
+.head { margin-bottom: 18px; }
+.head .title { font-size: 22px; font-weight: 800; color: #28394d; }
+.head .sub { margin-top: 6px; font-size: 12px; color: #8a98ad; line-height: 1.5; }
+.card { background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(20,40,80,.05); }
+.card .step { font-size: 14px; font-weight: 800; color: #28394d; margin-bottom: 12px; }
+.field { margin-bottom: 12px; }
+.field .label { display: block; font-size: 12px; color: #687386; margin-bottom: 6px; }
+.field input { height: 44px; padding: 0 12px; border: 1px solid #d7dee8; border-radius: 10px; font-size: 15px; background: #f8fafc; }
+.card .primary { width: 100%; background: #2878ff; color: #fff; border-radius: 10px; }
+.card .primary[disabled] { background: #b7cdf7; color: #fff; }
+.combo { width: 100%; margin-top: 4px; background: #15966a; color: #fff; border-radius: 10px; }
+.combo[disabled] { background: #a7d8c4; color: #fff; }
+.ok { margin-top: 14px; padding: 12px 14px; background: #eafaf1; border: 1px solid #bde9d2; border-radius: 10px; color: #15966a; font-size: 13px; }
+.error { margin-top: 14px; padding: 10px 14px; color: #d9483b; font-size: 13px; }

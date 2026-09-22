@@ -1,0 +1,31 @@
+<view class="page dev-page">
+  <view class="head">
+    <view class="title">儿童快速登录（测试）</view>
+    <view class="sub">仅 dev/test 可用，绕过微信 OAuth 与邀请码握手。</view>
+  </view>
+
+  <view class="card">
+    <view class="step">① 儿童一键登录</view>
+    <view class="field">
+      <text class="label">儿童账号</text>
+      <input value="{{childAccount}}" bindinput="input" data-field="childAccount" maxlength="51" placeholder="child_demo" />
+    </view>
+    <button class="primary" loading="{{busy}}" disabled="{{busy || childReady}}" bindtap="childLogin">
+      {{childReady ? '已以儿童身份登录' : '儿童一键登录'}}
+    </button>
+  </view>
+
+  <view class="card">
+    <view class="step">② 输入家长账号一键绑定</view>
+    <view class="field">
+      <text class="label">家长账号</text>
+      <input value="{{parentAccount}}" bindinput="input" data-field="parentAccount" maxlength="51" placeholder="parent_demo" />
+    </view>
+    <button class="primary" loading="{{busy}}" disabled="{{busy || !childReady}}" bindtap="bindParent">一键绑定父母</button>
+  </view>
+
+  <button class="combo" loading="{{busy}}" disabled="{{busy}}" bindtap="quickAll">一键登录并绑定</button>
+
+  <view wx:if="{{result}}" class="ok">绑定成功：familyId={{result.familyId}}，状态={{result.bindStatus}}</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+</view>

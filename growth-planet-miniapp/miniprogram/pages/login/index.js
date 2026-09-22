@@ -31,5 +31,8 @@ ui.page({
       session.set(auth);
       wx.reLaunch({ url: '/pages/family/index' });
     });
+  },
+  goDev() {
+    wx.navigateTo({ url: '/pages/dev-child-login/index' });
   }
 });

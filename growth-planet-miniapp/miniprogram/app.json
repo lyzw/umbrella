@@ -14,7 +14,8 @@
     "pages/schedule/index",
     "pages/health/index",
     "pages/notices/index",
-    "pages/privacy/index"
+    "pages/privacy/index",
+    "pages/dev-child-login/index"
   ],
   "window": {
     "navigationBarTitleText": "成长星球",
