@@ -40,8 +40,9 @@ public class ChildProfile {
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> tastes;
 
+    @Deprecated(since = "P0", forRemoval = true)
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<Long> favoriteDishIds;
+    private List<String> favoriteDishIds; // 历史「想吃」存储，已被 usr_child_want_eat 取代；P1 移除，仅作「常吃」派生种子。
 
     /** 档案状态：INCOMPLETE/COMPLETE。 */
     private String profileStatus;

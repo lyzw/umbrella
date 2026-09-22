@@ -113,7 +113,37 @@ public class MenuController {
 
     @PostMapping("/menu/mark-favorite")
     @RequireRole(RoleEnum.CHILD)
-    public Result<ChildPreferencesResp> favorite(@RequestBody @Valid MarkFavoriteReq req) {
+    public Result<WantEatResp> favorite(@RequestBody @Valid MarkFavoriteReq req) {
         return Result.ok(catalog.markFavorite(req));
+    }
+
+    @GetMapping("/child/want-eat")
+    @RequireRole({RoleEnum.CHILD, RoleEnum.PARENT})
+    public Result<WantEatResp> childWantEat(@RequestParam(required = false) @Positive Long childId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate menuDate,
+            @RequestParam String mealType) {
+        return Result.ok(catalog.childWantEat(childId, menuDate, mealType));
+    }
+
+    @GetMapping("/parent/want-eat")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<WantEatBoardResp> parentWantEat(@RequestParam @Positive Long childId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return Result.ok(catalog.parentWantEatBoard(childId, from, to));
+    }
+
+    @PostMapping("/parent/want-eat/{id}/status")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<WantEatResp> transitionWantEat(@PathVariable @Positive Long id,
+            @RequestBody @Valid WantEatStatusReq req) {
+        return Result.ok(catalog.transitionWantEat(id, req.getStatus(), req.getExpectedVersion()));
+    }
+
+    @GetMapping("/child/frequent-dish")
+    @RequireRole({RoleEnum.CHILD, RoleEnum.PARENT})
+    public Result<FrequentDishResp> frequentDish(@RequestParam(required = false) @Positive Long childId,
+            @RequestParam(defaultValue = "6") int limit) {
+        return Result.ok(catalog.frequentDishes(childId, limit));
     }
 }

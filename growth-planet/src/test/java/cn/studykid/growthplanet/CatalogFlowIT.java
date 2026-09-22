@@ -6,11 +6,13 @@ import cn.studykid.growthplanet.common.exception.BizException;
 import cn.studykid.growthplanet.config.ComplianceProperties;
 import cn.studykid.growthplanet.dto.request.OrderLineReq;
 import cn.studykid.growthplanet.entity.ChildProfile;
+import cn.studykid.growthplanet.entity.ChildWantEat;
 import cn.studykid.growthplanet.entity.DishRef;
 import cn.studykid.growthplanet.entity.Dish;
 import cn.studykid.growthplanet.entity.MenuDaily;
 import cn.studykid.growthplanet.entity.User;
 import cn.studykid.growthplanet.mapper.ChildProfileMapper;
+import cn.studykid.growthplanet.mapper.ChildWantEatMapper;
 import cn.studykid.growthplanet.mapper.DishMapper;
 import cn.studykid.growthplanet.mapper.MenuDailyMapper;
 import cn.studykid.growthplanet.mapper.UserMapper;
@@ -48,6 +50,7 @@ class CatalogFlowIT extends BaseIT {
     @Autowired UserMapper users;
     @Autowired DishMapper dishes;
     @Autowired MenuDailyMapper menus;
+    @Autowired ChildWantEatMapper wantEats;
     @Autowired ComplianceProperties policy;
     @MockitoSpyBean BusinessTime time;
 
@@ -293,10 +296,10 @@ class CatalogFlowIT extends BaseIT {
         long allergic = dish(admin, categoryId, "Peanut dish", List.of("PEANUT"), "DECLARED");
         long removed = dish(admin, categoryId, "Removed", List.of(), "DECLARED");
         long offSale = dish(admin, categoryId, "Unavailable", List.of(), "DECLARED");
-        familyMenu(ctx, List.of(safe, unknown, allergic, removed, offSale), today());
+        long menuId = familyMenu(ctx, List.of(safe, unknown, allergic, removed, offSale), today());
         mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content("{\"dislikes\":[\"Carrot\"],\"tastes\":[]}")).andExpect(status().isOk());
-        favorite(ctx.childToken(), safe, true).andExpect(status().isOk());
+        favorite(ctx.childToken(), safe, true, menuId).andExpect(status().isOk());
         mockMvc.perform(delete("/api/admin/dish/{id}", removed).header("Authorization", bearer(admin)))
                 .andExpect(status().isOk());
         Dish unavailable = dishes.selectById(offSale);
@@ -404,43 +407,158 @@ class CatalogFlowIT extends BaseIT {
     }
 
     @Test
-    void favoritesAreIdempotentPersistentSelfOnlyAndSurviveProfileUpdates() throws Exception {
+    void dailyWantEatIsScopedToChildAndMealAndExposesParentView() throws Exception {
         var ctx = readyProfile();
         var other = readyProfile();
         String admin = adminToken();
-        long dishId = dish(admin, category(admin), "Unknown but favoritable", List.of(), "UNKNOWN");
-        assertEquals(List.of(), profile(ctx).getFavoriteDishIds());
+        long dishId = dish(admin, category(admin), "Want-eatable", List.of(), "UNKNOWN");
+        long menuId = familyMenu(ctx, List.of(dishId), today());
+        // 幂等：标记两次仍只有一行
         for (int attempt = 0; attempt < 2; attempt++) {
-            favorite(ctx.childToken(), dishId, true).andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.favoriteDishIds[0]").value(Long.toString(dishId)));
+            favorite(ctx.childToken(), dishId, true, menuId).andExpect(status().isOk());
         }
-        assertEquals(List.of(dishId), profile(ctx).getFavoriteDishIds());
-        saveProfile(ctx);
-        mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
-                .contentType(JSON).content("{\"dislikes\":[],\"tastes\":[]}")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.favoriteDishIds[0]").value(Long.toString(dishId)));
-        for (String token : List.of(ctx.parentToken(), ctx.childToken())) {
-            mockMvc.perform(get("/api/child/preferences").header("Authorization", bearer(token))
-                    .param("childId", childUserId(ctx).toString())).andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.favoriteDishIds[0]").value(Long.toString(dishId)));
-        }
-        favorite(ctx.parentToken(), dishId, true).andExpect(status().isForbidden());
+        assertEquals(1L, wantEats.selectCount(new QueryWrapper<ChildWantEat>().eq("child_id", childUserId(ctx))
+                .eq("menu_date", today()).eq("meal_type", "LUNCH").eq("dish_type", "PRESET").eq("dish_id", dishId)));
+        // 家长不能标记（CHILD 专属）
+        favorite(ctx.parentToken(), dishId, true, menuId).andExpect(status().isForbidden());
+        // 他人 childId 被拒（未知字段）
         mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(other.childToken()))
                 .contentType(JSON).content(json(Map.of("dishId", dishId, "favorite", true,
+                        "menuId", menuId, "menuDate", today().toString(), "mealType", "LUNCH",
                         "childId", childUserId(ctx))))).andExpect(status().isBadRequest());
-        assertEquals(List.of(), profile(other).getFavoriteDishIds());
-        mockMvc.perform(delete("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
-                .andExpect(status().isOk());
-        favorite(ctx.childToken(), dishId, true).andExpect(status().isNotFound());
-        for (int attempt = 0; attempt < 2; attempt++) {
-            favorite(ctx.childToken(), dishId, false).andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.favoriteDishIds").isEmpty());
-        }
-        for (String body : List.of("{}", "{\"dishId\":0,\"favorite\":true}", "{\"dishId\":1}",
-                "{\"dishId\":1,\"favorite\":null}", "{\"dishId\":1.5,\"favorite\":true}")) {
+        assertEquals(0L, wantEats.selectCount(new QueryWrapper<ChildWantEat>().eq("child_id", childUserId(other))));
+        // 取消 → 行消失
+        favorite(ctx.childToken(), dishId, false, menuId).andExpect(status().isOk());
+        assertEquals(0L, wantEats.selectCount(new QueryWrapper<ChildWantEat>().eq("child_id", childUserId(ctx))
+                .eq("dish_id", dishId)));
+        // 重新标记后，家长可查询到孩子的每日想吃清单
+        favorite(ctx.childToken(), dishId, true, menuId).andExpect(status().isOk());
+        childWantEat(ctx.parentToken(), childUserId(ctx), today(), "LUNCH").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.menuDate").value(today().toString()))
+                .andExpect(jsonPath("$.data.mealType").value("LUNCH"))
+                .andExpect(jsonPath("$.data.wantEat.length()").value(1))
+                .andExpect(jsonPath("$.data.wantEat[0].type").value("PRESET"))
+                .andExpect(jsonPath("$.data.wantEat[0].id").value(Long.toString(dishId)));
+        childWantEat(ctx.childToken(), null, today(), "LUNCH").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.wantEat.length()").value(1));
+        // 缺字段 → 400
+        for (String body : List.of("{}", "{\"dishId\":1}", "{\"dishId\":1,\"favorite\":true}",
+                "{\"dishId\":1,\"favorite\":null,\"menuId\":1,\"menuDate\":\"" + today() + "\",\"mealType\":\"LUNCH\"}",
+                "{\"dishId\":1.5,\"favorite\":true,\"menuId\":1,\"menuDate\":\"" + today() + "\",\"mealType\":\"LUNCH\"}")) {
             mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
                     .contentType(JSON).content(body)).andExpect(status().isBadRequest());
         }
+        // 缺 dishType → 400
+        mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
+                .contentType(JSON).content(json(Map.of("dishId", dishId, "favorite", true,
+                        "menuId", menuId, "menuDate", today().toString(), "mealType", "LUNCH"))))
+                .andExpect(status().isBadRequest());
+        // 菜品下架后标记 → 404
+        mockMvc.perform(delete("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
+                .andExpect(status().isOk());
+        favorite(ctx.childToken(), dishId, true, menuId).andExpect(status().isNotFound());
+    }
+
+    private ResultActions childWantEat(String token, Long childId, LocalDate menuDate, String mealType)
+            throws Exception {
+        var request = get("/api/child/want-eat").header("Authorization", bearer(token))
+                .param("menuDate", menuDate.toString()).param("mealType", mealType);
+        if (childId != null) {
+            request.param("childId", childId.toString());
+        }
+        return mockMvc.perform(request);
+    }
+
+    @Test
+    void wantEatIsIsolatedByDateAndMeal() throws Exception {
+        var ctx = readyProfile();
+        String admin = adminToken();
+        long categoryId = category(admin);
+        long dishId = dish(admin, categoryId, "Daily scoped", List.of(), "DECLARED");
+        long menuId = familyMenu(ctx, List.of(dishId), today());
+        // A 日午餐标记想吃
+        favorite(ctx.childToken(), dishId, true, menuId).andExpect(status().isOk());
+        daily(ctx.childToken(), "FAMILY", null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.dishes[0].isFavorite").value(true));
+        // 为验证「按餐次隔离」，另建一份同菜的 DINNER 菜单
+        mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+                .contentType(JSON).content(json(Map.of("menuDate", today().toString(), "mealType", "DINNER",
+                        "dishIds", List.of(Map.of("type", "PRESET", "id", dishId))))))
+                .andExpect(status().isOk());
+        // A 日晚餐不高亮
+        daily(ctx.childToken(), "FAMILY", null, "DINNER", today()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.dishes[0].isFavorite").value(false));
+        // B 日午餐不高亮
+        LocalDate tomorrow = today().plusDays(1);
+        familyMenu(ctx, List.of(dishId), tomorrow);
+        daily(ctx.childToken(), "FAMILY", null, "LUNCH", tomorrow).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.dishes[0].isFavorite").value(false));
+        // 取消 A 日午餐后不高亮
+        favorite(ctx.childToken(), dishId, false, menuId).andExpect(status().isOk());
+        daily(ctx.childToken(), "FAMILY", null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.dishes[0].isFavorite").value(false));
+        assertEquals(0L, wantEats.selectCount(new QueryWrapper<ChildWantEat>().eq("child_id", childUserId(ctx))));
+    }
+
+    @Test
+    void wantEatQueryIsScopedToFamilyForParent() throws Exception {
+        var ctx = readyProfile();
+        var other = readyProfile();
+        String admin = adminToken();
+        long dishId = dish(admin, category(admin), "Parent view", List.of(), "DECLARED");
+        long menuId = familyMenu(ctx, List.of(dishId), today());
+        favorite(ctx.childToken(), dishId, true, menuId).andExpect(status().isOk());
+        // 同家庭家长可见
+        childWantEat(ctx.parentToken(), childUserId(ctx), today(), "LUNCH").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.wantEat.length()").value(1));
+        // 别家家长 / 别家孩子均越权
+        childWantEat(other.parentToken(), childUserId(ctx), today(), "LUNCH").andExpect(status().isForbidden());
+        childWantEat(other.childToken(), childUserId(ctx), today(), "LUNCH").andExpect(status().isForbidden());
+    }
+
+    @Test
+    void presetAndFamilyDishWithSameIdDoNotCollide() throws Exception {
+        var ctx = readyProfile();
+        String admin = adminToken();
+        long categoryId = category(admin);
+        long presetId = dish(admin, categoryId, "Preset dish", List.of(), "DECLARED");
+        long familyId = familyDish(ctx, categoryId, "Family dish", "DECLARED");
+        Map<String, Object> presetRef = new HashMap<>();
+        presetRef.put("type", "PRESET");
+        presetRef.put("id", presetId);
+        Map<String, Object> familyRef = new HashMap<>();
+        familyRef.put("type", "FAMILY");
+        familyRef.put("id", familyId);
+        var refs = List.of(presetRef, familyRef);
+        long menuId = familyMenuWithRefs(ctx, refs, today());
+        favorite(ctx.childToken(), presetId, true, menuId).andExpect(status().isOk());
+        favorite(ctx.childToken(), familyId, true, menuId, "FAMILY").andExpect(status().isOk());
+        assertEquals(1L, wantEats.selectCount(new QueryWrapper<ChildWantEat>()
+                .eq("child_id", childUserId(ctx)).eq("dish_type", "PRESET").eq("dish_id", presetId)));
+        assertEquals(1L, wantEats.selectCount(new QueryWrapper<ChildWantEat>()
+                .eq("child_id", childUserId(ctx)).eq("dish_type", "FAMILY").eq("dish_id", familyId)));
+        // 菜单菜品顺序固定（PRESET 在前、FAMILY 在后），按索引断言两道菜均被正确高亮。
+        daily(ctx.childToken(), "FAMILY", null).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.dishes[0].sourceType").value("PRESET"))
+                .andExpect(jsonPath("$.data.dishes[0].isFavorite").value(true))
+                .andExpect(jsonPath("$.data.dishes[1].sourceType").value("FAMILY"))
+                .andExpect(jsonPath("$.data.dishes[1].isFavorite").value(true));
+    }
+
+    @Test
+    void markingAgainstNonExistentMenuFails() throws Exception {
+        var ctx = readyProfile();
+        String admin = adminToken();
+        long dishId = dish(admin, category(admin), "Menu bound", List.of(), "DECLARED");
+        favorite(ctx.childToken(), dishId, true, 9_999_999L).andExpect(status().isNotFound());
+    }
+
+    private long familyDish(FamilyContext ctx, long categoryId, String name, String allergenStatus)
+            throws Exception {
+        return id(mockMvc.perform(post("/api/parent/family-dish").header("Authorization", bearer(ctx.parentToken()))
+                .contentType(JSON).content(json(Map.of("categoryId", Long.toString(categoryId), "name", name,
+                        "virtualPrice", "12.00", "allergens", List.of(), "allergenStatus", allergenStatus,
+                        "spiceLevel", 0)))).andExpect(status().isOk()).andReturn(), "dishId");
     }
 
     @Test
@@ -448,25 +566,24 @@ class CatalogFlowIT extends BaseIT {
         var ctx = setupFamily();
         String admin = adminToken();
         long dishId = dish(admin, category(admin), "Rice", List.of(), "DECLARED");
-        familyMenu(ctx, List.of(dishId), today());
-        favorite(ctx.childToken(), dishId, true).andExpect(status().isForbidden());
+        long menuId = familyMenu(ctx, List.of(dishId), today());
+        favorite(ctx.childToken(), dishId, true, menuId).andExpect(status().isForbidden());
         grant(ctx);
         approve(ctx);
-        favorite(ctx.childToken(), dishId, true).andExpect(status().isConflict())
+        favorite(ctx.childToken(), dishId, true, menuId).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("E-002"));
         daily(ctx.childToken(), "FAMILY", null).andExpect(status().isConflict());
         saveProfile(ctx);
-        favorite(ctx.childToken(), dishId, true).andExpect(status().isOk());
+        favorite(ctx.childToken(), dishId, true, menuId).andExpect(status().isOk());
         revoke(ctx);
-        favorite(ctx.childToken(), dishId, false).andExpect(status().isConflict())
+        favorite(ctx.childToken(), dishId, false, menuId).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("E-010"));
         daily(ctx.childToken(), "FAMILY", null).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("E-010"));
         mockMvc.perform(get("/api/child/preferences").header("Authorization", bearer(ctx.parentToken()))
                 .param("childId", childUserId(ctx).toString())).andExpect(status().isConflict());
-        assertEquals(List.of(dishId), profile(ctx).getFavoriteDishIds());
         grant(ctx);
-        favorite(ctx.childToken(), dishId, false).andExpect(status().isOk());
+        favorite(ctx.childToken(), dishId, false, menuId).andExpect(status().isOk());
     }
 
     @Test
@@ -513,11 +630,15 @@ class CatalogFlowIT extends BaseIT {
                 ids.add(publication.get(20, TimeUnit.SECONDS));
             }
             assertEquals(1, ids.size());
-            Future<?> one = pool.submit(() -> favorite(ctx.childToken(), first, true).andExpect(status().isOk()));
-            Future<?> two = pool.submit(() -> favorite(ctx.childToken(), second, true).andExpect(status().isOk()));
+            long menuId = ids.iterator().next();
+            Future<?> one = pool.submit(() -> favorite(ctx.childToken(), first, true, menuId).andExpect(status().isOk()));
+            Future<?> two = pool.submit(() -> favorite(ctx.childToken(), second, true, menuId).andExpect(status().isOk()));
             one.get(20, TimeUnit.SECONDS);
             two.get(20, TimeUnit.SECONDS);
-            assertEquals(Set.of(first, second), new HashSet<>(profile(ctx).getFavoriteDishIds()));
+            assertEquals(1L, wantEats.selectCount(new QueryWrapper<ChildWantEat>().eq("child_id", childUserId(ctx))
+                    .eq("menu_date", today()).eq("meal_type", "LUNCH").eq("dish_type", "PRESET").eq("dish_id", first)));
+            assertEquals(1L, wantEats.selectCount(new QueryWrapper<ChildWantEat>().eq("child_id", childUserId(ctx))
+                    .eq("menu_date", today()).eq("meal_type", "LUNCH").eq("dish_type", "PRESET").eq("dish_id", second)));
         }
     }
 
@@ -644,18 +765,36 @@ class CatalogFlowIT extends BaseIT {
                 .andExpect(status().isOk()).andReturn(), "menuId");
     }
 
+    private long familyMenuWithRefs(FamilyContext ctx, List<Map<String, Object>> refs, LocalDate date) throws Exception {
+        var body = Map.of("menuDate", date.toString(), "mealType", "LUNCH", "dishIds", refs);
+        return id(mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+                .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "menuId");
+    }
+
     private ResultActions daily(String token, String source, Long childId) throws Exception {
+        return daily(token, source, childId, "LUNCH", today());
+    }
+
+    private ResultActions daily(String token, String source, Long childId, String mealType, LocalDate date)
+            throws Exception {
         var request = get("/api/menu/daily").header("Authorization", bearer(token))
-                .param("sourceType", source).param("menuDate", today().toString()).param("mealType", "LUNCH");
+                .param("sourceType", source).param("menuDate", date.toString()).param("mealType", mealType);
         if (childId != null) {
             request.param("childId", childId.toString());
         }
         return mockMvc.perform(request);
     }
 
-    private ResultActions favorite(String token, long dishId, boolean favorite) throws Exception {
+    private ResultActions favorite(String token, long dishId, boolean favorite, long menuId) throws Exception {
+        return favorite(token, dishId, favorite, menuId, "PRESET");
+    }
+
+    private ResultActions favorite(String token, long dishId, boolean favorite, long menuId, String dishType)
+            throws Exception {
         return mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(token))
-                .contentType(JSON).content(json(Map.of("dishId", Long.toString(dishId), "favorite", favorite))));
+                .contentType(JSON).content(json(Map.of("dishId", Long.toString(dishId), "favorite", favorite,
+                        "menuId", Long.toString(menuId), "menuDate", today().toString(), "mealType", "LUNCH",
+                        "dishType", dishType))));
     }
 
     private FamilyContext readyProfile() throws Exception {

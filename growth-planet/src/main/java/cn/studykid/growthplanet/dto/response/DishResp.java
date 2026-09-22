@@ -13,6 +13,7 @@ public class DishResp {
     private Long dishId;
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long categoryId;
+    private String categoryName;
     private String name;
     private String imageUrl;
     private String virtualPrice;

@@ -65,7 +65,7 @@ class PrivacyWorkflowIT extends BaseIT {
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
         ChildProfile profile = profiles.selectOne(new QueryWrapper<ChildProfile>()
                 .eq("user_id", childUserId(ctx)));
-        profile.setFavoriteDishIds(List.of(9007199254740993L, 42L));
+        profile.setFavoriteDishIds(List.of("PRESET:9007199254740993", "PRESET:42"));
         assertEquals(1, profiles.updateById(profile));
         var task = export(ctx, "download");
         String operator = operator();
@@ -76,7 +76,7 @@ class PrivacyWorkflowIT extends BaseIT {
         mockMvc.perform(get("/api/compliance/requests/" + task.getTaskId() + "/download")
                 .header("Authorization", bearer(ctx.parentToken()))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile.favoriteDishIds").isEmpty());
-        profile.setFavoriteDishIds(List.of(9007199254740993L, 42L));
+        profile.setFavoriteDishIds(List.of("PRESET:9007199254740993", "PRESET:42"));
         assertEquals(1, profiles.updateById(profile));
         PrivacyRequest request = requests.selectById(Long.valueOf(task.getTaskId()));
         assertEquals("GENERATED_PROFILE_V1", request.getResultRef());
@@ -88,8 +88,8 @@ class PrivacyWorkflowIT extends BaseIT {
                 .andExpect(jsonPath("$.childId").value(childUserId(ctx).toString()))
                 .andExpect(jsonPath("$.profile.nickname").value("测试儿童"))
                 .andExpect(jsonPath("$.profile.favoriteDishIds.length()").value(2))
-                .andExpect(jsonPath("$.profile.favoriteDishIds[0]").value("9007199254740993"))
-                .andExpect(jsonPath("$.profile.favoriteDishIds[1]").value("42"))
+                .andExpect(jsonPath("$.profile.favoriteDishIds[0]").value("PRESET:9007199254740993"))
+                .andExpect(jsonPath("$.profile.favoriteDishIds[1]").value("PRESET:42"))
                 .andExpect(jsonPath("$.openid").doesNotExist())
                 .andExpect(jsonPath("$.scope").isString()).andReturn();
         assertFalse(download.getResponse().getContentAsString().contains("sessionKey"));
