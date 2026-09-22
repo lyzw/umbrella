@@ -1,0 +1,22 @@
+{
+  "name": "growth-planet-admin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "成长星球运营后台（里程碑A：M0 登录/工作台 + M2 账号与角色权限）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "element-plus": "^2.8.8",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^5.4.11"
+  }
+}
