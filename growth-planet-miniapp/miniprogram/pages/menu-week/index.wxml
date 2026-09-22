@@ -1,0 +1,69 @@
+<view class="page parent">
+  <view class="page-heading">
+    <text class="title">整周发布</text>
+    <text class="subtitle">先点选要铺的餐次，再挑好菜品，一次发完一周；单条失败不影响其余，失败项会保留勾选方便重试</text>
+  </view>
+
+  <view wx:if="{{receipt}}" class="notice">{{receipt}}</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+
+  <view class="toolbar">
+    <view class="range-nav">
+      <button class="compact-action" data-delta="-1" bindtap="shiftWeek" aria-label="上一周">上一周</button>
+      <button class="compact-action" data-delta="1" bindtap="shiftWeek" aria-label="下一周">下一周</button>
+    </view>
+    <text class="small week-label">{{weekLabel}}</text>
+  </view>
+
+  <block wx:if="{{ready}}">
+    <view class="section-title">第一步 · 选择要发布的餐次（已选 {{cellCount}}/21）</view>
+    <view wx:for="{{days}}" wx:key="date" class="day-row">
+      <view class="day-head">
+        <text class="day-name">{{item.label}}</text>
+        <text class="day-date">{{item.dateText}}</text>
+      </view>
+      <view class="meal-cells">
+        <view wx:for="{{item.meals}}" wx:key="mealType" wx:for-item="meal"
+          class="meal-cell {{meal.selected ? 'picked' : ''}} {{meal.empty ? 'empty-cell' : ''}}"
+          data-date="{{item.date}}" data-meal="{{meal.mealType}}" bindtap="toggleCell" aria-role="button">
+          <text class="meal-cell-name">{{meal.label}}</text>
+          <text class="meal-cell-status">{{meal.statusText}}</text>
+        </view>
+      </view>
+      <view class="day-tools">
+        <button wx:for="{{item.meals}}" wx:key="mealType" wx:for-item="meal"
+          class="compact-action" data-date="{{item.date}}" data-meal="{{meal.mealType}}"
+          bindtap="useAsTemplate">{{meal.label}}设为模板</button>
+      </view>
+    </view>
+    <view wx:if="{{days.length === 0}}" class="empty">这一周还取不到菜单格子，请稍后重试</view>
+
+    <view class="section-title list-title">第二步 · 选择菜品（已选 {{dishCount}}/50）</view>
+    <input placeholder="搜索菜品名" value="{{keyword}}" bindinput="search" />
+    <view class="dish-grid">
+      <view wx:for="{{catalog}}" wx:key="key" class="dish-chip {{item.selected ? 'picked' : ''}}"
+        data-key="{{item.key}}" bindtap="toggleDish" aria-role="button">
+        <text class="dish-chip-name">{{item.name}}</text>
+        <text class="dish-chip-type">{{item.type === 'FAMILY' ? '家庭菜' : '公共菜'}}</text>
+      </view>
+    </view>
+    <view wx:if="{{catalog.length === 0}}" class="empty">没有匹配的菜品，换个关键词试试</view>
+
+    <view class="notice">发布后可用「设为模板」把某天的菜一键铺到其他餐次，避免整周重复挑菜。</view>
+
+    <view wx:if="{{results.length}}" class="result-block">
+      <view class="section-title">发布结果</view>
+      <view wx:for="{{results}}" wx:key="key" class="result-row">
+        <text class="result-text">{{item.text}}</text>
+        <text class="badge {{item.ok ? 'ok' : 'normal'}}">{{item.ok ? '成功' : '待重试'}}</text>
+      </view>
+      <button class="compact-action" bindtap="retry">刷新这一周</button>
+    </view>
+
+    <view class="publish-bar">
+      <button class="primary" bindtap="publish" disabled="{{busy || !cellCount || !dishCount}}">
+        发布 {{cellCount}} 个餐次
+      </button>
+    </view>
+  </block>
+</view>

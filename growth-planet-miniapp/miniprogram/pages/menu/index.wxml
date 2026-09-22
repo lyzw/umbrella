@@ -3,6 +3,14 @@
     <view><view class="eyebrow">{{role === 'PARENT' ? '仅当前家庭有效' : '小当家 · 点餐'}}</view><view class="title">{{role === 'PARENT' ? '家庭菜单维护' : '今日餐单'}}</view></view>
     <picker mode="date" value="{{menuDate}}" bindchange="date" disabled="{{busy}}"><view class="picker date-picker">{{menuDate}}</view></picker>
   </view>
+  <scroll-view wx:if="{{week.length}}" class="week-strip" scroll-x="true" enable-flex="true">
+    <view wx:for="{{week}}" wx:key="date" class="week-day {{item.active ? 'active' : ''}} {{item.isToday ? 'today' : ''}}" bindtap="weekDay" data-date="{{item.date}}">
+      <text class="week-day-label">{{item.label}}</text>
+      <text class="week-day-date">{{item.dayText}}</text>
+      <text class="week-day-hint">{{item.hasMenu ? item.publishedCount + ' 餐已发' : '未发布'}}</text>
+      <text wx:if="{{item.wantEatCount}}" class="week-day-want">想吃 {{item.wantEatCount}}</text>
+    </view>
+  </scroll-view>
   <view wx:if="{{role === 'PARENT'}}" class="notice">这里发布的菜单只属于当前家庭，不会影响其他家庭或学校餐单。</view>
   <view wx:if="{{role === 'PARENT'}}" class="tabs source-tabs">
     <button class="{{sourceTab === 'FAMILY' ? 'active' : ''}}" bindtap="sourceTab" data-tab="FAMILY" disabled="{{busy}}">家庭菜品</button>
@@ -12,6 +20,18 @@
   <view wx:if="{{role === 'CHILD'}}" class="tabs">
     <button class="{{sourceType === 'FAMILY' ? 'active' : ''}}" bindtap="source" data-source="FAMILY" disabled="{{busy}}">家庭餐单</button>
     <button class="{{sourceType === 'SCHOOL' ? 'active' : ''}}" bindtap="source" data-source="SCHOOL" disabled="{{busy}}">学校餐单</button>
+  </view>
+  <view wx:if="{{role === 'CHILD' && recommend.length}}" class="quick-section recommend-section">
+    <view class="quick-head"><text class="quick-title">今天吃什么？</text><text class="small">避开过敏与忌口，挑几道试试</text></view>
+    <scroll-view class="quick-scroll" scroll-x="true" enable-flex="true">
+      <view wx:for="{{recommend}}" wx:key="key" class="quick-card {{item.available ? '' : 'quick-card-disabled'}} {{item.isFavorite ? 'quick-card-active' : ''}}" bindtap="quickFavorite" data-key="{{item.key}}">
+        <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="quick-image" />
+        <view wx:else class="quick-image quick-fallback">🍲</view>
+        <view class="quick-name">{{item.name}}</view>
+        <view class="quick-meta">{{item.isFavorite ? '今天已想吃' : item.available ? '加入想吃' : '今日餐单暂无'}}</view>
+        <view wx:if="{{item.reasonText}}" class="quick-reason">{{item.reasonText}}</view>
+      </view>
+    </scroll-view>
   </view>
   <view wx:if="{{role === 'CHILD' && frequent.length}}" class="quick-section">
     <view class="quick-head"><text class="quick-title">孩子常吃</text><text class="small">点一下加入今天的想吃</text></view>
@@ -87,6 +107,7 @@
     </view>
     <view class="parent-actions">
       <button bindtap="goDishManage" disabled="{{busy}}">我的菜品</button>
+      <button bindtap="goWeekPlan" disabled="{{busy}}">整周发布</button>
       <button bindtap="saveDraft" disabled="{{busy || !count || invalidSelectedCount}}">存草稿</button>
       <button class="primary" bindtap="saveMenu" disabled="{{busy || !count || invalidSelectedCount}}">发布家庭餐单</button>
     </view>

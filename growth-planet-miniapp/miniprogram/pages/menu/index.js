@@ -6,13 +6,25 @@ const { cents, money, shanghaiDate, selectable, filterDishes, dishRef, dishKey }
 
 const SPICE = ['无辣', '微辣', '中辣', '重辣'];
 const MEALS = ['BREAKFAST', 'LUNCH', 'DINNER'];
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const WEEK_DAYS = 7;
+
+function shiftDate(date, delta) {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + delta)).toISOString().slice(0, 10);
+}
+function weekdayLabel(date, today) {
+  if (date === today) return '今天';
+  const [year, month, day] = date.split('-').map(Number);
+  return WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+}
 
 ui.page({
   data: { role: '', busy: false, error: '', children: [], childIndex: 0, childId: '', sourceType: 'FAMILY',
     menuDate: shanghaiDate(), today: shanghaiDate(), mealType: 'LUNCH', meals: ['早餐', '午餐', '晚餐'], mealIndex: 1,
     menu: null, dishes: [], mildOnly: false, favoritesOnly: false, keyword: '', total: '0.00', count: 0,
     sourceTab: 'FAMILY', missingCount: 0, missingDishIds: [], invalidSelectedCount: 0, ready: false,
-    categories: [], categoryId: '', frequent: [] },
+    categories: [], categoryId: '', frequent: [], recommend: [], week: [] },
   onLoad(query) { this.previousConfirmId = query.previousConfirmId || null; },
   onShow() {
     if (!ui.guard(this)) return;
@@ -22,6 +34,7 @@ ui.page({
     this.selectedRefs = [];
     this.tabPinned = false;
     this.frequentDishes = [];
+    this.recommendDishes = [];
     ui.run(this, async () => {
       if (this.data.role === 'PARENT') {
         await this.loadParent();
@@ -73,6 +86,8 @@ ui.page({
     this.allDishes = menu.dishes || [];
     this.setData({ menu, ready: true });
     await this.loadFrequent();
+    await this.loadRecommend();
+    await this.loadWeek();
     if (this.previousConfirmId && sourceType === 'FAMILY' && this.data.role === 'CHILD') {
       const previous = await api.get('/menu/confirm/' + this.previousConfirmId);
       if (!['REJECTED', 'CANCELLED'].includes(previous.status)) throw new Error('仅拒绝或撤回的确认单可重新提报');
@@ -97,6 +112,54 @@ ui.page({
     } catch (error) {
       this.frequentDishes = []; // 快捷区为增强体验，失败时静默降级不影响主流程。
     }
+  },
+  // 「今天吃什么」推荐：后端按 过敏硬过滤 → 忌口剔除 → 常吃加权 → 本周未吃加分 打分，失败静默降级。
+  async loadRecommend() {
+    if (this.data.role !== 'CHILD' || !this.data.menu) { this.recommendDishes = []; return; }
+    try {
+      const result = await api.get('/child/recommend', {
+        menuId: this.data.menu.menuId, childId: this.data.childId, limit: 3
+      });
+      this.recommendDishes = (result.dishes || []).map(item => ({
+        ...item, key: dishKey(item), reasonText: (item.reasons || []).join(' · ')
+      }));
+    } catch (error) {
+      this.recommendDishes = []; // 推荐卡同为增强体验，失败时不影响菜单主流程。
+    }
+  },
+  // 周条：今天起 7 天，标注哪几天已发菜单（家长用于整周发布，孩子用于提前挑选）。
+  async loadWeek() {
+    const today = shanghaiDate();
+    const from = today;
+    const to = shiftDate(today, WEEK_DAYS - 1);
+    try {
+      const result = this.data.role === 'PARENT'
+        ? await api.get('/parent/menu-week', { from, to })
+        : await api.get('/child/menu-week', { from, to, childId: this.data.childId });
+      const week = (result.days || []).map(day => {
+        const meals = day.meals || [];
+        const published = meals.filter(meal => meal.menuId);
+        return {
+          date: day.menuDate,
+          label: weekdayLabel(day.menuDate, today),
+          dayText: day.menuDate.slice(5).replace('-', '/'),
+          publishedCount: published.length,
+          hasMenu: published.length > 0,
+          wantEatCount: meals.reduce((sum, meal) => sum + (meal.wantEatCount || 0), 0),
+          isToday: day.menuDate === today,
+          active: day.menuDate === this.data.menuDate
+        };
+      });
+      this.setData({ week });
+    } catch (error) {
+      this.setData({ week: [] }); // 周条失败不影响单日菜单主流程
+    }
+  },
+  decorateRecommend(dishes) {
+    return (this.recommendDishes || []).map(item => {
+      const match = dishes.find(dish => dishKey(dish) === item.key);
+      return { ...item, available: Boolean(match && match.selectable), isFavorite: Boolean(match && match.isFavorite) };
+    });
   },
   buildCategories(dishes) {
     const seen = new Map();
@@ -136,6 +199,7 @@ ui.page({
     this.setData({ menu, missingCount: menu ? (menu.missingDishIds || []).length : 0,
       missingDishIds: menu ? menu.missingDishIds || [] : [], ready: true });
     this.render();
+    await this.loadWeek();
   },
   render() {
     if (this.data.role === 'PARENT') {
@@ -167,6 +231,7 @@ ui.page({
         categories,
         categoryId,
         frequent: [],
+        recommend: [],
         dishes: filterDishes(inCategory, { mildOnly: this.data.mildOnly, keyword: this.data.keyword }),
         count: this.selectedRefs.length,
         invalidSelectedCount
@@ -188,7 +253,8 @@ ui.page({
     const selected = all.filter(d => d.quantity > 0);
     const total = selected.reduce((sum, d) => sum + cents(d.virtualPrice) * d.quantity, 0);
     this.setData({ dishes: filterDishes(inCategory, this.data), categories, categoryId,
-      frequent: this.decorateFrequent(all), total: money(total), count: selected.length });
+      frequent: this.decorateFrequent(all), recommend: this.decorateRecommend(all),
+      total: money(total), count: selected.length });
   },
   source(e) {
     if (this.data.busy || this.data.role === 'PARENT') return;
@@ -202,6 +268,13 @@ ui.page({
     this.render();
   },
   date(e) { this.setData({ menuDate: e.detail.value }); ui.run(this, () => this.read()); },
+  // 周条点选：切到该天（可能是下周），孩子可提前挑选想吃，家长可维护该天菜单。
+  weekDay(e) {
+    const date = e.currentTarget.dataset.date;
+    if (this.data.busy || !date || date === this.data.menuDate) return;
+    this.setData({ menuDate: date });
+    return ui.run(this, () => this.read());
+  },
   meal(e) { const index = Number(e.detail.value); this.setData({ mealIndex: index, mealType: MEALS[index] }); ui.run(this, () => this.read()); },
   child(e) { const index = Number(e.detail.value); this.setData({ childIndex: index, childId: this.data.children[index].childId }); ui.run(this, () => this.read()); },
   filters(e) { this.setData({ mildOnly: e.detail.value.includes('mild'), favoritesOnly: e.detail.value.includes('favorite') }); this.render(); },
@@ -292,6 +365,10 @@ ui.page({
     wx.navigateTo({ url: '/pages/confirmation/index?compose=1' });
   },
   goDishManage() { wx.navigateTo({ url: '/pages/dish-manage/index' }); },
+  goWeekPlan() {
+    if (this.data.role !== 'PARENT' || this.data.busy) return;
+    wx.navigateTo({ url: '/pages/menu-week/index' });
+  },
   category(e) {
     this.setData({ categoryId: e.currentTarget.dataset.id || '' });
     this.render();
@@ -299,7 +376,9 @@ ui.page({
   quickFavorite(e) {
     return ui.run(this, async () => {
       const key = e.currentTarget.dataset.key;
-      const item = (this.frequentDishes || []).find(row => row.key === key);
+      // 快捷区与推荐卡共用本处理器：两处的菜品都来自后端派生，可能不在今日餐单里。
+      const item = [...(this.frequentDishes || []), ...(this.recommendDishes || [])]
+        .find(row => row.key === key);
       const dish = this.allDishes.find(row => dishKey(row) === key);
       if (!item || !dish || !selectable(dish)) {
         wx.showToast({ title: '今日餐单暂无可标记的菜品', icon: 'none' });
@@ -330,7 +409,9 @@ ui.page({
     this.selectedRefs = [];
     this.tabPinned = false;
     this.frequentDishes = [];
+    this.recommendDishes = [];
     this.setData({ dishes: [], menu: null, missingCount: 0, missingDishIds: [], invalidSelectedCount: 0,
-      total: '0.00', count: 0, ready: false, categories: [], categoryId: '', frequent: [] });
+      total: '0.00', count: 0, ready: false, categories: [], categoryId: '', frequent: [], recommend: [],
+      week: [] });
   }
 });

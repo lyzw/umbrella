@@ -732,11 +732,14 @@ test('菜单页：常吃快捷区只允许标记今日餐单已有的菜品', as
         { type: 'FAMILY', id: '7', name: '家庭番茄炒蛋', count: 2, categoryId: '3', categoryName: '主食' }
       ] };
     }
+    if (endpoint === '/child/recommend') return { dishes: [] };
+    if (endpoint === '/child/menu-week' || endpoint === '/parent/menu-week') return { days: [] };
     return { menuId: '20', sourceType: 'FAMILY', menuDate: shanghaiDate(), mealType: 'LUNCH',
       canSubmit: true, dishes: [{ ...dish, canSelect: true, categoryName: '主食' }] };
   };
   await page.read();
-  assert.deepEqual(calls.map(call => call.endpoint), ['/menu/daily', '/child/frequent-dish']);
+  assert.deepEqual(calls.map(call => call.endpoint),
+    ['/menu/daily', '/child/frequent-dish', '/child/recommend', '/child/menu-week']);
   assert.equal(calls[1].query.limit, 6);
   assert.deepEqual(page.data.frequent.map(item => item.key), ['PRESET:99', 'FAMILY:7']);
   // 今日餐单里没有 FAMILY:7，标记它后端会 404，所以前端直接置为不可点。
@@ -817,4 +820,167 @@ test('家长想吃看板：菜品已下架时保留行占位并标注', async ()
   assert.equal(dish0.statusLabel, '已采购');
   assert.equal(dish0.flags, '菜品已下架 · 已过期');
   assert.deepEqual(dish0.actions.map(action => action.status), ['COOKED', 'MARKED']);
+});
+test('菜单页：推荐卡渲染、点击复用今日餐单校验', async () => {
+  const page = loadPage('menu', 'CHILD');
+  api.get = async (endpoint, query) => {
+    if (endpoint === '/child/frequent-dish') return { dishes: [] };
+    if (endpoint === '/child/menu-week') return { days: [] };
+    if (endpoint === '/child/recommend') {
+      return { menuId: '20', dishes: [
+        { type: 'PRESET', id: '99', name: '合成餐食', categoryName: '主食', score: 6, reasons: ['最近常吃', '本周还没吃'] },
+        { type: 'FAMILY', id: '7', name: '家庭番茄炒蛋', categoryName: '主食', score: 3, reasons: ['口味清淡'] }
+      ] };
+    }
+    return { menuId: '20', sourceType: 'FAMILY', menuDate: shanghaiDate(), mealType: 'LUNCH',
+      canSubmit: true, dishes: [{ ...dish, canSelect: true }] };
+  };
+  const calls = [];
+  api.post = async (endpoint, body) => { calls.push({ endpoint, body }); return { wantEat: [] }; };
+  await page.read();
+  assert.deepEqual(page.data.recommend.map(item => item.key), ['PRESET:99', 'FAMILY:7']);
+  assert.equal(page.data.recommend[0].reasonText, '最近常吃 · 本周还没吃');
+  // 今日餐单有 PRESET:99、没有 FAMILY:7，所以只有前者可点（复用 quickFavorite 的前置校验）。
+  assert.equal(page.data.recommend[0].available, true);
+  assert.equal(page.data.recommend[1].available, false);
+
+  await page.quickFavorite(event({ key: 'PRESET:99' }));
+  assert.deepEqual(calls, [{ endpoint: '/menu/mark-favorite', body: {
+    dishId: '99', dishType: 'PRESET', favorite: true,
+    menuId: '20', menuDate: shanghaiDate(), mealType: 'LUNCH' } }]);
+
+  const toasts = [];
+  global.wx.showToast = options => toasts.push(options.title);
+  await page.quickFavorite(event({ key: 'FAMILY:7' }));
+  assert.equal(calls.length, 1);
+  assert.deepEqual(toasts, ['今日餐单暂无可标记的菜品']);
+});
+test('菜单页：推荐与周条接口失败时静默降级', async () => {
+  const page = loadPage('menu', 'CHILD');
+  api.get = async endpoint => {
+    if (endpoint === '/menu/daily') {
+      return { menuId: '20', sourceType: 'FAMILY', menuDate: shanghaiDate(), mealType: 'LUNCH',
+        canSubmit: true, dishes: [{ ...dish, canSelect: true }] };
+    }
+    throw Object.assign(new Error('服务不可用'), { status: 500 });
+  };
+  await page.read();
+  assert.deepEqual(page.data.recommend, []);
+  assert.deepEqual(page.data.frequent, []);
+  assert.deepEqual(page.data.week, []);
+  assert.equal(page.data.ready, true);
+  assert.deepEqual(page.data.dishes.map(item => item.dishId), ['99']);
+});
+test('菜单页：周条标注已发布天数，点选可切到该天', async () => {
+  const page = loadPage('menu', 'CHILD');
+  const today = shanghaiDate();
+  const day = delta => new Date(Date.UTC(...today.split('-').map(Number).map((v, i) => i === 1 ? v - 1 : v))
+    + delta * 86400000).toISOString().slice(0, 10);
+  const tomorrow = day(1);
+  const meals = { menuId: '20', status: 'PUBLISHED', dishCount: 1 };
+  api.get = async (endpoint, query) => {
+    if (endpoint === '/child/frequent-dish') return { dishes: [] };
+    if (endpoint === '/child/recommend') return { dishes: [] };
+    if (endpoint === '/child/menu-week') {
+      assert.equal(query.from, today);
+      assert.equal(query.to, day(6));
+      return { from: today, to: day(6), today, days: [
+        { menuDate: today, meals: [{ mealType: 'LUNCH', ...meals, wantEatCount: 1 }, { mealType: 'DINNER' }] },
+        { menuDate: tomorrow, meals: [{ mealType: 'LUNCH' }] }
+      ] };
+    }
+    return { menuId: '20', sourceType: 'FAMILY', menuDate: query.menuDate, mealType: 'LUNCH',
+      canSubmit: true, dishes: [{ ...dish, canSelect: true }] };
+  };
+  await page.read();
+  assert.equal(page.data.week.length, 2);
+  assert.deepEqual(page.data.week[0], { date: today, label: '今天', dayText: today.slice(5).replace('-', '/'),
+    publishedCount: 1, hasMenu: true, wantEatCount: 1, isToday: true, active: true });
+  assert.equal(page.data.week[1].hasMenu, false);
+
+  await page.weekDay(event({ date: tomorrow }));
+  assert.equal(page.data.menuDate, tomorrow);
+  assert.equal(page.data.week[1].active, true);
+  assert.equal(page.data.week[0].active, false);
+});
+test('整周发布：格子点选、模板铺菜与批量发布部分成功', async () => {
+  const page = loadPage('menu-week', 'PARENT');
+  const today = shanghaiDate();
+  const days = Array.from({ length: 7 }, (unused, index) => ({
+    menuDate: new Date(Date.UTC(...today.split('-').map(Number).map((v, i) => i === 1 ? v - 1 : v))
+      + index * 86400000).toISOString().slice(0, 10),
+    meals: ['BREAKFAST', 'LUNCH', 'DINNER'].map(mealType => mealType === 'LUNCH' && index === 0
+      ? { mealType, menuId: '30', status: 'PUBLISHED', dishCount: 1 }
+      : { mealType, menuId: null, dishCount: 0 })
+  }));
+  const requests = [];
+  api.get = async (endpoint, query) => {
+    requests.push({ endpoint, query });
+    if (endpoint === '/parent/dish') return { items: [dish], total: 1 };
+    if (endpoint === '/parent/family-dish') return { items: [familyDish], total: 1 };
+    if (endpoint === '/parent/menu-week') return { from: days[0].menuDate, to: days[6].menuDate, days };
+    if (endpoint === '/parent/menu-daily') return { menuId: '30', dishes: [{ ...dish, canSelect: true }] };
+    throw new Error('unexpected ' + endpoint);
+  };
+  await page.onShow();
+  assert.equal(page.data.days.length, 7);
+  assert.equal(page.data.days[0].meals[1].statusText, '1 道');
+  assert.equal(page.data.days[0].meals[0].empty, true);
+  assert.deepEqual(page.data.catalog.map(item => item.key), ['FAMILY:7', 'PRESET:99']);
+  assert.equal(page.data.dishCount, 0);
+
+  page.toggleCell(event({ date: days[0].menuDate, meal: 'LUNCH' }));
+  assert.equal(page.data.cellCount, 1);
+  assert.equal(page.data.days[0].meals[1].selected, true);
+  page.toggleCell(event({ date: days[1].menuDate, meal: 'DINNER' }));
+  assert.equal(page.data.cellCount, 2);
+
+  await page.useAsTemplate(event({ date: days[0].menuDate, meal: 'LUNCH' }));
+  assert.equal(page.data.dishCount, 1);
+  assert.match(page.data.receipt, /已用 .* 的 1 道菜作为模板/);
+
+  let sent;
+  api.post = async (endpoint, body) => {
+    sent = { endpoint, body };
+    return { okCount: 1, failCount: 1, results: [
+      { menuDate: days[0].menuDate, mealType: 'LUNCH', ok: true, code: null },
+      { menuDate: days[1].menuDate, mealType: 'DINNER', ok: false, code: 'E-404' }
+    ] };
+  };
+  await page.publish();
+  assert.equal(sent.endpoint, '/parent/menu-daily/batch');
+  assert.equal(sent.body.items.length, 2);
+  assert.deepEqual(sent.body.items[0], { menuDate: days[0].menuDate, mealType: 'LUNCH',
+    dishIds: [{ type: 'PRESET', id: '99' }], status: 'PUBLISHED' });
+  assert.deepEqual(page.data.results.map(row => row.ok), [true, false]);
+  assert.match(page.data.receipt, /成功 1 条，失败 1 条/);
+  // 部分成功语义：失败项保留勾选，家长可直接重试。
+  assert.equal(page.data.cellCount, 1);
+  assert.equal(page.data.days[1].meals[2].selected, true);
+
+  page.onHide();
+  assert.deepEqual(page.data.days, []);
+  assert.equal(page.data.cellCount, 0);
+});
+test('整周发布：未选餐次或未选菜品时拒绝提交', async () => {
+  const page = loadPage('menu-week', 'PARENT');
+  const today = shanghaiDate();
+  api.get = async endpoint => {
+    if (endpoint === '/parent/dish') return { items: [dish], total: 1 };
+    if (endpoint === '/parent/family-dish') return { items: [], total: 0 };
+    if (endpoint === '/parent/menu-week') return { days: [{ menuDate: today, meals: [
+      { mealType: 'LUNCH', menuId: null, dishCount: 0 }] }] };
+    throw new Error('unexpected ' + endpoint);
+  };
+  let posted = false;
+  api.post = async () => { posted = true; return {}; };
+  await page.onShow();
+  await page.publish();
+  assert.equal(posted, false);
+  assert.match(page.data.error, /请先点选要发布的餐次/);
+
+  page.toggleCell(event({ date: today, meal: 'LUNCH' }));
+  await page.publish();
+  assert.equal(posted, false);
+  assert.match(page.data.error, /请先选择要铺的菜品/);
 });
