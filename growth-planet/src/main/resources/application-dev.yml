@@ -13,6 +13,8 @@ wx:
 
 jwt:
   secret: synthetic-only-development-secret-01234567890123456789
+  # 后台运营端独立密钥（与 C 端隔离）。
+  admin-secret: synthetic-only-development-admin-secret-012345678901234
 
 # 合成演示数据目录，不代表已获 Q-01 或正式字典审批。
 compliance:

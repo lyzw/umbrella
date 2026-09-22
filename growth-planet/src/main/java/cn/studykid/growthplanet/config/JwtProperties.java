@@ -21,4 +21,13 @@ public class JwtProperties {
 
     /** 签发方标识。 */
     private String issuer = "growth-planet";
+
+    /** 后台运营端独立密钥（与 C 端隔离，避免 token 互解）。长度需 >= 32 字节。 */
+    private String adminSecret;
+
+    /** 后台 access token 有效期（毫秒）。默认 30 分钟。 */
+    private long adminAccessTtl = 1_800_000L;
+
+    /** 后台签发方标识。 */
+    private String adminIssuer = "growth-planet-admin";
 }

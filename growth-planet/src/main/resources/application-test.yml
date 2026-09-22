@@ -17,6 +17,7 @@ spring:
         - classpath:v005_child_want_eat.sql
         - classpath:v006_want_eat_medal.sql
         - classpath:v007_wish_menu.sql
+        - classpath:v008_admin.sql
   # datasource / redis 由 @ServiceConnection（Testcontainers）在集成测试中注入
 
 logging:
@@ -25,6 +26,7 @@ logging:
 
 jwt:
   secret: synthetic-only-test-secret-01234567890123456789012345
+  admin-secret: synthetic-only-admin-secret-012345678901234567890123
 
 compliance:
   collection-enabled: true

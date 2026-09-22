@@ -21,6 +21,13 @@ public class ProductionConfigGuard {
         this.compliance = compliance;
     }
 
+    private void validateJwt(String label, String secret, long ttl) {
+        if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32
+                || isDemonstration(secret) || ttl != 1_800_000L) {
+            throw new IllegalStateException(label + " requires an independent JWT secret and a 30-minute token lifetime");
+        }
+    }
+
     @PostConstruct
     public void validate() {
         if (!environment.acceptsProfiles(Profiles.of("prod"))) {
@@ -34,6 +41,7 @@ public class ProductionConfigGuard {
                 || isDemonstration(secret) || jwt.getAccessTtl() != 1_800_000L) {
             throw new IllegalStateException("prod requires an independent JWT secret and a 30-minute token lifetime");
         }
+        validateJwt("prod admin jwt", jwt.getAdminSecret(), jwt.getAdminAccessTtl());
         if (compliance.isCollectionEnabled()) {
             compliance.requireCollection();
             if (isDemonstration(compliance.getApprovalReference())

@@ -41,10 +41,22 @@ jwt:
   secret: ${JWT_SECRET}
   access-ttl: 1800000
   issuer: growth-planet
+  # 后台运营端独立账号体系密钥（与 C 端隔离）。
+  admin-secret: ${JWT_ADMIN_SECRET}
+  admin-access-ttl: 1800000
+  admin-issuer: growth-planet-admin
 
 wx:
   appid: ${WX_APPID:}
   secret: ${WX_SECRET:}
+
+# 后台运营端首个超级管理员引导配置（仅当 sys_admin_user 为空时播种，见 AdminDataInitializer）。
+# 生产环境请通过环境变量覆盖默认密码，避免使用弱口令。
+console:
+  bootstrap:
+    username: ${CONSOLE_BOOTSTRAP_USERNAME:admin.zhou}
+    password: ${CONSOLE_BOOTSTRAP_PASSWORD:admin123}
+    name: ${CONSOLE_BOOTSTRAP_NAME:超级管理员}
 
 compliance:
   collection-enabled: false
