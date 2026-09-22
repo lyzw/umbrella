@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="成长星球 Logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1">
+      <stop offset="0" stop-color="#46B4EC"/>
+      <stop offset="1" stop-color="#5FC98E"/>
+    </linearGradient>
+    <radialGradient id="planet" cx="0.38" cy="0.32" r="0.85">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.7" stop-color="#F2FAFF"/>
+      <stop offset="1" stop-color="#DCEFFB"/>
+    </radialGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#86E05A"/>
+      <stop offset="1" stop-color="#43B258"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="16" y="16" width="480" height="480" rx="116" fill="url(#bg)"/>
+
+  <!-- 装饰星星 -->
+  <g fill="#FFFFFF" opacity="0.92">
+    <path d="M118 96 C121 108 122 110 134 113 C122 116 121 118 118 130 C115 118 114 116 102 113 C114 110 115 108 118 96 Z"/>
+    <circle cx="408" cy="120" r="7"/>
+    <circle cx="416" cy="372" r="9"/>
+    <circle cx="96" cy="384" r="6"/>
+  </g>
+  <g fill="#FFE08A">
+    <path d="M404 250 C406 259 407 260 416 262 C407 264 406 265 404 274 C402 265 401 264 392 262 C401 260 402 259 404 250 Z"/>
+    <path d="M150 300 C152 307 153 308 160 310 C153 312 152 313 150 320 C148 313 147 312 140 310 C147 308 148 307 150 300 Z"/>
+  </g>
+
+  <!-- 行星环（在星球后面） -->
+  <ellipse cx="256" cy="304" rx="156" ry="40" fill="none" stroke="#FFFFFF" stroke-width="12" opacity="0.5" transform="rotate(-16 256 304)"/>
+
+  <!-- 星球本体 -->
+  <circle cx="256" cy="304" r="118" fill="url(#planet)"/>
+  <!-- 高光 -->
+  <ellipse cx="216" cy="262" rx="40" ry="26" fill="#FFFFFF" opacity="0.55" transform="rotate(-25 216 262)"/>
+
+  <!-- 腮红 -->
+  <circle cx="206" cy="328" r="17" fill="#FFB3C4" opacity="0.85"/>
+  <circle cx="306" cy="328" r="17" fill="#FFB3C4" opacity="0.85"/>
+
+  <!-- 眼睛 -->
+  <circle cx="222" cy="296" r="13" fill="#37475A"/>
+  <circle cx="290" cy="296" r="13" fill="#37475A"/>
+  <circle cx="226" cy="291" r="4.5" fill="#FFFFFF"/>
+  <circle cx="294" cy="291" r="4.5" fill="#FFFFFF"/>
+
+  <!-- 微笑 -->
+  <path d="M224 326 Q256 352 288 326" fill="none" stroke="#37475A" stroke-width="9" stroke-linecap="round"/>
+
+  <!-- 嫩芽（成长） -->
+  <path d="M256 190 C254 165 254 150 256 128" fill="none" stroke="url(#leaf)" stroke-width="12" stroke-linecap="round"/>
+  <path d="M256 168 C216 162 200 132 196 108 C236 116 256 144 256 168 Z" fill="url(#leaf)"/>
+  <path d="M256 168 C296 162 312 132 316 108 C276 116 256 144 256 168 Z" fill="url(#leaf)"/>
+  <circle cx="256" cy="126" r="6" fill="#B6F08A"/>
+</svg>
