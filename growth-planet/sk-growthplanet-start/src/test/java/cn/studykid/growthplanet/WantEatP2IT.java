@@ -92,7 +92,7 @@ class WantEatP2IT extends BaseIT {
         assertEquals(1, awardCount(defId, childUserId(ctx)));
 
         // 勋章墙可见（前端平铺渲染，无需改动勋章页）。
-        MvcResult medalResult = mockMvc.perform(get("/api/medal/awards")
+        MvcResult medalResult = mockMvc.perform(get("/api/mini/medal/awards")
                 .header("Authorization", bearer(ctx.childToken()))
                 .param("childId", childUserId(ctx).toString())).andExpect(status().isOk()).andReturn();
         JsonNode medals = objectMapper.readTree(medalResult.getResponse().getContentAsString()).get("data");
@@ -154,7 +154,7 @@ class WantEatP2IT extends BaseIT {
             markFavorite(ctx, frequentDish, past, date, "LUNCH");
         }
 
-        JsonNode data = dataJson(mockMvc.perform(get("/api/child/recommend")
+        JsonNode data = dataJson(mockMvc.perform(get("/api/mini/child/recommend")
                 .header("Authorization", bearer(ctx.childToken())).param("menuId", Long.toString(menuId))));
         assertEquals(Long.toString(menuId), data.get("menuId").asString());
         JsonNode list = data.get("dishes");
@@ -251,7 +251,7 @@ class WantEatP2IT extends BaseIT {
         // 跨度超过 14 天
         week(ctx.parentToken(), today, today.plusDays(14)).andExpect(status().isBadRequest());
         // 缺参数
-        mockMvc.perform(get("/api/parent/menu-week").header("Authorization", bearer(ctx.parentToken())))
+        mockMvc.perform(get("/api/mini/parent/menu-week").header("Authorization", bearer(ctx.parentToken())))
                 .andExpect(status().isBadRequest());
         // 跨家庭隔离：别家家长在同一格看到的是"未发布"，看不到本家菜单
         JsonNode otherWeek = dataJson(week(other.parentToken(), today, today));
@@ -271,7 +271,7 @@ class WantEatP2IT extends BaseIT {
         long menuId = familyMenu(ctx, List.of(first, second), today, "LUNCH");
         markFavorite(ctx, first, menuId, today, "LUNCH");
 
-        JsonNode data = dataJson(mockMvc.perform(get("/api/child/menu-week")
+        JsonNode data = dataJson(mockMvc.perform(get("/api/mini/child/menu-week")
                 .header("Authorization", bearer(ctx.childToken()))
                 .param("from", today.toString()).param("to", today.plusDays(6).toString())));
         JsonNode lunch = meal(data, 0, "LUNCH");
@@ -284,14 +284,14 @@ class WantEatP2IT extends BaseIT {
         assertFalse(dinner.get("marked").asBoolean());
 
         // 家长可代查（须本家庭）
-        data = dataJson(mockMvc.perform(get("/api/child/menu-week")
+        data = dataJson(mockMvc.perform(get("/api/mini/child/menu-week")
                 .header("Authorization", bearer(ctx.parentToken())).param("childId", childUserId(ctx).toString())
                 .param("from", today.toString()).param("to", today.toString())));
         assertEquals(1, meal(data, 0, "LUNCH").get("wantEatCount").asInt());
 
         // 儿童传他人 childId → 403
         var other = readyProfile();
-        mockMvc.perform(get("/api/child/menu-week").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(get("/api/mini/child/menu-week").header("Authorization", bearer(ctx.childToken()))
                 .param("childId", childUserId(other).toString())
                 .param("from", today.toString()).param("to", today.toString()))
                 .andExpect(status().isForbidden());
@@ -313,7 +313,7 @@ class WantEatP2IT extends BaseIT {
                 items.add(batchItem(today.plusDays(day), mealType, dishId));
             }
         }
-        JsonNode data = dataJson(mockMvc.perform(post("/api/parent/menu-daily/batch")
+        JsonNode data = dataJson(mockMvc.perform(post("/api/mini/parent/menu-daily/batch")
                 .header("Authorization", bearer(ctx.parentToken())).contentType(JSON)
                 .content(json(Map.of("items", items)))));
         assertEquals(21, data.get("okCount").asInt());
@@ -344,7 +344,7 @@ class WantEatP2IT extends BaseIT {
 
         Map<String, Object> bad = batchItem(today.plusDays(1), "LUNCH", dishId);
         bad.put("dishIds", List.of(Map.of("type", "PRESET", "id", "99999999")));
-        JsonNode data = dataJson(mockMvc.perform(post("/api/parent/menu-daily/batch")
+        JsonNode data = dataJson(mockMvc.perform(post("/api/mini/parent/menu-daily/batch")
                 .header("Authorization", bearer(ctx.parentToken())).contentType(JSON)
                 .content(json(Map.of("items", List.of(batchItem(today, "LUNCH", dishId), bad))))));
         assertEquals(1, data.get("okCount").asInt());
@@ -360,11 +360,11 @@ class WantEatP2IT extends BaseIT {
         for (int i = 0; i < 22; i++) {
             oversize.add(batchItem(today, "LUNCH", dishId));
         }
-        mockMvc.perform(post("/api/parent/menu-daily/batch").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/parent/menu-daily/batch").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(Map.of("items", oversize))))
                 .andExpect(status().isBadRequest());
         // 儿童 token 无权限
-        mockMvc.perform(post("/api/parent/menu-daily/batch").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(post("/api/mini/parent/menu-daily/batch").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content(json(Map.of("items", List.of(batchItem(today, "DINNER", dishId))))))
                 .andExpect(status().isForbidden());
     }
@@ -396,15 +396,15 @@ class WantEatP2IT extends BaseIT {
             }));
             assertTrue(locked.await(10, TimeUnit.SECONDS), "并发事务未能取得行锁");
 
-            assertReadable(pool, "家长周视图", () -> mockMvc.perform(get("/api/parent/menu-week")
+            assertReadable(pool, "家长周视图", () -> mockMvc.perform(get("/api/mini/parent/menu-week")
                     .header("Authorization", bearer(ctx.parentToken()))
                     .param("from", today.toString()).param("to", today.plusDays(6).toString()))
                     .andReturn().getResponse().getStatus());
-            assertReadable(pool, "孩子周视图", () -> mockMvc.perform(get("/api/child/menu-week")
+            assertReadable(pool, "孩子周视图", () -> mockMvc.perform(get("/api/mini/child/menu-week")
                     .header("Authorization", bearer(ctx.childToken()))
                     .param("from", today.toString()).param("to", today.plusDays(6).toString()))
                     .andReturn().getResponse().getStatus());
-            assertReadable(pool, "推荐", () -> mockMvc.perform(get("/api/child/recommend")
+            assertReadable(pool, "推荐", () -> mockMvc.perform(get("/api/mini/child/recommend")
                     .header("Authorization", bearer(ctx.childToken()))
                     .param("menuId", Long.toString(menuId)))
                     .andReturn().getResponse().getStatus());
@@ -423,7 +423,7 @@ class WantEatP2IT extends BaseIT {
         var ctx = setupFamily();
         grant(ctx);
         approve(ctx);
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
         return ctx;
     }
@@ -438,7 +438,7 @@ class WantEatP2IT extends BaseIT {
     }
 
     private long category(String admin) throws Exception {
-        return id(mockMvc.perform(post("/api/admin/dish-category").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish-category").header("Authorization", bearer(admin))
                 .contentType(JSON).content("{\"name\":\"P2 category\",\"sort\":0,\"status\":\"ENABLED\"}"))
                 .andExpect(status().isOk()).andReturn(), "categoryId");
     }
@@ -453,7 +453,7 @@ class WantEatP2IT extends BaseIT {
         body.put("allergenStatus", allergenStatus);
         body.put("spiceLevel", spiceLevel);
         body.put("status", "ON_SALE");
-        return id(mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish").header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "dishId");
     }
 
@@ -465,7 +465,7 @@ class WantEatP2IT extends BaseIT {
             ref.put("id", dishId);
             refs.add(ref);
         }
-        return menuId(mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        return menuId(mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(Map.of("menuDate", date.toString(), "mealType", mealType,
                         "dishIds", refs))))
                 .andExpect(status().isOk()).andReturn());
@@ -489,19 +489,19 @@ class WantEatP2IT extends BaseIT {
         body.put("menuDate", date.toString());
         body.put("mealType", mealType);
         body.put("dishType", "PRESET");
-        mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(post("/api/mini/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk());
     }
 
     private ResultActions transition(String token, long wantEatId, String status, int expectedVersion)
             throws Exception {
-        return mockMvc.perform(post("/api/parent/want-eat/{id}/status", wantEatId)
+        return mockMvc.perform(post("/api/mini/parent/want-eat/{id}/status", wantEatId)
                 .header("Authorization", bearer(token)).contentType(JSON)
                 .content(json(Map.of("status", status, "expectedVersion", expectedVersion))));
     }
 
     private ResultActions recommend(String token, long menuId, Long childId, int limit) throws Exception {
-        var request = get("/api/child/recommend").header("Authorization", bearer(token))
+        var request = get("/api/mini/child/recommend").header("Authorization", bearer(token))
                 .param("menuId", Long.toString(menuId)).param("limit", Integer.toString(limit));
         if (childId != null) {
             request = request.param("childId", childId.toString());
@@ -510,7 +510,7 @@ class WantEatP2IT extends BaseIT {
     }
 
     private ResultActions week(String token, LocalDate from, LocalDate to) throws Exception {
-        return mockMvc.perform(get("/api/parent/menu-week").header("Authorization", bearer(token))
+        return mockMvc.perform(get("/api/mini/parent/menu-week").header("Authorization", bearer(token))
                 .param("from", from.toString()).param("to", to.toString()));
     }
 

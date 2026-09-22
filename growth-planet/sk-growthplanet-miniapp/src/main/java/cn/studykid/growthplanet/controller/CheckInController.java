@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 儿童打卡（F-034/F-035）。所有操作过同意门禁；撤回同意后停采并隐藏。 */
 @RestController
-@RequestMapping("/api/child/check-in")
+@RequestMapping("/api/mini/child/check-in")
 public class CheckInController {
     private final CheckService service;
 

@@ -37,7 +37,7 @@ class WalletBoardIT extends BaseIT {
         grantMoney(ctx, "100.00", "board-grant");
         insertSpend(ctx, "12.00", "MENU_CONFIRM", 900001L);
 
-        JsonNode overview = data(get("/api/wallet/overview").header("Authorization", "Bearer " + ctx.childToken())
+        JsonNode overview = data(get("/api/mini/wallet/overview").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString()));
         assertEquals("88.00", overview.get("balance").asText());
         assertEquals("12.00", overview.get("weekUsed").asText());
@@ -47,7 +47,7 @@ class WalletBoardIT extends BaseIT {
         assertEquals(8, overview.get("weekProgress").asInt());
         assertEquals("NORMAL", overview.get("weekStatus").asText());
 
-        JsonNode board = data(get("/api/wallet/board").header("Authorization", "Bearer " + ctx.parentToken()));
+        JsonNode board = data(get("/api/mini/wallet/board").header("Authorization", "Bearer " + ctx.parentToken()));
         assertEquals(ctx.familyId().toString(), board.get("familyId").asText());
         assertEquals("88.00", board.get("totalBalance").asText());
         assertEquals("12.00", board.get("weekSpend").asText());
@@ -58,7 +58,7 @@ class WalletBoardIT extends BaseIT {
         assertEquals("88.00", child.get("balance").asText());
         assertEquals("12.00", child.get("weekUsed").asText());
 
-        JsonNode stats = data(get("/api/wallet/stats").header("Authorization", "Bearer " + ctx.childToken())
+        JsonNode stats = data(get("/api/mini/wallet/stats").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString()).param("range", "WEEK"));
         assertEquals("WEEK", stats.get("range").asText());
         assertEquals(7, stats.get("spendTrend").size());
@@ -70,12 +70,12 @@ class WalletBoardIT extends BaseIT {
         assertEquals(100, stats.get("grantCategories").get(0).get("percent").asInt());
 
         // 本月按周分桶：4~5 个点，且支出合计与周口径一致
-        JsonNode month = data(get("/api/wallet/stats").header("Authorization", "Bearer " + ctx.childToken())
+        JsonNode month = data(get("/api/mini/wallet/stats").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString()).param("range", "MONTH"));
         assertEquals("MONTH", month.get("range").asText());
         assertTrue(month.get("spendTrend").size() >= 4 && month.get("spendTrend").size() <= 6);
         assertEquals("12.00", month.get("totalSpend").asText());
-        mockMvc.perform(get("/api/wallet/stats").header("Authorization", "Bearer " + ctx.childToken())
+        mockMvc.perform(get("/api/mini/wallet/stats").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString()).param("range", "YEAR"))
                 .andExpect(status().isBadRequest());
     }
@@ -95,7 +95,7 @@ class WalletBoardIT extends BaseIT {
         assertEquals("12.00", menu.get("items").get(0).get("amount").asText());
         // 无筛选时返回全部 3 条，证明扩展参数向后兼容
         assertEquals(3, logPage(ctx, null, null).get("total").asInt());
-        mockMvc.perform(get("/api/wallet/allowance-log").header("Authorization", "Bearer " + ctx.childToken())
+        mockMvc.perform(get("/api/mini/wallet/allowance-log").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString()).param("direction", "SIDEWAYS"))
                 .andExpect(status().isBadRequest());
     }
@@ -107,18 +107,18 @@ class WalletBoardIT extends BaseIT {
         grantMoney(ctx, "20.00", "iso-grant");
         grantMoney(other, "7.00", "iso-grant");
 
-        JsonNode board = data(get("/api/wallet/board").header("Authorization", "Bearer " + ctx.parentToken()));
+        JsonNode board = data(get("/api/mini/wallet/board").header("Authorization", "Bearer " + ctx.parentToken()));
         assertEquals("20.00", board.get("totalBalance").asText());
         assertEquals(1, board.get("children").size());
         assertEquals(childUserId(ctx).toString(), board.get("children").get(0).get("childId").asText());
 
         // 跨家庭：家长查他人儿童、儿童查他人自述，均以 E-009 拒绝且不暴露数据存在性
-        mockMvc.perform(get("/api/wallet/overview").header("Authorization", "Bearer " + other.parentToken())
+        mockMvc.perform(get("/api/mini/wallet/overview").header("Authorization", "Bearer " + other.parentToken())
                 .param("childId", childUserId(ctx).toString())).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/wallet/overview").header("Authorization", "Bearer " + ctx.childToken())
+        mockMvc.perform(get("/api/mini/wallet/overview").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(other).toString())).andExpect(status().isForbidden());
         // 儿童不可访问家长看板
-        mockMvc.perform(get("/api/wallet/board").header("Authorization", "Bearer " + ctx.childToken()))
+        mockMvc.perform(get("/api/mini/wallet/board").header("Authorization", "Bearer " + ctx.childToken()))
                 .andExpect(status().isForbidden());
     }
 
@@ -126,7 +126,7 @@ class WalletBoardIT extends BaseIT {
     void emptyFamilyRendersZeroBoardAndEmptyCategories() throws Exception {
         var ctx = ready();
 
-        JsonNode board = data(get("/api/wallet/board").header("Authorization", "Bearer " + ctx.parentToken()));
+        JsonNode board = data(get("/api/mini/wallet/board").header("Authorization", "Bearer " + ctx.parentToken()));
         assertEquals("0.00", board.get("totalBalance").asText());
         assertEquals("0.00", board.get("weekSpend").asText());
         assertEquals("0.00", board.get("weekGrant").asText());
@@ -134,7 +134,7 @@ class WalletBoardIT extends BaseIT {
         assertEquals("0.00", board.get("children").get(0).get("balance").asText());
 
         // 无流水时分类为空（前端展示空态），趋势仍返回完整 7 个 0 值点以便图表占位
-        JsonNode stats = data(get("/api/wallet/stats").header("Authorization", "Bearer " + ctx.childToken())
+        JsonNode stats = data(get("/api/mini/wallet/stats").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString()));
         assertEquals("WEEK", stats.get("range").asText());
         assertEquals(0, stats.get("spendCategories").size());
@@ -153,7 +153,7 @@ class WalletBoardIT extends BaseIT {
     }
 
     private void grantMoney(FamilyContext ctx, String amount, String key) throws Exception {
-        mockMvc.perform(post("/api/wallet/grant").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(post("/api/mini/wallet/grant").header("Authorization", "Bearer " + ctx.parentToken())
                         .header("Idempotency-Key", key).contentType(JSON)
                         .content("{\"childId\":\"" + childUserId(ctx) + "\",\"amount\":\"" + amount
                                 + "\",\"reason\":\"看板测试发放\"}"))
@@ -185,7 +185,7 @@ class WalletBoardIT extends BaseIT {
     }
 
     private JsonNode logPage(FamilyContext ctx, String field, String value) throws Exception {
-        MockHttpServletRequestBuilder request = get("/api/wallet/allowance-log")
+        MockHttpServletRequestBuilder request = get("/api/mini/wallet/allowance-log")
                 .header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString());
         if (field != null) {

@@ -37,34 +37,34 @@ class SecurityRegressionIT extends BaseIT {
 
     @Test
     void roleCannotSwitchOldTokenExpiresAndLogoutIsDurable() throws Exception {
-        var login = mockMvc.perform(post("/api/auth/wx-login").contentType(JSON)
+        var login = mockMvc.perform(post("/api/mini/auth/wx-login").contentType(JSON)
                 .content("{\"code\":\"" + UUID.randomUUID() + "\"}")).andExpect(status().isOk()).andReturn();
         String original = dataOf(login, WxLoginResp.class).getToken();
-        var select = mockMvc.perform(post("/api/auth/select-role").header("Authorization", "Bearer " + original)
+        var select = mockMvc.perform(post("/api/mini/auth/select-role").header("Authorization", "Bearer " + original)
                 .contentType(JSON).content("{\"role\":\"CHILD\"}")).andExpect(status().isOk()).andReturn();
         String child = dataOf(select, SelectRoleResp.class).getToken();
-        mockMvc.perform(post("/api/auth/select-role").header("Authorization", "Bearer " + original)
+        mockMvc.perform(post("/api/mini/auth/select-role").header("Authorization", "Bearer " + original)
                 .contentType(JSON).content("{\"role\":\"CHILD\"}")).andExpect(status().isUnauthorized());
-        mockMvc.perform(post("/api/auth/select-role").header("Authorization", "Bearer " + child)
+        mockMvc.perform(post("/api/mini/auth/select-role").header("Authorization", "Bearer " + child)
                 .contentType(JSON).content("{\"role\":\"PARENT\"}")).andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + child)).andExpect(status().isOk());
-        mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + child)).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/mini/auth/logout").header("Authorization", "Bearer " + child)).andExpect(status().isOk());
+        mockMvc.perform(post("/api/mini/auth/logout").header("Authorization", "Bearer " + child)).andExpect(status().isUnauthorized());
     }
 
     @Test
     void reloginRestoresFamiliesAndDisabledAccountsCannotLoginOrUseToken() throws Exception {
         String code = UUID.randomUUID().toString();
         String parent = loginAndSelectRole(code, RoleEnum.PARENT);
-        mockMvc.perform(post("/api/family/create").header("Authorization", "Bearer " + parent)
+        mockMvc.perform(post("/api/mini/family/create").header("Authorization", "Bearer " + parent)
                 .contentType(JSON).content("{\"familyName\":\"合成家庭\"}")).andExpect(status().isOk());
-        var login = mockMvc.perform(post("/api/auth/wx-login").contentType(JSON)
+        var login = mockMvc.perform(post("/api/mini/auth/wx-login").contentType(JSON)
                 .content("{\"code\":\"" + code + "\"}")).andExpect(status().isOk()).andReturn();
         String token = dataOf(login, WxLoginResp.class).getToken();
         assertEquals(1, jwtUtil.getFamilyIds(jwtUtil.parse(token)).size());
-        mockMvc.perform(get("/api/family/invite-code").header("Authorization", "Bearer " + parent)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/mini/family/invite-code").header("Authorization", "Bearer " + parent)).andExpect(status().isOk());
         users.update(null, new UpdateWrapper<User>().eq("id", jwtUtil.getUserId(jwtUtil.parse(token))).set("status", "DISABLED"));
-        mockMvc.perform(get("/api/family/invite-code").header("Authorization", "Bearer " + token)).andExpect(status().isUnauthorized());
-        mockMvc.perform(post("/api/auth/wx-login").contentType(JSON).content("{\"code\":\"" + code + "\"}"))
+        mockMvc.perform(get("/api/mini/family/invite-code").header("Authorization", "Bearer " + token)).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/mini/auth/wx-login").contentType(JSON).content("{\"code\":\"" + code + "\"}"))
                 .andExpect(status().isUnauthorized());
     }
 
@@ -72,14 +72,14 @@ class SecurityRegressionIT extends BaseIT {
     void rejectionReusesRelationshipButNotOldConsentAndApprovalsAreIdempotent() throws Exception {
         var ctx = setupFamily();
         grant(ctx);
-        mockMvc.perform(post("/api/family/bind-approve").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(post("/api/mini/family/bind-approve").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content("{\"applyId\":\"" + ctx.applyId() + "\",\"approve\":false}")).andExpect(status().isOk());
-        var join = mockMvc.perform(post("/api/family/join").header("Authorization", "Bearer " + ctx.childToken())
+        var join = mockMvc.perform(post("/api/mini/family/join").header("Authorization", "Bearer " + ctx.childToken())
                 .contentType(JSON).content("{\"inviteCode\":\"" + ctx.inviteCode() + "\"}")).andExpect(status().isOk()).andReturn();
         assertEquals(ctx.applyId().toString(), objectMapper.readTree(join.getResponse().getContentAsString())
                 .get("data").get("applyId").asText());
         assertEquals(2, members.selectById(ctx.applyId()).getApplicationVersion());
-        mockMvc.perform(post("/api/family/bind-approve").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(post("/api/mini/family/bind-approve").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content("{\"applyId\":\"" + ctx.applyId() + "\",\"approve\":true}"))
                 .andExpect(status().isConflict());
         grant(ctx);
@@ -88,14 +88,14 @@ class SecurityRegressionIT extends BaseIT {
         assertEquals(2, notices.selectCount(new QueryWrapper<Notice>().eq("child_id", childUserId(ctx))
                 .eq("event_type", "BIND_BOUND")));
         var other = setupFamily();
-        mockMvc.perform(post("/api/family/join").header("Authorization", "Bearer " + ctx.childToken())
+        mockMvc.perform(post("/api/mini/family/join").header("Authorization", "Bearer " + ctx.childToken())
                 .contentType(JSON).content("{\"inviteCode\":\"" + other.inviteCode() + "\"}")).andExpect(status().isConflict());
     }
 
     @Test
     void malformedPayloadHasTraceAndNeverLogsChildData() throws Exception {
         var ctx = setupFamily();
-        var result = mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+        var result = mockMvc.perform(post("/api/mini/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content("{\"nickname\":\"PRIVATE_SENTINEL\","))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("E-400")).andReturn();
         String requestId = result.getResponse().getHeader("X-Request-Id");
@@ -105,15 +105,15 @@ class SecurityRegressionIT extends BaseIT {
         assertNotNull(log.getIp());
         assertNull(log.getDetail());
         assertNull(UserContext.get());
-        mockMvc.perform(get("/api/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(get("/api/mini/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
                 .param("childId", "-1").param("consentType", "PROFILE")).andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/compliance/requests/-1").header("Authorization", "Bearer " + ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/compliance/requests/-1").header("Authorization", "Bearer " + ctx.parentToken()))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/not-an-endpoint")).andExpect(status().isNotFound());
-        mockMvc.perform(get("/api/auth/wx-login")).andExpect(status().isMethodNotAllowed());
-        mockMvc.perform(post("/api/auth/wx-login").contentType("text/plain").content("synthetic"))
+        mockMvc.perform(get("/api/mini/not-an-endpoint")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/mini/auth/wx-login")).andExpect(status().isMethodNotAllowed());
+        mockMvc.perform(post("/api/mini/auth/wx-login").contentType("text/plain").content("synthetic"))
                 .andExpect(status().isUnsupportedMediaType());
-        var denial = mockMvc.perform(post("/api/family/create")
+        var denial = mockMvc.perform(post("/api/mini/family/create")
                 .header("Authorization", "Bearer " + ctx.childToken()).contentType(JSON).content("{}"))
                 .andExpect(status().isForbidden()).andReturn();
         AuditLog denied = audits.selectOne(new QueryWrapper<AuditLog>()
@@ -128,10 +128,10 @@ class SecurityRegressionIT extends BaseIT {
         policy.setCollectionEnabled(false);
         try {
             long before = users.selectCount(new QueryWrapper<>());
-            mockMvc.perform(post("/api/auth/wx-login").contentType(JSON).content("{\"code\":\"closed-gate\"}"))
+            mockMvc.perform(post("/api/mini/auth/wx-login").contentType(JSON).content("{\"code\":\"closed-gate\"}"))
                     .andExpect(status().isForbidden());
             assertEquals(before, users.selectCount(new QueryWrapper<>()));
-            mockMvc.perform(post("/api/family/join").header("Authorization", "Bearer " + ctx.childToken())
+            mockMvc.perform(post("/api/mini/family/join").header("Authorization", "Bearer " + ctx.childToken())
                     .contentType(JSON).content("{\"inviteCode\":\"" + ctx.inviteCode() + "\"}"))
                     .andExpect(status().isForbidden());
         } finally {
@@ -145,10 +145,10 @@ class SecurityRegressionIT extends BaseIT {
         String token = loginAndSelectRole(code, RoleEnum.CHILD);
         Long userId = jwtUtil.getUserId(jwtUtil.parse(token));
         users.deleteById(userId);
-        mockMvc.perform(post("/api/auth/wx-login").contentType(JSON).content("{\"code\":\"" + code + "\"}"))
+        mockMvc.perform(post("/api/mini/auth/wx-login").contentType(JSON).content("{\"code\":\"" + code + "\"}"))
                 .andExpect(status().isUnauthorized());
         assertEquals(userId, users.findIdentityIncludingDeleted("mock_openid_" + code).getId());
-        mockMvc.perform(post("/api/auth/logout").header("Authorization", "Bearer " + token))
+        mockMvc.perform(post("/api/mini/auth/logout").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
     }
 }

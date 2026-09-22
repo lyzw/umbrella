@@ -59,7 +59,7 @@ class CatalogFlowIT extends BaseIT {
         String admin = adminToken();
         long categoryId = category(admin);
         long dishId = dish(admin, categoryId, "Carrot stew", List.of(), "DECLARED");
-        mockMvc.perform(get("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
+        mockMvc.perform(get("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.dishId").value(Long.toString(dishId)))
                 .andExpect(jsonPath("$.data.categoryId").value(Long.toString(categoryId)))
@@ -68,29 +68,29 @@ class CatalogFlowIT extends BaseIT {
         changed.put("virtualPrice", "0.00");
         changed.put("spiceLevel", 3);
         changed.put("status", "OFF_SALE");
-        mockMvc.perform(put("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin))
+        mockMvc.perform(put("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(changed))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.virtualPrice").value("0.00"));
-        mockMvc.perform(get("/api/admin/dish").header("Authorization", bearer(admin))
+        mockMvc.perform(get("/api/mini/admin/dish").header("Authorization", bearer(admin))
                 .param("categoryId", Long.toString(categoryId)).param("status", "OFF_SALE").param("pageSize", "1"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.items[0].dishId").value(Long.toString(dishId)));
-        mockMvc.perform(get("/api/admin/dish").header("Authorization", bearer(admin))
+        mockMvc.perform(get("/api/mini/admin/dish").header("Authorization", bearer(admin))
                 .param("categoryId", Long.toString(categoryId)).param("page", "2147483647").param("pageSize", "100"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.items").isEmpty());
-        mockMvc.perform(get("/api/admin/dish-category").header("Authorization", bearer(admin))
+        mockMvc.perform(get("/api/mini/admin/dish-category").header("Authorization", bearer(admin))
                 .param("pageSize", "1")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].categoryId").isString());
-        for (String path : List.of("/api/admin/dish", "/api/admin/dish-category")) {
+        for (String path : List.of("/api/mini/admin/dish", "/api/mini/admin/dish-category")) {
             for (String query : List.of("?page=0", "?pageSize=0", "?pageSize=101", "?page=1.5")) {
                 mockMvc.perform(get(path + query).header("Authorization", bearer(admin)))
                         .andExpect(status().isBadRequest());
             }
         }
-        mockMvc.perform(delete("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
+        mockMvc.perform(delete("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
                 .andExpect(status().isOk());
         assertNull(dishes.selectById(dishId));
-        mockMvc.perform(get("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
+        mockMvc.perform(get("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
                 .andExpect(status().isNotFound());
     }
 
@@ -104,7 +104,7 @@ class CatalogFlowIT extends BaseIT {
             populated.put("imageUrl", "https://example.com/synthetic-dish.png");
             populated.put("calories", 125);
             populated.put("tags", "synthetic");
-            mockMvc.perform(put("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin))
+            mockMvc.perform(put("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(admin))
                     .contentType(JSON).content(json(populated))).andExpect(status().isOk());
             Dish before = dishes.selectById(dishId);
             assertEquals(populated.get("imageUrl"), before.getImageUrl());
@@ -117,7 +117,7 @@ class CatalogFlowIT extends BaseIT {
                      "imageUrl":null,"calories":null,"tags":null}
                     """.formatted(categoryId)
                     : json(dishBody(categoryId, "Optional fields", List.of(), "DECLARED"));
-            mockMvc.perform(put("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin))
+            mockMvc.perform(put("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(admin))
                     .contentType(JSON).content(cleared)).andExpect(status().isOk());
             // Read persisted state: the PUT response alone can hide a NOT_NULL update strategy.
             Dish after = dishes.selectById(dishId);
@@ -127,7 +127,7 @@ class CatalogFlowIT extends BaseIT {
             assertEquals(before.getName(), after.getName());
             assertEquals(before.getVirtualPrice(), after.getVirtualPrice());
             assertEquals(before.getAllergens(), after.getAllergens());
-            mockMvc.perform(get("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
+            mockMvc.perform(get("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.imageUrl").doesNotExist())
                     .andExpect(jsonPath("$.data.calories").doesNotExist())
@@ -143,20 +143,20 @@ class CatalogFlowIT extends BaseIT {
         long dishId = dish(admin, categoryId, "Rice", List.of(), "DECLARED");
         var ctx = setupFamily();
         for (String token : List.of(ctx.parentToken(), ctx.childToken())) {
-            mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(token))
+            mockMvc.perform(post("/api/mini/admin/dish").header("Authorization", bearer(token))
                     .contentType(JSON).content(json(dishBody(categoryId, "Rice", List.of(), "DECLARED"))))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(put("/api/admin/dish/{id}", dishId).header("Authorization", bearer(token))
+            mockMvc.perform(put("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(token))
                     .contentType(JSON).content(json(dishBody(categoryId, "Rice", List.of(), "DECLARED"))))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(delete("/api/admin/dish/{id}", dishId).header("Authorization", bearer(token)))
+            mockMvc.perform(delete("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(token)))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(get("/api/admin/dish").header("Authorization", bearer(token)))
+            mockMvc.perform(get("/api/mini/admin/dish").header("Authorization", bearer(token)))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(post("/api/admin/dish-category").header("Authorization", bearer(token))
+            mockMvc.perform(post("/api/mini/admin/dish-category").header("Authorization", bearer(token))
                     .contentType(JSON).content("{\"name\":\"Category\"}")).andExpect(status().isForbidden());
         }
-        mockMvc.perform(get("/api/admin/dish")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/mini/admin/dish")).andExpect(status().isUnauthorized());
         List<Map.Entry<String, Object>> invalid = List.of(
                 Map.entry("name", " "), Map.entry("name", "x".repeat(65)),
                 Map.entry("categoryId", 0), Map.entry("categoryId", Long.MAX_VALUE),
@@ -170,12 +170,12 @@ class CatalogFlowIT extends BaseIT {
         for (var entry : invalid) {
             var body = dishBody(categoryId, "Rice", List.of(), "DECLARED");
             body.put(entry.getKey(), entry.getValue());
-            mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
+            mockMvc.perform(post("/api/mini/admin/dish").header("Authorization", bearer(admin))
                     .contentType(JSON).content(json(body))).andExpect(status().isBadRequest());
         }
         for (String body : List.of("{}", "{\"name\":\" \"}", "{\"name\":\"Test\",\"sort\":-1}",
                 "{\"name\":\"Test\",\"status\":\"UNKNOWN\"}", "{\"name\":\"Test\",\"familyId\":\"1\"}")) {
-            mockMvc.perform(post("/api/admin/dish-category").header("Authorization", bearer(admin))
+            mockMvc.perform(post("/api/mini/admin/dish-category").header("Authorization", bearer(admin))
                     .contentType(JSON).content(body)).andExpect(status().isBadRequest());
         }
     }
@@ -199,18 +199,18 @@ class CatalogFlowIT extends BaseIT {
         for (String field : List.of("familyId", "ownerKey", "sourceType", "childId")) {
             var injected = new LinkedHashMap<>(body);
             injected.put(field, other.familyId().toString());
-            mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+            mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                     .contentType(JSON).content(json(injected))).andExpect(status().isBadRequest());
         }
         body.put("school", "Injected school");
-        mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(body))).andExpect(status().isBadRequest());
-        mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content(json(menuBody(List.of(first), today())))).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/menu/daily").header("Authorization", bearer(other.parentToken()))
+        mockMvc.perform(get("/api/mini/menu/daily").header("Authorization", bearer(other.parentToken()))
                 .param("sourceType", "FAMILY").param("menuDate", today().toString()).param("mealType", "LUNCH")
                 .param("childId", childUserId(ctx).toString())).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/menu/daily").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/menu/daily").header("Authorization", bearer(ctx.parentToken()))
                 .param("sourceType", "FAMILY").param("menuDate", today().toString()).param("mealType", "LUNCH"))
                 .andExpect(status().isBadRequest());
     }
@@ -228,35 +228,35 @@ class CatalogFlowIT extends BaseIT {
         offSale.setStatus("OFF_SALE");
         dishes.updateById(offSale);
 
-        mockMvc.perform(get("/api/parent/dish").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/parent/dish").header("Authorization", bearer(ctx.parentToken()))
                 .param("pageSize", "100").param("categoryId", Long.toString(categoryId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.items[0].dishId").value(Long.toString(available)));
-        mockMvc.perform(get("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .param("menuDate", today().toString()).param("mealType", "LUNCH"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.menuId").value(Long.toString(menuId)))
                 .andExpect(jsonPath("$.data.dishes[0].dishId").value(Long.toString(available)))
                 .andExpect(jsonPath("$.data.dishes[1].dishId").value(Long.toString(unavailable)));
 
-        mockMvc.perform(get("/api/parent/menu-daily").header("Authorization", bearer(other.parentToken()))
+        mockMvc.perform(get("/api/mini/parent/menu-daily").header("Authorization", bearer(other.parentToken()))
                 .param("menuDate", today().toString()).param("mealType", "LUNCH"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").doesNotExist());
         for (String token : List.of(ctx.childToken(), other.childToken())) {
-            mockMvc.perform(get("/api/parent/dish").header("Authorization", bearer(token)))
+            mockMvc.perform(get("/api/mini/parent/dish").header("Authorization", bearer(token)))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(get("/api/parent/menu-daily").header("Authorization", bearer(token))
+            mockMvc.perform(get("/api/mini/parent/menu-daily").header("Authorization", bearer(token))
                     .param("menuDate", today().toString()).param("mealType", "LUNCH"))
                     .andExpect(status().isForbidden());
         }
         String parentWithoutFamily = loginAndSelectRole("catalog-parent-" + UUID.randomUUID(), RoleEnum.PARENT);
-        mockMvc.perform(get("/api/parent/dish").header("Authorization", bearer(parentWithoutFamily)))
+        mockMvc.perform(get("/api/mini/parent/dish").header("Authorization", bearer(parentWithoutFamily)))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/parent/dish").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/parent/dish").header("Authorization", bearer(ctx.parentToken()))
                 .param("categoryId", "0")).andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .param("menuDate", today().toString()).param("mealType", "SNACK"))
                 .andExpect(status().isBadRequest());
     }
@@ -268,10 +268,10 @@ class CatalogFlowIT extends BaseIT {
         long dishId = dish(admin, category(admin), "Rice", List.of(), "DECLARED");
         var body = menuBody(List.of(dishId), today());
         body.put("school", profile(ctx).getSchool());
-        long schoolMenu = id(mockMvc.perform(post("/api/admin/menu-daily")
+        long schoolMenu = id(mockMvc.perform(post("/api/mini/admin/menu-daily")
                 .header("Authorization", bearer(admin)).contentType(JSON).content(json(body)))
                 .andExpect(status().isOk()).andReturn(), "menuId");
-        assertEquals(schoolMenu, id(mockMvc.perform(post("/api/admin/menu-daily")
+        assertEquals(schoolMenu, id(mockMvc.perform(post("/api/mini/admin/menu-daily")
                 .header("Authorization", bearer(admin)).contentType(JSON).content(json(body)))
                 .andExpect(status().isOk()).andReturn(), "menuId"));
         daily(ctx.childToken(), "SCHOOL", null).andExpect(status().isOk())
@@ -282,7 +282,7 @@ class CatalogFlowIT extends BaseIT {
         familyMenu(ctx, List.of(dishId), today());
         daily(ctx.parentToken(), "FAMILY", childUserId(ctx)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.canSubmit").value(false));
-        mockMvc.perform(post("/api/admin/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/admin/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(body))).andExpect(status().isForbidden());
     }
 
@@ -294,21 +294,21 @@ class CatalogFlowIT extends BaseIT {
         // 录入侧：校名不在发布目录 ⇒ 拒绝。校名是 SCHOOL 菜单的归属键文本，手输错字会让该校孩子看不到菜单。
         var body = menuBody(List.of(dishId), today());
         body.put("school", "未登记小学");
-        mockMvc.perform(post("/api/admin/menu-daily").header("Authorization", bearer(admin))
+        mockMvc.perform(post("/api/mini/admin/menu-daily").header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(body))).andExpect(status().isBadRequest());
         // 目录内校名可发布，且与家长档案同值时孩子能取到（展示闭环），但依旧不可下单。
         body.put("school", profile(ctx).getSchool());
-        long menuId = id(mockMvc.perform(post("/api/admin/menu-daily").header("Authorization", bearer(admin))
+        long menuId = id(mockMvc.perform(post("/api/mini/admin/menu-daily").header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "menuId");
         daily(ctx.childToken(), "SCHOOL", null).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.menuId").value(Long.toString(menuId)))
                 .andExpect(jsonPath("$.data.canSubmit").value(false));
         // 档案侧：校名不在发布目录 ⇒ 拒绝（与年级、过敏原同一白名单机制）。
         String rejected = profileJson(ctx).replace("\"school\":\"合成学校\"", "\"school\":\"未登记小学\"");
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(rejected)).andExpect(status().isBadRequest());
         // 已在目录内的校名不受影响。
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
     }
 
@@ -319,18 +319,18 @@ class CatalogFlowIT extends BaseIT {
         long declared = dish(admin, categoryId, "DeclaredOnly", List.of("MILK"), "DECLARED");
         // 未声明的菜只能存在于下架态（R5-c），仍必须能被管理员筛出来补全。
         long pending = dish(admin, categoryId, "PendingOnly", List.of(), "UNKNOWN", "OFF_SALE");
-        mockMvc.perform(get("/api/admin/dish").param("allergenStatus", "UNKNOWN").param("keyword", "PendingOnly")
+        mockMvc.perform(get("/api/mini/admin/dish").param("allergenStatus", "UNKNOWN").param("keyword", "PendingOnly")
                 .header("Authorization", bearer(admin))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.items[0].dishId").value(Long.toString(pending)))
                 .andExpect(jsonPath("$.data.items[0].allergenStatus").value("UNKNOWN"));
-        mockMvc.perform(get("/api/admin/dish").param("allergenStatus", "DECLARED").param("keyword", "PendingOnly")
+        mockMvc.perform(get("/api/mini/admin/dish").param("allergenStatus", "DECLARED").param("keyword", "PendingOnly")
                 .header("Authorization", bearer(admin))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(0));
-        mockMvc.perform(get("/api/admin/dish").param("allergenStatus", "DECLARED").param("keyword", "DeclaredOnly")
+        mockMvc.perform(get("/api/mini/admin/dish").param("allergenStatus", "DECLARED").param("keyword", "DeclaredOnly")
                 .header("Authorization", bearer(admin))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].dishId").value(Long.toString(declared)));
-        mockMvc.perform(get("/api/admin/dish").param("allergenStatus", "SAFE")
+        mockMvc.perform(get("/api/mini/admin/dish").param("allergenStatus", "SAFE")
                 .header("Authorization", bearer(admin))).andExpect(status().isBadRequest());
     }
 
@@ -339,17 +339,17 @@ class CatalogFlowIT extends BaseIT {
         String admin = adminToken();
         long categoryId = category(admin);
         // 直接上架未声明的菜 ⇒ 拒绝（否则孩子端静默点不了：safetyStatus=UNKNOWN、canSelect=false）。
-        mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
+        mockMvc.perform(post("/api/mini/admin/dish").header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(dishBody(categoryId, "Draft", List.of(), "UNKNOWN", "ON_SALE"))))
                 .andExpect(status().isBadRequest());
         long draft = dish(admin, categoryId, "Draft", List.of(), "UNKNOWN", "OFF_SALE");
         // 未声明菜品不允许改为上架
-        mockMvc.perform(put("/api/admin/dish/{id}", draft).header("Authorization", bearer(admin))
+        mockMvc.perform(put("/api/mini/admin/dish/{id}", draft).header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(dishBody(categoryId, "Draft", List.of(), "UNKNOWN", "ON_SALE"))))
                 .andExpect(status().isBadRequest());
         assertEquals("OFF_SALE", dishes.selectById(draft).getStatus());
         // 补上声明后即可上架
-        mockMvc.perform(put("/api/admin/dish/{id}", draft).header("Authorization", bearer(admin))
+        mockMvc.perform(put("/api/mini/admin/dish/{id}", draft).header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(dishBody(categoryId, "Draft", List.of(), "DECLARED", "ON_SALE"))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.allergenStatus").value("DECLARED"));
@@ -367,10 +367,10 @@ class CatalogFlowIT extends BaseIT {
         long removed = dish(admin, categoryId, "Removed", List.of(), "DECLARED");
         long offSale = dish(admin, categoryId, "Unavailable", List.of(), "DECLARED");
         long menuId = familyMenu(ctx, List.of(safe, unknown, allergic, removed, offSale), today());
-        mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(put("/api/mini/child/preferences").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content("{\"dislikes\":[\"Carrot\"],\"tastes\":[]}")).andExpect(status().isOk());
         favorite(ctx.childToken(), safe, true, menuId).andExpect(status().isOk());
-        mockMvc.perform(delete("/api/admin/dish/{id}", removed).header("Authorization", bearer(admin)))
+        mockMvc.perform(delete("/api/mini/admin/dish/{id}", removed).header("Authorization", bearer(admin)))
                 .andExpect(status().isOk());
         Dish unavailable = dishes.selectById(offSale);
         unavailable.setStatus("OFF_SALE");
@@ -460,17 +460,17 @@ class CatalogFlowIT extends BaseIT {
         for (var ids : List.of(List.of(), List.of(0L), Collections.nCopies(51, dishId))) {
             var body = menuBody(List.of(dishId), today());
             body.put("dishIds", ids);
-            mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+            mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                     .contentType(JSON).content(json(body))).andExpect(status().isBadRequest());
         }
         for (String meal : List.of("", "SNACK", "lunch")) {
             var body = menuBody(List.of(dishId), today());
             body.put("mealType", meal);
-            mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+            mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                     .contentType(JSON).content(json(body))).andExpect(status().isBadRequest());
         }
         long before = menus.selectCount(new QueryWrapper<MenuDaily>().eq("family_id", ctx.familyId()));
-        mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(menuBody(List.of(Long.MAX_VALUE), today().plusDays(1)))))
                 .andExpect(status().isNotFound());
         assertEquals(before, menus.selectCount(new QueryWrapper<MenuDaily>().eq("family_id", ctx.familyId())));
@@ -492,7 +492,7 @@ class CatalogFlowIT extends BaseIT {
         // 家长不能标记（CHILD 专属）
         favorite(ctx.parentToken(), dishId, true, menuId).andExpect(status().isForbidden());
         // 他人 childId 被拒（未知字段）
-        mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(other.childToken()))
+        mockMvc.perform(post("/api/mini/menu/mark-favorite").header("Authorization", bearer(other.childToken()))
                 .contentType(JSON).content(json(Map.of("dishId", dishId, "favorite", true,
                         "menuId", menuId, "menuDate", today().toString(), "mealType", "LUNCH",
                         "childId", childUserId(ctx))))).andExpect(status().isBadRequest());
@@ -515,23 +515,23 @@ class CatalogFlowIT extends BaseIT {
         for (String body : List.of("{}", "{\"dishId\":1}", "{\"dishId\":1,\"favorite\":true}",
                 "{\"dishId\":1,\"favorite\":null,\"menuId\":1,\"menuDate\":\"" + today() + "\",\"mealType\":\"LUNCH\"}",
                 "{\"dishId\":1.5,\"favorite\":true,\"menuId\":1,\"menuDate\":\"" + today() + "\",\"mealType\":\"LUNCH\"}")) {
-            mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
+            mockMvc.perform(post("/api/mini/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
                     .contentType(JSON).content(body)).andExpect(status().isBadRequest());
         }
         // 缺 dishType → 400
-        mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(post("/api/mini/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content(json(Map.of("dishId", dishId, "favorite", true,
                         "menuId", menuId, "menuDate", today().toString(), "mealType", "LUNCH"))))
                 .andExpect(status().isBadRequest());
         // 菜品下架后标记 → 404
-        mockMvc.perform(delete("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
+        mockMvc.perform(delete("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
                 .andExpect(status().isOk());
         favorite(ctx.childToken(), dishId, true, menuId).andExpect(status().isNotFound());
     }
 
     private ResultActions childWantEat(String token, Long childId, LocalDate menuDate, String mealType)
             throws Exception {
-        var request = get("/api/child/want-eat").header("Authorization", bearer(token))
+        var request = get("/api/mini/child/want-eat").header("Authorization", bearer(token))
                 .param("menuDate", menuDate.toString()).param("mealType", mealType);
         if (childId != null) {
             request.param("childId", childId.toString());
@@ -551,7 +551,7 @@ class CatalogFlowIT extends BaseIT {
         daily(ctx.childToken(), "FAMILY", null).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.dishes[0].isFavorite").value(true));
         // 为验证「按餐次隔离」，另建一份同菜的 DINNER 菜单
-        mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(Map.of("menuDate", today().toString(), "mealType", "DINNER",
                         "dishIds", List.of(Map.of("type", "PRESET", "id", dishId))))))
                 .andExpect(status().isOk());
@@ -625,7 +625,7 @@ class CatalogFlowIT extends BaseIT {
 
     private long familyDish(FamilyContext ctx, long categoryId, String name, String allergenStatus)
             throws Exception {
-        return id(mockMvc.perform(post("/api/parent/family-dish").header("Authorization", bearer(ctx.parentToken()))
+        return id(mockMvc.perform(post("/api/mini/parent/family-dish").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(Map.of("categoryId", Long.toString(categoryId), "name", name,
                         "virtualPrice", "12.00", "allergens", List.of(), "allergenStatus", allergenStatus,
                         "spiceLevel", 0)))).andExpect(status().isOk()).andReturn(), "dishId");
@@ -650,7 +650,7 @@ class CatalogFlowIT extends BaseIT {
                 .andExpect(jsonPath("$.code").value("E-010"));
         daily(ctx.childToken(), "FAMILY", null).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("E-010"));
-        mockMvc.perform(get("/api/child/preferences").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/child/preferences").header("Authorization", bearer(ctx.parentToken()))
                 .param("childId", childUserId(ctx).toString())).andExpect(status().isConflict());
         grant(ctx);
         favorite(ctx.childToken(), dishId, false, menuId).andExpect(status().isOk());
@@ -666,7 +666,7 @@ class CatalogFlowIT extends BaseIT {
         String reference = policy.getCatalogReference();
         try {
             policy.setCatalogReference("");
-            mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
+            mockMvc.perform(post("/api/mini/admin/dish").header("Authorization", bearer(admin))
                     .contentType(JSON).content(json(dishBody(categoryId, "Rice", List.of(), "DECLARED"))))
                     .andExpect(status().isBadRequest());
             daily(ctx.childToken(), "FAMILY", null).andExpect(status().isOk())
@@ -732,7 +732,7 @@ class CatalogFlowIT extends BaseIT {
             await(validated);
             Future<?> writer = pool.submit(() -> {
                 updating.countDown();
-                return mockMvc.perform(delete("/api/admin/dish/{id}", dishId)
+                return mockMvc.perform(delete("/api/mini/admin/dish/{id}", dishId)
                         .header("Authorization", bearer(admin))).andExpect(status().isOk());
             });
             try {
@@ -795,7 +795,7 @@ class CatalogFlowIT extends BaseIT {
     }
 
     private long category(String admin) throws Exception {
-        return id(mockMvc.perform(post("/api/admin/dish-category").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish-category").header("Authorization", bearer(admin))
                 .contentType(JSON).content("{\"name\":\"Synthetic category\",\"sort\":0,\"status\":\"ENABLED\"}"))
                 .andExpect(status().isOk()).andReturn(), "categoryId");
     }
@@ -807,7 +807,7 @@ class CatalogFlowIT extends BaseIT {
 
     private long dish(String admin, long categoryId, String name, List<String> allergens, String allergenStatus,
             String status) throws Exception {
-        return id(mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish").header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(dishBody(categoryId, name, allergens, allergenStatus, status))))
                 .andExpect(status().isOk()).andReturn(), "dishId");
     }
@@ -853,14 +853,14 @@ class CatalogFlowIT extends BaseIT {
     }
 
     private long familyMenu(FamilyContext ctx, List<Long> dishIds, LocalDate date) throws Exception {
-        return id(mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        return id(mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(menuBody(dishIds, date))))
                 .andExpect(status().isOk()).andReturn(), "menuId");
     }
 
     private long familyMenuWithRefs(FamilyContext ctx, List<Map<String, Object>> refs, LocalDate date) throws Exception {
         var body = Map.of("menuDate", date.toString(), "mealType", "LUNCH", "dishIds", refs);
-        return id(mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        return id(mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "menuId");
     }
 
@@ -870,7 +870,7 @@ class CatalogFlowIT extends BaseIT {
 
     private ResultActions daily(String token, String source, Long childId, String mealType, LocalDate date)
             throws Exception {
-        var request = get("/api/menu/daily").header("Authorization", bearer(token))
+        var request = get("/api/mini/menu/daily").header("Authorization", bearer(token))
                 .param("sourceType", source).param("menuDate", date.toString()).param("mealType", mealType);
         if (childId != null) {
             request.param("childId", childId.toString());
@@ -884,7 +884,7 @@ class CatalogFlowIT extends BaseIT {
 
     private ResultActions favorite(String token, long dishId, boolean favorite, long menuId, String dishType)
             throws Exception {
-        return mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(token))
+        return mockMvc.perform(post("/api/mini/menu/mark-favorite").header("Authorization", bearer(token))
                 .contentType(JSON).content(json(Map.of("dishId", Long.toString(dishId), "favorite", favorite,
                         "menuId", Long.toString(menuId), "menuDate", today().toString(), "mealType", "LUNCH",
                         "dishType", dishType))));
@@ -899,7 +899,7 @@ class CatalogFlowIT extends BaseIT {
     }
 
     private void saveProfile(FamilyContext ctx) throws Exception {
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
     }
 

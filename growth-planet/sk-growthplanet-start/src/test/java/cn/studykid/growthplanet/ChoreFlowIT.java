@@ -44,7 +44,7 @@ class ChoreFlowIT extends BaseIT {
         assertTrue(createdTaskId != null && createdTaskId > 0, "应返回任务 ID");
 
         // 儿童认领
-        MvcResult claim = mockMvc.perform(post("/api/chore/claim")
+        MvcResult claim = mockMvc.perform(post("/api/mini/chore/claim")
                         .header("Authorization", "Bearer " + ctx.childToken())
                         .contentType(JSON)
                         .content("{\"taskId\":" + createdTaskId + "}"))
@@ -53,7 +53,7 @@ class ChoreFlowIT extends BaseIT {
         assertEquals("CLAIMED", claimResp.status());
 
         // 儿童提交
-        MvcResult submit = mockMvc.perform(post("/api/chore/submit")
+        MvcResult submit = mockMvc.perform(post("/api/mini/chore/submit")
                         .header("Authorization", "Bearer " + ctx.childToken())
                         .contentType(JSON)
                         .content("{\"instanceId\":" + claimResp.instanceId() + "}"))
@@ -63,7 +63,7 @@ class ChoreFlowIT extends BaseIT {
         assertEquals(1, submitResp.version());
 
         // 家长确认（expectedVersion = 提交后的版本 1）
-        MvcResult confirm = mockMvc.perform(post("/api/chore/confirm")
+        MvcResult confirm = mockMvc.perform(post("/api/mini/chore/confirm")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content("{\"id\":" + submitResp.instanceId() + ",\"expectedVersion\":1}"))
@@ -91,20 +91,20 @@ class ChoreFlowIT extends BaseIT {
         FamilyContext ctx = boundFamily();
         Long createdTaskId = createTask(ctx);
 
-        MvcResult claim = mockMvc.perform(post("/api/chore/claim")
+        MvcResult claim = mockMvc.perform(post("/api/mini/chore/claim")
                         .header("Authorization", "Bearer " + ctx.childToken())
                         .contentType(JSON)
                         .content("{\"taskId\":" + createdTaskId + "}"))
                 .andExpect(status().isOk()).andReturn();
         ChoreInstanceResp claimResp = dataOf(claim, ChoreInstanceResp.class);
 
-        mockMvc.perform(post("/api/chore/submit")
+        mockMvc.perform(post("/api/mini/chore/submit")
                         .header("Authorization", "Bearer " + ctx.childToken())
                         .contentType(JSON)
                         .content("{\"instanceId\":" + claimResp.instanceId() + "}"))
                 .andExpect(status().isOk());
 
-        MvcResult reject = mockMvc.perform(post("/api/chore/reject")
+        MvcResult reject = mockMvc.perform(post("/api/mini/chore/reject")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content("{\"id\":" + claimResp.instanceId() + ",\"expectedVersion\":1,\"reason\":\"未扫干净\"}"))
@@ -119,28 +119,28 @@ class ChoreFlowIT extends BaseIT {
         FamilyContext ctx = boundFamily();
         Long createdTaskId = createTask(ctx);
 
-        MvcResult claim = mockMvc.perform(post("/api/chore/claim")
+        MvcResult claim = mockMvc.perform(post("/api/mini/chore/claim")
                         .header("Authorization", "Bearer " + ctx.childToken())
                         .contentType(JSON)
                         .content("{\"taskId\":" + createdTaskId + "}"))
                 .andExpect(status().isOk()).andReturn();
         ChoreInstanceResp claimResp = dataOf(claim, ChoreInstanceResp.class);
 
-        mockMvc.perform(post("/api/chore/submit")
+        mockMvc.perform(post("/api/mini/chore/submit")
                         .header("Authorization", "Bearer " + ctx.childToken())
                         .contentType(JSON)
                         .content("{\"instanceId\":" + claimResp.instanceId() + "}"))
                 .andExpect(status().isOk());
 
         // 第一次确认成功
-        mockMvc.perform(post("/api/chore/confirm")
+        mockMvc.perform(post("/api/mini/chore/confirm")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content("{\"id\":" + claimResp.instanceId() + ",\"expectedVersion\":1}"))
                 .andExpect(status().isOk());
 
         // 第二次确认（仍用旧版本）应冲突
-        mockMvc.perform(post("/api/chore/confirm")
+        mockMvc.perform(post("/api/mini/chore/confirm")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content("{\"id\":" + claimResp.instanceId() + ",\"expectedVersion\":1}"))
@@ -149,7 +149,7 @@ class ChoreFlowIT extends BaseIT {
 
     /** 家长创建一个一次性家务任务，返回任务编号。 */
     private Long createTask(FamilyContext ctx) throws Exception {
-        mockMvc.perform(post("/api/chore/task")
+        mockMvc.perform(post("/api/mini/chore/task")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content("{\"title\":\"扫地\",\"description\":\"客厅扫地\",\"icon\":\"🧹\","
@@ -159,7 +159,7 @@ class ChoreFlowIT extends BaseIT {
     }
 
     private Long listTaskId(FamilyContext ctx) throws Exception {
-        MvcResult list = mockMvc.perform(get("/api/chore/tasks")
+        MvcResult list = mockMvc.perform(get("/api/mini/chore/tasks")
                         .header("Authorization", "Bearer " + ctx.parentToken()))
                 .andExpect(status().isOk()).andReturn();
         JsonNode root = objectMapper.readTree(list.getResponse().getContentAsString());
@@ -169,7 +169,7 @@ class ChoreFlowIT extends BaseIT {
     }
 
     private String balanceOf(FamilyContext ctx, Long childId) throws Exception {
-        MvcResult bal = mockMvc.perform(get("/api/wallet/balance")
+        MvcResult bal = mockMvc.perform(get("/api/mini/wallet/balance")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .param("childId", String.valueOf(childId)))
                 .andExpect(status().isOk()).andReturn();
@@ -178,7 +178,7 @@ class ChoreFlowIT extends BaseIT {
     }
 
     private List<ChildMedalView> awardsOf(FamilyContext ctx, Long childId) throws Exception {
-        MvcResult aw = mockMvc.perform(get("/api/medal/awards")
+        MvcResult aw = mockMvc.perform(get("/api/mini/medal/awards")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .param("childId", String.valueOf(childId)))
                 .andExpect(status().isOk()).andReturn();

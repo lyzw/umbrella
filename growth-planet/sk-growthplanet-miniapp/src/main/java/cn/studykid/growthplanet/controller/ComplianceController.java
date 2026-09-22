@@ -33,7 +33,7 @@ import java.util.Map;
  * revoke 成功返回 HTTP 200；撤回后的授权写入返回 E-010 / HTTP 409。
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/mini")
 public class ComplianceController {
 
     private final ComplianceService complianceService;

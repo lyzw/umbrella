@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** 家长打卡项配置（F-033）。familyId 后端派生；所有操作过同意门禁。 */
 @RestController
-@RequestMapping("/api/parent/check-item")
+@RequestMapping("/api/mini/parent/check-item")
 public class CheckItemController {
     private final CheckService service;
 

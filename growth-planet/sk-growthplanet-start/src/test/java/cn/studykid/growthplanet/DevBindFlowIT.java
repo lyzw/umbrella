@@ -21,7 +21,7 @@ class DevBindFlowIT extends BaseIT {
     void quickBindParentBindsChildAndRefreshesToken() throws Exception {
         String childToken = loginAndSelectRole("dev_child_1", RoleEnum.CHILD);
 
-        MvcResult bind = mockMvc.perform(post("/api/dev/quick-bind-parent")
+        MvcResult bind = mockMvc.perform(post("/api/mini/dev/quick-bind-parent")
                         .header("Authorization", "Bearer " + childToken)
                         .contentType(JSON)
                         .content("{\"parentAccount\":\"dev_parent_1\"}"))
@@ -33,7 +33,7 @@ class DevBindFlowIT extends BaseIT {
         assertNotNull(resp.getToken());
 
         // 返回的刷新 token 应能以儿童身份查询到绑定状态为 BOUND
-        MvcResult binding = mockMvc.perform(get("/api/family/binding")
+        MvcResult binding = mockMvc.perform(get("/api/mini/family/binding")
                         .header("Authorization", "Bearer " + resp.getToken()))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -45,7 +45,7 @@ class DevBindFlowIT extends BaseIT {
     @Test
     void quickBindParentRequiresChildRole_403() throws Exception {
         String parentToken = loginAndSelectRole("dev_parent_only", RoleEnum.PARENT);
-        mockMvc.perform(post("/api/dev/quick-bind-parent")
+        mockMvc.perform(post("/api/mini/dev/quick-bind-parent")
                         .header("Authorization", "Bearer " + parentToken)
                         .contentType(JSON)
                         .content("{\"parentAccount\":\"dev_parent_2\"}"))
@@ -55,7 +55,7 @@ class DevBindFlowIT extends BaseIT {
     @Test
     void quickBindParentRejectsBadAccount_400() throws Exception {
         String childToken = loginAndSelectRole("dev_child_bad", RoleEnum.CHILD);
-        mockMvc.perform(post("/api/dev/quick-bind-parent")
+        mockMvc.perform(post("/api/mini/dev/quick-bind-parent")
                         .header("Authorization", "Bearer " + childToken)
                         .contentType(JSON)
                         .content("{\"parentAccount\":\"bad account!\"}"))

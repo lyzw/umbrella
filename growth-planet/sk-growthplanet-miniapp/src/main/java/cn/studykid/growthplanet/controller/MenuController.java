@@ -15,7 +15,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/mini")
 public class MenuController {
     private final CatalogService catalog;
 

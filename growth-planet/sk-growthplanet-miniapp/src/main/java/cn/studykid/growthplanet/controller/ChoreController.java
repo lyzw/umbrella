@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/chore")
+@RequestMapping("/api/mini/chore")
 public class ChoreController {
     private final ChoreService service;
 

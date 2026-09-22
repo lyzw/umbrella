@@ -61,7 +61,7 @@ class TransactionRegressionIT extends BaseIT {
         var ctx = setupFamily();
         grant(ctx);
         approve(ctx);
-        mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
         AuditService auditTarget = AopTestUtils.getUltimateTargetObject(auditService);
         doAnswer(invocation -> {
@@ -70,7 +70,7 @@ class TransactionRegressionIT extends BaseIT {
         }).when(auditTarget).record(eq("PREFERENCES"), anyLong(), anyLong(), eq("CHILD"),
                 anyLong(), isNull(), anyString());
         try {
-            mockMvc.perform(put("/api/child/preferences").header("Authorization", "Bearer " + ctx.childToken())
+            mockMvc.perform(put("/api/mini/child/preferences").header("Authorization", "Bearer " + ctx.childToken())
                     .contentType(JSON).content("{\"dislikes\":[],\"tastes\":[]}"))
                     .andExpect(status().isInternalServerError());
         } finally {
@@ -94,7 +94,7 @@ class TransactionRegressionIT extends BaseIT {
             throw new IllegalStateException("injected notice failure");
         }).when(noticeTarget).recordBinding(any(FamilyMember.class), anyLong());
         try {
-            mockMvc.perform(post("/api/family/bind-approve")
+            mockMvc.perform(post("/api/mini/family/bind-approve")
                     .header("Authorization", "Bearer " + ctx.parentToken()).contentType(JSON)
                     .content("{\"applyId\":\"" + ctx.applyId() + "\",\"approve\":true}"))
                     .andExpect(status().isInternalServerError());
@@ -119,7 +119,7 @@ class TransactionRegressionIT extends BaseIT {
             for (int i = 0; i < 8; i++) {
                 futures.add(pool.submit(() -> {
                     assertTrue(start.await(10, TimeUnit.SECONDS));
-                    return mockMvc.perform(post("/api/family/bind-approve")
+                    return mockMvc.perform(post("/api/mini/family/bind-approve")
                             .header("Authorization", "Bearer " + ctx.parentToken()).contentType(JSON)
                             .content("{\"applyId\":\"" + ctx.applyId() + "\",\"approve\":true}"))
                             .andReturn().getResponse().getStatus();
@@ -160,7 +160,7 @@ class TransactionRegressionIT extends BaseIT {
         approve(ctx);
         String preferenceJson = "{\"dislikes\":[\"芹菜\"],\"tastes\":[]}";
         if (preferences) {
-            mockMvc.perform(post("/api/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
+            mockMvc.perform(post("/api/mini/child/profile").header("Authorization", "Bearer " + ctx.parentToken())
                     .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
         }
         String writerToken = preferences ? ctx.childToken() : ctx.parentToken();
@@ -196,8 +196,8 @@ class TransactionRegressionIT extends BaseIT {
                 Future<Integer> second = pool.submit(() -> {
                     secondStarted.countDown();
                     var request = revokeFirst
-                            ? preferences ? put("/api/child/preferences") : post("/api/child/profile")
-                            : post("/api/compliance/consent/revoke");
+                            ? preferences ? put("/api/mini/child/preferences") : post("/api/mini/child/profile")
+                            : post("/api/mini/compliance/consent/revoke");
                     String body = revokeFirst ? preferences ? preferenceJson : profileJson(ctx)
                             : objectMapper.writeValueAsString(revokeRequest(ctx));
                     return mockMvc.perform(request.header("Authorization", "Bearer "
@@ -220,7 +220,7 @@ class TransactionRegressionIT extends BaseIT {
             assertEquals(java.util.List.of(revokeFirst ? "胡萝卜" : "芹菜"), profile.getDislikes());
             assertEquals(java.util.List.of("PEANUT"), profile.getAllergies());
         }
-        var request = preferences ? put("/api/child/preferences") : post("/api/child/profile");
+        var request = preferences ? put("/api/mini/child/preferences") : post("/api/mini/child/profile");
         mockMvc.perform(request.header("Authorization", "Bearer " + writerToken)
                 .contentType(JSON).content(preferences ? preferenceJson : profileJson(ctx)))
                 .andExpect(status().isConflict());

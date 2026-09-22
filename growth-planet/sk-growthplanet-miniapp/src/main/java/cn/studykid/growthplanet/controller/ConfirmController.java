@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Positive;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/mini")
 public class ConfirmController {
     private final ConfirmService service;
 

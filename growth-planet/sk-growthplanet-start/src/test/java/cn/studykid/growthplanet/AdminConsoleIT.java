@@ -35,7 +35,7 @@ class AdminConsoleIT extends BaseIT {
     }
 
     private String adminLogin(String username, String password) throws Exception {
-        var result = mockMvc.perform(post("/api/console/auth/login")
+        var result = mockMvc.perform(post("/api/admin/auth/login")
                         .contentType(JSON)
                         .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
                 .andExpect(status().isOk())
@@ -46,7 +46,7 @@ class AdminConsoleIT extends BaseIT {
     @Test
     @DisplayName("首个超级管理员可登录并返回角色与权限点")
     void bootstrapSuperAdminCanLogin() throws Exception {
-        var result = mockMvc.perform(post("/api/console/auth/login")
+        var result = mockMvc.perform(post("/api/admin/auth/login")
                         .contentType(JSON)
                         .content("{\"username\":\"" + BOOTSTRAP_USERNAME + "\",\"password\":\""
                                 + BOOTSTRAP_PASSWORD + "\"}"))
@@ -64,7 +64,7 @@ class AdminConsoleIT extends BaseIT {
     @Test
     @DisplayName("密码错误返回 401")
     void wrongPasswordRejected() throws Exception {
-        mockMvc.perform(post("/api/console/auth/login")
+        mockMvc.perform(post("/api/admin/auth/login")
                         .contentType(JSON)
                         .content("{\"username\":\"" + BOOTSTRAP_USERNAME + "\",\"password\":\"wrong\"}"))
                 .andExpect(status().isUnauthorized())
@@ -74,7 +74,7 @@ class AdminConsoleIT extends BaseIT {
     @Test
     @DisplayName("缺少 admin token 访问后台接口返回 401")
     void consoleWithoutTokenRejected() throws Exception {
-        mockMvc.perform(get("/api/console/auth/me"))
+        mockMvc.perform(get("/api/admin/auth/me"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("E-001"));
     }
@@ -83,7 +83,7 @@ class AdminConsoleIT extends BaseIT {
     @DisplayName("C 端 token 无法访问后台接口（账号/密钥体系隔离）")
     void cEndTokenCannotAccessConsole() throws Exception {
         String cEndToken = loginAndSelectRole("c_admin_" + java.util.UUID.randomUUID(), RoleEnum.PARENT);
-        mockMvc.perform(get("/api/console/auth/me")
+        mockMvc.perform(get("/api/admin/auth/me")
                         .header("Authorization", "Bearer " + cEndToken))
                 .andExpect(status().isUnauthorized());
     }
@@ -92,7 +92,7 @@ class AdminConsoleIT extends BaseIT {
     @DisplayName("/me 回显当前管理员身份")
     void meReturnsIdentity() throws Exception {
         String token = adminLogin();
-        var result = mockMvc.perform(get("/api/console/auth/me")
+        var result = mockMvc.perform(get("/api/admin/auth/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.username").value(BOOTSTRAP_USERNAME))
@@ -106,10 +106,10 @@ class AdminConsoleIT extends BaseIT {
     @DisplayName("登出后旧 token 立即失效（token_version 递增）")
     void logoutInvalidatesToken() throws Exception {
         String token = adminLogin();
-        mockMvc.perform(post("/api/console/auth/logout")
+        mockMvc.perform(post("/api/admin/auth/logout")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/console/auth/me")
+        mockMvc.perform(get("/api/admin/auth/me")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
     }
@@ -118,7 +118,7 @@ class AdminConsoleIT extends BaseIT {
     @DisplayName("工作台返回概览 KPI 与待办入口")
     void workbenchReturnsKpis() throws Exception {
         String token = adminLogin();
-        var result = mockMvc.perform(get("/api/console/workbench")
+        var result = mockMvc.perform(get("/api/admin/workbench")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.kpis").exists())
@@ -133,7 +133,7 @@ class AdminConsoleIT extends BaseIT {
     @DisplayName("账号列表包含首个超级管理员")
     void listAccountsContainsBootstrap() throws Exception {
         String token = adminLogin();
-        mockMvc.perform(get("/api/console/accounts")
+        mockMvc.perform(get("/api/admin/accounts")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").isNumber())
@@ -144,7 +144,7 @@ class AdminConsoleIT extends BaseIT {
     @DisplayName("角色列表包含 6 个后台角色")
     void listRolesHasSix() throws Exception {
         String token = adminLogin();
-        mockMvc.perform(get("/api/console/roles")
+        mockMvc.perform(get("/api/admin/roles")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(6));
@@ -154,7 +154,7 @@ class AdminConsoleIT extends BaseIT {
     @DisplayName("权限矩阵：OP 在菜品库具备 view 但不具备角色权限")
     void permissionMatrixForOp() throws Exception {
         String token = adminLogin();
-        mockMvc.perform(get("/api/console/roles/permissions").param("roleCode", "OP")
+        mockMvc.perform(get("/api/admin/roles/permissions").param("roleCode", "OP")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(
@@ -173,7 +173,7 @@ class AdminConsoleIT extends BaseIT {
         String opUsername = "op_" + java.util.UUID.randomUUID().toString().substring(0, 8);
         String opPassword = "op123456";
 
-        mockMvc.perform(post("/api/console/accounts")
+        mockMvc.perform(post("/api/admin/accounts")
                         .header("Authorization", "Bearer " + saToken)
                         .contentType(JSON)
                         .content("{\"username\":\"" + opUsername + "\",\"name\":\"运营演示\","
@@ -185,18 +185,18 @@ class AdminConsoleIT extends BaseIT {
         String opToken = adminLogin(opUsername, opPassword);
 
         // OP 有 工作台首页:view
-        mockMvc.perform(get("/api/console/workbench")
+        mockMvc.perform(get("/api/admin/workbench")
                         .header("Authorization", "Bearer " + opToken))
                 .andExpect(status().isOk());
 
         // OP 无 后台账号:view → 403
-        mockMvc.perform(get("/api/console/accounts")
+        mockMvc.perform(get("/api/admin/accounts")
                         .header("Authorization", "Bearer " + opToken))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("E-009"));
 
         // OP 无 角色权限:view → 403
-        mockMvc.perform(get("/api/console/roles")
+        mockMvc.perform(get("/api/admin/roles")
                         .header("Authorization", "Bearer " + opToken))
                 .andExpect(status().isForbidden());
     }
@@ -208,7 +208,7 @@ class AdminConsoleIT extends BaseIT {
         String username = "dc_" + java.util.UUID.randomUUID().toString().substring(0, 8);
         String password = "dc123456";
 
-        var created = mockMvc.perform(post("/api/console/accounts")
+        var created = mockMvc.perform(post("/api/admin/accounts")
                         .header("Authorization", "Bearer " + saToken)
                         .contentType(JSON)
                         .content("{\"username\":\"" + username + "\",\"name\":\"客服演示\","
@@ -218,16 +218,16 @@ class AdminConsoleIT extends BaseIT {
         Long id = dataOf(created, cn.studykid.growthplanet.dto.response.AdminAccountResp.class).getId();
 
         String dcToken = adminLogin(username, password);
-        mockMvc.perform(get("/api/console/auth/me")
+        mockMvc.perform(get("/api/admin/auth/me")
                         .header("Authorization", "Bearer " + dcToken))
                 .andExpect(status().isOk());
 
-        mockMvc.perform(put("/api/console/accounts/" + id + "/status").param("status", "DISABLED")
+        mockMvc.perform(put("/api/admin/accounts/" + id + "/status").param("status", "DISABLED")
                         .header("Authorization", "Bearer " + saToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("DISABLED"));
 
-        mockMvc.perform(get("/api/console/auth/me")
+        mockMvc.perform(get("/api/admin/auth/me")
                         .header("Authorization", "Bearer " + dcToken))
                 .andExpect(status().isUnauthorized());
     }

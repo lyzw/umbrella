@@ -26,7 +26,7 @@ import java.util.List;
  * 全部需 admin token；细粒度权限在 Service 层以 {@code AdminUserContext.requirePerm} 校验。
  */
 @RestController
-@RequestMapping("/api/console")
+@RequestMapping("/api/admin")
 public class AdminAccountController {
 
     private final AdminAccountService service;

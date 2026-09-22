@@ -41,7 +41,7 @@ class WalletFlowIT extends BaseIT {
         grantMoney(ctx, grantJson(ctx, "51.00"), "g1", 409);
         assertEquals("50.00", balance(ctx).get("balance").asText());
         assertEquals(1L, logs.selectCount(new QueryWrapper<AllowanceLog>().eq("child_id", childUserId(ctx))));
-        var history = mockMvc.perform(get("/api/wallet/allowance-log")
+        var history = mockMvc.perform(get("/api/mini/wallet/allowance-log")
                 .header("Authorization", "Bearer " + ctx.childToken()).param("childId", childUserId(ctx).toString()))
                 .andExpect(status().isOk()).andReturn();
         JsonNode item = objectMapper.readTree(history.getResponse().getContentAsString())
@@ -59,10 +59,10 @@ class WalletFlowIT extends BaseIT {
         }
         grantMoney(ctx, grantJson(ctx, "1.00"), null, 400);
         String anotherParent = setupFamily().parentToken();
-        mockMvc.perform(post("/api/wallet/grant").header("Authorization", "Bearer " + anotherParent)
+        mockMvc.perform(post("/api/mini/wallet/grant").header("Authorization", "Bearer " + anotherParent)
                 .header("Idempotency-Key", "bad-scope").contentType(JSON).content(grantJson(ctx, "1.00")))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/wallet/grant").header("Authorization", "Bearer " + ctx.childToken())
+        mockMvc.perform(post("/api/mini/wallet/grant").header("Authorization", "Bearer " + ctx.childToken())
                 .header("Idempotency-Key", "bad-role").contentType(JSON).content(grantJson(ctx, "1.00")))
                 .andExpect(status().isForbidden());
         revoke(ctx);
@@ -78,17 +78,17 @@ class WalletFlowIT extends BaseIT {
         assertEquals("150.00", rule.get("weeklyLimit").asText());
         String body = "{\"childId\":\"" + childUserId(ctx)
                 + "\",\"singleLimit\":\"10.00\",\"dailyLimit\":\"20.00\",\"weeklyLimit\":\"100.00\",\"expectedVersion\":0}";
-        mockMvc.perform(put("/api/wallet/allowance-rule").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(put("/api/mini/wallet/allowance-rule").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content(body)).andExpect(status().isOk());
-        mockMvc.perform(put("/api/wallet/allowance-rule").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(put("/api/mini/wallet/allowance-rule").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content(body)).andExpect(status().isConflict());
-        mockMvc.perform(put("/api/wallet/allowance-rule").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(put("/api/mini/wallet/allowance-rule").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content(body.replace("\"10.00\"", "\"21.00\"")))
                 .andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/wallet/allowance-log").header("Authorization", "Bearer " + ctx.childToken())
+        mockMvc.perform(get("/api/mini/wallet/allowance-log").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString()).param("startDate", "2026-01-01")
                 .param("endDate", "2026-02-01")).andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/wallet/allowance-log").header("Authorization", "Bearer " + ctx.childToken())
+        mockMvc.perform(get("/api/mini/wallet/allowance-log").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString()).param("pageSize", "101"))
                 .andExpect(status().isBadRequest());
     }
@@ -118,7 +118,7 @@ class WalletFlowIT extends BaseIT {
         try (var executor = Executors.newFixedThreadPool(8)) {
             var results = new ArrayList<Future<Integer>>();
             for (int i = 0; i < 16; i++) {
-                results.add(executor.submit(() -> mockMvc.perform(post("/api/wallet/grant")
+                results.add(executor.submit(() -> mockMvc.perform(post("/api/mini/wallet/grant")
                         .header("Authorization", "Bearer " + ctx.parentToken()).header("Idempotency-Key", "race")
                         .contentType(JSON).content(grantJson(ctx, "50.00"))).andReturn().getResponse().getStatus()));
             }
@@ -160,13 +160,13 @@ class WalletFlowIT extends BaseIT {
     }
 
     private JsonNode balance(FamilyContext ctx) throws Exception {
-        var response = mockMvc.perform(get("/api/wallet/balance").header("Authorization", "Bearer " + ctx.childToken())
+        var response = mockMvc.perform(get("/api/mini/wallet/balance").header("Authorization", "Bearer " + ctx.childToken())
                 .param("childId", childUserId(ctx).toString())).andExpect(status().isOk()).andReturn();
         return objectMapper.readTree(response.getResponse().getContentAsString()).get("data");
     }
 
     private JsonNode rule(FamilyContext ctx) throws Exception {
-        var response = mockMvc.perform(get("/api/wallet/allowance-rule")
+        var response = mockMvc.perform(get("/api/mini/wallet/allowance-rule")
                 .header("Authorization", "Bearer " + ctx.parentToken()).param("childId", childUserId(ctx).toString()))
                 .andExpect(status().isOk()).andReturn();
         return objectMapper.readTree(response.getResponse().getContentAsString()).get("data");
@@ -177,7 +177,7 @@ class WalletFlowIT extends BaseIT {
     }
 
     private JsonNode grantMoney(FamilyContext ctx, String body, String key, int statusCode) throws Exception {
-        var request = post("/api/wallet/grant").header("Authorization", "Bearer " + ctx.parentToken())
+        var request = post("/api/mini/wallet/grant").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content(body);
         if (key != null) request.header("Idempotency-Key", key);
         var response = mockMvc.perform(request).andExpect(status().is(statusCode)).andReturn();

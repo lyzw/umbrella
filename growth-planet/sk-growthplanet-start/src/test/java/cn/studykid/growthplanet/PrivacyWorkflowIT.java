@@ -36,24 +36,24 @@ class PrivacyWorkflowIT extends BaseIT {
     @Test
     void exportRequiresKeyAndRejectsOtherAccountAndChangedPayload() throws Exception {
         var ctx = boundFamily();
-        mockMvc.perform(post("/api/compliance/data-export").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/compliance/data-export").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(exportJson(ctx))).andExpect(status().isBadRequest());
         for (String key : new String[]{"bad key", "a".repeat(129)}) {
-            mockMvc.perform(post("/api/compliance/data-export").header("Authorization", bearer(ctx.parentToken()))
+            mockMvc.perform(post("/api/mini/compliance/data-export").header("Authorization", bearer(ctx.parentToken()))
                     .header("Idempotency-Key", key).contentType(JSON).content(exportJson(ctx)))
                     .andExpect(status().isBadRequest());
         }
         DataExportResp first = export(ctx, "same_key");
         assertEquals(first.getTaskId(), export(ctx, "same_key").getTaskId());
         var other = boundFamily();
-        mockMvc.perform(get("/api/compliance/requests/" + first.getTaskId())
+        mockMvc.perform(get("/api/mini/compliance/requests/" + first.getTaskId())
                 .header("Authorization", bearer(other.parentToken()))).andExpect(status().isNotFound());
-        mockMvc.perform(get("/api/compliance/requests/" + first.getTaskId() + "/download")
+        mockMvc.perform(get("/api/mini/compliance/requests/" + first.getTaskId() + "/download")
                 .header("Authorization", bearer(other.parentToken()))).andExpect(status().isNotFound());
-        mockMvc.perform(post("/api/compliance/data-export").header("Authorization", bearer(other.parentToken()))
+        mockMvc.perform(post("/api/mini/compliance/data-export").header("Authorization", bearer(other.parentToken()))
                 .header("Idempotency-Key", "foreign").contentType(JSON).content(exportJson(ctx)))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(post("/api/compliance/data-delete").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/compliance/data-delete").header("Authorization", bearer(ctx.parentToken()))
                 .header("Idempotency-Key", "same_key").contentType(JSON).content(deleteJson(ctx, "code", true)))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("E-012"));
     }
@@ -61,7 +61,7 @@ class PrivacyWorkflowIT extends BaseIT {
     @Test
     void generatedDownloadIsRequesterOnlyExpiresAndStoresNoPlaintextExport() throws Exception {
         var ctx = boundFamily();
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
         ChildProfile profile = profiles.selectOne(new QueryWrapper<ChildProfile>()
                 .eq("user_id", childUserId(ctx)));
@@ -73,7 +73,7 @@ class PrivacyWorkflowIT extends BaseIT {
         transition(operator, task, "READY", 1);
         profile.setFavoriteDishIds(List.of());
         assertEquals(1, profiles.updateById(profile));
-        mockMvc.perform(get("/api/compliance/requests/" + task.getTaskId() + "/download")
+        mockMvc.perform(get("/api/mini/compliance/requests/" + task.getTaskId() + "/download")
                 .header("Authorization", bearer(ctx.parentToken()))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.profile.favoriteDishIds").isEmpty());
         profile.setFavoriteDishIds(List.of("PRESET:9007199254740993", "PRESET:42"));
@@ -82,7 +82,7 @@ class PrivacyWorkflowIT extends BaseIT {
         assertEquals("GENERATED_PROFILE_V1", request.getResultRef());
         assertTrue(request.getExpiresAt() > System.currentTimeMillis() + 23L * 3600 * 1000);
         revoke(ctx);
-        var download = mockMvc.perform(get("/api/compliance/requests/" + task.getTaskId() + "/download")
+        var download = mockMvc.perform(get("/api/mini/compliance/requests/" + task.getTaskId() + "/download")
                 .header("Authorization", bearer(ctx.parentToken()))).andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", "no-store, private"))
                 .andExpect(jsonPath("$.childId").value(childUserId(ctx).toString()))
@@ -93,13 +93,13 @@ class PrivacyWorkflowIT extends BaseIT {
                 .andExpect(jsonPath("$.openid").doesNotExist())
                 .andExpect(jsonPath("$.scope").isString()).andReturn();
         assertFalse(download.getResponse().getContentAsString().contains("sessionKey"));
-        mockMvc.perform(get("/api/compliance/requests/" + task.getTaskId() + "/download")
+        mockMvc.perform(get("/api/mini/compliance/requests/" + task.getTaskId() + "/download")
                 .header("Authorization", bearer(operator))).andExpect(status().isForbidden());
         requests.update(null, new UpdateWrapper<PrivacyRequest>().eq("id", task.getTaskId()).set("expires_at", 1L));
-        mockMvc.perform(get("/api/compliance/requests/" + task.getTaskId() + "/download")
+        mockMvc.perform(get("/api/mini/compliance/requests/" + task.getTaskId() + "/download")
                 .header("Authorization", bearer(ctx.parentToken()))).andExpect(status().isGone())
                 .andExpect(jsonPath("$.code").value("E-410"));
-        mockMvc.perform(get("/api/compliance/requests/" + task.getTaskId())
+        mockMvc.perform(get("/api/mini/compliance/requests/" + task.getTaskId())
                 .header("Authorization", bearer(ctx.parentToken())))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("EXPIRED"))
                 .andExpect(jsonPath("$.data.downloadAvailable").value(false));
@@ -115,24 +115,24 @@ class PrivacyWorkflowIT extends BaseIT {
         var task = export(ctx, "ops");
         String operator = operator();
         settings.setOperatorIds(Set.of());
-        mockMvc.perform(post("/api/admin/compliance/requests/" + task.getTaskId() + "/transition")
+        mockMvc.perform(post("/api/mini/admin/compliance/requests/" + task.getTaskId() + "/transition")
                 .header("Authorization", bearer(operator)).contentType(JSON)
                 .content(transitionJson("PROCESSING", 0))).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/compliance/requests/" + task.getTaskId())
+        mockMvc.perform(get("/api/mini/compliance/requests/" + task.getTaskId())
                 .header("Authorization", bearer(operator))).andExpect(status().isForbidden());
         settings.setOperatorIds(Set.of(jwtUtil.getUserId(jwtUtil.parse(operator))));
-        mockMvc.perform(post("/api/admin/compliance/requests/" + task.getTaskId() + "/transition")
+        mockMvc.perform(post("/api/mini/admin/compliance/requests/" + task.getTaskId() + "/transition")
                 .header("Authorization", bearer(operator)).contentType(JSON)
                 .content("{\"status\":\"PROCESSING\",\"expectedVersion\":0}")).andExpect(status().isBadRequest());
-        mockMvc.perform(post("/api/admin/compliance/requests/" + task.getTaskId() + "/transition")
+        mockMvc.perform(post("/api/mini/admin/compliance/requests/" + task.getTaskId() + "/transition")
                 .header("Authorization", bearer(operator)).contentType(JSON)
                 .content(transitionJson("PROCESSING", 0).replace("ticket_123", "../../secret")))
                 .andExpect(status().isBadRequest());
         transition(operator, task, "PROCESSING", 0);
-        mockMvc.perform(post("/api/admin/compliance/requests/" + task.getTaskId() + "/transition")
+        mockMvc.perform(post("/api/mini/admin/compliance/requests/" + task.getTaskId() + "/transition")
                 .header("Authorization", bearer(operator)).contentType(JSON)
                 .content(transitionJson("READY", 0))).andExpect(status().isConflict());
-        mockMvc.perform(post("/api/admin/compliance/requests/" + task.getTaskId() + "/transition")
+        mockMvc.perform(post("/api/mini/admin/compliance/requests/" + task.getTaskId() + "/transition")
                 .header("Authorization", bearer(operator)).contentType(JSON)
                 .content(transitionJson("COMPLETED", 1))).andExpect(status().isConflict());
         transition(operator, task, "READY", 1);
@@ -143,11 +143,11 @@ class PrivacyWorkflowIT extends BaseIT {
     @Test
     void deletionRequiresConfirmationMatchingFreshIdentityAndManualEvidence() throws Exception {
         var ctx = boundFamily();
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
         for (String json : new String[]{deleteJson(ctx, "wrong-account", true),
                 deleteJson(ctx, "unused", false)}) {
-            mockMvc.perform(post("/api/compliance/data-delete").header("Authorization", bearer(ctx.parentToken()))
+            mockMvc.perform(post("/api/mini/compliance/data-delete").header("Authorization", bearer(ctx.parentToken()))
                     .header("Idempotency-Key", UUID.randomUUID().toString()).contentType(JSON).content(json))
                     .andExpect(status().isBadRequest());
         }
@@ -158,7 +158,7 @@ class PrivacyWorkflowIT extends BaseIT {
         doReturn(session).when(wechat).code2Session(freshCode);
         DataExportResp task = null;
         for (int i = 0; i < 2; i++) {
-            var result = mockMvc.perform(post("/api/compliance/data-delete")
+            var result = mockMvc.perform(post("/api/mini/compliance/data-delete")
                     .header("Authorization", bearer(ctx.parentToken())).header("Idempotency-Key", "delete_1")
                     .contentType(JSON).content(deleteJson(ctx, freshCode, true)))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("RECEIVED")).andReturn();
@@ -168,7 +168,7 @@ class PrivacyWorkflowIT extends BaseIT {
         }
         assertNotNull(task);
         assertNotNull(requests.selectById(Long.valueOf(task.getTaskId())).getVerifiedAt());
-        mockMvc.perform(post("/api/compliance/data-delete").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/compliance/data-delete").header("Authorization", bearer(ctx.parentToken()))
                 .header("Idempotency-Key", "new_replayed_code").contentType(JSON)
                 .content(deleteJson(ctx, freshCode, true))).andExpect(status().isBadRequest());
         String operator = operator();
@@ -176,7 +176,7 @@ class PrivacyWorkflowIT extends BaseIT {
         transition(operator, task, "COMPLETED", 1);
         assertEquals(1, profiles.selectCount(new QueryWrapper<ChildProfile>().eq("user_id", childUserId(ctx))));
         assertEquals("ticket_123", requests.selectById(Long.valueOf(task.getTaskId())).getEvidenceRef());
-        mockMvc.perform(get("/api/compliance/requests/" + task.getTaskId() + "/download")
+        mockMvc.perform(get("/api/mini/compliance/requests/" + task.getTaskId() + "/download")
                 .header("Authorization", bearer(ctx.parentToken()))).andExpect(status().isConflict());
     }
 
@@ -188,7 +188,7 @@ class PrivacyWorkflowIT extends BaseIT {
     }
 
     private DataExportResp export(FamilyContext ctx, String key) throws Exception {
-        return dataOf(mockMvc.perform(post("/api/compliance/data-export")
+        return dataOf(mockMvc.perform(post("/api/mini/compliance/data-export")
                 .header("Authorization", bearer(ctx.parentToken())).header("Idempotency-Key", key)
                 .contentType(JSON).content(exportJson(ctx))).andExpect(status().isOk()).andReturn(), DataExportResp.class);
     }
@@ -204,7 +204,7 @@ class PrivacyWorkflowIT extends BaseIT {
     }
 
     private void transition(String token, DataExportResp task, String status, int version) throws Exception {
-        mockMvc.perform(post("/api/admin/compliance/requests/" + task.getTaskId() + "/transition")
+        mockMvc.perform(post("/api/mini/admin/compliance/requests/" + task.getTaskId() + "/transition")
                 .header("Authorization", bearer(token)).contentType(JSON).content(transitionJson(status, version)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value(status));
     }

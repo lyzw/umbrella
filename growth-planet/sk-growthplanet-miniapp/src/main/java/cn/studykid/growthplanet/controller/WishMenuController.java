@@ -27,7 +27,7 @@ import java.time.LocalDate;
  * familyId / ownerKey / sourceType（菜单上下文）严禁客户端传入。
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/mini")
 public class WishMenuController {
     private final WishMenuService wishes;
 

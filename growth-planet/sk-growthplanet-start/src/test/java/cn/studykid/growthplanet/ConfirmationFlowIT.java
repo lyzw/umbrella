@@ -63,7 +63,7 @@ class ConfirmationFlowIT extends BaseIT {
         long id = submitted.path("confirmId").asLong();
         assertEquals("PENDING", submitted.path("status").asText());
         assertEquals("18.00", submitted.path("totalAmount").asText());
-        JsonNode status = request("GET", "/api/menu/confirm/status?confirmId=" + id,
+        JsonNode status = request("GET", "/api/mini/menu/confirm/status?confirmId=" + id,
                 fixture.ctx().childToken(), null, null, 200);
         assertEquals(3, status.size());
         assertFalse(status.has("items"));
@@ -120,9 +120,9 @@ class ConfirmationFlowIT extends BaseIT {
         Map<String, Object> stale = explicit(preview);
         JsonNode refreshed = approveConfirm(fixture, second, stale, 409);
         assertNotEquals(preview.path("walletVersion"), refreshed.path("walletVersion"));
-        JsonNode rule = request("GET", "/api/wallet/allowance-rule?childId=" + childUserId(fixture.ctx()),
+        JsonNode rule = request("GET", "/api/mini/wallet/allowance-rule?childId=" + childUserId(fixture.ctx()),
                 fixture.ctx().parentToken(), null, null, 200);
-        request("PUT", "/api/wallet/allowance-rule", fixture.ctx().parentToken(),
+        request("PUT", "/api/mini/wallet/allowance-rule", fixture.ctx().parentToken(),
                 Map.of("childId", childUserId(fixture.ctx()).toString(), "singleLimit", "10.00",
                         "dailyLimit", "10.00", "weeklyLimit", "50.00",
                         "expectedVersion", rule.path("version").asInt()), null, 200);
@@ -137,22 +137,22 @@ class ConfirmationFlowIT extends BaseIT {
     void modifyPreservesOriginalLinesAndResubmissionGetsNewIdentity() throws Exception {
         Fixture fixture = ready("18.00");
         long first = submit(fixture, "original", 200).path("confirmId").asLong();
-        JsonNode modified = request("POST", "/api/parent/approve/" + first + "/modify",
+        JsonNode modified = request("POST", "/api/mini/parent/approve/" + first + "/modify",
                 fixture.ctx().parentToken(), Map.of("expectedVersion", 0, "reason", "Synthetic suggestion",
                         "items", List.of(Map.of("dishRef", refBody(fixture.dishId()), "quantity", 2))), null, 200);
         assertEquals("REJECTED", modified.path("status").asText());
         assertEquals(1, modified.path("items").get(0).path("quantity").asInt());
         assertEquals(2, modified.path("suggestedItems").get(0).path("quantity").asInt());
         assertEquals("Synthetic suggestion", modified.path("childVisibleNote").asText());
-        JsonNode detail = request("GET", "/api/menu/confirm/" + first, fixture.ctx().childToken(),
+        JsonNode detail = request("GET", "/api/mini/menu/confirm/" + first, fixture.ctx().childToken(),
                 null, null, 200);
         assertEquals("Synthetic suggestion", detail.path("childVisibleNote").asText());
         Map<String, Object> body = submitBody(fixture);
         body.put("previousConfirmId", Long.toString(first));
-        long second = request("POST", "/api/menu/confirm", fixture.ctx().childToken(), body, "resubmit", 200)
+        long second = request("POST", "/api/mini/menu/confirm", fixture.ctx().childToken(), body, "resubmit", 200)
                 .path("confirmId").asLong();
         assertNotEquals(first, second);
-        JsonNode withdrawn = request("POST", "/api/menu/confirm/" + second + "/withdraw",
+        JsonNode withdrawn = request("POST", "/api/mini/menu/confirm/" + second + "/withdraw",
                 fixture.ctx().childToken(), Map.of("expectedVersion", 0), null, 200);
         assertEquals("CANCELLED", withdrawn.path("status").asText());
         approveConfirm(fixture, second, Map.of("expectedVersion", 0), 409);
@@ -165,10 +165,10 @@ class ConfirmationFlowIT extends BaseIT {
         Fixture fixture = ready("18.00");
         long id = submit(fixture, "reject-reason", 200).path("confirmId").asLong();
         String reason = "Could we choose something else today?";
-        request("POST", "/api/parent/approve/" + id + "/reject", fixture.ctx().parentToken(),
+        request("POST", "/api/mini/parent/approve/" + id + "/reject", fixture.ctx().parentToken(),
                 Map.of("expectedVersion", 0, "reason", reason), null, 200);
         for (String token : List.of(fixture.ctx().parentToken(), fixture.ctx().childToken())) {
-            JsonNode detail = request("GET", "/api/menu/confirm/" + id, token, null, null, 200);
+            JsonNode detail = request("GET", "/api/mini/menu/confirm/" + id, token, null, null, 200);
             assertEquals(reason, detail.path("childVisibleNote").asText());
             assertEquals("REJECTED", detail.path("status").asText());
         }
@@ -210,22 +210,22 @@ class ConfirmationFlowIT extends BaseIT {
         Fixture fixture = ready("18.00");
         long id = submit(fixture, "scope", 200).path("confirmId").asLong();
         var other = setupFamily();
-        request("GET", "/api/menu/confirm/" + id, other.parentToken(), null, null, 404);
-        request("POST", "/api/parent/approve/" + id + "/approve", fixture.ctx().childToken(),
+        request("GET", "/api/mini/menu/confirm/" + id, other.parentToken(), null, null, 404);
+        request("POST", "/api/mini/parent/approve/" + id + "/approve", fixture.ctx().childToken(),
                 Map.of("expectedVersion", 0), null, 403);
         Map<String, Object> body = submitBody(fixture);
         body.put("remark", "changed");
-        request("POST", "/api/menu/confirm", fixture.ctx().childToken(), body, "scope", 409);
+        request("POST", "/api/mini/menu/confirm", fixture.ctx().childToken(), body, "scope", 409);
         for (int quantity : List.of(0, 10)) {
             body.put("items", List.of(Map.of("dishRef", refBody(fixture.dishId()), "quantity", quantity)));
-            request("POST", "/api/menu/confirm", fixture.ctx().childToken(), body, "invalid", 400);
+            request("POST", "/api/mini/menu/confirm", fixture.ctx().childToken(), body, "invalid", 400);
         }
         body = submitBody(fixture);
         body.put("totalAmount", "0.01");
-        request("POST", "/api/menu/confirm", fixture.ctx().childToken(), body, "injection", 400);
+        request("POST", "/api/mini/menu/confirm", fixture.ctx().childToken(), body, "injection", 400);
         revoke(fixture.ctx());
         approveConfirm(fixture, id, Map.of("expectedVersion", 0), 409);
-        request("GET", "/api/menu/confirm/" + id, fixture.ctx().childToken(), null, null, 409);
+        request("GET", "/api/mini/menu/confirm/" + id, fixture.ctx().childToken(), null, null, 409);
         assertBalance(fixture, "50.00");
         assertEquals("PENDING", confirms.selectById(id).getStatus());
     }
@@ -331,10 +331,10 @@ class ConfirmationFlowIT extends BaseIT {
         Fixture fixture = ready("18.00");
         long id = submit(fixture, "withdraw-race", 200).path("confirmId").asLong();
         try (var pool = Executors.newFixedThreadPool(2)) {
-            Future<Integer> approval = pool.submit(() -> mockMvc.perform(post("/api/parent/approve/" + id + "/approve")
+            Future<Integer> approval = pool.submit(() -> mockMvc.perform(post("/api/mini/parent/approve/" + id + "/approve")
                     .header("Authorization", "Bearer " + fixture.ctx().parentToken())
                     .contentType(JSON).content("{\"expectedVersion\":0}")).andReturn().getResponse().getStatus());
-            Future<Integer> withdrawal = pool.submit(() -> mockMvc.perform(post("/api/menu/confirm/" + id + "/withdraw")
+            Future<Integer> withdrawal = pool.submit(() -> mockMvc.perform(post("/api/mini/menu/confirm/" + id + "/withdraw")
                     .header("Authorization", "Bearer " + fixture.ctx().childToken())
                     .contentType(JSON).content("{\"expectedVersion\":0}")).andReturn().getResponse().getStatus());
             List<Integer> outcomes = List.of(approval.get(30, TimeUnit.SECONDS), withdrawal.get(30, TimeUnit.SECONDS));
@@ -435,7 +435,7 @@ class ConfirmationFlowIT extends BaseIT {
         var ctx = setupFamily();
         grant(ctx);
         approve(ctx);
-        request("POST", "/api/child/profile", ctx.parentToken(),
+        request("POST", "/api/mini/child/profile", ctx.parentToken(),
                 objectMapper.readTree(profileJson(ctx)), null, 200);
         grantMoney(ctx, "50.00", "initial");
         DishCategory category = new DishCategory();
@@ -461,7 +461,7 @@ class ConfirmationFlowIT extends BaseIT {
     }
 
     private void grantMoney(FamilyContext ctx, String amount, String key) throws Exception {
-        request("POST", "/api/wallet/grant", ctx.parentToken(),
+        request("POST", "/api/mini/wallet/grant", ctx.parentToken(),
                 Map.of("childId", childUserId(ctx).toString(), "amount", amount, "reason", "Synthetic grant"), key, 200);
     }
 
@@ -478,11 +478,11 @@ class ConfirmationFlowIT extends BaseIT {
     }
 
     private JsonNode submit(Fixture fixture, String key, int code) throws Exception {
-        return request("POST", "/api/menu/confirm", fixture.ctx().childToken(), submitBody(fixture), key, code);
+        return request("POST", "/api/mini/menu/confirm", fixture.ctx().childToken(), submitBody(fixture), key, code);
     }
 
     private JsonNode approveConfirm(Fixture fixture, long id, Object body, int code) throws Exception {
-        return request("POST", "/api/parent/approve/" + id + "/approve",
+        return request("POST", "/api/mini/parent/approve/" + id + "/approve",
                 fixture.ctx().parentToken(), body, null, code);
     }
 

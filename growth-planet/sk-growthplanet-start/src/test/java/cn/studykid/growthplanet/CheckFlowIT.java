@@ -65,7 +65,7 @@ class CheckFlowIT extends BaseIT {
             throws Exception {
         String body = "{\"name\":\"" + name + "\",\"icon\":\"" + icon + "\",\"unit\":\"" + unit
                 + "\",\"dailyTarget\":" + dailyTarget + ",\"sortOrder\":" + sortOrder + "}";
-        MvcResult r = mockMvc.perform(post("/api/parent/check-item")
+        MvcResult r = mockMvc.perform(post("/api/mini/parent/check-item")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON).content(body))
                 .andExpect(status().isOk()).andReturn();
@@ -74,7 +74,7 @@ class CheckFlowIT extends BaseIT {
 
     /** 儿童一键打卡；调用方自行断言状态。 */
     private MvcResult childCheckIn(FamilyContext ctx, Long itemId) throws Exception {
-        return mockMvc.perform(post("/api/child/check-in")
+        return mockMvc.perform(post("/api/mini/child/check-in")
                         .header("Authorization", "Bearer " + ctx.childToken())
                         .param("itemId", String.valueOf(itemId)))
                 .andReturn();
@@ -110,7 +110,7 @@ class CheckFlowIT extends BaseIT {
     }
 
     private int currentStreak(FamilyContext ctx) throws Exception {
-        return data(get("/api/child/check-in/calendar")
+        return data(get("/api/mini/child/check-in/calendar")
                 .header("Authorization", "Bearer " + ctx.childToken())).get("currentStreak").asInt();
     }
 
@@ -129,7 +129,7 @@ class CheckFlowIT extends BaseIT {
         assertEquals(409, childCheckIn(ctx, itemId).getResponse().getStatus());
 
         // 今日次数应封顶在 2，且 reached=true
-        JsonNode today = data(get("/api/child/check-in/today")
+        JsonNode today = data(get("/api/mini/child/check-in/today")
                 .header("Authorization", "Bearer " + ctx.childToken()));
         JsonNode row = today.get(0);
         assertEquals(2, row.get("count").asInt());
@@ -190,7 +190,7 @@ class CheckFlowIT extends BaseIT {
         revoke(ctx);
 
         // 儿童接口应返回 E010（CONFLICT），实现停采并隐藏
-        assertEquals(409, mockMvc.perform(get("/api/child/check-in/items")
+        assertEquals(409, mockMvc.perform(get("/api/mini/child/check-in/items")
                         .header("Authorization", "Bearer " + ctx.childToken())).andReturn()
                 .getResponse().getStatus());
         assertEquals(409, childCheckIn(ctx, 999999L).getResponse().getStatus());
@@ -205,7 +205,7 @@ class CheckFlowIT extends BaseIT {
         Long itemA = createItem(a, "家庭A专属", "🔒", "次", 0, 1);
 
         // 家庭 B 儿童看不到家庭 A 的项（列表为空）
-        JsonNode bItems = data(get("/api/child/check-in/items")
+        JsonNode bItems = data(get("/api/mini/child/check-in/items")
                 .header("Authorization", "Bearer " + b.childToken()));
         assertTrue(bItems.isArray() && bItems.size() == 0, "家庭 B 不应看到家庭 A 的打卡项");
 
@@ -227,13 +227,13 @@ class CheckFlowIT extends BaseIT {
         assertEquals(200, childCheckIn(ctx, itemId).getResponse().getStatus());
 
         // 家长软删该项（expectedVersion=0）
-        mockMvc.perform(delete("/api/parent/check-item/" + itemId)
+        mockMvc.perform(delete("/api/mini/parent/check-item/" + itemId)
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .param("expectedVersion", "0"))
                 .andExpect(status().isOk());
 
         // 儿童列表不再包含该项
-        JsonNode list = data(get("/api/child/check-in/items")
+        JsonNode list = data(get("/api/mini/child/check-in/items")
                 .header("Authorization", "Bearer " + ctx.childToken()));
         boolean stillVisible = false;
         for (JsonNode n : list) {

@@ -33,7 +33,7 @@ class Sprint1ClosureIT extends BaseIT {
     void parentDiscoversApplicationsWithScopedPaginationAndStatus() throws Exception {
         var ctx = setupFamily();
         var other = setupFamily();
-        mockMvc.perform(get("/api/family/children").header("Authorization", bearer(ctx.parentToken())))
+        mockMvc.perform(get("/api/mini/family/children").header("Authorization", bearer(ctx.parentToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.page").value(1))
@@ -44,46 +44,46 @@ class Sprint1ClosureIT extends BaseIT {
                 .andExpect(jsonPath("$.data.items[0].nickname").doesNotExist())
                 .andExpect(jsonPath("$.data.items[0].allergies").doesNotExist());
         for (String query : new String[]{"?page=2&pageSize=1", "?bindStatus=BOUND"}) {
-            mockMvc.perform(get("/api/family/children" + query).header("Authorization", bearer(ctx.parentToken())))
+            mockMvc.perform(get("/api/mini/family/children" + query).header("Authorization", bearer(ctx.parentToken())))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.data.items").isEmpty());
         }
-        mockMvc.perform(get("/api/family/children").header("Authorization", bearer(other.parentToken())))
+        mockMvc.perform(get("/api/mini/family/children").header("Authorization", bearer(other.parentToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items[0].childId").value(childUserId(other).toString()));
         for (String query : new String[]{"?page=0", "?pageSize=101", "?pageSize=0", "?page=1.5",
                 "?bindStatus=UNKNOWN", "?page=2147483648"}) {
-            mockMvc.perform(get("/api/family/children" + query).header("Authorization", bearer(ctx.parentToken())))
+            mockMvc.perform(get("/api/mini/family/children" + query).header("Authorization", bearer(ctx.parentToken())))
                     .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("E-400"));
         }
-        mockMvc.perform(get("/api/family/children?page=2147483647&pageSize=100")
+        mockMvc.perform(get("/api/mini/family/children?page=2147483647&pageSize=100")
                 .header("Authorization", bearer(ctx.parentToken())))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.items").isEmpty());
-        mockMvc.perform(get("/api/family/children").header("Authorization", bearer(ctx.childToken())))
+        mockMvc.perform(get("/api/mini/family/children").header("Authorization", bearer(ctx.childToken())))
                 .andExpect(status().isForbidden());
         String noFamily = loginAndSelectRole("p_" + UUID.randomUUID(), RoleEnum.PARENT);
-        mockMvc.perform(get("/api/family/children").header("Authorization", bearer(noFamily)))
+        mockMvc.perform(get("/api/mini/family/children").header("Authorization", bearer(noFamily)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void childCanRecoverBindingStateWithoutFamilyClaim() throws Exception {
         String fresh = loginAndSelectRole("c_" + UUID.randomUUID(), RoleEnum.CHILD);
-        mockMvc.perform(get("/api/family/binding").header("Authorization", bearer(fresh)))
+        mockMvc.perform(get("/api/mini/family/binding").header("Authorization", bearer(fresh)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.bindStatus").value("NONE"));
         var ctx = setupFamily();
         assertBinding(ctx, "PENDING", 1);
-        mockMvc.perform(post("/api/family/bind-approve").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/family/bind-approve").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content("{\"applyId\":\"" + ctx.applyId() + "\",\"approve\":false}"))
                 .andExpect(status().isOk());
         assertBinding(ctx, "REJECTED", 1);
-        mockMvc.perform(post("/api/family/join").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(post("/api/mini/family/join").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content("{\"inviteCode\":\"" + ctx.inviteCode() + "\"}"))
                 .andExpect(status().isOk());
         assertBinding(ctx, "PENDING", 2);
         grant(ctx);
         approve(ctx);
         assertBinding(ctx, "BOUND", 2);
-        mockMvc.perform(get("/api/family/binding").header("Authorization", bearer(ctx.parentToken())))
+        mockMvc.perform(get("/api/mini/family/binding").header("Authorization", bearer(ctx.parentToken())))
                 .andExpect(status().isForbidden());
     }
 
@@ -95,7 +95,7 @@ class Sprint1ClosureIT extends BaseIT {
         approve(ctx);
         assertProfileStatus(ctx.parentToken(), childUserId(ctx), 404);
         saveProfile(ctx);
-        mockMvc.perform(get("/api/child/profile").param("childId", childUserId(ctx).toString())
+        mockMvc.perform(get("/api/mini/child/profile").param("childId", childUserId(ctx).toString())
                 .header("Authorization", bearer(ctx.parentToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.childId").value(childUserId(ctx).toString()))
@@ -107,7 +107,7 @@ class Sprint1ClosureIT extends BaseIT {
         var other = setupFamily();
         assertProfileStatus(other.parentToken(), childUserId(ctx), 403);
         assertProfileStatus(ctx.parentToken(), 0L, 400);
-        mockMvc.perform(get("/api/child/profile").header("Authorization", bearer(ctx.parentToken())))
+        mockMvc.perform(get("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken())))
                 .andExpect(status().isBadRequest());
         revoke(ctx);
         assertProfileStatus(ctx.parentToken(), childUserId(ctx), 409);
@@ -119,13 +119,13 @@ class Sprint1ClosureIT extends BaseIT {
     void preferencesOnlyModifyOwnNonSafetyFieldsAndAllowParentRead() throws Exception {
         var ctx = readyProfile();
         String preferences = "{\"dislikes\":[\"芹菜\"],\"tastes\":[\"酸甜\"]}";
-        mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(put("/api/mini/child/preferences").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content(preferences))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.childId").value(childUserId(ctx).toString()))
                 .andExpect(jsonPath("$.data.dislikes[0]").value("芹菜"));
         for (String token : List.of(ctx.childToken(), ctx.parentToken())) {
-            mockMvc.perform(get("/api/child/preferences").header("Authorization", bearer(token))
+            mockMvc.perform(get("/api/mini/child/preferences").header("Authorization", bearer(token))
                     .param("childId", childUserId(ctx).toString()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.dislikes[0]").value("芹菜"))
@@ -143,7 +143,7 @@ class Sprint1ClosureIT extends BaseIT {
         var audit = audits.selectOne(new QueryWrapper<AuditLog>().eq("action", "PREFERENCES")
                 .eq("actor_user_id", childUserId(ctx)));
         assertNotNull(audit);
-        mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(put("/api/mini/child/preferences").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content("{\"dislikes\":[],\"tastes\":[]}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.dislikes").isEmpty());
         assertEquals(List.of(), profile(ctx).getTastes());
@@ -157,7 +157,7 @@ class Sprint1ClosureIT extends BaseIT {
                 "grade", "school", "favoriteDishIds", "profileStatus", "unexpected")) {
             String body = objectMapper.writeValueAsString(Map.of("dislikes", List.of(),
                     "tastes", List.of(), field, "injected"));
-            mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
+            mockMvc.perform(put("/api/mini/child/preferences").header("Authorization", bearer(ctx.childToken()))
                     .contentType(JSON).content(body))
                     .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("E-400"));
         }
@@ -166,18 +166,18 @@ class Sprint1ClosureIT extends BaseIT {
                 "{\"dislikes\":[],\"tastes\":\"清淡\"}",
                 objectMapper.writeValueAsString(Map.of("dislikes", Collections.nCopies(21, "x"), "tastes", List.of())),
                 objectMapper.writeValueAsString(Map.of("dislikes", List.of(), "tastes", List.of("x".repeat(65)))))) {
-            mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
+            mockMvc.perform(put("/api/mini/child/preferences").header("Authorization", bearer(ctx.childToken()))
                     .contentType(JSON).content(body)).andExpect(status().isBadRequest());
         }
         for (String token : List.of(other.childToken(), other.parentToken())) {
-            mockMvc.perform(get("/api/child/preferences").header("Authorization", bearer(token))
+            mockMvc.perform(get("/api/mini/child/preferences").header("Authorization", bearer(token))
                     .param("childId", childUserId(ctx).toString())).andExpect(status().isForbidden());
         }
-        mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(put("/api/mini/child/preferences").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content("{\"dislikes\":[],\"tastes\":[]}")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(get("/api/mini/child/preferences").header("Authorization", bearer(ctx.childToken()))
                 .param("childId", "-1")).andExpect(status().isBadRequest());
-        mockMvc.perform(get("/api/child/preferences")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/mini/child/preferences")).andExpect(status().isUnauthorized());
         assertEquals(List.of("胡萝卜"), profile(ctx).getDislikes());
     }
 
@@ -216,7 +216,7 @@ class Sprint1ClosureIT extends BaseIT {
         var guardian = users.selectById(jwtUtil.getUserId(jwtUtil.parse(ctx.parentToken())));
         guardian.setStatus("DISABLED");
         users.updateById(guardian);
-        mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(put("/api/mini/child/preferences").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content("{\"dislikes\":[],\"tastes\":[]}"))
                 .andExpect(status().isForbidden());
         guardian.setStatus("NORMAL");
@@ -238,7 +238,7 @@ class Sprint1ClosureIT extends BaseIT {
     }
 
     private void saveProfile(FamilyContext ctx) throws Exception {
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
     }
 
@@ -247,7 +247,7 @@ class Sprint1ClosureIT extends BaseIT {
     }
 
     private void assertBinding(FamilyContext ctx, String state, int version) throws Exception {
-        mockMvc.perform(get("/api/family/binding").header("Authorization", bearer(ctx.childToken())))
+        mockMvc.perform(get("/api/mini/family/binding").header("Authorization", bearer(ctx.childToken())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.bindStatus").value(state))
                 .andExpect(jsonPath("$.data.applicationVersion").value(version))
@@ -257,16 +257,16 @@ class Sprint1ClosureIT extends BaseIT {
     }
 
     private void assertProfileStatus(String token, Long childId, int expected) throws Exception {
-        mockMvc.perform(get("/api/child/profile").header("Authorization", bearer(token))
+        mockMvc.perform(get("/api/mini/child/profile").header("Authorization", bearer(token))
                 .param("childId", childId.toString())).andExpect(status().is(expected));
     }
 
     private void assertPreferencesStatus(FamilyContext ctx, int expected) throws Exception {
-        mockMvc.perform(put("/api/child/preferences").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(put("/api/mini/child/preferences").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content("{\"dislikes\":[],\"tastes\":[]}"))
                 .andExpect(status().is(expected));
         for (String token : List.of(ctx.childToken(), ctx.parentToken())) {
-            mockMvc.perform(get("/api/child/preferences").header("Authorization", bearer(token))
+            mockMvc.perform(get("/api/mini/child/preferences").header("Authorization", bearer(token))
                     .param("childId", childUserId(ctx).toString())).andExpect(status().is(expected));
         }
     }

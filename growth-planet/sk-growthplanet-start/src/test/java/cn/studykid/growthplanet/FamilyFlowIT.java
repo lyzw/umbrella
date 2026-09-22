@@ -22,7 +22,7 @@ class FamilyFlowIT extends BaseIT {
     @Test
     void createFamilyReturnsValidInviteCodeAndToken() throws Exception {
         String parentToken = loginAndSelectRole("fam_create_code", RoleEnum.PARENT);
-        MvcResult create = mockMvc.perform(post("/api/family/create")
+        MvcResult create = mockMvc.perform(post("/api/mini/family/create")
                         .header("Authorization", "Bearer " + parentToken)
                         .contentType(JSON)
                         .content("{\"familyName\":\"小明家\"}"))
@@ -39,7 +39,7 @@ class FamilyFlowIT extends BaseIT {
     void inviteCodeReuseAndJoinApproveFlow() throws Exception {
         FamilyContext ctx = setupFamily();
         // 查询邀请码
-        MvcResult inv = mockMvc.perform(get("/api/family/invite-code")
+        MvcResult inv = mockMvc.perform(get("/api/mini/family/invite-code")
                         .header("Authorization", "Bearer " + ctx.parentToken()))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -48,7 +48,7 @@ class FamilyFlowIT extends BaseIT {
 
         grant(ctx);
         // 审批通过
-        MvcResult approve = mockMvc.perform(post("/api/family/bind-approve")
+        MvcResult approve = mockMvc.perform(post("/api/mini/family/bind-approve")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content("{\"applyId\":" + ctx.applyId() + ",\"relationLabel\":\"娃\",\"approve\":true}"))
@@ -61,7 +61,7 @@ class FamilyFlowIT extends BaseIT {
     @Test
     void childCannotCreateFamily_403() throws Exception {
         String childToken = loginAndSelectRole("fam_child_create", RoleEnum.CHILD);
-        mockMvc.perform(post("/api/family/create")
+        mockMvc.perform(post("/api/mini/family/create")
                         .header("Authorization", "Bearer " + childToken)
                         .contentType(JSON)
                         .content("{\"familyName\":\"x\"}"))
@@ -71,7 +71,7 @@ class FamilyFlowIT extends BaseIT {
     @Test
     void parentCannotJoinFamily_403() throws Exception {
         String parentToken = loginAndSelectRole("fam_parent_join", RoleEnum.PARENT);
-        mockMvc.perform(post("/api/family/join")
+        mockMvc.perform(post("/api/mini/family/join")
                         .header("Authorization", "Bearer " + parentToken)
                         .contentType(JSON)
                         .content("{\"inviteCode\":\"ABC123\"}"))
@@ -85,7 +85,7 @@ class FamilyFlowIT extends BaseIT {
         FamilyContext ctxB = setupFamily();
 
         // 家长 B 尝试审批家庭 A 的儿童申请 -> 跨家庭，应 403
-        mockMvc.perform(post("/api/family/bind-approve")
+        mockMvc.perform(post("/api/mini/family/bind-approve")
                         .header("Authorization", "Bearer " + ctxB.parentToken())
                         .contentType(JSON)
                         .content("{\"applyId\":" + ctxA.applyId() + ",\"approve\":true}"))
@@ -95,7 +95,7 @@ class FamilyFlowIT extends BaseIT {
     @Test
     void joinWithInvalidCode_400() throws Exception {
         String childToken = loginAndSelectRole("fam_join_bad", RoleEnum.CHILD);
-        mockMvc.perform(post("/api/family/join")
+        mockMvc.perform(post("/api/mini/family/join")
                         .header("Authorization", "Bearer " + childToken)
                         .contentType(JSON)
                         .content("{\"inviteCode\":\"ZZZZZZ\"}"))

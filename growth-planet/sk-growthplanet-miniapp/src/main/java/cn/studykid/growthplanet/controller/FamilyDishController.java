@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
  * expectedVersion 为乐观锁版本号，编辑/上下架/删除必传。
  */
 @RestController
-@RequestMapping("/api/parent/family-dish")
+@RequestMapping("/api/mini/parent/family-dish")
 public class FamilyDishController {
     private final FamilyDishService service;
 

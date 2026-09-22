@@ -45,7 +45,7 @@ class ScheduleFlowIT extends BaseIT {
         FamilyContext ctx = boundFamily();
         Long childId = childUserId(ctx);
 
-        mockMvc.perform(post("/api/schedule")
+        mockMvc.perform(post("/api/mini/schedule")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content(createBody(childId, "写语文作业", today(), "08:00", "ONCE", null, null)))
@@ -70,7 +70,7 @@ class ScheduleFlowIT extends BaseIT {
         Long childId = childUserId(ctx);
         int weekday = LocalDate.now(ZONE).getDayOfWeek().getValue();
 
-        mockMvc.perform(post("/api/schedule")
+        mockMvc.perform(post("/api/mini/schedule")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content(createBody(childId, "钢琴课", today(), "18:30", "WEEKLY", String.valueOf(weekday), 30)))
@@ -88,14 +88,14 @@ class ScheduleFlowIT extends BaseIT {
         FamilyContext ctx = boundFamily();
         Long childId = childUserId(ctx);
 
-        MvcResult created = mockMvc.perform(post("/api/schedule")
+        MvcResult created = mockMvc.perform(post("/api/mini/schedule")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content(createBody(childId, "吃药", today(), "20:00", "DAILY", null, 10)))
                 .andExpect(status().isOk()).andReturn();
         ScheduleResp schedule = dataOf(created, ScheduleResp.class);
 
-        mockMvc.perform(post("/api/schedule/" + schedule.scheduleId() + "/cancel")
+        mockMvc.perform(post("/api/mini/schedule/" + schedule.scheduleId() + "/cancel")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content("{}"))
@@ -110,7 +110,7 @@ class ScheduleFlowIT extends BaseIT {
         FamilyContext ctx = boundFamily();
         Long childId = childUserId(ctx);
 
-        MvcResult created = mockMvc.perform(post("/api/schedule")
+        MvcResult created = mockMvc.perform(post("/api/mini/schedule")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content(createBody(childId, "晨读", today(), "00:00", "DAILY", null, 0)))
@@ -139,7 +139,7 @@ class ScheduleFlowIT extends BaseIT {
         FamilyContext ctx = boundFamily();
         Long childId = childUserId(ctx);
 
-        mockMvc.perform(post("/api/schedule")
+        mockMvc.perform(post("/api/mini/schedule")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content(createBody(childId, "过期日程", minusDays(1), "08:00", "ONCE", null, null)))
@@ -166,7 +166,7 @@ class ScheduleFlowIT extends BaseIT {
     }
 
     private List<ScheduleResp> schedulesOf(String token, Long childId) throws Exception {
-        MvcResult res = mockMvc.perform(get("/api/schedule/list")
+        MvcResult res = mockMvc.perform(get("/api/mini/schedule/list")
                         .header("Authorization", "Bearer " + token)
                         .param("childId", String.valueOf(childId)))
                 .andExpect(status().isOk()).andReturn();
@@ -177,7 +177,7 @@ class ScheduleFlowIT extends BaseIT {
 
     private List<ScheduleOccurrenceResp> occurrencesOf(String token, Long childId, String from, String to)
             throws Exception {
-        MvcResult res = mockMvc.perform(get("/api/schedule/occurrences")
+        MvcResult res = mockMvc.perform(get("/api/mini/schedule/occurrences")
                         .header("Authorization", "Bearer " + token)
                         .param("childId", String.valueOf(childId)).param("from", from).param("to", to))
                 .andExpect(status().isOk()).andReturn();
@@ -187,7 +187,7 @@ class ScheduleFlowIT extends BaseIT {
     }
 
     private boolean sawScheduleRemind(String token) throws Exception {
-        MvcResult res = mockMvc.perform(get("/api/notices")
+        MvcResult res = mockMvc.perform(get("/api/mini/notices")
                         .header("Authorization", "Bearer " + token)
                         .param("page", "1").param("pageSize", "100"))
                 .andExpect(status().isOk()).andReturn();

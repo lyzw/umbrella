@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  * FAMILY 组接口：create / invite-code / join / bind-approve。
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/mini")
 public class FamilyController {
 
     private final FamilyService familyService;

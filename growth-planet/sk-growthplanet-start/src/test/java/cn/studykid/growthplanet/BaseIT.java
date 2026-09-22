@@ -98,14 +98,14 @@ public abstract class BaseIT {
 
     /** 微信登录 + 选择角色，返回角色 token。 */
     protected String loginAndSelectRole(String code, RoleEnum role) throws Exception {
-        MvcResult wx = mockMvc.perform(post("/api/auth/wx-login")
+        MvcResult wx = mockMvc.perform(post("/api/mini/auth/wx-login")
                         .contentType(JSON)
                         .content("{\"code\":\"" + code + "\"}"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
                 .andReturn();
         WxLoginResp wxResp = dataOf(wx, WxLoginResp.class);
 
-        MvcResult sr = mockMvc.perform(post("/api/auth/select-role")
+        MvcResult sr = mockMvc.perform(post("/api/mini/auth/select-role")
                         .header("Authorization", "Bearer " + wxResp.getToken())
                         .contentType(JSON)
                         .content("{\"role\":\"" + role.name() + "\"}"))
@@ -138,7 +138,7 @@ public abstract class BaseIT {
         String parentToken = loginAndSelectRole(parentCode, RoleEnum.PARENT);
         String childToken = loginAndSelectRole(childCode, RoleEnum.CHILD);
 
-        MvcResult create = mockMvc.perform(post("/api/family/create")
+        MvcResult create = mockMvc.perform(post("/api/mini/family/create")
                         .header("Authorization", "Bearer " + parentToken)
                         .contentType(JSON)
                         .content("{\"familyName\":\"测试家庭\"}"))
@@ -146,7 +146,7 @@ public abstract class BaseIT {
                 .andReturn();
         CreateFamilyResp cf = dataOf(create, CreateFamilyResp.class);
 
-        MvcResult join = mockMvc.perform(post("/api/family/join")
+        MvcResult join = mockMvc.perform(post("/api/mini/family/join")
                         .header("Authorization", "Bearer " + childToken)
                         .contentType(JSON)
                         .content("{\"inviteCode\":\"" + cf.getInviteCode() + "\"}"))
@@ -167,13 +167,13 @@ public abstract class BaseIT {
     }
 
     protected void grant(FamilyContext ctx) throws Exception {
-        mockMvc.perform(post("/api/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(post("/api/mini/compliance/consent").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content(consentJson(ctx)))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
     }
 
     protected void approve(FamilyContext ctx) throws Exception {
-        mockMvc.perform(post("/api/family/bind-approve").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(post("/api/mini/family/bind-approve").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content("{\"applyId\":\"" + ctx.applyId() + "\",\"approve\":true}"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
     }
@@ -185,7 +185,7 @@ public abstract class BaseIT {
     }
 
     protected void revoke(FamilyContext ctx) throws Exception {
-        mockMvc.perform(post("/api/compliance/consent/revoke").header("Authorization", "Bearer " + ctx.parentToken())
+        mockMvc.perform(post("/api/mini/compliance/consent/revoke").header("Authorization", "Bearer " + ctx.parentToken())
                 .contentType(JSON).content("{\"childId\":\"" + childUserId(ctx)
                         + "\",\"consentType\":\"PROFILE\",\"version\":\"v1\"}"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());

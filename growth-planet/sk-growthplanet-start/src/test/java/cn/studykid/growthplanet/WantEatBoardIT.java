@@ -104,7 +104,7 @@ class WantEatBoardIT extends BaseIT {
         // 儿童 token 无权限
         board(ctx.childToken(), childUserId(ctx), today, today).andExpect(status().isForbidden());
         // 缺 childId
-        mockMvc.perform(get("/api/parent/want-eat").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/parent/want-eat").header("Authorization", bearer(ctx.parentToken()))
                 .param("from", today.toString()).param("to", today.toString()))
                 .andExpect(status().isBadRequest());
         // from > to
@@ -157,7 +157,7 @@ class WantEatBoardIT extends BaseIT {
         LocalDate today = today();
         long menuId = familyMenu(ctx, List.of(dishId), today, "LUNCH");
         markFavorite(ctx, dishId, menuId, today, "LUNCH");
-        mockMvc.perform(delete("/api/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
+        mockMvc.perform(delete("/api/mini/admin/dish/{id}", dishId).header("Authorization", bearer(admin)))
                 .andExpect(status().isOk());
 
         JsonNode data = dataJson(board(ctx.parentToken(), childUserId(ctx), today, today));
@@ -221,10 +221,10 @@ class WantEatBoardIT extends BaseIT {
         markFavorite(ctx, older, menuOlder, today.minusDays(10), "LUNCH");
         long menuGone = familyMenu(ctx, List.of(gone), today, "DINNER");
         markFavorite(ctx, gone, menuGone, today, "DINNER");
-        mockMvc.perform(delete("/api/admin/dish/{id}", gone).header("Authorization", bearer(admin)))
+        mockMvc.perform(delete("/api/mini/admin/dish/{id}", gone).header("Authorization", bearer(admin)))
                 .andExpect(status().isOk());
 
-        JsonNode data = dataJson(mockMvc.perform(get("/api/child/frequent-dish")
+        JsonNode data = dataJson(mockMvc.perform(get("/api/mini/child/frequent-dish")
                 .header("Authorization", bearer(ctx.childToken()))));
         JsonNode items = data.get("dishes");
         // 已删除菜品被跳过；近期加权使今天的菜排在 10 天前的菜之前
@@ -234,13 +234,13 @@ class WantEatBoardIT extends BaseIT {
         assertEquals("常吃旧菜", items.get(1).get("name").asString());
 
         // 家长可代查但须本家庭；越权 403
-        dataJson(mockMvc.perform(get("/api/child/frequent-dish")
+        dataJson(mockMvc.perform(get("/api/mini/child/frequent-dish")
                 .header("Authorization", bearer(ctx.parentToken()))
                 .param("childId", childUserId(ctx).toString()))).get("dishes");
         var other = readyProfile();
-        mockMvc.perform(get("/api/child/frequent-dish").header("Authorization", bearer(other.parentToken()))
+        mockMvc.perform(get("/api/mini/child/frequent-dish").header("Authorization", bearer(other.parentToken()))
                 .param("childId", childUserId(ctx).toString())).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/child/frequent-dish").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(get("/api/mini/child/frequent-dish").header("Authorization", bearer(ctx.childToken()))
                 .param("childId", childUserId(other).toString())).andExpect(status().isForbidden());
     }
 
@@ -273,7 +273,7 @@ class WantEatBoardIT extends BaseIT {
             }));
             assertTrue(locked.await(10, TimeUnit.SECONDS), "并发事务未能取得行锁");
 
-            Future<Integer> reader = pool.submit(() -> mockMvc.perform(get("/api/menu/daily")
+            Future<Integer> reader = pool.submit(() -> mockMvc.perform(get("/api/mini/menu/daily")
                             .header("Authorization", bearer(ctx.childToken())).param("sourceType", "FAMILY")
                             .param("menuDate", today.toString()).param("mealType", "LUNCH"))
                     .andReturn().getResponse().getStatus());
@@ -297,7 +297,7 @@ class WantEatBoardIT extends BaseIT {
         var ctx = setupFamily();
         grant(ctx);
         approve(ctx);
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
         return ctx;
     }
@@ -312,7 +312,7 @@ class WantEatBoardIT extends BaseIT {
     }
 
     private long category(String admin) throws Exception {
-        return id(mockMvc.perform(post("/api/admin/dish-category").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish-category").header("Authorization", bearer(admin))
                 .contentType(JSON).content("{\"name\":\"Synthetic category\",\"sort\":0,\"status\":\"ENABLED\"}"))
                 .andExpect(status().isOk()).andReturn(), "categoryId");
     }
@@ -327,7 +327,7 @@ class WantEatBoardIT extends BaseIT {
         body.put("allergenStatus", allergenStatus);
         body.put("spiceLevel", 0);
         body.put("status", "ON_SALE");
-        return id(mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish").header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "dishId");
     }
 
@@ -343,7 +343,7 @@ class WantEatBoardIT extends BaseIT {
         body.put("menuDate", date.toString());
         body.put("mealType", mealType);
         body.put("dishIds", refs);
-        return id(mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        return id(mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "menuId");
     }
 
@@ -356,18 +356,18 @@ class WantEatBoardIT extends BaseIT {
         body.put("menuDate", date.toString());
         body.put("mealType", mealType);
         body.put("dishType", "PRESET");
-        mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(post("/api/mini/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk());
     }
 
     private ResultActions board(String token, Long childId, LocalDate from, LocalDate to) throws Exception {
-        return mockMvc.perform(get("/api/parent/want-eat").header("Authorization", bearer(token))
+        return mockMvc.perform(get("/api/mini/parent/want-eat").header("Authorization", bearer(token))
                 .param("childId", childId.toString()).param("from", from.toString()).param("to", to.toString()));
     }
 
     private ResultActions transition(String token, long wantEatId, String status, int expectedVersion)
             throws Exception {
-        return mockMvc.perform(post("/api/parent/want-eat/{id}/status", wantEatId)
+        return mockMvc.perform(post("/api/mini/parent/want-eat/{id}/status", wantEatId)
                 .header("Authorization", bearer(token)).contentType(JSON)
                 .content(json(Map.of("status", status, "expectedVersion", expectedVersion))));
     }

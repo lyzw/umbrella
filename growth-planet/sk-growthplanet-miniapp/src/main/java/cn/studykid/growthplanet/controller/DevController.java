@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 开发/测试专用接口，仅 dev / test profile 加载。
  */
 @RestController
-@RequestMapping("/api/dev")
+@RequestMapping("/api/mini/dev")
 @Profile({"dev", "test"})
 public class DevController {
 

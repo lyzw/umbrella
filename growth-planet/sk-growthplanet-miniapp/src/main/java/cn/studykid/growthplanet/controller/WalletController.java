@@ -12,7 +12,7 @@ import java.time.LocalDate;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/wallet")
+@RequestMapping("/api/mini/wallet")
 public class WalletController {
     private final WalletService service;
 

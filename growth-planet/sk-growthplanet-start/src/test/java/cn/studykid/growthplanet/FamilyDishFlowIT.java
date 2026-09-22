@@ -42,13 +42,13 @@ class FamilyDishFlowIT extends BaseIT {
         long categoryId = category(admin);
         long id = createFamilyDish(ctx.parentToken(), categoryId);
 
-        JsonNode list = data(get("/api/parent/family-dish").header("Authorization", bearer(ctx.parentToken()))
+        JsonNode list = data(get("/api/mini/parent/family-dish").header("Authorization", bearer(ctx.parentToken()))
                 .param("pageSize", "20"));
         assertEquals(1, list.get("total").asInt());
         assertEquals(id, list.get("items").get(0).get("dishId").asLong());
         assertEquals("ON_SALE", list.get("items").get(0).get("status").asText());
 
-        FamilyDishResp detail = data(mockMvc.perform(get("/api/parent/family-dish/{id}", id)
+        FamilyDishResp detail = data(mockMvc.perform(get("/api/mini/parent/family-dish/{id}", id)
                 .header("Authorization", bearer(ctx.parentToken()))), FamilyDishResp.class);
         assertEquals("ON_SALE", detail.getStatus());
         assertEquals(0, detail.getVersion());
@@ -67,7 +67,7 @@ class FamilyDishFlowIT extends BaseIT {
         assertEquals(3, on.getVersion());
 
         // 乐观锁：版本不匹配应冲突
-        mockMvc.perform(put("/api/parent/family-dish/{id}", id).header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(put("/api/mini/parent/family-dish/{id}", id).header("Authorization", bearer(ctx.parentToken()))
                 .param("expectedVersion", "99").contentType(JSON)
                 .content(json(familyDishBody(categoryId, "冲突菜", "1.00", List.of(), "DECLARED"))))
                 .andExpect(status().isConflict());
@@ -79,7 +79,7 @@ class FamilyDishFlowIT extends BaseIT {
         String admin = adminToken();
         long categoryId = category(admin);
 
-        JsonNode list = data(get("/api/parent/dish-category").header("Authorization", bearer(ctx.parentToken())));
+        JsonNode list = data(get("/api/mini/parent/dish-category").header("Authorization", bearer(ctx.parentToken())));
         assertTrue(list.isArray());
         boolean found = false;
         for (JsonNode node : list) {
@@ -89,7 +89,7 @@ class FamilyDishFlowIT extends BaseIT {
         }
         assertTrue(found, "家长应能读取预置分类用于私有菜品录入");
 
-        mockMvc.perform(get("/api/parent/dish-category").header("Authorization", bearer(ctx.childToken())))
+        mockMvc.perform(get("/api/mini/parent/dish-category").header("Authorization", bearer(ctx.childToken())))
                 .andExpect(status().isForbidden());
     }
 
@@ -100,21 +100,21 @@ class FamilyDishFlowIT extends BaseIT {
         long categoryId = category(admin);
         long id = createFamilyDish(ctx.parentToken(), categoryId);
         for (String token : List.of(ctx.childToken(), admin)) {
-            mockMvc.perform(post("/api/parent/family-dish").header("Authorization", bearer(token))
+            mockMvc.perform(post("/api/mini/parent/family-dish").header("Authorization", bearer(token))
                     .contentType(JSON).content(json(familyDishBody(categoryId, "x", "1.00", List.of(), "DECLARED"))))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(get("/api/parent/family-dish").header("Authorization", bearer(token)))
+            mockMvc.perform(get("/api/mini/parent/family-dish").header("Authorization", bearer(token)))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(get("/api/parent/family-dish/{id}", id).header("Authorization", bearer(token)))
+            mockMvc.perform(get("/api/mini/parent/family-dish/{id}", id).header("Authorization", bearer(token)))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(put("/api/parent/family-dish/{id}", id).header("Authorization", bearer(token))
+            mockMvc.perform(put("/api/mini/parent/family-dish/{id}", id).header("Authorization", bearer(token))
                     .param("expectedVersion", "0").contentType(JSON)
                     .content(json(familyDishBody(categoryId, "x", "1.00", List.of(), "DECLARED"))))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(post("/api/parent/family-dish/{id}/status", id).header("Authorization", bearer(token))
+            mockMvc.perform(post("/api/mini/parent/family-dish/{id}/status", id).header("Authorization", bearer(token))
                     .param("targetStatus", "OFF_SALE").param("expectedVersion", "0"))
                     .andExpect(status().isForbidden());
-            mockMvc.perform(delete("/api/parent/family-dish/{id}", id).header("Authorization", bearer(token))
+            mockMvc.perform(delete("/api/mini/parent/family-dish/{id}", id).header("Authorization", bearer(token))
                     .param("expectedVersion", "0")).andExpect(status().isForbidden());
         }
     }
@@ -127,16 +127,16 @@ class FamilyDishFlowIT extends BaseIT {
         long id = createFamilyDish(ctx.parentToken(), categoryId);
         var other = readyProfile();
 
-        JsonNode otherList = data(get("/api/parent/family-dish").header("Authorization", bearer(other.parentToken()))
+        JsonNode otherList = data(get("/api/mini/parent/family-dish").header("Authorization", bearer(other.parentToken()))
                 .param("pageSize", "20"));
         assertEquals(0, otherList.get("total").asInt());
-        mockMvc.perform(get("/api/parent/family-dish/{id}", id).header("Authorization", bearer(other.parentToken())))
+        mockMvc.perform(get("/api/mini/parent/family-dish/{id}", id).header("Authorization", bearer(other.parentToken())))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(put("/api/parent/family-dish/{id}", id).header("Authorization", bearer(other.parentToken()))
+        mockMvc.perform(put("/api/mini/parent/family-dish/{id}", id).header("Authorization", bearer(other.parentToken()))
                 .param("expectedVersion", "0").contentType(JSON)
                 .content(json(familyDishBody(categoryId, "劫持", "1.00", List.of(), "DECLARED"))))
                 .andExpect(status().isNotFound());
-        mockMvc.perform(delete("/api/parent/family-dish/{id}", id).header("Authorization", bearer(other.parentToken()))
+        mockMvc.perform(delete("/api/mini/parent/family-dish/{id}", id).header("Authorization", bearer(other.parentToken()))
                 .param("expectedVersion", "0")).andExpect(status().isNotFound());
         // 隔离已由上面的 404 断言证明：另一家庭既不能查看也不能改动本家庭的菜品
     }
@@ -153,7 +153,7 @@ class FamilyDishFlowIT extends BaseIT {
         long menuId = publishMenu(ctx.parentToken(),
                 List.of(refBody(preset), refFamilyBody(family)), date);
 
-        JsonNode maint = data(get("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        JsonNode maint = data(get("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .param("menuDate", date.toString()).param("mealType", "LUNCH"));
         assertEquals(menuId, maint.get("menuId").asLong());
         List<String> types = new ArrayList<>();
@@ -184,10 +184,10 @@ class FamilyDishFlowIT extends BaseIT {
         assertEquals(1, references(ctx.parentToken(), family));
         deleteFamilyDish(ctx.parentToken(), family, 0);
         // 软删除后详情不可见
-        mockMvc.perform(get("/api/parent/family-dish/{id}", family).header("Authorization", bearer(ctx.parentToken())))
+        mockMvc.perform(get("/api/mini/parent/family-dish/{id}", family).header("Authorization", bearer(ctx.parentToken())))
                 .andExpect(status().isNotFound());
         // 菜单仍引用该菜，但维护页应标记为缺失
-        JsonNode maint = data(get("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        JsonNode maint = data(get("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .param("menuDate", date.toString()).param("mealType", "LUNCH"));
         boolean missing = false;
         for (JsonNode m : maint.get("missingDishIds")) {
@@ -245,57 +245,57 @@ class FamilyDishFlowIT extends BaseIT {
 
     private long createFamilyDish(String token, long categoryId) throws Exception {
         var body = familyDishBody(categoryId, "妈妈拿手菜", "7.00", List.of(), "DECLARED");
-        return id(mockMvc.perform(post("/api/parent/family-dish").header("Authorization", bearer(token))
+        return id(mockMvc.perform(post("/api/mini/parent/family-dish").header("Authorization", bearer(token))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "dishId");
     }
 
     private FamilyDishResp updateFamilyDish(String token, long id, int expectedVersion, long categoryId) throws Exception {
         var body = familyDishBody(categoryId, "妈妈改名菜", "9.00", List.of(), "DECLARED");
-        return data(mockMvc.perform(put("/api/parent/family-dish/{id}", id).header("Authorization", bearer(token))
+        return data(mockMvc.perform(put("/api/mini/parent/family-dish/{id}", id).header("Authorization", bearer(token))
                 .param("expectedVersion", String.valueOf(expectedVersion)).contentType(JSON).content(json(body)))
                 .andExpect(status().isOk()), FamilyDishResp.class);
     }
 
     private FamilyDishResp changeStatus(String token, long id, int expectedVersion, String target) throws Exception {
-        return data(mockMvc.perform(post("/api/parent/family-dish/{id}/status", id).header("Authorization", bearer(token))
+        return data(mockMvc.perform(post("/api/mini/parent/family-dish/{id}/status", id).header("Authorization", bearer(token))
                 .param("targetStatus", target).param("expectedVersion", String.valueOf(expectedVersion)))
                 .andExpect(status().isOk()), FamilyDishResp.class);
     }
 
     private int references(String token, long id) throws Exception {
-        JsonNode node = data(mockMvc.perform(get("/api/parent/family-dish/{id}/references", id)
+        JsonNode node = data(mockMvc.perform(get("/api/mini/parent/family-dish/{id}/references", id)
                 .header("Authorization", bearer(token))).andExpect(status().isOk()));
         return node.get("menuCount").asInt();
     }
 
     private void deleteFamilyDish(String token, long id, int expectedVersion) throws Exception {
-        mockMvc.perform(delete("/api/parent/family-dish/{id}", id).header("Authorization", bearer(token))
+        mockMvc.perform(delete("/api/mini/parent/family-dish/{id}", id).header("Authorization", bearer(token))
                 .param("expectedVersion", String.valueOf(expectedVersion))).andExpect(status().isOk());
     }
 
     private long publishMenu(String token, List<Map<String, Object>> refs, LocalDate date) throws Exception {
         var body = new LinkedHashMap<>(Map.of("menuDate", date.toString(), "mealType", "LUNCH",
                 "dishIds", refs, "status", "PUBLISHED"));
-        return id(mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(token))
+        return id(mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(token))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "menuId");
     }
 
     private JsonNode daily(String token, String childId, LocalDate date) throws Exception {
-        return data(mockMvc.perform(get("/api/menu/daily").header("Authorization", bearer(token))
+        return data(mockMvc.perform(get("/api/mini/menu/daily").header("Authorization", bearer(token))
                 .param("sourceType", "FAMILY").param("menuDate", date.toString())
                 .param("mealType", "LUNCH").param("childId", childId)).andExpect(status().isOk()));
     }
 
     private JsonNode submitConfirm(String token, long menuId, List<Map<String, Object>> items) throws Exception {
         var body = Map.of("menuId", Long.toString(menuId), "items", items);
-        var result = mockMvc.perform(post("/api/menu/confirm").header("Authorization", bearer(token))
+        var result = mockMvc.perform(post("/api/mini/menu/confirm").header("Authorization", bearer(token))
                 .header("Idempotency-Key", "family-dish-order-" + menuId)
                 .contentType(JSON).content(json(body))).andReturn();
         return objectMapper.readTree(result.getResponse().getContentAsString()).get("data");
     }
 
     private JsonNode approveConfirm(String token, long confirmId) throws Exception {
-        return data(mockMvc.perform(post("/api/parent/approve/{id}/approve", confirmId).header("Authorization", bearer(token))
+        return data(mockMvc.perform(post("/api/mini/parent/approve/{id}/approve", confirmId).header("Authorization", bearer(token))
                 .contentType(JSON).content("{\"expectedVersion\":0}")).andExpect(status().isOk()));
     }
 
@@ -334,12 +334,12 @@ class FamilyDishFlowIT extends BaseIT {
     }
 
     private void saveProfile(FamilyContext ctx) throws Exception {
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
     }
 
     private void grantMoney(FamilyContext ctx, String amount, String key) throws Exception {
-        mockMvc.perform(post("/api/wallet/grant").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/wallet/grant").header("Authorization", bearer(ctx.parentToken()))
                 .header("Idempotency-Key", key).contentType(JSON)
                 .content("{\"childId\":\"" + childUserId(ctx) + "\",\"amount\":\"" + amount
                         + "\",\"reason\":\"家庭菜品测试发放\"}")).andExpect(status().isOk());
@@ -355,14 +355,14 @@ class FamilyDishFlowIT extends BaseIT {
     }
 
     private long category(String admin) throws Exception {
-        return id(mockMvc.perform(post("/api/admin/dish-category").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish-category").header("Authorization", bearer(admin))
                 .contentType(JSON).content("{\"name\":\"家庭菜品分类\",\"sort\":0,\"status\":\"ENABLED\"}"))
                 .andExpect(status().isOk()).andReturn(), "categoryId");
     }
 
     private long dish(String admin, long categoryId, String name, List<String> allergens, String allergenStatus)
             throws Exception {
-        return id(mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish").header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(dishBody(categoryId, name, allergens, allergenStatus))))
                 .andExpect(status().isOk()).andReturn(), "dishId");
     }

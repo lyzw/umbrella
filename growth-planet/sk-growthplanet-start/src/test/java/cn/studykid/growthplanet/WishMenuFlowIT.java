@@ -61,7 +61,7 @@ class WishMenuFlowIT extends BaseIT {
     void settingUsesDefaultsAndOptimisticLock() throws Exception {
         var ctx = readyProfile();
 
-        JsonNode initial = dataJson(mockMvc.perform(get("/api/parent/wish-setting")
+        JsonNode initial = dataJson(mockMvc.perform(get("/api/mini/parent/wish-setting")
                 .header("Authorization", bearer(ctx.parentToken()))));
         assertEquals(5, initial.get("maxDishes").asInt(), "无设置行时应返回默认上限 5");
         assertTrue(initial.get("enabled").asBoolean());
@@ -77,7 +77,7 @@ class WishMenuFlowIT extends BaseIT {
         putSetting(ctx.parentToken(), 11, true, 1).andExpect(status().isBadRequest());
         putSetting(ctx.parentToken(), 0, true, 1).andExpect(status().isBadRequest());
         // 儿童无权读写家长设置
-        mockMvc.perform(get("/api/parent/wish-setting").header("Authorization", bearer(ctx.childToken())))
+        mockMvc.perform(get("/api/mini/parent/wish-setting").header("Authorization", bearer(ctx.childToken())))
                 .andExpect(status().isForbidden());
         // 关闭开关
         JsonNode off = dataJson(putSetting(ctx.parentToken(), 2, false, 1));
@@ -303,7 +303,7 @@ class WishMenuFlowIT extends BaseIT {
         mark(ctx.childToken(), today(), "PRESET", dishId, true).andExpect(status().isOk());
         dataJson(submit(ctx.childToken(), today(), List.of(dishId), 0));
 
-        JsonNode view = dataJson(mockMvc.perform(get("/api/parent/wish-menu")
+        JsonNode view = dataJson(mockMvc.perform(get("/api/mini/parent/wish-menu")
                 .header("Authorization", bearer(ctx.parentToken()))
                 .param("childId", childUserId(ctx).toString()).param("menuDate", today().toString())));
         assertEquals(childUserId(ctx).toString(), view.get("childId").asString());
@@ -311,7 +311,7 @@ class WishMenuFlowIT extends BaseIT {
         assertEquals(1, view.get("submittedCount").asInt());
         assertEquals("家长查看菜", view.get("items").get(0).get("name").asString());
 
-        JsonNode list = dataJson(mockMvc.perform(get("/api/parent/wish-menu/list")
+        JsonNode list = dataJson(mockMvc.perform(get("/api/mini/parent/wish-menu/list")
                 .header("Authorization", bearer(ctx.parentToken()))
                 .param("childId", childUserId(ctx).toString())
                 .param("from", today().toString()).param("to", today().plusDays(6).toString())));
@@ -320,7 +320,7 @@ class WishMenuFlowIT extends BaseIT {
         assertFalse(list.get("items").get(0).get("expired").asBoolean());
 
         // 未创建的一天：状态 NONE（可选功能，不产生占位记录）
-        JsonNode empty = dataJson(mockMvc.perform(get("/api/parent/wish-menu")
+        JsonNode empty = dataJson(mockMvc.perform(get("/api/mini/parent/wish-menu")
                 .header("Authorization", bearer(ctx.parentToken()))
                 .param("childId", childUserId(ctx).toString())
                 .param("menuDate", today().plusDays(1).toString())));
@@ -328,16 +328,16 @@ class WishMenuFlowIT extends BaseIT {
         assertTrue(empty.get("items").isEmpty());
 
         // 越权：别家家长 / 儿童 token / 区间超限 / 不存在的孩子
-        mockMvc.perform(get("/api/parent/wish-menu").header("Authorization", bearer(other.parentToken()))
+        mockMvc.perform(get("/api/mini/parent/wish-menu").header("Authorization", bearer(other.parentToken()))
                 .param("childId", childUserId(ctx).toString()).param("menuDate", today().toString()))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/parent/wish-menu").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(get("/api/mini/parent/wish-menu").header("Authorization", bearer(ctx.childToken()))
                 .param("childId", childUserId(ctx).toString()).param("menuDate", today().toString()))
                 .andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/parent/wish-menu/list").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/parent/wish-menu/list").header("Authorization", bearer(ctx.parentToken()))
                 .param("childId", "99999999").param("from", today().toString())
                 .param("to", today().toString())).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/parent/wish-menu/list").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/parent/wish-menu/list").header("Authorization", bearer(ctx.parentToken()))
                 .param("childId", childUserId(ctx).toString())
                 .param("from", today().toString()).param("to", today().plusDays(31).toString()))
                 .andExpect(status().isBadRequest());
@@ -347,9 +347,9 @@ class WishMenuFlowIT extends BaseIT {
     void revokedConsentBlocksWishMenu() throws Exception {
         var ctx = readyProfile();
         revoke(ctx);
-        mockMvc.perform(get("/api/child/wish-menu").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(get("/api/mini/child/wish-menu").header("Authorization", bearer(ctx.childToken()))
                 .param("menuDate", today().toString())).andExpect(status().isConflict());
-        mockMvc.perform(get("/api/child/wish-catalog").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(get("/api/mini/child/wish-catalog").header("Authorization", bearer(ctx.childToken()))
                 .param("menuDate", today().toString()).param("sourceType", "PRESET"))
                 .andExpect(status().isConflict());
         mark(ctx.childToken(), today(), "PRESET", 1L, true).andExpect(status().isConflict());
@@ -382,11 +382,11 @@ class WishMenuFlowIT extends BaseIT {
             }));
             assertTrue(locked.await(10, TimeUnit.SECONDS), "并发事务未能取得行锁");
 
-            Future<Integer> childRead = pool.submit(() -> mockMvc.perform(get("/api/child/wish-menu")
+            Future<Integer> childRead = pool.submit(() -> mockMvc.perform(get("/api/mini/child/wish-menu")
                             .header("Authorization", bearer(ctx.childToken()))
                             .param("menuDate", today().toString()))
                     .andReturn().getResponse().getStatus());
-            Future<Integer> parentRead = pool.submit(() -> mockMvc.perform(get("/api/parent/wish-menu/list")
+            Future<Integer> parentRead = pool.submit(() -> mockMvc.perform(get("/api/mini/parent/wish-menu/list")
                             .header("Authorization", bearer(ctx.parentToken()))
                             .param("childId", childUserId(ctx).toString())
                             .param("from", today().toString()).param("to", today().toString()))
@@ -411,7 +411,7 @@ class WishMenuFlowIT extends BaseIT {
         var ctx = setupFamily();
         grant(ctx);
         approve(ctx);
-        mockMvc.perform(post("/api/child/profile").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/child/profile").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(profileJson(ctx))).andExpect(status().isOk());
         return ctx;
     }
@@ -426,7 +426,7 @@ class WishMenuFlowIT extends BaseIT {
     }
 
     private long category(String admin) throws Exception {
-        return id(mockMvc.perform(post("/api/admin/dish-category").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish-category").header("Authorization", bearer(admin))
                         .contentType(JSON).content("{\"name\":\"Synthetic category\",\"sort\":0,\"status\":\"ENABLED\"}"))
                 .andExpect(status().isOk()).andReturn(), "categoryId");
     }
@@ -441,7 +441,7 @@ class WishMenuFlowIT extends BaseIT {
         body.put("allergenStatus", allergenStatus);
         body.put("spiceLevel", 0);
         body.put("status", "ON_SALE");
-        return id(mockMvc.perform(post("/api/admin/dish").header("Authorization", bearer(admin))
+        return id(mockMvc.perform(post("/api/mini/admin/dish").header("Authorization", bearer(admin))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "dishId");
     }
 
@@ -453,7 +453,7 @@ class WishMenuFlowIT extends BaseIT {
         body.put("allergens", List.of());
         body.put("allergenStatus", "DECLARED");
         body.put("spiceLevel", 1);
-        return id(mockMvc.perform(post("/api/parent/family-dish").header("Authorization", bearer(ctx.parentToken()))
+        return id(mockMvc.perform(post("/api/mini/parent/family-dish").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "dishId");
     }
 
@@ -487,12 +487,12 @@ class WishMenuFlowIT extends BaseIT {
         body.put("menuDate", date.toString());
         body.put("mealType", "LUNCH");
         body.put("dishIds", refs);
-        return id(mockMvc.perform(post("/api/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
+        return id(mockMvc.perform(post("/api/mini/parent/menu-daily").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(json(body))).andExpect(status().isOk()).andReturn(), "menuId");
     }
 
     private ResultActions markFavorite(FamilyContext ctx, long dishId, LocalDate date) throws Exception {
-        long menuId = id(mockMvc.perform(get("/api/parent/menu-daily")
+        long menuId = id(mockMvc.perform(get("/api/mini/parent/menu-daily")
                         .header("Authorization", bearer(ctx.parentToken()))
                         .param("menuDate", date.toString()).param("mealType", "LUNCH"))
                 .andExpect(status().isOk()).andReturn(), "menuId");
@@ -503,7 +503,7 @@ class WishMenuFlowIT extends BaseIT {
         body.put("menuDate", date.toString());
         body.put("mealType", "LUNCH");
         body.put("menuId", Long.toString(menuId));
-        return mockMvc.perform(post("/api/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
+        return mockMvc.perform(post("/api/mini/menu/mark-favorite").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content(json(body)));
     }
 
@@ -513,12 +513,12 @@ class WishMenuFlowIT extends BaseIT {
         body.put("maxDishes", maxDishes);
         body.put("enabled", enabled);
         body.put("expectedVersion", expectedVersion);
-        return mockMvc.perform(put("/api/parent/wish-setting").header("Authorization", bearer(token))
+        return mockMvc.perform(put("/api/mini/parent/wish-setting").header("Authorization", bearer(token))
                 .contentType(JSON).content(json(body)));
     }
 
     private ResultActions catalog(String token, LocalDate menuDate, String sourceType) throws Exception {
-        return mockMvc.perform(get("/api/child/wish-catalog").header("Authorization", bearer(token))
+        return mockMvc.perform(get("/api/mini/child/wish-catalog").header("Authorization", bearer(token))
                 .param("menuDate", menuDate.toString()).param("sourceType", sourceType).param("pageSize", "100"));
     }
 
@@ -529,7 +529,7 @@ class WishMenuFlowIT extends BaseIT {
         body.put("type", type);
         body.put("id", Long.toString(id));
         body.put("selected", selected);
-        return mockMvc.perform(post("/api/child/wish-mark").header("Authorization", bearer(token))
+        return mockMvc.perform(post("/api/mini/child/wish-mark").header("Authorization", bearer(token))
                 .contentType(JSON).content(json(body)));
     }
 
@@ -546,7 +546,7 @@ class WishMenuFlowIT extends BaseIT {
         body.put("menuDate", menuDate.toString());
         body.put("refs", refs);
         body.put("expectedVersion", expectedVersion);
-        return mockMvc.perform(post("/api/child/wish-menu/submit").header("Authorization", bearer(token))
+        return mockMvc.perform(post("/api/mini/child/wish-menu/submit").header("Authorization", bearer(token))
                 .contentType(JSON).content(json(body)));
     }
 
@@ -554,7 +554,7 @@ class WishMenuFlowIT extends BaseIT {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("menuDate", menuDate.toString());
         body.put("expectedVersion", expectedVersion);
-        return mockMvc.perform(post("/api/child/wish-menu/withdraw").header("Authorization", bearer(token))
+        return mockMvc.perform(post("/api/mini/child/wish-menu/withdraw").header("Authorization", bearer(token))
                 .contentType(JSON).content(json(body)));
     }
 

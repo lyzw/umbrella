@@ -13,14 +13,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 后台运营端认证接口（前缀 {@code /api/console}，与 C 端 {@code /api/auth} 完全隔离）。
+ * 后台运营端认证接口（前缀 {@code /api/admin}，与 C 端 {@code /api/auth} 完全隔离）。
  * <ul>
- *   <li>{@code POST /api/console/auth/login} —— 放行（无需 token）；</li>
- *   <li>{@code POST /api/console/auth/logout} / {@code GET /api/console/auth/me} —— 需 admin token。</li>
+ *   <li>{@code POST /api/admin/auth/login} —— 放行（无需 token）；</li>
+ *   <li>{@code POST /api/admin/auth/logout} / {@code GET /api/admin/auth/me} —— 需 admin token。</li>
  * </ul>
  */
 @RestController
-@RequestMapping("/api/console/auth")
+@RequestMapping("/api/admin/auth")
 public class AdminAuthController {
 
     private final AdminAuthService authService;

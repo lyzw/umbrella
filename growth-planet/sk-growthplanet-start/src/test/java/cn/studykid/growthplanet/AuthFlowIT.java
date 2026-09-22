@@ -18,7 +18,7 @@ class AuthFlowIT extends BaseIT {
 
     @Test
     void wxLoginReturnsTokenAndIsNew() throws Exception {
-        MvcResult wx = mockMvc.perform(post("/api/auth/wx-login")
+        MvcResult wx = mockMvc.perform(post("/api/mini/auth/wx-login")
                         .contentType(JSON)
                         .content("{\"code\":\"auth_flow_code_1\"}"))
                 .andExpect(status().isOk())
@@ -28,7 +28,7 @@ class AuthFlowIT extends BaseIT {
         assertEquals("UNSELECTED", resp.getRole());
         assertEquals(1800, resp.getExpiresIn());
         // 再次登录同一 code -> 同一 openid，isNew=false
-        MvcResult wx2 = mockMvc.perform(post("/api/auth/wx-login")
+        MvcResult wx2 = mockMvc.perform(post("/api/mini/auth/wx-login")
                         .contentType(JSON)
                         .content("{\"code\":\"auth_flow_code_1\"}"))
                 .andExpect(status().isOk())
@@ -43,7 +43,7 @@ class AuthFlowIT extends BaseIT {
         String token = loginAndSelectRole("auth_role_code", RoleEnum.CHILD);
         // 解析角色：通过 select-role 响应
         // token 已隐含 CHILD 角色；此处仅验证端点可重复调用且返回新 token
-        MvcResult sr = mockMvc.perform(post("/api/auth/select-role")
+        MvcResult sr = mockMvc.perform(post("/api/mini/auth/select-role")
                         .header("Authorization", "Bearer " + token)
                         .contentType(JSON)
                         .content("{\"role\":\"CHILD\"}"))
@@ -59,7 +59,7 @@ class AuthFlowIT extends BaseIT {
         FamilyContext ctx = setupFamily();
         grant(ctx);
         approve(ctx);
-        MvcResult profile = mockMvc.perform(post("/api/child/profile")
+        MvcResult profile = mockMvc.perform(post("/api/mini/child/profile")
                         .header("Authorization", "Bearer " + ctx.parentToken())
                         .contentType(JSON)
                         .content(profileJson(ctx)))
@@ -73,7 +73,7 @@ class AuthFlowIT extends BaseIT {
     void childProfileWithoutFamilyReturns403() throws Exception {
         // 仅登录+选角色，未加入家庭的儿童访问 profile -> 403（数据归属校验）
         String childToken = loginAndSelectRole("auth_nofam_code", RoleEnum.CHILD);
-        mockMvc.perform(post("/api/child/profile")
+        mockMvc.perform(post("/api/mini/child/profile")
                         .header("Authorization", "Bearer " + childToken)
                         .contentType(JSON)
                         .content("{\"nickname\":\"x\"}"))

@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * AUTH 组接口：wx-login / select-role / child-profile。
  */
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/mini")
 public class AuthController {
 
     private final AuthService authService;

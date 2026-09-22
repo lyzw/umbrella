@@ -53,25 +53,25 @@ class NoticeCenterFlowIT extends BaseIT {
         Notice event = event(ctx, "TEST_INBOX");
         Notice inbox = notices.selectOne(new QueryWrapper<Notice>().eq("event_key", event.getEventKey())
                 .eq("channel", "IN_APP"));
-        mockMvc.perform(get("/api/notices").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/notices").header("Authorization", bearer(ctx.parentToken()))
                 .param("page", "1").param("pageSize", "1"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.items.length()").value(1))
                 .andExpect(jsonPath("$.data.items[0].id").value(inbox.getId().toString()))
                 .andExpect(jsonPath("$.data.items[0].subscriptionNoticeId").value(event.getId().toString()));
-        mockMvc.perform(get("/api/notices").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(get("/api/mini/notices").header("Authorization", bearer(ctx.parentToken()))
                 .param("pageSize", "101")).andExpect(status().isBadRequest());
-        mockMvc.perform(post("/api/notices/" + inbox.getId() + "/read")
+        mockMvc.perform(post("/api/mini/notices/" + inbox.getId() + "/read")
                 .header("Authorization", bearer(other.parentToken()))).andExpect(status().isNotFound());
         for (int i = 0; i < 2; i++) {
-            mockMvc.perform(post("/api/notices/" + inbox.getId() + "/read")
+            mockMvc.perform(post("/api/mini/notices/" + inbox.getId() + "/read")
                     .header("Authorization", bearer(ctx.parentToken()))).andExpect(status().isOk());
         }
         assertNotNull(notices.selectById(inbox.getId()).getReadAt());
         long unread = notices.selectCount(new QueryWrapper<Notice>().eq("receiver_id", parentId(ctx))
                 .eq("channel", "IN_APP").isNull("read_at"));
-        mockMvc.perform(get("/api/notices/unread-count").header("Authorization", bearer(ctx.parentToken())))
+        mockMvc.perform(get("/api/mini/notices/unread-count").header("Authorization", bearer(ctx.parentToken())))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.unreadCount").value(unread));
-        mockMvc.perform(post("/api/notices/subscription").header("Authorization", bearer(ctx.childToken()))
+        mockMvc.perform(post("/api/mini/notices/subscription").header("Authorization", bearer(ctx.childToken()))
                 .contentType(JSON).content(subscriptionJson(event, true))).andExpect(status().isNotFound());
     }
 
@@ -125,7 +125,7 @@ class NoticeCenterFlowIT extends BaseIT {
         }
         assertEquals(0, delivery.deliverBatch());
         verify(transport, times(4)).send(anyString(), anyString(), anyString(), anyString());
-        mockMvc.perform(post("/api/notices/subscription").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/notices/subscription").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(subscriptionJson(event, true))).andExpect(status().isConflict());
     }
 
@@ -193,7 +193,7 @@ class NoticeCenterFlowIT extends BaseIT {
                 .thenReturn(NoticeTransport.Outcome.RETRYABLE_FAILURE);
         delivery.deliverBatch();
         Long originalRetry = notices.selectById(event.getId()).getNextRetryAt();
-        mockMvc.perform(post("/api/notices/subscription").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/notices/subscription").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(subscriptionJson(event, false))).andExpect(status().isOk());
         authorize(ctx, event);
         Notice after = notices.selectById(event.getId());
@@ -278,7 +278,7 @@ class NoticeCenterFlowIT extends BaseIT {
     }
 
     private void authorize(FamilyContext ctx, Notice event) throws Exception {
-        mockMvc.perform(post("/api/notices/subscription").header("Authorization", bearer(ctx.parentToken()))
+        mockMvc.perform(post("/api/mini/notices/subscription").header("Authorization", bearer(ctx.parentToken()))
                 .contentType(JSON).content(subscriptionJson(event, true)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("PENDING"));
     }

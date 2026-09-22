@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/schedule")
+@RequestMapping("/api/mini/schedule")
 public class ScheduleController {
     private final ScheduleService service;
 
