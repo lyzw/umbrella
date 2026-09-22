@@ -43,7 +43,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Monitor, User, Document } from '@element-plus/icons-vue'
+import { Monitor, User, Document, Goods } from '@element-plus/icons-vue'
 import { auth, doLogout, hasPerm } from '../stores/auth'
 
 const route = useRoute()

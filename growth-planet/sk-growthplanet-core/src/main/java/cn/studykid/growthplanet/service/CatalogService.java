@@ -88,18 +88,28 @@ public class CatalogService {
 
     public DishCategoryResp createCategory(DishCategoryReq req) {
         requireRole("ADMIN");
+        return createCategoryAs(UserContext.userId(), req);
+    }
+
+    /** 运营端变体：鉴权由调用方（AdminUserContext.requirePerm）完成，actorId 由运营会话提供。 */
+    public DishCategoryResp createCategoryAs(Long actorId, DishCategoryReq req) {
         validate(req);
         DishCategory category = new DishCategory();
         category.setName(req.getName().trim());
         category.setSort(req.getSort());
         category.setStatus(req.getStatus());
         categories.insert(category);
-        audit.record("CATEGORY_CREATE", UserContext.userId(), null, "CATEGORY", category.getId(), null, null);
+        audit.record("CATEGORY_CREATE", actorId, null, "CATEGORY", category.getId(), null, null);
         return categoryResponse(category);
     }
 
     public PageResp<DishCategoryResp> listCategories(int page, int pageSize) {
         requireRole("ADMIN");
+        return listCategoriesAs(page, pageSize);
+    }
+
+    /** 运营端变体：纯读，无审计。 */
+    public PageResp<DishCategoryResp> listCategoriesAs(int page, int pageSize) {
         long offset = offset(page, pageSize);
         long total = categories.selectCount(new QueryWrapper<>());
         List<DishCategoryResp> items = categories.selectList(new QueryWrapper<DishCategory>()
@@ -110,38 +120,58 @@ public class CatalogService {
 
     public DishResp createDish(DishReq req) {
         requireRole("ADMIN");
+        return createDishAs(UserContext.userId(), req);
+    }
+
+    /** 运营端变体：鉴权由调用方完成。 */
+    public DishResp createDishAs(Long actorId, DishReq req) {
         validateDish(req);
         Dish dish = new Dish();
         applyDish(dish, req);
         dishes.insert(dish);
-        audit.record("DISH_CREATE", UserContext.userId(), null, "DISH", dish.getId(), null, null);
+        audit.record("DISH_CREATE", actorId, null, "DISH", dish.getId(), null, null);
         return dishResponse(dish);
     }
 
     public DishResp updateDish(Long dishId, DishReq req) {
         requireRole("ADMIN");
+        return updateDishAs(UserContext.userId(), dishId, req);
+    }
+
+    /** 运营端变体：鉴权由调用方完成。 */
+    public DishResp updateDishAs(Long actorId, Long dishId, DishReq req) {
         positive(dishId);
         validateDish(req);
         Dish dish = lockDish(dishId);
         applyDish(dish, req);
         requireUpdated(dishes.updateById(dish));
-        audit.record("DISH_UPDATE", UserContext.userId(), null, "DISH", dishId, null, null);
+        audit.record("DISH_UPDATE", actorId, null, "DISH", dishId, null, null);
         return dishResponse(dish);
     }
 
     public void deleteDish(Long dishId) {
         requireRole("ADMIN");
+        deleteDishAs(UserContext.userId(), dishId);
+    }
+
+    /** 运营端变体：鉴权由调用方完成（详设 §3.4：预置菜品删除仅 SA）。 */
+    public void deleteDishAs(Long actorId, Long dishId) {
         positive(dishId);
         lockDish(dishId);
         // Keep menu references and historical snapshots; subsequent validation observes the missing dish.
         requireUpdated(dishes.update(null, new UpdateWrapper<Dish>().eq("id", dishId)
                 .set("status", "OFF_SALE").setSql("delete_at = UNIX_TIMESTAMP() * 1000")
                 .setSql("update_time = CURRENT_TIMESTAMP")));
-        audit.record("DISH_DELETE", UserContext.userId(), null, "DISH", dishId, null, null);
+        audit.record("DISH_DELETE", actorId, null, "DISH", dishId, null, null);
     }
 
     public DishResp getDish(Long dishId) {
         requireRole("ADMIN");
+        return getDishAs(dishId);
+    }
+
+    /** 运营端变体：纯读，无审计。 */
+    public DishResp getDishAs(Long dishId) {
         positive(dishId);
         Dish dish = dishes.selectById(dishId);
         if (dish == null) {
@@ -154,6 +184,12 @@ public class CatalogService {
     public PageResp<DishResp> listDishes(int page, int pageSize, Long categoryId, String status, String keyword,
             String allergenStatus) {
         requireRole("ADMIN");
+        return listDishesAs(page, pageSize, categoryId, status, keyword, allergenStatus);
+    }
+
+    /** 运营端变体：纯读，无审计。 */
+    public PageResp<DishResp> listDishesAs(int page, int pageSize, Long categoryId, String status, String keyword,
+            String allergenStatus) {
         return queryDishes(page, pageSize, categoryId, status, keyword, allergenStatus);
     }
 
@@ -194,6 +230,11 @@ public class CatalogService {
 
     public MenuUpsertResp upsertSchoolMenu(MenuDailyReq req) {
         requireRole("ADMIN");
+        return upsertSchoolMenuAs(UserContext.userId(), req);
+    }
+
+    /** 运营端变体：鉴权由调用方完成；校名发布目录校验保留（R4-lite）。 */
+    public MenuUpsertResp upsertSchoolMenuAs(Long actorId, MenuDailyReq req) {
         validateMenu(req);
         if (req.getSchool() == null || req.getSchool().isBlank()) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
@@ -204,7 +245,7 @@ public class CatalogService {
         if (!policy.getSchools().contains(school)) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "学校不在发布目录");
         }
-        return upsertMenu(req, "SCHOOL", null, school);
+        return upsertMenu(req, "SCHOOL", null, school, actorId);
     }
 
     public MenuUpsertResp upsertFamilyMenu(MenuDailyReq req) {
@@ -218,6 +259,11 @@ public class CatalogService {
     }
 
     private MenuUpsertResp upsertMenu(MenuDailyReq req, String sourceType, Long familyId, String school) {
+        return upsertMenu(req, sourceType, familyId, school, UserContext.userId());
+    }
+
+    private MenuUpsertResp upsertMenu(MenuDailyReq req, String sourceType, Long familyId, String school,
+            Long actorId) {
         MenuDaily proposed = new MenuDaily();
         proposed.setSourceType(sourceType);
         proposed.setFamilyId(familyId);
@@ -254,7 +300,7 @@ public class CatalogService {
             // 菜单已被他人更新，提示刷新后重试（乐观锁）
             throw new BizException(ResultCode.E007_CONCURRENCY_CONFLICT);
         }
-        audit.record("MENU_UPSERT", UserContext.userId(), familyId, "MENU", menu.getId(), null,
+        audit.record("MENU_UPSERT", actorId, familyId, "MENU", menu.getId(), null,
                 "sourceType=" + sourceType);
         return new MenuUpsertResp(menu.getId());
     }

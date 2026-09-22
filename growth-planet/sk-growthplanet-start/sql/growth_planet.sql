@@ -581,6 +581,8 @@ CREATE TABLE life_family_dish (
   spice_level     TINYINT NOT NULL,
   visibility      VARCHAR(20) NOT NULL DEFAULT 'PRIVATE',
   status          VARCHAR(20) NOT NULL DEFAULT 'ON_SALE',
+  review_status   VARCHAR(20) NOT NULL DEFAULT 'NONE',
+  reject_reason   VARCHAR(255) DEFAULT NULL,
   version         INT NOT NULL DEFAULT 0,
   create_time     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_time     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -595,8 +597,10 @@ CREATE TABLE life_family_dish (
   CONSTRAINT chk_fdish_spice CHECK (spice_level BETWEEN 0 AND 3),
   CONSTRAINT chk_fdish_status CHECK (status IN ('ON_SALE', 'OFF_SALE')),
   CONSTRAINT chk_fdish_visibility CHECK (visibility IN ('PRIVATE', 'PUBLIC')),
+  CONSTRAINT chk_fdish_review CHECK (review_status IN ('NONE', 'PENDING', 'APPROVED', 'REJECTED')),
   CONSTRAINT chk_fdish_allergen_status CHECK (allergen_status IN ('UNKNOWN', 'DECLARED')),
-  CONSTRAINT chk_fdish_allergens CHECK (JSON_TYPE(allergens) = 'ARRAY')
+  CONSTRAINT chk_fdish_allergens CHECK (JSON_TYPE(allergens) = 'ARRAY'),
+  KEY idx_family_dish_review (review_status, visibility, id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============ v002_menu_dish_ref ============

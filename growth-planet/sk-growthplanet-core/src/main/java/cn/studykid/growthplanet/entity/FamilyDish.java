@@ -35,6 +35,11 @@ public class FamilyDish {
     private Integer spiceLevel;
     private String visibility;
     private String status;
+    /** 运营审核状态（v009，D1 方案 A）：NONE 未送审 / PENDING 待审 / APPROVED 通过 / REJECTED 驳回。 */
+    private String reviewStatus;
+    /** 驳回原因（review_status=REJECTED 时有值，运营审核留痕）。 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String rejectReason;
     private Integer version;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

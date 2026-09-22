@@ -83,3 +83,80 @@ export async function exportAuditLogs(filter) {
   a.click()
   URL.revokeObjectURL(a.href)
 }
+
+// ==================== M3 内容管理 ====================
+
+/** 菜品分页（预置菜品库） */
+export const listDishes = (filter) => {
+  const p = new URLSearchParams()
+  if (filter.categoryId) p.set('categoryId', filter.categoryId)
+  if (filter.status) p.set('status', filter.status)
+  if (filter.keyword) p.set('keyword', filter.keyword)
+  if (filter.allergenStatus) p.set('allergenStatus', filter.allergenStatus)
+  p.set('page', filter.page || 1)
+  p.set('pageSize', filter.pageSize || 20)
+  return http.get(`/api/admin/dishes?${p.toString()}`)
+}
+
+export const getDish = (id) => http.get(`/api/admin/dishes/${id}`)
+export const createDish = (payload) => http.post('/api/admin/dishes', payload)
+export const updateDish = (id, payload) => http.put(`/api/admin/dishes/${id}`, payload)
+export const deleteDish = (id) => http.delete(`/api/admin/dishes/${id}`)
+export const toggleDishStatus = (id, status) =>
+  http.put(`/api/admin/dishes/${id}/status`, { status })
+
+/** 菜品分类 */
+export const listCategories = (page = 1, pageSize = 50) =>
+  http.get(`/api/admin/dish-categories?page=${page}&pageSize=${pageSize}`)
+export const createCategory = (payload) => http.post('/api/admin/dish-categories', payload)
+export const updateCategory = (id, payload) => http.put(`/api/admin/dish-categories/${id}`, payload)
+export const deleteCategory = (id) => http.delete(`/api/admin/dish-categories/${id}`)
+
+/** 校餐菜单（SCHOOL） */
+export const listSchoolMenus = (filter) => {
+  const p = new URLSearchParams()
+  if (filter.school) p.set('school', filter.school)
+  if (filter.from) p.set('from', filter.from)
+  if (filter.to) p.set('to', filter.to)
+  if (filter.mealType) p.set('mealType', filter.mealType)
+  p.set('page', filter.page || 1)
+  p.set('pageSize', filter.pageSize || 20)
+  return http.get(`/api/admin/menus/school?${p.toString()}`)
+}
+export const upsertSchoolMenu = (payload) => http.post('/api/admin/menus/school', payload)
+
+/** 任务库（跨家庭治理） */
+export const listChoreTasks = (filter) => {
+  const p = new URLSearchParams()
+  if (filter.familyId) p.set('familyId', filter.familyId)
+  if (filter.status) p.set('status', filter.status)
+  if (filter.keyword) p.set('keyword', filter.keyword)
+  p.set('page', filter.page || 1)
+  p.set('pageSize', filter.pageSize || 20)
+  return http.get(`/api/admin/chore-tasks?${p.toString()}`)
+}
+export const createChoreTask = (payload) => http.post('/api/admin/chore-tasks', payload)
+export const updateChoreTask = (id, payload) => http.put(`/api/admin/chore-tasks/${id}`, payload)
+
+/** 勋章配置 */
+export const listMedals = (status = '') =>
+  http.get(`/api/admin/medals${status ? `?status=${status}` : ''}`)
+export const createMedal = (payload) => http.post('/api/admin/medals', payload)
+export const updateMedal = (id, payload) => http.put(`/api/admin/medals/${id}`, payload)
+
+/** UGC 审核队列 */
+export const ugcQueue = (filter) => {
+  const p = new URLSearchParams()
+  if (filter.reviewStatus) p.set('reviewStatus', filter.reviewStatus)
+  if (filter.keyword) p.set('keyword', filter.keyword)
+  p.set('page', filter.page || 1)
+  p.set('pageSize', filter.pageSize || 20)
+  return http.get(`/api/admin/ugc/queue?${p.toString()}`)
+}
+export const reviewUgc = (id, payload) => http.post(`/api/admin/ugc/${id}/review`, payload)
+export const deleteUgc = (id) => http.delete(`/api/admin/ugc/${id}`)
+
+/** 心愿菜单家庭配置（页面归 M4 家庭详情，API 先行） */
+export const getWishConfig = (familyId) => http.get(`/api/admin/wish-menu-config/${familyId}`)
+export const updateWishConfig = (familyId, payload) =>
+  http.put(`/api/admin/wish-menu-config/${familyId}`, payload)
