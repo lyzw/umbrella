@@ -27,6 +27,11 @@ public class ChildWantEat {
     private String dishType;
     private Long dishId;
     private String status;
+    /**
+     * 被收编到哪张心愿菜单提交单（P3）：0 = 普通想吃标记；>0 = 已被该心愿单的上一次提交收录。
+     * 撤回后保留，用于回显"上次提交了哪些"，便于撤选改选。
+     */
+    private Long wishId = 0L;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private Long deleteAt = 0L;

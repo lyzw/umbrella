@@ -50,6 +50,7 @@ public class CatalogService {
     private final FamilyMapper families;
     private final ChildProfileMapper profiles;
     private final ChildWantEatMapper wantEats;
+    private final WishMenuMapper wishMenus;
     private final ChildAuthorizationService authorization;
     private final ComplianceProperties policy;
     private final AuditService audit;
@@ -62,9 +63,10 @@ public class CatalogService {
 
     public CatalogService(DishCategoryMapper categories, DishMapper dishes, FamilyDishMapper familyDishes,
             MenuDailyMapper menus, FamilyMapper families, ChildProfileMapper profiles,
-            ChildWantEatMapper wantEats, ChildAuthorizationService authorization, ComplianceProperties policy,
-            AuditService audit, Validator validator, BusinessTime time, MedalDefinitionMapper medalDefs,
-            MedalService medalService, PlatformTransactionManager transactionManager) {
+            ChildWantEatMapper wantEats, WishMenuMapper wishMenus, ChildAuthorizationService authorization,
+            ComplianceProperties policy, AuditService audit, Validator validator, BusinessTime time,
+            MedalDefinitionMapper medalDefs, MedalService medalService,
+            PlatformTransactionManager transactionManager) {
         this.categories = categories;
         this.dishes = dishes;
         this.familyDishes = familyDishes;
@@ -72,6 +74,7 @@ public class CatalogService {
         this.families = families;
         this.profiles = profiles;
         this.wantEats = wantEats;
+        this.wishMenus = wishMenus;
         this.authorization = authorization;
         this.policy = policy;
         this.audit = audit;
@@ -367,6 +370,12 @@ public class CatalogService {
             }
         } else {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        }
+        // P3 心愿菜单：当日心愿菜单已提交（SUBMITTED）时，当日想吃标记整体锁定，撤回后恢复。
+        // 锁定的唯一依据是头表状态，不需要给明细行打锁标记。
+        if (wishMenus.selectCount(new QueryWrapper<WishMenu>().eq("child_id", ctx.getUserId())
+                .eq("menu_date", req.getMenuDate()).eq("status", "SUBMITTED")) > 0) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "心愿菜单已提交，请先撤回再调整想吃");
         }
         String type = req.getFavorite() ? resolveDishType(req) : null;
         if (req.getFavorite()) {

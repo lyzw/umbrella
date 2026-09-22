@@ -16,6 +16,7 @@ spring:
         - classpath:v004_health_check.sql
         - classpath:v005_child_want_eat.sql
         - classpath:v006_want_eat_medal.sql
+        - classpath:v007_wish_menu.sql
   # datasource / redis 由 @ServiceConnection（Testcontainers）在集成测试中注入
 
 logging:

@@ -1,5 +1,5 @@
 module.exports = Object.freeze({
-  apiBase: 'http://localhost:8080',
+  apiBase: 'http://localhost:19100',
   environment: 'development',
   syntheticLogin: true,
   realDataApproved: false,

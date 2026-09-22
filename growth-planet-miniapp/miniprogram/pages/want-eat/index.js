@@ -5,7 +5,7 @@ const { loadChildren } = require('../../services/children');
 
 // 看板一次展示 7 天；与后端 31 天上限相比留有充足余量。
 const RANGE_DAYS = 7;
-const MEAL_LABELS = { BREAKFAST: '早餐', LUNCH: '午餐', DINNER: '晚餐' };
+const MEAL_LABELS = { BREAKFAST: '早餐', LUNCH: '午餐', DINNER: '晚餐', ALL: '未指定餐次' };
 const STATUS_LABELS = { MARKED: '未处理', ADOPTED: '已采购', COOKED: '已做' };
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 // 家长可执行的状态流转（当前状态自身不作为动作展示）。
@@ -90,7 +90,9 @@ ui.page({
       meals: (day.meals || []).map(meal => ({
         mealType: meal.mealType,
         mealLabel: MEAL_LABELS[meal.mealType] || meal.mealType,
-        sourceLabel: meal.sourceType === 'SCHOOL' ? '学校餐单' : '家庭菜单',
+        // WISH = 心愿菜谱目录里的标记（meal_type=ALL，无当天菜单上下文），必须与菜单标记区分开。
+        sourceLabel: meal.sourceType === 'SCHOOL' ? '学校餐单'
+          : meal.sourceType === 'WISH' ? '心愿菜谱' : '家庭菜单',
         items: (meal.items || []).map(item => Object.assign({}, item, {
           key: String(item.wantEatId),
           displayName: item.name || '（菜品信息不可用）',

@@ -41,6 +41,13 @@ const dish = { dishId: '99', name: '合成餐食', virtualPrice: '10.01', spiceL
   canSelect: true, status: 'ON_SALE', allergenStatus: 'DECLARED', allergyConflict: false };
 const familyDish = { dishId: '7', categoryId: '3', name: '家庭番茄炒蛋', virtualPrice: '8.00', spiceLevel: 1,
   sourceType: 'FAMILY', canSelect: true, status: 'ON_SALE', allergenStatus: 'DECLARED', allergyConflict: false };
+// 心愿菜单（P3）固定件。emptyWish = 当天未创建：功能可选，后端不产生占位记录（status=NONE）。
+const wishDish = { dishId: '99', type: 'PRESET', name: '合成餐食', categoryId: '3', categoryName: '主食',
+  spiceLevel: 0, status: 'ON_SALE', allergenStatus: 'DECLARED', safetyStatus: 'DECLARED',
+  allergyConflict: false, disliked: false, selectable: true, marked: false };
+const emptyWish = { childId: '9007199254740993', menuDate: shanghaiDate(), status: 'NONE', enabled: true,
+  maxDishes: 5, dishCount: 0, submittedCount: 0, canEdit: true, canSubmit: false, locked: false,
+  version: 0, submitTime: null, items: [] };
 
 test('新家长无家庭的403展示建家庭入口，但保留权限提醒', async () => {
   const page = loadPage('family');
@@ -140,7 +147,13 @@ test('家长加载当前家庭菜单并仅提交服务端允许的维护字段',
   api.post = async (endpoint, body) => { sent = { endpoint, body }; return { menuId: '20' }; };
   await page.loadParent();
   assert.deepEqual(page.selectedRefs, [{ type: 'PRESET', id: '99' }]);
-  assert.equal(calls.some(call => call.endpoint === '/family/children'), false);
+  // 「孩子的心愿菜单」卡需要 childId（家长端在这里选孩子），故会顺带取一次绑定儿童列表；
+  // 但菜单维护是家庭级的：本用例的 stub 对未知端点返回菜单对象 ⇒ loadChildren 视为"无已绑定儿童"，
+  // 必须静默降级（children 为空、心愿卡不渲染），不能影响下面的目录/发布流程。
+  assert.equal(calls.filter(call => call.endpoint === '/family/children').length, 1);
+  assert.deepEqual(page.data.children, []);
+  assert.deepEqual(page.data.childLabels, []);
+  assert.equal(page.data.wish, null);
   // 家庭私有菜品与预置菜品合并进同一份目录，来源由 type 区分。
   assert.deepEqual(page.catalogDishes.map(item => item.sourceType + ':' + item.dishId), ['FAMILY:7', 'PRESET:99', 'PRESET:100']);
   page.toggleDish(event({ key: 'FAMILY:7' }));
@@ -734,12 +747,19 @@ test('菜单页：常吃快捷区只允许标记今日餐单已有的菜品', as
     }
     if (endpoint === '/child/recommend') return { dishes: [] };
     if (endpoint === '/child/menu-week' || endpoint === '/parent/menu-week') return { days: [] };
+    // 心愿菜单为增强区块：孩子端每次读菜单会顺带取当天心愿单与可选菜谱目录。
+    if (endpoint === '/child/wish-menu') return { ...emptyWish, menuDate: shanghaiDate() };
+    if (endpoint === '/child/wish-catalog') return { items: [], total: 0, page: 1, pageSize: 10 };
     return { menuId: '20', sourceType: 'FAMILY', menuDate: shanghaiDate(), mealType: 'LUNCH',
       canSubmit: true, dishes: [{ ...dish, canSelect: true, categoryName: '主食' }] };
   };
   await page.read();
   assert.deepEqual(calls.map(call => call.endpoint),
-    ['/menu/daily', '/child/frequent-dish', '/child/recommend', '/child/menu-week']);
+    ['/menu/daily', '/child/frequent-dish', '/child/recommend', '/child/menu-week', '/child/wish-menu',
+      '/child/wish-catalog']);
+  assert.equal(page.data.wish.statusLabel, '未创建');
+  assert.equal(page.data.wish.canEdit, true);
+  assert.deepEqual(page.data.wishDishes, []);
   assert.equal(calls[1].query.limit, 6);
   assert.deepEqual(page.data.frequent.map(item => item.key), ['PRESET:99', 'FAMILY:7']);
   // 今日餐单里没有 FAMILY:7，标记它后端会 404，所以前端直接置为不可点。
@@ -820,6 +840,26 @@ test('家长想吃看板：菜品已下架时保留行占位并标注', async ()
   assert.equal(dish0.statusLabel, '已采购');
   assert.equal(dish0.flags, '菜品已下架 · 已过期');
   assert.deepEqual(dish0.actions.map(action => action.status), ['COOKED', 'MARKED']);
+});
+test('家长想吃看板：心愿菜谱标记单独标注，不冒充家庭菜单', async () => {
+  const page = loadPage('want-eat');
+  const today = shanghaiDate();
+  page.setData({ today, from: today, to: today, childId: child.childId });
+  api.get = async () => ({ childId: child.childId, from: today, to: today, today, expiredCount: 0,
+    days: [{ menuDate: today, meals: [
+      { mealType: 'ALL', sourceType: 'WISH', menuId: null,
+        items: [{ wantEatId: '33', type: 'PRESET', id: '99', name: '心愿菜', status: 'MARKED', version: 0,
+          expired: false, allergyConflict: false, disliked: false, missing: false }] },
+      { mealType: 'LUNCH', sourceType: 'FAMILY', menuId: '20', items: [] }
+    ] }],
+    summary: { totalItems: 1, dishes: [] } });
+  await page.read();
+  const meals = page.data.days[0].meals;
+  // 心愿目录标记落 meal_type=ALL / source_type=WISH：必须显示成"未指定餐次 · 心愿菜谱"，
+  // 否则会被家长读成"今天家庭菜单里的菜"。
+  assert.equal(meals[0].mealLabel, '未指定餐次');
+  assert.equal(meals[0].sourceLabel, '心愿菜谱');
+  assert.equal(meals[1].sourceLabel, '家庭菜单');
 });
 test('菜单页：推荐卡渲染、点击复用今日餐单校验', async () => {
   const page = loadPage('menu', 'CHILD');
@@ -1028,4 +1068,129 @@ test('菜单页孩子端渲染使用统一安全提示', () => {
   page.render();
   assert.equal(page.data.dishes[0].safetyLabel, '未登记过敏信息，暂不可选择');
   assert.equal(page.data.dishes[0].selectable, false);
+});
+// ---------- 心愿菜单（P3）：家长配上限 / 儿童选菜提交 / 锁定与撤回 ----------
+const wishPool = (overrides = {}) => ({ ...wishDish, submitted: false, missing: false, ...overrides });
+
+test('心愿菜单：候选池勾选受家长上限约束，超限只提示不改选择', () => {
+  const page = loadPage('menu', 'CHILD');
+  page.wishRaw = { ...emptyWish, maxDishes: 2, dishCount: 3, items: [
+    wishPool(), wishPool({ dishId: '100', name: '第二道' }), wishPool({ dishId: '101', name: '第三道' })
+  ] };
+  page.renderWish();
+  // 未手动勾选过 ⇒ 按上限预勾选候选池前两道，减少孩子操作
+  assert.equal(page.data.wish.countText, '2 / 2');
+  assert.deepEqual(page.data.wishSelected, ['PRESET:99', 'PRESET:100']);
+
+  page.wishToggle(event({ key: 'PRESET:101' }));
+  assert.match(page.data.error, /最多勾选 2 道菜/);
+  assert.deepEqual(page.data.wishSelected, ['PRESET:99', 'PRESET:100']);
+
+  // 取消勾选永远允许，且超限提示被清掉
+  page.wishToggle(event({ key: 'PRESET:100' }));
+  assert.deepEqual(page.data.wishSelected, ['PRESET:99']);
+  assert.equal(page.data.error, '');
+});
+test('心愿菜单：提交按 type/id 拆分并携带乐观锁版本', async () => {
+  const page = loadPage('menu', 'CHILD');
+  const family = wishPool({ dishId: '7', type: 'FAMILY', name: '家庭菜' });
+  page.wishRaw = { ...emptyWish, version: 3, dishCount: 2, items: [wishPool(), family] };
+  page.renderWish();
+  page.wishSelectionTouched = true;
+  page.setData({ wishSelected: ['PRESET:99', 'FAMILY:7'] });
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return emptyWish; };
+  api.get = async endpoint => endpoint === '/child/wish-menu' ? emptyWish : { items: [], total: 0 };
+
+  await page.wishSubmit();
+  assert.deepEqual(sent, { endpoint: '/child/wish-menu/submit', body: {
+    menuDate: shanghaiDate(),
+    refs: [{ type: 'PRESET', id: '99' }, { type: 'FAMILY', id: '7' }],
+    expectedVersion: 3 } });
+});
+test('心愿菜单：已下架或待确认的候选菜不能加入，提示复用统一安全口径', () => {
+  const page = loadPage('menu', 'CHILD');
+  page.wishRaw = { ...emptyWish, items: [
+    wishPool({ dishId: '88', name: '待确认菜', allergenStatus: 'UNKNOWN', safetyStatus: 'UNKNOWN', selectable: false }),
+    wishPool({ dishId: '7', type: 'FAMILY', name: null, status: null, safetyStatus: null,
+      selectable: false, missing: true })
+  ] };
+  page.renderWish();
+  // 预勾选只挑仍可选的菜 ⇒ 这两道都不会被默认选中
+  assert.deepEqual(page.data.wishSelected, []);
+  assert.match(page.data.wish.items[0].flags, /未登记过敏信息/);
+  assert.match(page.data.wish.items[1].flags, /已下架/);
+
+  page.wishToggle(event({ key: 'PRESET:88' }));
+  assert.match(page.data.error, /不能加入心愿菜单/);
+  assert.deepEqual(page.data.wishSelected, []);
+});
+test('心愿菜单：锁定态勾选无效，撤回走确认并带版本', async () => {
+  const page = loadPage('menu', 'CHILD');
+  const locked = { ...emptyWish, status: 'SUBMITTED', locked: true, canEdit: false, canSubmit: false,
+    version: 2, submittedCount: 1, items: [wishPool({ submitted: true })] };
+  page.wishRaw = locked;
+  page.renderWish();
+  assert.equal(page.data.wish.statusLabel, '已提交');
+  assert.deepEqual(page.data.wishSelected, ['PRESET:99'], '默认勾选上次提交的菜');
+  page.wishToggle(event({ key: 'PRESET:99' }));
+  assert.deepEqual(page.data.wishSelected, ['PRESET:99'], '锁定态不响应勾选变化');
+
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return locked; };
+  api.get = async endpoint => endpoint === '/child/wish-menu'
+    ? { ...locked, status: 'WITHDRAWN', locked: false, canEdit: true } : { items: [], total: 0 };
+  await page.wishWithdraw();
+  assert.deepEqual(sent, { endpoint: '/child/wish-menu/withdraw',
+    body: { menuDate: shanghaiDate(), expectedVersion: 2 } });
+});
+test('心愿菜单：目录复用统一安全提示，并标注已在候选池的菜', async () => {
+  const page = loadPage('menu', 'CHILD');
+  api.get = async () => ({ items: [
+    wishDish,
+    { ...wishDish, dishId: '88', name: '待确认菜', allergenStatus: 'UNKNOWN', safetyStatus: 'UNKNOWN', selectable: false },
+    { ...wishDish, dishId: '7', type: 'FAMILY', name: '家庭菜', marked: true }
+  ], total: 3, page: 1, pageSize: 10 });
+  await page.loadWishCatalog();
+  assert.deepEqual(page.data.wishDishes.map(item => item.key), ['PRESET:99', 'PRESET:88', 'FAMILY:7']);
+  assert.deepEqual(page.data.wishDishes.map(item => item.safetyLabel),
+    ['过敏信息已声明', '未登记过敏信息，暂不可选择', '过敏信息已声明']);
+  assert.deepEqual(page.data.wishDishes.map(item => item.actionLabel), ['加入', '加入', '移出']);
+  assert.deepEqual(page.data.wishDishes.map(item => item.typeLabel), ['预置菜谱', '预置菜谱', '家庭菜谱']);
+});
+test('心愿菜单：目录加入或移出候选池走 wish-mark', async () => {
+  const page = loadPage('menu', 'CHILD');
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return emptyWish; };
+  api.get = async endpoint => endpoint === '/child/wish-menu' ? emptyWish : { items: [], total: 0 };
+  await page.wishMark(event({ type: 'PRESET', id: '99', marked: 'false' }));
+  assert.deepEqual(sent, { endpoint: '/child/wish-mark',
+    body: { menuDate: shanghaiDate(), type: 'PRESET', id: '99', selected: true } });
+  await page.wishMark(event({ type: 'PRESET', id: '99', marked: 'true' }));
+  assert.equal(sent.body.selected, false);
+});
+test('心愿菜单：家长只看到孩子已提交的菜，保存设置带乐观锁版本', async () => {
+  const page = loadPage('menu', 'PARENT');
+  const submitted = wishPool({ submitted: true });
+  const pending = wishPool({ dishId: '77', name: '只标记没提交' });
+  const wish = { ...emptyWish, status: 'SUBMITTED', locked: true, canEdit: false, canSubmit: false,
+    version: 4, submittedCount: 1, items: [submitted, pending] };
+  api.get = async endpoint => {
+    if (endpoint === '/parent/wish-menu') return wish;
+    if (endpoint === '/parent/wish-setting') return { maxDishes: 2, enabled: true, version: 4 };
+    return { items: [], total: 0, days: [] };
+  };
+  page.setData({ childId: child.childId, children: [child], childLabels: ['孩子 · 1'] });
+  await page.loadWish();
+  assert.deepEqual(page.data.wish.items.map(item => item.name), ['合成餐食'], '候选池明细不进家长视图');
+  assert.deepEqual(page.data.wishSelected, [], '家长端不参与勾选');
+  assert.equal(page.data.wishMaxDraft, 2);
+
+  let sent;
+  api.put = async (endpoint, body) => { sent = { endpoint, body }; };
+  page.wishMax(event({}, 2));
+  assert.equal(page.data.wishMaxDraft, 3);
+  await page.wishSettingSave();
+  assert.deepEqual(sent, { endpoint: '/parent/wish-setting',
+    body: { maxDishes: 3, enabled: true, expectedVersion: 4 } });
 });

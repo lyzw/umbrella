@@ -23,6 +23,7 @@ public enum ResultCode {
     E011_ALLOWANCE_CONFIRM_REQUIRED(1011, HttpStatus.CONFLICT, "额度已变化，请重新确认"),
     E012_IDEMPOTENCY_CONFLICT(1012, HttpStatus.CONFLICT, "请求标识已用于其他内容"),
     E013_DAILY_LIMIT_REACHED(1013, HttpStatus.CONFLICT, "今日打卡已达上限"),
+    E014_WISH_LIMIT_REACHED(1014, HttpStatus.BAD_REQUEST, "已选菜品数量超出家长设置的心愿菜单上限"),
     E400_INVALID_ARGUMENT(1400, HttpStatus.BAD_REQUEST, "参数不合法"),
     E404_NOT_FOUND(1404, HttpStatus.NOT_FOUND, "资源不存在"),
     E405_METHOD_NOT_ALLOWED(1405, HttpStatus.METHOD_NOT_ALLOWED, "请求方法不支持"),
