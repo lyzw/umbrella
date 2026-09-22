@@ -27,7 +27,7 @@ ui.page({
     hasFamily: false, selected: null, consent: null, agreed: false, age: '', relationLabel: '', page: 1, total: 0,
     bindingSteps: [], currentBindingStep: 0 },
   input: ui.input,
-  onShow() { if (ui.guard(this)) this.refresh(); },
+  onShow() { if (ui.guard(this, 'PARENT')) this.refresh(); },
   refresh() {
     return ui.run(this, async () => {
       if (this.data.role === 'CHILD') {

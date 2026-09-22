@@ -56,7 +56,7 @@ ui.page({
     repeatLabels: REPEAT_LABELS, aheadLabels: AHEAD_LABELS
   },
   onShow() {
-    if (!ui.guard(this)) return;
+    if (!ui.guard(this, 'PARENT')) return;
     return ui.run(this, async () => {
       const today = shanghaiDate();
       const children = await loadChildren();

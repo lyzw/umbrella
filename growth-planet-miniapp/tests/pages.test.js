@@ -418,7 +418,7 @@ test('首页只接受当前角色的一级视图，家务页返回对应儿童�
   const chore = loadPage('chore', 'CHILD');
   chore.changeTab({ detail: { key: 'me' } });
   assert.deepEqual(navigation, ['/pages/home/index?tab=me']);
-  chore.changeTab({ detail: { key: 'chore' } });
+  chore.changeTab({ detail: { key: 'task' } });
   assert.deepEqual(navigation, ['/pages/home/index?tab=me']);
 });
 test('勋章列表生成顶层稳定键供视图循环使用', async () => {

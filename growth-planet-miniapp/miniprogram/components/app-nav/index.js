@@ -3,7 +3,7 @@ Component({
   data: {
     childTabs: [
       { key: 'meal', text: '点餐', icon: '餐' },
-      { key: 'chore', text: '家务', icon: '务' },
+      { key: 'task', text: '任务', icon: '务' },
       { key: 'growth', text: '成长', icon: '长' },
       { key: 'me', text: '我的', icon: '我' }
     ],

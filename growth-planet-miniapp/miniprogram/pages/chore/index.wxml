@@ -66,6 +66,25 @@
       <view class="muted" wx:if="{{item.status === 'REJECTED'}}">驳回原因：{{item.rejectReason || '无'}}</view>
     </view>
     <view wx:if="{{instances.length === 0}}" class="empty">还没有认领家务，去上面挑一个吧</view>
+
+    <view class="section-title list-title">今日健康打卡</view>
+    <view wx:for="{{checkItems}}" wx:key="key" class="item">
+      <view class="row">
+        <text class="item-title">{{item.icon}} {{item.name}}</text>
+        <text class="badge {{item.reached ? 'ok' : 'normal'}}">{{item.limitText}}</text>
+      </view>
+      <view class="muted">今日 {{item.targetText}}</view>
+      <button class="primary item-action" data-id="{{item.itemId}}" bindtap="checkIn" disabled="{{item.reached}}">{{item.actionLabel}}</button>
+    </view>
+    <view wx:if="{{checkItems.length === 0}}" class="empty">家里还没有打卡项，请家长到「健康打卡」添加</view>
+    <view wx:if="{{streak}}" class="streak-card">
+      <view class="streak-copy">
+        <text class="streak-label">连续打卡</text>
+        <text class="streak-value">{{streak}}<text class="streak-unit">天</text></text>
+      </view>
+      <view class="streak-visual" aria-hidden="true">🔥</view>
+    </view>
+    <button class="ghost item-action task-health-link" bindtap="go" data-page="health">查看打卡日历</button>
   </block>
 
   <app-nav wx:if="{{role === 'CHILD'}}" role="{{role}}" active="{{active}}" bindchange="changeTab" />

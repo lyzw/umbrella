@@ -13,18 +13,22 @@ const CYCLE = { ONCE: '一次性', DAILY: '每日', WEEKLY: '每周' };
 
 ui.page({
   data: {
-    role: '', active: 'chore', busy: false, error: '', receipt: '',
+    role: '', active: 'task', busy: false, error: '', receipt: '',
     children: [], childIndex: 0, childId: '',
     tasks: [], instances: [],
     showForm: false, title: '', reward: '', cycleIndex: 0,
-    cycles: ['ONCE', 'DAILY', 'WEEKLY'], cycleLabels: ['一次性', '每日', '每周']
+    cycles: ['ONCE', 'DAILY', 'WEEKLY'], cycleLabels: ['一次性', '每日', '每周'],
+    // 健康打卡（仅孩子端，并入「任务」tab）
+    checkItems: [], doneCount: 0, totalCount: 0, streak: 0
   },
+  go: ui.go,
   onShow() {
     if (!ui.guard(this)) return;
     return ui.run(this, async () => {
       const children = await loadChildren();
       this.setData({ children, childId: children[0].childId, childIndex: 0 });
       await this.read();
+      if (this.data.role === 'CHILD') await this.readChild();
     });
   },
   async read() {
@@ -103,9 +107,45 @@ ui.page({
       await this.read();
     });
   },
+  // 健康打卡今日视图（与 health 页同口径，并入「任务」tab，日历等深度功能仍走 health 页）。
+  async readChild() {
+    const [items, todayRows, calendar] = await Promise.all([
+      api.get('/child/check-in/items'),
+      api.get('/child/check-in/today'),
+      api.get('/child/check-in/calendar', { month: shanghaiDate().slice(0, 7) })
+    ]);
+    const rows = new Map((todayRows || []).map(row => [String(row.itemId), row]));
+    const checkItems = (items || []).map(item => {
+      const row = rows.get(String(item.itemId)) || {};
+      const dailyTarget = row.dailyTarget === undefined ? Number(item.dailyTarget || 0) : Number(row.dailyTarget);
+      const count = Number(row.count || 0);
+      const reached = row.reached === true;
+      const unit = item.unit || '次';
+      const percent = dailyTarget > 0 ? Math.min(100, Math.round(count / dailyTarget * 100)) : 0;
+      return Object.assign({}, item, {
+        key: String(item.itemId), count, dailyTarget, reached, percent,
+        targetText: dailyTarget > 0 ? count + ' / ' + dailyTarget + unit : '已打卡 ' + count + ' 次',
+        limitText: dailyTarget > 0 ? '每日上限 ' + dailyTarget + unit : '不限次数',
+        actionLabel: reached ? '今日已完成' : '打卡'
+      });
+    });
+    const doneCount = checkItems.filter(item => item.dailyTarget > 0 ? item.reached : item.count > 0).length;
+    this.setData({ checkItems, totalCount: checkItems.length, doneCount, streak: (calendar && calendar.currentStreak) || 0 });
+  },
+  checkIn(e) {
+    const itemId = e.currentTarget.dataset.id;
+    return ui.run(this, async () => {
+      if (this.data.role !== 'CHILD') return;
+      await api.post('/child/check-in?itemId=' + itemId, {});
+      await this.readChild();
+      const item = this.data.checkItems.find(entry => entry.key === String(itemId));
+      const name = (item && item.name) || '打卡项';
+      this.setData({ receipt: '「' + name + '」打卡成功，已连续打卡 ' + this.data.streak + ' 天，继续保持 💪' });
+    });
+  },
   changeTab(e) {
     const key = e.detail.key;
-    if (key === 'chore') return;
+    if (key === 'task') return;
     if (['meal', 'growth', 'me'].includes(key)) {
       return wx.reLaunch({ url: '/pages/home/index?tab=' + key });
     }
