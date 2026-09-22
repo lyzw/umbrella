@@ -23,7 +23,11 @@ const routes = [
       { path: 'confirmations', name: 'confirmations', component: () => import('../views/ConfirmationsView.vue'), meta: { title: '确认单', menu: '业务数据' } },
       { path: 'wallets', name: 'wallets', component: () => import('../views/WalletsView.vue'), meta: { title: '钱包与流水', menu: '业务数据' } },
       { path: 'chores-health', name: 'choresHealth', component: () => import('../views/ChoresHealthView.vue'), meta: { title: '家务与打卡', menu: '业务数据' } },
-      { path: 'medal-awards', name: 'medalAwards', component: () => import('../views/MedalAwardsView.vue'), meta: { title: '勋章发放', menu: '业务数据' } }
+      { path: 'medal-awards', name: 'medalAwards', component: () => import('../views/MedalAwardsView.vue'), meta: { title: '勋章发放', menu: '业务数据' } },
+      { path: 'consent-logs', name: 'consentLogs', component: () => import('../views/ConsentLogsView.vue'), meta: { title: '同意留痕', menu: '合规与隐私' } },
+      { path: 'privacy-requests', name: 'privacyRequests', component: () => import('../views/PrivacyRequestsView.vue'), meta: { title: '隐私工单', menu: '合规与隐私' } },
+      { path: 'privacy-verifications', name: 'privacyVerifications', component: () => import('../views/VerificationsView.vue'), meta: { title: '核验记录', menu: '合规与隐私' } },
+      { path: 'compliance', name: 'compliance', component: () => import('../views/ComplianceView.vue'), meta: { title: '合规清单', menu: '合规与隐私' } }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/workbench' }

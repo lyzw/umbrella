@@ -251,3 +251,27 @@ export async function exportBizCsv(domain, filter) {
   a.click()
   URL.revokeObjectURL(a.href)
 }
+
+/** ==================== M5 合规与隐私中心 ==================== */
+
+/** 同意留痕查询 */
+export const listConsents = (params) => http.get('/api/admin/consents', { params })
+
+/** 隐私工单列表（CP/SA/RA 隔离域） */
+export const listPrivacyRequests = (params) => http.get('/api/admin/privacy-requests', { params })
+
+/** CP 核验闭环（RECEIVED → PROCESSING，L4 二次确认） */
+export const verifyPrivacyRequest = (id, code) =>
+  http.post(`/api/admin/privacy-requests/${id}/verify`, { code })
+
+/** CP 驳回（原因落 error_code + 审计，L4 二次确认） */
+export const rejectPrivacyRequest = (id, reason) =>
+  http.post(`/api/admin/privacy-requests/${id}/reject`, { reason })
+
+/** 核验记录只读 */
+export const listVerifications = (params) => http.get('/api/admin/privacy-verifications', { params })
+
+/** 合规清单 */
+export const getComplianceChecklist = () => http.get('/api/admin/compliance-checklist')
+export const checkCompliance = (itemKey, checked) =>
+  http.put('/api/admin/compliance-checklist', { itemKey, checked })

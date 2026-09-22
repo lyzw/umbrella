@@ -41,6 +41,15 @@
           <el-menu-item index="/chores-health">家务与打卡</el-menu-item>
           <el-menu-item index="/medal-awards">勋章发放</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu v-if="canSeePrivacy" index="privacy">
+          <template #title>
+            <el-icon><Lock /></el-icon><span>合规与隐私</span>
+          </template>
+          <el-menu-item index="/consent-logs">同意留痕</el-menu-item>
+          <el-menu-item index="/privacy-requests">隐私工单</el-menu-item>
+          <el-menu-item index="/privacy-verifications">核验记录</el-menu-item>
+          <el-menu-item index="/compliance">合规清单</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -63,7 +72,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Monitor, User, Document, Goods, DataAnalysis } from '@element-plus/icons-vue'
+import { Monitor, User, Document, Goods, DataAnalysis, Lock } from '@element-plus/icons-vue'
 import { auth, doLogout, hasPerm } from '../stores/auth'
 
 const route = useRoute()
@@ -81,6 +90,10 @@ const canSeeContent = computed(() =>
 const canSeeBiz = computed(() =>
   hasPerm('每日想吃', 'view') || hasPerm('确认单', 'view') || hasPerm('审批记录', 'view')
   || hasPerm('钱包与流水', 'view') || hasPerm('家务健康', 'view') || hasPerm('勋章发放/家庭设置', 'view'))
+// 合规与隐私菜单：隐私域隔离（SA/CP/RA），任一隐私资源有查看权限即可见
+const canSeePrivacy = computed(() =>
+  hasPerm('同意留痕', 'view') || hasPerm('隐私工单', 'view')
+  || hasPerm('核验记录', 'view') || hasPerm('合规清单', 'view'))
 
 async function onLogout() {
   await doLogout()
