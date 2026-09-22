@@ -6,7 +6,7 @@
     <view wx:if="{{role === 'PARENT'}}">
       <view class="field"><text class="label">昵称</text><input value="{{nickname}}" data-field="nickname" bindinput="input" maxlength="64" /></view>
       <view class="field"><text class="label">年级</text><picker range="{{grades}}" bindchange="grade"><view class="picker">{{grade}}</view></picker></view>
-      <view class="field"><text class="label">学校</text><input value="{{school}}" data-field="school" bindinput="input" maxlength="128" /></view>
+      <view class="field"><text class="label">学校</text><picker range="{{schoolOptions}}" bindchange="school"><view class="picker">{{school}}</view></picker></view>
       <view class="field"><text class="label">过敏原编码（合成开发目录）</text><checkbox-group bindchange="allergies"><label wx:for="{{allergyOptions}}" wx:key="code" class="check"><checkbox value="{{item.code}}" checked="{{item.checked}}" />{{item.code}}</label></checkbox-group></view>
     </view>
     <view class="field"><text class="label">不喜欢的食物（逗号分隔）</text><textarea value="{{dislikesText}}" data-field="dislikesText" bindinput="input" maxlength="1299" /></view>

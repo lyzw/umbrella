@@ -16,6 +16,16 @@ function safeDish(dish) {
     && dish.allergenStatus === 'DECLARED' && !dish.allergyConflict;
 }
 function selectable(dish) { return dish.canSelect === true && safeDish(dish); }
+// 孩子端菜品安全提示。后端 safetyStatus=UNKNOWN 有两个来源，用户能做的事不同，文案必须分开：
+// ① 菜品自身未登记过敏原 ⇒ 需管理员补录；② 菜品已声明、但孩子档案的过敏原不在最新发布目录
+// （fail-closed）⇒ 需家长更新档案，孩子自己无法解决。避免统一显示成「不可点」而无人可处理。
+function safetyLabel(dish) {
+  if (dish.status !== 'ON_SALE') return '已下架';
+  if (dish.allergyConflict) return '含过敏原，不可选择';
+  if (dish.allergenStatus !== 'DECLARED') return '未登记过敏信息，暂不可选择';
+  if (dish.safetyStatus === 'UNKNOWN') return '档案过敏信息需家长更新，暂不可选择';
+  return '过敏信息已声明';
+}
 function filterDishes(dishes, options = {}) {
   return dishes.filter(d => (!options.mildOnly || d.spiceLevel === 0)
     && (!options.favoritesOnly || d.isFavorite)
@@ -36,4 +46,4 @@ function list(text) {
 }
 const statusLabels = { PENDING: '等待家长确认', COMPLETED: '已完成', REJECTED: '请调整后再提交', CANCELLED: '已撤回',
   NONE: '尚未申请', BOUND: '已绑定', RECEIVED: '已受理', PROCESSING: '办理中', READY: '可查看导出', FAILED: '办理失败', EXPIRED: '已过期' };
-module.exports = { cents, money, shanghaiDate, safeDish, selectable, filterDishes, dishRef, dishKey, id, list, statusLabels };
+module.exports = { cents, money, shanghaiDate, safeDish, selectable, safetyLabel, filterDishes, dishRef, dishKey, id, list, statusLabels };

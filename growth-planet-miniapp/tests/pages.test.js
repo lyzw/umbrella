@@ -984,3 +984,48 @@ test('整周发布：未选餐次或未选菜品时拒绝提交', async () => {
   assert.equal(posted, false);
   assert.match(page.data.error, /请先选择要铺的菜品/);
 });
+test('档案页学校改为发布目录选择，历史校名仍可回显', async () => {
+  const config = require('../miniprogram/config');
+  const page = loadPage('profile');
+  api.get = async endpoint => endpoint.includes('consent') ? { currentStatus: 'GRANTED' }
+    : { school: '历史老校', allergies: [], dislikes: [], tastes: [] };
+  await page.read();
+  assert.equal(page.data.school, '历史老校');
+  assert.equal(page.data.schoolOptions[0], config.schools[0]);
+  assert.ok(page.data.schoolOptions.includes('历史老校'));
+
+  page.school(event({}, 1));
+  assert.equal(page.data.school, config.schools[1]);
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; };
+  page.setData({ nickname: '小明', grade: '三年级' });
+  await page.save();
+  assert.equal(sent.endpoint, '/child/profile');
+  assert.equal(sent.body.school, config.schools[1]);
+  page.onHide();
+  assert.deepEqual(page.data.schoolOptions, []);
+});
+test('孩子端安全提示按 UNKNOWN 来源区分，且指向能处理的人', () => {
+  const { safetyLabel } = require('../miniprogram/utils/domain');
+  // 菜品自身未声明 ⇒ 需管理员补录
+  assert.equal(safetyLabel({ status: 'ON_SALE', allergenStatus: 'UNKNOWN', allergyConflict: false }),
+    '未登记过敏信息，暂不可选择');
+  // 菜品已声明、但档案过敏原不在最新目录（fail-closed）⇒ 只有家长能处理
+  assert.equal(safetyLabel({ status: 'ON_SALE', allergenStatus: 'DECLARED', safetyStatus: 'UNKNOWN', allergyConflict: false }),
+    '档案过敏信息需家长更新，暂不可选择');
+  assert.equal(safetyLabel({ status: 'ON_SALE', allergenStatus: 'DECLARED', safetyStatus: 'DECLARED', allergyConflict: false }),
+    '过敏信息已声明');
+  assert.equal(safetyLabel({ status: 'ON_SALE', allergenStatus: 'DECLARED', allergyConflict: true }), '含过敏原，不可选择');
+  assert.equal(safetyLabel({ status: 'OFF_SALE', allergenStatus: 'DECLARED', allergyConflict: false }), '已下架');
+});
+test('菜单页孩子端渲染使用统一安全提示', () => {
+  const page = loadPage('menu', 'CHILD');
+  page.allDishes = [{ ...dish, allergenStatus: 'UNKNOWN', canSelect: false, safetyStatus: 'UNKNOWN' }];
+  page.quantities = {};
+  page.selectedRefs = [];
+  page.catalogDishes = page.allDishes;
+  page.setData({ menu: { menuId: '20', canSubmit: false, menuDate: shanghaiDate(), mealType: 'LUNCH' } });
+  page.render();
+  assert.equal(page.data.dishes[0].safetyLabel, '未登记过敏信息，暂不可选择');
+  assert.equal(page.data.dishes[0].selectable, false);
+});

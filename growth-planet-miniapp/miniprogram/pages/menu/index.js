@@ -2,7 +2,7 @@ const api = require('../../services/api');
 const ui = require('../../utils/page');
 const context = require('../../services/context');
 const { loadChildren } = require('../../services/children');
-const { cents, money, shanghaiDate, selectable, filterDishes, dishRef, dishKey } = require('../../utils/domain');
+const { cents, money, shanghaiDate, selectable, safetyLabel, filterDishes, dishRef, dishKey } = require('../../utils/domain');
 
 const SPICE = ['无辣', '微辣', '中辣', '重辣'];
 const MEALS = ['BREAKFAST', 'LUNCH', 'DINNER'];
@@ -241,8 +241,7 @@ ui.page({
     const all = this.allDishes.map(dish => ({
       ...dish, key: dishKey(dish), quantity: this.quantities[dishKey(dish)] || 0, selectable: selectable(dish),
       categoryName: dish.categoryName || '',
-      safetyLabel: dish.allergyConflict ? '含过敏原，不可选择' : dish.allergenStatus !== 'DECLARED'
-        ? '过敏信息待确认' : dish.status !== 'ON_SALE' ? '已下架' : '过敏信息已声明',
+      safetyLabel: safetyLabel(dish),
       spiceLabel: SPICE[dish.spiceLevel]
     }));
     const categories = this.buildCategories(all);
