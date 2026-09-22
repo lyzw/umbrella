@@ -160,3 +160,94 @@ export const deleteUgc = (id) => http.delete(`/api/admin/ugc/${id}`)
 export const getWishConfig = (familyId) => http.get(`/api/admin/wish-menu-config/${familyId}`)
 export const updateWishConfig = (familyId, payload) =>
   http.put(`/api/admin/wish-menu-config/${familyId}`, payload)
+
+// ==================== M4 业务数据 ====================
+
+/** 业务数据查询参数拼接（列表/导出共用） */
+function bizQuery(f, { withPage = true } = {}) {
+  const p = new URLSearchParams()
+  if (f.familyId) p.set('familyId', f.familyId)
+  if (f.childId) p.set('childId', f.childId)
+  if (f.status) p.set('status', f.status)
+  if (f.mealType) p.set('mealType', f.mealType)
+  if (f.transType) p.set('transType', f.transType)
+  if (f.itemId) p.set('itemId', f.itemId)
+  if (f.overLimit !== undefined && f.overLimit !== null && f.overLimit !== '') p.set('overLimit', f.overLimit)
+  if (f.from) p.set('from', f.from)
+  if (f.to) p.set('to', f.to)
+  if (withPage) {
+    p.set('page', f.page || 1)
+    p.set('pageSize', f.pageSize || 20)
+  }
+  return p.toString()
+}
+
+/** 每日想吃分页 */
+export const wantEat = (filter) => http.get(`/api/admin/want-eat?${bizQuery(filter)}`)
+
+/** 确认单分页 */
+export const confirmations = (filter) => http.get(`/api/admin/confirmations?${bizQuery(filter)}`)
+
+/** 确认单详情 */
+export const confirmationDetail = (id) => http.get(`/api/admin/confirmations/${id}`)
+
+/** 超额确认单人工复核（结论落审计，不改业务状态） */
+export const reviewConfirmation = (id, payload) =>
+  http.post(`/api/admin/confirmations/${id}/review`, payload)
+
+/** 审批记录分页 */
+export const confirmApprovals = (filter) => http.get(`/api/admin/confirm-approvals?${bizQuery(filter)}`)
+
+/** 钱包余额分页 */
+export const wallets = (filter) => http.get(`/api/admin/wallets?${bizQuery(filter)}`)
+
+/** 零花钱流水分页 */
+export const allowanceLogs = (filter) => http.get(`/api/admin/allowance-logs?${bizQuery(filter)}`)
+
+/** 家务实例分页（含状态汇总/完成率） */
+export const choreInstances = (filter) => http.get(`/api/admin/chore-instances?${bizQuery(filter)}`)
+
+/** 打卡记录分页 */
+export const checkRecords = (filter) => http.get(`/api/admin/check-records?${bizQuery(filter)}`)
+
+/** 勋章发放分页 */
+export const medalAwards = (filter) => {
+  const p = new URLSearchParams()
+  if (filter.definitionId) p.set('definitionId', filter.definitionId)
+  if (filter.familyId) p.set('familyId', filter.familyId)
+  if (filter.childId) p.set('childId', filter.childId)
+  p.set('page', filter.page || 1)
+  p.set('pageSize', filter.pageSize || 20)
+  return http.get(`/api/admin/medal-awards?${p.toString()}`)
+}
+
+/** 勋章人工补发（L4） */
+export const reissueMedal = (payload) => http.post('/api/admin/medal-awards', payload)
+
+/** 业务数据 CSV 导出（Blob 下载；导出行为在后端落审计） */
+export async function exportBizCsv(domain, filter) {
+  const resp = await fetch(`/api/admin/export/${domain}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+    body: JSON.stringify({
+      familyId: filter.familyId || null,
+      childId: filter.childId || null,
+      status: filter.status || null,
+      mealType: filter.mealType || null,
+      from: filter.from || null,
+      to: filter.to || null
+    })
+  })
+  if (!resp.ok) {
+    const env = await resp.json().catch(() => null)
+    throw new Error(env?.message || `导出失败（HTTP ${resp.status}）`)
+  }
+  const blob = await resp.blob()
+  const disposition = resp.headers.get('Content-Disposition') || ''
+  const m = disposition.match(/filename="([^"]+)"/)
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = m ? m[1] : `biz-${domain}.csv`
+  a.click()
+  URL.revokeObjectURL(a.href)
+}

@@ -18,7 +18,12 @@ const routes = [
       { path: 'school-menus', name: 'schoolMenus', component: () => import('../views/SchoolMenusView.vue'), meta: { title: '菜单编排', menu: '内容管理' } },
       { path: 'chore-tasks', name: 'choreTasks', component: () => import('../views/ChoreTasksView.vue'), meta: { title: '任务库', menu: '内容管理' } },
       { path: 'medals', name: 'medals', component: () => import('../views/MedalsView.vue'), meta: { title: '勋章配置', menu: '内容管理' } },
-      { path: 'ugc-queue', name: 'ugcQueue', component: () => import('../views/UgcQueueView.vue'), meta: { title: 'UGC 审核队列', menu: '内容管理' } }
+      { path: 'ugc-queue', name: 'ugcQueue', component: () => import('../views/UgcQueueView.vue'), meta: { title: 'UGC 审核队列', menu: '内容管理' } },
+      { path: 'want-eat', name: 'wantEat', component: () => import('../views/WantEatView.vue'), meta: { title: '想吃记录', menu: '业务数据' } },
+      { path: 'confirmations', name: 'confirmations', component: () => import('../views/ConfirmationsView.vue'), meta: { title: '确认单', menu: '业务数据' } },
+      { path: 'wallets', name: 'wallets', component: () => import('../views/WalletsView.vue'), meta: { title: '钱包与流水', menu: '业务数据' } },
+      { path: 'chores-health', name: 'choresHealth', component: () => import('../views/ChoresHealthView.vue'), meta: { title: '家务与打卡', menu: '业务数据' } },
+      { path: 'medal-awards', name: 'medalAwards', component: () => import('../views/MedalAwardsView.vue'), meta: { title: '勋章发放', menu: '业务数据' } }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/workbench' }

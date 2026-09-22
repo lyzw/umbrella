@@ -21,6 +21,26 @@
           <el-menu-item index="/audit-logs">操作日志</el-menu-item>
           <el-menu-item index="/c-audit-logs">C 端关键操作</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu v-if="canSeeContent" index="content">
+          <template #title>
+            <el-icon><Goods /></el-icon><span>内容管理</span>
+          </template>
+          <el-menu-item index="/dishes">菜品库</el-menu-item>
+          <el-menu-item index="/school-menus">菜单编排</el-menu-item>
+          <el-menu-item index="/chore-tasks">任务库</el-menu-item>
+          <el-menu-item index="/medals">勋章配置</el-menu-item>
+          <el-menu-item index="/ugc-queue">UGC 审核队列</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu v-if="canSeeBiz" index="biz">
+          <template #title>
+            <el-icon><DataAnalysis /></el-icon><span>业务数据</span>
+          </template>
+          <el-menu-item index="/want-eat">想吃记录</el-menu-item>
+          <el-menu-item index="/confirmations">确认单</el-menu-item>
+          <el-menu-item index="/wallets">钱包与流水</el-menu-item>
+          <el-menu-item index="/chores-health">家务与打卡</el-menu-item>
+          <el-menu-item index="/medal-awards">勋章发放</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -43,7 +63,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Monitor, User, Document, Goods } from '@element-plus/icons-vue'
+import { Monitor, User, Document, Goods, DataAnalysis } from '@element-plus/icons-vue'
 import { auth, doLogout, hasPerm } from '../stores/auth'
 
 const route = useRoute()
@@ -53,6 +73,14 @@ const activeMenu = computed(() => route.path)
 const canSeeAccounts = computed(() => hasPerm('后台账号', 'view'))
 // 审计菜单：拥有「操作日志:view」或「C端关键操作:view」权限可见
 const canSeeAudit = computed(() => hasPerm('操作日志', 'view') || hasPerm('C端关键操作', 'view'))
+// 内容管理菜单：任一内容资源有查看权限即可见
+const canSeeContent = computed(() =>
+  hasPerm('菜品库', 'view') || hasPerm('菜单编排', 'view') || hasPerm('任务库/奖励库', 'view')
+  || hasPerm('勋章配置', 'view') || hasPerm('UGC审核队列', 'view'))
+// 业务数据菜单：任一业务数据资源有查看权限即可见
+const canSeeBiz = computed(() =>
+  hasPerm('每日想吃', 'view') || hasPerm('确认单', 'view') || hasPerm('审批记录', 'view')
+  || hasPerm('钱包与流水', 'view') || hasPerm('家务健康', 'view') || hasPerm('勋章发放/家庭设置', 'view'))
 
 async function onLogout() {
   await doLogout()
