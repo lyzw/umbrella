@@ -146,4 +146,35 @@ public class MenuController {
             @RequestParam(defaultValue = "6") int limit) {
         return Result.ok(catalog.frequentDishes(childId, limit));
     }
+
+    @GetMapping("/child/recommend")
+    @RequireRole({RoleEnum.CHILD, RoleEnum.PARENT})
+    public Result<RecommendResp> recommend(@RequestParam @Positive Long menuId,
+            @RequestParam(required = false) @Positive Long childId,
+            @RequestParam(defaultValue = "3") int limit) {
+        return Result.ok(catalog.recommend(menuId, childId, limit));
+    }
+
+    @GetMapping("/parent/menu-week")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<MenuWeekResp> parentMenuWeek(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return Result.ok(catalog.parentMenuWeek(from, to));
+    }
+
+    @GetMapping("/child/menu-week")
+    @RequireRole({RoleEnum.CHILD, RoleEnum.PARENT})
+    public Result<MenuWeekResp> childMenuWeek(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) @Positive Long childId) {
+        return Result.ok(catalog.childMenuWeek(childId, from, to));
+    }
+
+    @PostMapping("/parent/menu-daily/batch")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<MenuBatchResp> publishBatch(@RequestBody @Valid MenuDailyBatchReq req) {
+        return Result.ok(catalog.publishFamilyMenuBatch(req.getItems()));
+    }
 }

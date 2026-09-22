@@ -13,7 +13,11 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.net.URI;
 import java.time.LocalDate;
@@ -30,6 +34,15 @@ public class CatalogService {
     private static final int FREQUENT_WINDOW_DAYS = 30;
     /** 派生「爱吃/常点」默认返回条数。 */
     private static final int FREQUENT_DEFAULT_LIMIT = 6;
+    /** 周视图最大跨度（含首尾）。 */
+    private static final int WEEK_MAX_DAYS = 14;
+    /** 批量发布单批上限（7 天 × 3 餐）。 */
+    private static final int BATCH_MAX_ITEMS = 21;
+    /** 推荐默认/最大返回条数。 */
+    private static final int RECOMMEND_DEFAULT_LIMIT = 3;
+    private static final int RECOMMEND_MAX_LIMIT = 5;
+    /** 画像里出现这些词即视为"偏好清淡"，用于给低辣度菜品加分。 */
+    private static final List<String> MILD_TASTE_WORDS = List.of("清淡", "少油", "少盐", "不辣");
     private final DishCategoryMapper categories;
     private final DishMapper dishes;
     private final FamilyDishMapper familyDishes;
@@ -42,11 +55,16 @@ public class CatalogService {
     private final AuditService audit;
     private final Validator validator;
     private final BusinessTime time;
+    private final MedalDefinitionMapper medalDefs;
+    private final MedalService medalService;
+    /** 批量发布用：每条 item 走独立事务（REQUIRES_NEW），单条失败不回滚整批。 */
+    private final TransactionTemplate perItemTransactions;
 
     public CatalogService(DishCategoryMapper categories, DishMapper dishes, FamilyDishMapper familyDishes,
             MenuDailyMapper menus, FamilyMapper families, ChildProfileMapper profiles,
             ChildWantEatMapper wantEats, ChildAuthorizationService authorization, ComplianceProperties policy,
-            AuditService audit, Validator validator, BusinessTime time) {
+            AuditService audit, Validator validator, BusinessTime time, MedalDefinitionMapper medalDefs,
+            MedalService medalService, PlatformTransactionManager transactionManager) {
         this.categories = categories;
         this.dishes = dishes;
         this.familyDishes = familyDishes;
@@ -59,6 +77,10 @@ public class CatalogService {
         this.audit = audit;
         this.validator = validator;
         this.time = time;
+        this.medalDefs = medalDefs;
+        this.medalService = medalService;
+        this.perItemTransactions = new TransactionTemplate(transactionManager);
+        this.perItemTransactions.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     public DishCategoryResp createCategory(DishCategoryReq req) {
@@ -513,9 +535,35 @@ public class CatalogService {
         }
         audit.record("WANT_EAT_STATUS", UserContext.userId(), member.getFamilyId(), "CHILD", row.getChildId(),
                 null, "wantEatId=" + wantEatId + ";status=" + status);
+        if ("COOKED".equals(status)) {
+            // 采纳反馈闭环：「家长真的做了孩子点的菜」是正向激励时刻，按累计被做次数发勋章。
+            // 必须放在乐观锁更新成功之后，否则会把失败的流转也算进去。
+            awardMenuMedals(member);
+        }
         return WantEatResp.builder().childId(row.getChildId()).menuDate(row.getMenuDate())
                 .mealType(row.getMealType())
                 .wantEat(currentWantEat(row.getChildId(), row.getMenuDate(), row.getMealType())).build();
+    }
+
+    /**
+     * 想吃被做（COOKED）累计计数 → 发 {@code category='MEAL'} 的 COUNT 类勋章。
+     * 幂等由 {@link MedalService#award} 的 (definition_id, child_id, ref_id=阈值) 唯一键保证（重复标记、回退再标都不会重复发）。
+     * 必须在已持有写事务时调用（MedalService.award 为 {@code Propagation.MANDATORY}）。
+     */
+    private void awardMenuMedals(FamilyMember member) {
+        long cooked = wantEats.selectCount(new QueryWrapper<ChildWantEat>()
+                .eq("child_id", member.getUserId()).eq("status", "COOKED"));
+        if (cooked <= 0) {
+            return;
+        }
+        List<MedalDefinition> defs = medalDefs.selectList(new QueryWrapper<MedalDefinition>()
+                .eq("category", "MEAL").eq("status", "NORMAL").eq("condition_type", "COUNT"));
+        for (MedalDefinition def : defs) {
+            if (def.getThreshold() != null && cooked >= def.getThreshold()) {
+                medalService.award(member.getUserId(), member.getFamilyId(), def.getCode(),
+                        (long) def.getThreshold(), 0);
+            }
+        }
     }
 
     /**
@@ -571,6 +619,257 @@ public class CatalogService {
                     .count(datesByRef.get(key).size()).build());
         }
         return FrequentDishResp.builder().dishes(dishes).build();
+    }
+
+    /**
+     * 「今天吃什么」引导式推荐：在指定菜单内按画像 + 历史 + 忌口打分排序，返回 Top N 与推荐理由。
+     * 安全硬约束：含过敏原的菜品一律剔除，不受任何加分影响。纯读，不加锁。
+     */
+    public RecommendResp recommend(Long menuId, Long childId, int limit) {
+        LoginUser ctx = requireRole("CHILD", "PARENT");
+        positive(menuId);
+        int top = limit <= 0 ? RECOMMEND_DEFAULT_LIMIT : limit;
+        if (top > RECOMMEND_MAX_LIMIT) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        }
+        if ("CHILD".equals(ctx.getRole())) {
+            if (childId != null && !childId.equals(ctx.getUserId())) {
+                throw new BizException(ResultCode.E009_FORBIDDEN);
+            }
+            childId = ctx.getUserId();
+        } else {
+            positive(childId);
+        }
+        FamilyMember member = authorization.boundChild(childId);
+        if ("PARENT".equals(ctx.getRole())) {
+            authorization.requireParent(member.getFamilyId());
+        }
+        // 与 parentWantEatBoard 一致：读写孩子的餐食画像数据前，家长侧也校验一次有效同意（只读，不锁）。
+        authorization.requireConsentReadOnly(member);
+        ChildProfile profile = requireCompleteProfile(member);
+        // 菜单校验与 markFavorite 同源：只认已发布且确实属于该孩子的菜单（越权统一 404，不暴露存在性）。
+        MenuDaily menu = menus.selectOne(new QueryWrapper<MenuDaily>().eq("id", menuId).eq("status", "PUBLISHED"));
+        if (menu == null) {
+            throw new BizException(ResultCode.E404_NOT_FOUND);
+        }
+        if ("FAMILY".equals(menu.getSourceType())) {
+            if (!member.getFamilyId().equals(menu.getFamilyId())) {
+                throw new BizException(ResultCode.E404_NOT_FOUND);
+            }
+        } else if ("SCHOOL".equals(menu.getSourceType())) {
+            String school = profile.getSchool() == null ? null : profile.getSchool().trim();
+            if (school == null || school.isEmpty() || !school.equals(menu.getOwnerKey())) {
+                throw new BizException(ResultCode.E404_NOT_FOUND);
+            }
+        } else {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        }
+        Map<String, Dish> candidates = visibleDishesByRef(menu.getDishIds(), member.getFamilyId());
+        Map<Long, String> categoryNames = categoryNamesOf(candidates.values());
+        LocalDate today = time.today();
+        // 常吃：近 30 天出现天数
+        Map<String, Integer> frequent = new HashMap<>();
+        for (ChildWantEat row : wantEatRows(childId, today.minusDays(FREQUENT_WINDOW_DAYS - 1L), today)) {
+            frequent.merge(row.getDishType() + ":" + row.getDishId(), 1, Integer::sum);
+        }
+        // 「本周还没吃过」以菜单所在自然周（周一起）为准，而非"今天所在周"，否则选未来菜单时该加分恒失效。
+        LocalDate weekStart = menu.getMenuDate().with(java.time.DayOfWeek.MONDAY);
+        Set<String> markedThisWeek = new HashSet<>();
+        for (ChildWantEat row : wantEatRows(childId, weekStart, weekStart.plusDays(6))) {
+            markedThisWeek.add(row.getDishType() + ":" + row.getDishId());
+        }
+        boolean mildPreference = prefersMild(profile);
+        List<RecommendResp.Item> scored = new ArrayList<>();
+        for (DishRef ref : menu.getDishIds()) {
+            String key = ref.getType() + ":" + ref.getId();
+            Dish dish = candidates.get(key);
+            if (dish == null || !"ON_SALE".equals(dish.getStatus())) {
+                continue;
+            }
+            if (allergyConflict(dish, profile)) {
+                continue; // 安全红线：过敏原命中直接剔除
+            }
+            if (isDisliked(dish, profile)) {
+                continue;
+            }
+            int score = 0;
+            List<String> reasons = new ArrayList<>();
+            int count = frequent.getOrDefault(key, 0);
+            if (count > 0) {
+                score += 2 * Math.min(count, 5);
+                reasons.add("近 30 天想吃 " + count + " 次");
+            }
+            if (!markedThisWeek.contains(key)) {
+                score += 2;
+                reasons.add("本周还没吃过");
+            }
+            boolean mildDish = dish.getSpiceLevel() != null && dish.getSpiceLevel() <= 1;
+            if (mildPreference && mildDish) {
+                score += 1;
+                reasons.add("符合清淡偏好");
+            }
+            if (dish.getSpiceLevel() != null && dish.getSpiceLevel() >= 3) {
+                score -= 2;
+                reasons.add("偏辣");
+            }
+            scored.add(RecommendResp.Item.builder().type(ref.getType()).id(ref.getId()).name(dish.getName())
+                    .imageUrl(dish.getImageUrl()).categoryId(dish.getCategoryId())
+                    .categoryName(categoryNames.get(dish.getCategoryId()))
+                    .score(score).reasons(reasons).build());
+        }
+        scored.sort(Comparator.comparingInt(RecommendResp.Item::getScore).reversed()
+                .thenComparing(RecommendResp.Item::getId));
+        return RecommendResp.builder().menuId(menu.getId()).menuDate(menu.getMenuDate())
+                .mealType(menu.getMealType())
+                .dishes(scored.stream().limit(top).toList()).build();
+    }
+
+    /**
+     * 家长周视图：区间内「每天 × 每餐」的家庭菜单概览，用于"整周发布"。
+     * 纯读、不加锁；未发布的餐次也返回格子（menuId=null），不丢格。
+     */
+    public MenuWeekResp parentMenuWeek(LocalDate from, LocalDate to) {
+        LoginUser ctx = requireRole("PARENT");
+        validateWeekRange(from, to);
+        Long familyId = ctx.firstFamilyId();
+        if (familyId == null) {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        // 只读校验：不锁 family 行（与 R6 约定一致，避免家长查看周视图时阻塞发布/点单写事务）。
+        authorization.requireParent(familyId);
+        return MenuWeekResp.builder().from(from).to(to).today(time.today())
+                .days(weekSkeleton(from, to, weekMenuIndex(from, to, "FAMILY", familyId.toString()), null)).build();
+    }
+
+    /**
+     * 孩子周视图：整周各餐次是否有菜单 + 我已标记几道，用于周条与"提前挑选"。
+     * FAMILY（本家庭）优先于 SCHOOL（档案学校）占用同一格。纯读、不加锁。
+     */
+    public MenuWeekResp childMenuWeek(Long childId, LocalDate from, LocalDate to) {
+        LoginUser ctx = requireRole("CHILD", "PARENT");
+        validateWeekRange(from, to);
+        if ("CHILD".equals(ctx.getRole())) {
+            if (childId != null && !childId.equals(ctx.getUserId())) {
+                throw new BizException(ResultCode.E009_FORBIDDEN);
+            }
+            childId = ctx.getUserId();
+        } else {
+            positive(childId);
+        }
+        FamilyMember member = authorization.boundChild(childId);
+        if ("PARENT".equals(ctx.getRole())) {
+            authorization.requireParent(member.getFamilyId());
+        }
+        authorization.requireConsentReadOnly(member);
+        ChildProfile profile = requireCompleteProfile(member);
+        Map<String, MenuDaily> index = weekMenuIndex(from, to, "FAMILY", member.getFamilyId().toString());
+        String school = profile.getSchool() == null ? null : profile.getSchool().trim();
+        if (school != null && !school.isEmpty()) {
+            for (Map.Entry<String, MenuDaily> entry : weekMenuIndex(from, to, "SCHOOL", school).entrySet()) {
+                index.putIfAbsent(entry.getKey(), entry.getValue());
+            }
+        }
+        Map<String, Integer> wantCount = new HashMap<>();
+        for (ChildWantEat row : wantEatRows(childId, from, to)) {
+            wantCount.merge(row.getMenuDate() + "|" + row.getMealType(), 1, Integer::sum);
+        }
+        return MenuWeekResp.builder().from(from).to(to).today(time.today())
+                .days(weekSkeleton(from, to, index, wantCount)).build();
+    }
+
+    /**
+     * 家长「整周发布」：逐条独立事务、允许部分成功（单条失败不回滚整批）。
+     * <p>
+     * <b>必须挂起类级事务（{@code NOT_SUPPORTED}）</b>：鉴权 {@code requireCurrentFamilyParent} 会对家庭行
+     * 加 {@code FOR UPDATE}，而每条 item 的子事务用的是 {@code REQUIRES_NEW}。若本方法仍在外层事务内，
+     * 子事务会先<b>挂起外层事务</b>（外层事务的行锁不释放）再去抢同一行 → 自己把自己锁死，批量请求挂起不返回。
+     * 因此这里：① 方法本身无事务；② 鉴权单独放进一个短事务并立刻提交，不跨批量循环持锁。
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public MenuBatchResp publishFamilyMenuBatch(List<MenuDailyBatchReq.Item> items) {
+        if (items == null || items.isEmpty() || items.size() > BATCH_MAX_ITEMS
+                || items.stream().anyMatch(Objects::isNull)) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        }
+        // ① 鉴权只做一次（独立短事务，提交后立即释放家庭行锁），并拿到 familyId 供各条复用。
+        Long familyId = perItemTransactions.execute(status -> requireCurrentFamilyParent().firstFamilyId());
+        // ② 逐条独立事务：此时无外层事务可挂起，子事务之间串行抢锁、各自提交，单条失败不影响其余。
+        List<MenuBatchResp.Result> results = new ArrayList<>();
+        int ok = 0;
+        for (MenuDailyBatchReq.Item item : items) {
+            String code = null;
+            try {
+                perItemTransactions.executeWithoutResult(status -> upsertAuthorizedFamilyMenu(familyId, item));
+                ok++;
+            } catch (BizException error) {
+                code = error.getResultCode().getCode();
+            } catch (RuntimeException error) {
+                code = ResultCode.E500_SYSTEM_ERROR.getCode();
+            }
+            results.add(MenuBatchResp.Result.builder().menuDate(item.getMenuDate()).mealType(item.getMealType())
+                    .ok(code == null).code(code).build());
+        }
+        return MenuBatchResp.builder().okCount(ok).failCount(results.size() - ok).results(results).build();
+    }
+
+    /**
+     * 批量发布单条：复用 {@link #upsertFamilyMenu} 的校验与写入链路，但<b>不重复鉴权</b>
+     * （批量入口已鉴权并解析出 familyId，避免 21 次 FOR UPDATE 家庭行）。
+     */
+    private MenuUpsertResp upsertAuthorizedFamilyMenu(Long familyId, MenuDailyBatchReq.Item item) {
+        MenuDailyReq req = new MenuDailyReq();
+        req.setMenuDate(item.getMenuDate());
+        req.setMealType(item.getMealType());
+        req.setDishIds(item.getDishIds());
+        req.setStatus(item.getStatus());
+        validateMenu(req);
+        return upsertMenu(req, "FAMILY", familyId, null);
+    }
+
+    /** 周视图区间校验：必填、from&lt;=to、跨度（含首尾）不超过 {@link #WEEK_MAX_DAYS} 天。 */
+    private void validateWeekRange(LocalDate from, LocalDate to) {
+        if (from == null || to == null || from.isAfter(to)
+                || ChronoUnit.DAYS.between(from, to) + 1 > WEEK_MAX_DAYS) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        }
+    }
+
+    /** 区间菜单索引 key="日期|餐次" → 菜单（同一格 FAMILY 优先，调用方用 putIfAbsent 保证）。 */
+    private Map<String, MenuDaily> weekMenuIndex(LocalDate from, LocalDate to, String sourceType, String ownerKey) {
+        Map<String, MenuDaily> index = new HashMap<>();
+        for (MenuDaily menu : menus.selectList(new QueryWrapper<MenuDaily>().eq("source_type", sourceType)
+                .eq("owner_key", ownerKey).between("menu_date", from, to))) {
+            index.put(menu.getMenuDate() + "|" + menu.getMealType(), menu);
+        }
+        return index;
+    }
+
+    /** 生成"每一天 × 三餐"骨架（未发布也占位）；wantCount 为 null 时 wantEatCount/marked 固定 0/false。 */
+    private List<MenuWeekResp.Day> weekSkeleton(LocalDate from, LocalDate to, Map<String, MenuDaily> index,
+            Map<String, Integer> wantCount) {
+        List<MenuWeekResp.Day> days = new ArrayList<>();
+        for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
+            List<MenuWeekResp.Meal> meals = new ArrayList<>();
+            for (String mealType : List.of("BREAKFAST", "LUNCH", "DINNER")) {
+                String key = date + "|" + mealType;
+                MenuDaily menu = index.get(key);
+                int count = wantCount == null ? 0 : wantCount.getOrDefault(key, 0);
+                meals.add(MenuWeekResp.Meal.builder().mealType(mealType)
+                        .menuId(menu == null ? null : menu.getId())
+                        .sourceType(menu == null ? null : menu.getSourceType())
+                        .status(menu == null ? null : menu.getStatus())
+                        .dishCount(menu == null || menu.getDishIds() == null ? 0 : menu.getDishIds().size())
+                        .wantEatCount(count).marked(count > 0).build());
+            }
+            days.add(MenuWeekResp.Day.builder().menuDate(date).meals(meals).build());
+        }
+        return days;
+    }
+
+    /** 画像是否偏好清淡（用于给低辣度菜品加分；仅在画像明确表达时生效，避免给所有菜无差别加分）。 */
+    private boolean prefersMild(ChildProfile profile) {
+        return profile.getTastes() != null && profile.getTastes().stream().filter(Objects::nonNull)
+                .anyMatch(taste -> MILD_TASTE_WORDS.stream().anyMatch(taste::contains));
     }
 
     private void validateBoardRange(LocalDate from, LocalDate to) {
