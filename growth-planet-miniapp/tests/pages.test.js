@@ -442,6 +442,77 @@ test('首页只接受当前角色的一级视图，家务页返回对应儿童�
   chore.changeTab({ detail: { key: 'task' } });
   assert.deepEqual(navigation, ['/pages/home/index?tab=me']);
 });
+test('家长首页摘要按选中儿童查询，并使用总数和今日单日范围', async () => {
+  const page = loadPage('home');
+  const secondChild = { childId: '9007199254740994', relationLabel: '女儿', bindStatus: 'BOUND' };
+  const calls = [];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    if (endpoint === '/notices/unread-count') return { unreadCount: 2 };
+    if (endpoint === '/family/children') return { items: [child, secondChild], total: 2 };
+    if (endpoint === '/parent/approvals') return { items: [], total: 7 };
+    if (endpoint === '/chore/instances') return [{ instanceId: '1' }, { instanceId: '2' }];
+    if (endpoint === '/parent/want-eat') return { summary: { totalItems: 3 } };
+    throw new Error('未预期接口 ' + endpoint);
+  };
+  await page.onShow();
+  assert.equal(page.data.childId, child.childId);
+  assert.deepEqual(page.data.parentSummary, {
+    approvals: { status: 'ready', value: 7, error: '' },
+    chores: { status: 'ready', value: 2, error: '' },
+    wantEat: { status: 'ready', value: 3, error: '' }
+  });
+  await page.selectParentChild({ detail: { value: 1 } });
+  assert.equal(page.data.childId, secondChild.childId);
+  const summaryCalls = calls.filter(call => ['/parent/approvals', '/chore/instances', '/parent/want-eat'].includes(call.endpoint));
+  assert.ok(summaryCalls.slice(-3).every(call => call.query.childId === secondChild.childId));
+  assert.deepEqual(summaryCalls.at(-1).query, {
+    childId: secondChild.childId, from: shanghaiDate(), to: shanghaiDate()
+  });
+  page.openParentSummary(event({ page: 'want-eat' }));
+  assert.equal(navigation.at(-1), '/pages/want-eat/index?childId=' + encodeURIComponent(secondChild.childId) + '&range=today');
+});
+test('家长首页摘要单项失败只标记该项，不把失败伪装成零', async () => {
+  const page = loadPage('home');
+  api.get = async endpoint => {
+    if (endpoint === '/notices/unread-count') return { unreadCount: 0 };
+    if (endpoint === '/family/children') return { items: [child], total: 1 };
+    if (endpoint === '/parent/approvals') throw new Error('审批暂不可用');
+    if (endpoint === '/chore/instances') return [];
+    if (endpoint === '/parent/want-eat') return { summary: { totalItems: 0 } };
+    throw new Error('未预期接口 ' + endpoint);
+  };
+  await page.onShow();
+  assert.equal(page.data.parentSummary.approvals.status, 'error');
+  assert.match(page.data.parentSummary.approvals.error, /审批暂不可用/);
+  assert.deepEqual(page.data.parentSummary.chores, { status: 'ready', value: 0, error: '' });
+  assert.deepEqual(page.data.parentSummary.wantEat, { status: 'ready', value: 0, error: '' });
+});
+test('家长首页无绑定儿童时保留可重试状态，迟到响应不回写', async () => {
+  const page = loadPage('home');
+  api.get = async endpoint => {
+    if (endpoint === '/notices/unread-count') return { unreadCount: 0 };
+    if (endpoint === '/family/children') throw new Error('尚无已绑定的儿童，请先前往家庭与绑定');
+    throw new Error('不应请求摘要');
+  };
+  await page.onShow();
+  assert.equal(page.data.parentSummaryUnavailable, true);
+  assert.match(page.data.parentSummaryMessage, /尚无已绑定/);
+
+  let resolveChildren;
+  api.get = async endpoint => {
+    if (endpoint === '/family/children') {
+      return new Promise(resolve => { resolveChildren = resolve; });
+    }
+    return { unreadCount: 0 };
+  };
+  const pending = page.retryParentSummary();
+  page.onHide();
+  resolveChildren({ items: [child], total: 1 });
+  await pending;
+  assert.equal(page.data.childId, '');
+  assert.equal(page.data.parentSummaryUnavailable, true);
+});
 test('勋章列表生成顶层稳定键供视图循环使用', async () => {
   const page = loadPage('medal');
   page.data.childId = child.childId;
@@ -684,6 +755,24 @@ test('健康打卡：儿童打卡刷新今日次数与连续天数，达上限�
   assert.equal(page.data.doneCount, 2);
   assert.match(page.data.receipt, /「喝水」打卡成功，已连续打卡 2 天/);
   assert.equal(calls.at(-1).endpoint, '/child/check-in/calendar');
+});
+test('儿童任务页刷新健康打卡使用上海月份参数', async () => {
+  const page = loadPage('chore', 'CHILD');
+  page.setData({ childId: child.childId });
+  const calls = [];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    if (endpoint === '/child/check-in/items') return [{ itemId: '1', name: '喝水', dailyTarget: 3, unit: '次' }];
+    if (endpoint === '/child/check-in/today') return [{ itemId: '1', count: 1, dailyTarget: 3, reached: false }];
+    if (endpoint === '/child/check-in/calendar') return { currentStreak: 2 };
+    throw new Error('未预期接口 ' + endpoint);
+  };
+  await page.readChild();
+  assert.deepEqual(calls.at(-1), {
+    endpoint: '/child/check-in/calendar', query: { month: shanghaiDate().slice(0, 7) }
+  });
+  assert.equal(page.data.streak, 2);
+  assert.equal(page.data.checkItems[0].percent, 33);
 });
 test('健康打卡：日历格子按周日起排，且不能翻到未来月份', async () => {
   const page = loadPage('health', 'CHILD');
@@ -1164,7 +1253,7 @@ test('心愿菜单：目录复用统一安全提示，并标注已在候选池�
   assert.deepEqual(page.data.wishDishes.map(item => item.key), ['PRESET:99', 'PRESET:88', 'FAMILY:7']);
   assert.deepEqual(page.data.wishDishes.map(item => item.safetyLabel),
     ['过敏信息已声明', '未登记过敏信息，暂不可选择', '过敏信息已声明']);
-  assert.deepEqual(page.data.wishDishes.map(item => item.actionLabel), ['加入', '加入', '移出']);
+  assert.deepEqual(page.data.wishDishes.map(item => item.actionLabel), ['加入心愿', '加入心愿', '移出心愿']);
   assert.deepEqual(page.data.wishDishes.map(item => item.typeLabel), ['预置菜谱', '预置菜谱', '家庭菜谱']);
 });
 test('心愿菜单：目录加入或移出候选池走 wish-mark', async () => {
@@ -1177,6 +1266,51 @@ test('心愿菜单：目录加入或移出候选池走 wish-mark', async () => {
     body: { menuDate: shanghaiDate(), type: 'PRESET', id: '99', selected: true } });
   await page.wishMark(event({ type: 'PRESET', id: '99', marked: 'true' }));
   assert.equal(sent.body.selected, false);
+});
+test('心愿菜单：关闭、锁定和日期越界均为只读，普通想吃仍可用', async () => {
+  const page = loadPage('menu', 'CHILD');
+  const today = shanghaiDate();
+  const cases = [
+    { enabled: false, canEdit: true, locked: false, menuDate: today, notice: /尚未开启/ },
+    { enabled: true, canEdit: true, locked: true, menuDate: today, notice: /已提交/ },
+    { enabled: true, canEdit: true, locked: false, menuDate: '2099-01-01', notice: /不在可编辑范围/ }
+  ];
+  for (const item of cases) {
+    page.wishRaw = { ...emptyWish, ...item, items: [wishPool()] };
+    page.wishSelectionTouched = true;
+    page.setData({ menuDate: item.menuDate, wishSelected: [] });
+    page.renderWish();
+    assert.equal(page.data.wish.canEdit, false);
+    assert.match(page.data.wish.noticeText, item.notice);
+    page.wishToggle(event({ key: 'PRESET:99' }));
+    assert.deepEqual(page.data.wishSelected, []);
+    await page.loadWishCatalog();
+    assert.deepEqual(page.data.wishDishes, []);
+  }
+
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; };
+  page.data.menu = { menuId: '20', canSubmit: true, menuDate: today, mealType: 'LUNCH' };
+  page.data.menuDate = today;
+  page.data.mealType = 'LUNCH';
+  page.allDishes = [{ ...dish, sourceType: 'PRESET', isFavorite: false }];
+  page.data.quantities = { 'PRESET:99': 1 };
+  page.data.childId = child.childId;
+  await page.favorite(event({ key: 'PRESET:99' }));
+  assert.equal(sent.endpoint, '/menu/mark-favorite');
+});
+test('心愿菜单：wish-mark兼容布尔和字符串标记，鉴权错误不静默', async () => {
+  const page = loadPage('menu', 'CHILD');
+  page.wishRaw = emptyWish;
+  page.renderWish();
+  const calls = [];
+  api.post = async (endpoint, body) => { calls.push({ endpoint, body }); return emptyWish; };
+  await page.wishMark(event({ type: 'PRESET', id: '99', marked: false }));
+  await page.wishMark(event({ type: 'PRESET', id: '99', marked: 'true' }));
+  assert.deepEqual(calls.map(call => call.body.selected), [true, false]);
+
+  api.get = async () => { throw Object.assign(new Error('登录已失效'), { status: 401 }); };
+  await assert.rejects(page.loadWish(), error => error.status === 401);
 });
 test('心愿菜单：家长只看到孩子已提交的菜，保存设置带乐观锁版本', async () => {
   const page = loadPage('menu', 'PARENT');
