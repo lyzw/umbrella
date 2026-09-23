@@ -13,8 +13,8 @@
     </picker>
     <text wx:else class="muted">{{childLabels[childIndex]}}</text>
     <view class="range-nav">
-      <button class="compact-action" data-delta="-1" bindtap="shiftRange" aria-label="上一周">上一周</button>
-      <button class="compact-action" data-delta="1" bindtap="shiftRange" aria-label="下一周">下一周</button>
+      <button class="compact-action" data-delta="-1" bindtap="shiftRange" aria-label="{{rangeDays === 1 ? '前一天' : '上一周'}}">{{rangeDays === 1 ? '前一天' : '上一周'}}</button>
+      <button class="compact-action" data-delta="1" bindtap="shiftRange" aria-label="{{rangeDays === 1 ? '后一天' : '下一周'}}">{{rangeDays === 1 ? '后一天' : '下一周'}}</button>
     </view>
   </view>
   <view class="small range-label">{{rangeLabel}}</view>

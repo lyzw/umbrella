@@ -30,7 +30,7 @@
           <view class="member-copy"><text class="member-name">{{item.displayName}}</text><text class="small">查看绑定进度与下一步</text></view>
           <text class="badge {{item.bindStatus === 'BOUND' ? 'positive' : ''}}">{{item.bindStatusLabel}}</text>
         </button>
-        <view class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
+        <view wx:if="{{total > 20 || page > 1}}" class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
       </view>
       <view wx:if="{{selected && consent}}" class="section">
         <view class="flow-heading">

@@ -14,10 +14,13 @@ ui.page({
   onShow() {
     if (!ui.guard(this)) return;
     this.visible = true;
-    ui.run(this, async () => {
+    return ui.run(this, async () => {
       const children = await loadChildren();
       const draft = context.takeCart();
-      const childId = draft ? draft.childId : this.data.childId || children[0].childId;
+      const requested = children.find(item => item.childId === (this.query && this.query.childId));
+      const existing = children.find(item => item.childId === this.data.childId);
+      const childId = draft ? draft.childId : (requested || existing || children[0]).childId;
+      if (this.query) this.query.childId = '';
       this.setData({ children, childId, childIndex: Math.max(0, children.findIndex(c => c.childId === childId)),
         draft, pendingSubmit: !!operations.pending('submit:' + childId) });
       if (this.query && this.query.id) { const confirmId = id(this.query.id); this.query.id = null; await this.readDetail(confirmId); }

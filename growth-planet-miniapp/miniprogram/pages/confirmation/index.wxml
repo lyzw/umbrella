@@ -57,7 +57,7 @@
       <view class="row"><text>{{item.menuDate}}</text><text>{{item.totalAmount}} 虚拟单位</text></view>
       <view class="row"><text class="small">确认单 {{item.confirmId}}</text><text class="badge">{{item.label}}</text></view>
     </button>
-    <view class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
+    <view wx:if="{{total > 20 || page > 1}}" class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
   </view>
   <view wx:if="{{busy}}" class="loading">正在处理，请勿重复提交</view>
 </view>

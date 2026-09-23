@@ -23,20 +23,67 @@
       <button class="primary hero-action" bindtap="go" data-page="menu">{{role === 'PARENT' ? '查看家庭菜单' : '去点餐'}}</button>
     </view>
 
-    <!-- 家长端：沿用原成人功能看板 -->
+    <!-- 家长端：先展示明确对应当前儿童的可执行摘要，再进入完整功能页 -->
     <block wx:if="{{role === 'PARENT'}}">
+      <view class="parent-summary">
+        <view class="parent-summary-head">
+          <view>
+            <view class="section-title">当前儿童待办</view>
+            <view wx:if="{{parentSummaryUnavailable}}" class="small">{{parentSummaryMessage}}</view>
+          </view>
+          <picker wx:if="{{children.length > 1}}" range="{{childLabels}}" value="{{childIndex}}" bindchange="selectParentChild" disabled="{{busy}}">
+            <view class="picker parent-child-picker">{{childLabels[childIndex]}}⌄</view>
+          </picker>
+          <text wx:elif="{{children.length === 1}}" class="small parent-child-label">{{childLabels[childIndex]}}</text>
+        </view>
+        <view wx:if="{{!parentSummaryUnavailable}}" class="parent-summary-grid">
+          <view class="parent-summary-item" bindtap="openParentSummary" data-page="confirmation">
+            <text class="parent-summary-value" wx:if="{{parentSummary.approvals.status === 'ready'}}">{{parentSummary.approvals.value}}</text>
+            <text class="parent-summary-value summary-loading" wx:elif="{{parentSummary.approvals.status === 'loading'}}">…</text>
+            <text class="parent-summary-value summary-error" wx:else>!</text>
+            <text class="parent-summary-label">待审批餐单</text>
+            <text class="parent-summary-hint">{{parentSummary.approvals.status === 'error' ? parentSummary.approvals.error : '打开处理'}}</text>
+          </view>
+          <view class="parent-summary-item" bindtap="openParentSummary" data-page="chore">
+            <text class="parent-summary-value" wx:if="{{parentSummary.chores.status === 'ready'}}">{{parentSummary.chores.value}}</text>
+            <text class="parent-summary-value summary-loading" wx:elif="{{parentSummary.chores.status === 'loading'}}">…</text>
+            <text class="parent-summary-value summary-error" wx:else>!</text>
+            <text class="parent-summary-label">待确认家务</text>
+            <text class="parent-summary-hint">{{parentSummary.chores.status === 'error' ? parentSummary.chores.error : '打开处理'}}</text>
+          </view>
+          <view class="parent-summary-item" bindtap="openParentSummary" data-page="want-eat">
+            <text class="parent-summary-value" wx:if="{{parentSummary.wantEat.status === 'ready'}}">{{parentSummary.wantEat.value}}</text>
+            <text class="parent-summary-value summary-loading" wx:elif="{{parentSummary.wantEat.status === 'loading'}}">…</text>
+            <text class="parent-summary-value summary-error" wx:else>!</text>
+            <text class="parent-summary-label">今日想吃</text>
+            <text class="parent-summary-hint">{{parentSummary.wantEat.status === 'error' ? parentSummary.wantEat.error : '打开清单'}}</text>
+          </view>
+        </view>
+        <view wx:else class="parent-summary-empty">
+          <button bindtap="retryParentSummary" disabled="{{busy}}">重新加载</button>
+          <button bindtap="go" data-page="family" disabled="{{busy}}">去家庭与绑定</button>
+        </view>
+        <button class="parent-summary-retry" wx:if="{{!parentSummaryUnavailable && (parentSummary.approvals.status === 'error' || parentSummary.chores.status === 'error' || parentSummary.wantEat.status === 'error')}}" bindtap="retryParentSummary" disabled="{{busy}}">刷新摘要</button>
+      </view>
       <view class="home-list">
-        <view class="home-list-row" bindtap="go" data-page="confirmation" aria-role="button" hover-class="home-list-row-active">
+        <view class="home-list-row" bindtap="openParentSummary" data-page="confirmation" aria-role="button" hover-class="home-list-row-active">
           <view class="home-list-row-content">
             <text class="home-list-icon confirmation-icon">✓</text>
             <view class="home-list-copy"><text class="home-list-title">待审批与历史记录</text><text class="home-list-subtitle">处理孩子的餐单提报</text></view>
             <text class="home-list-arrow">›</text>
           </view>
         </view>
-        <view class="home-list-row" bindtap="go" data-page="want-eat" aria-role="button" hover-class="home-list-row-active">
+        <view class="home-list-row" bindtap="openParentSummary" data-page="want-eat" aria-role="button" hover-class="home-list-row-active">
           <view class="home-list-row-content">
             <text class="home-list-icon confirmation-icon">想</text>
             <view class="home-list-copy"><text class="home-list-title">孩子想吃</text><text class="home-list-subtitle">按日看孩子标记的想吃清单，采买与烹饪</text></view>
+            <text class="home-list-arrow">›</text>
+          </view>
+        </view>
+        <view class="home-list-row" bindtap="openParentSummary" data-page="chore" aria-role="button" hover-class="home-list-row-active">
+          <view class="home-list-row-content">
+            <text class="home-list-icon health-icon">勤</text>
+            <view class="home-list-copy"><text class="home-list-title">家务任务</text><text class="home-list-subtitle">查看孩子已提交、待你确认的家务</text></view>
             <text class="home-list-arrow">›</text>
           </view>
         </view>
@@ -125,7 +172,7 @@
           <text class="wish-card-title">🌟 今天的心愿菜单</text>
           <text class="wish-card-count">{{wish.countText}}</text>
         </view>
-        <text class="wish-card-sub">{{wish.statusLabel === '已提交' ? '已交给爸妈，等确认' : '挑几道想吃的，提交给爸妈'}}</text>
+        <text class="wish-card-sub">{{wish.noticeText}}</text>
       </view>
 
       <view wx:if="{{confirmStatus}}" class="confirm-bar {{confirmStatus === 'COMPLETED' ? 'ok' : confirmStatus === 'REJECTED' ? 'err' : 'warn'}}" bindtap="go" data-page="confirmation" hover-class="home-list-row-active">

@@ -45,22 +45,30 @@ ui.page({
   data: {
     role: '', busy: false, error: '', receipt: '', ready: false,
     children: [], childLabels: [], childIndex: 0, childId: '',
-    today: '', from: '', to: '', rangeLabel: '',
+    today: '', from: '', to: '', rangeDays: RANGE_DAYS, rangeLabel: '',
     days: [], summary: [], totalItems: 0, expiredCount: 0,
     // 配方按菜品缓存：同一道菜多次展开只请求一次。键 = type:dishId。
     recipeOpenKey: '', recipeStates: {}
   },
+  onLoad(query) {
+    this.requestedChildId = query && query.childId ? query.childId : '';
+    this.singleDay = query && query.range === 'today';
+  },
   onShow() {
     if (!ui.guard(this, 'PARENT')) return;
     const today = shanghaiDate();
-    this.setData({ today, from: today, to: shiftDate(today, RANGE_DAYS - 1), receipt: '' });
+    const rangeDays = this.singleDay ? 1 : RANGE_DAYS;
+    this.setData({ today, from: today, to: shiftDate(today, rangeDays - 1), rangeDays, receipt: '' });
     return ui.run(this, async () => {
       const children = await loadChildren();
+      const requestedChildId = this.requestedChildId || this.data.childId;
+      const childIndex = Math.max(0, children.findIndex(item => item.childId === requestedChildId));
+      this.requestedChildId = '';
       this.setData({
         children,
         childLabels: children.map(childLabel),
-        childIndex: 0,
-        childId: children[0].childId
+        childIndex,
+        childId: children[childIndex].childId
       });
       await this.read();
     });
@@ -122,10 +130,10 @@ ui.page({
     });
   },
   shiftRange(e) {
-    const delta = Number(e.currentTarget.dataset.delta) * RANGE_DAYS;
+    const delta = Number(e.currentTarget.dataset.delta) * this.data.rangeDays;
     return ui.run(this, async () => {
       const from = shiftDate(this.data.from, delta);
-      this.setData({ from, to: shiftDate(from, RANGE_DAYS - 1), receipt: '',
+      this.setData({ from, to: shiftDate(from, this.data.rangeDays - 1), receipt: '',
         recipeOpenKey: '', recipeStates: {} });
       await this.read();
     });

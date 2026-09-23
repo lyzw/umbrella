@@ -1,11 +1,13 @@
 const api = require('../../services/api');
 const session = require('../../services/session');
 const ui = require('../../utils/page');
+const lifecycle = require('../../services/lifecycle');
 const { loadChildren } = require('../../services/children');
 const { shanghaiDate, dishKey, selectable } = require('../../utils/domain');
 
 const CHILD_HOME_TABS = ['meal', 'task', 'growth', 'me'];
 const PARENT_HOME_TABS = ['home', 'me'];
+const PARENT_SUMMARY_PAGE_SIZE = 1;
 // 心愿菜单状态文案（与 menu 页同源，避免重复依赖）。
 const WISH_STATUS_LABELS = { NONE: '未创建', SUBMITTED: '已提交', WITHDRAWN: '已撤回' };
 // 爸妈确认状态 → 儿童化文案（确认单全页已降级为点餐内状态条）。
@@ -18,7 +20,13 @@ const CONFIRM_LABELS = {
 ui.page({
   data: {
     role: '', active: 'meal', busy: false, error: '', unread: 0, synthetic: require('../../config').syntheticLogin,
-    childId: '',
+    childId: '', children: [], childLabels: [], childIndex: 0,
+    parentSummaryUnavailable: false, parentSummaryMessage: '',
+    parentSummary: {
+      approvals: { status: 'idle', value: 0, error: '' },
+      chores: { status: 'idle', value: 0, error: '' },
+      wantEat: { status: 'idle', value: 0, error: '' }
+    },
     // 点餐（孩子首页）增强区块
     familyCount: 0, schoolCount: 0, familyMenuId: '', mealMenuDishes: [],
     recommend: [], frequent: [], wish: null,
@@ -29,6 +37,7 @@ ui.page({
   go: ui.go,
   onLoad(query) {
     this.requestedTab = query && query.tab ? query.tab : '';
+    this.requestedChildId = query && query.childId ? query.childId : '';
   },
   onShow() {
     if (!ui.guard(this)) return;
@@ -37,11 +46,144 @@ ui.page({
     const active = tabs.includes(this.requestedTab) ? this.requestedTab : fallback;
     this.requestedTab = '';
     this.setData({ active });
-    ui.run(this, async () => {
-      const data = await api.get('/notices/unread-count');
-      this.setData({ unread: data.unreadCount });
-      if (this.data.role === 'CHILD') await this.loadChildTab(active);
+    const revision = lifecycle.current();
+    const generation = session.generation();
+    return ui.run(this, async () => {
+      const tasks = [this.loadUnread(revision, generation)];
+      if (this.data.role === 'PARENT') tasks.push(this.loadParentHome(revision, generation));
+      else tasks.push(this.loadChildTab(active));
+      const results = await Promise.allSettled(tasks);
+      const fatal = results.find(result => result.status === 'rejected'
+        && this.isFatalLoadError(result.reason));
+      if (fatal) throw fatal.reason;
     });
+  },
+  isFatalLoadError(error) {
+    return Boolean(error && (error.cancelled || error.status === 401 || error.code === 'E-010'));
+  },
+  isCurrentLoad(revision, generation) {
+    return revision === lifecycle.current() && generation === session.generation();
+  },
+  async loadUnread(revision, generation) {
+    try {
+      const data = await api.get('/notices/unread-count');
+      if (this.isCurrentLoad(revision, generation)) this.setData({ unread: data.unreadCount });
+    } catch (error) {
+      if (this.isFatalLoadError(error)) throw error;
+      // 通知角标是增强信息，失败不阻断家长待办摘要。
+    }
+  },
+  summaryState(status, value, error) {
+    return { status, value: value == null ? 0 : value, error: error || '' };
+  },
+  async loadParentHome(revision, generation) {
+    let children;
+    try {
+      children = await loadChildren();
+    } catch (error) {
+      if (this.isFatalLoadError(error)) throw error;
+      if (!this.isCurrentLoad(revision, generation)) return;
+      const message = error.message || '暂无已绑定的儿童';
+      this.setData({
+        children: [], childLabels: [], childIndex: 0, childId: '',
+        parentSummaryUnavailable: true, parentSummaryMessage: message,
+        parentSummary: {
+          approvals: this.summaryState('error', 0, message),
+          chores: this.summaryState('error', 0, message),
+          wantEat: this.summaryState('error', 0, message)
+        }
+      });
+      return;
+    }
+    const requestedChildId = this.requestedChildId || this.data.childId;
+    const index = Math.max(0, children.findIndex(item => item.childId === requestedChildId));
+    const childId = children[index] && children[index].childId;
+    if (!childId) {
+      this.setData({ children: [], childLabels: [], childIndex: 0, childId: '',
+        parentSummaryUnavailable: true, parentSummaryMessage: '暂无已绑定的儿童' });
+      return;
+    }
+    if (!this.isCurrentLoad(revision, generation)) return;
+    this.requestedChildId = '';
+    this.setData({
+      children,
+      childLabels: children.map(item => (item.relationLabel || '孩子') + ' · ' + item.childId),
+      childIndex: index,
+      childId,
+      parentSummaryUnavailable: false,
+      parentSummaryMessage: '',
+      parentSummary: {
+        approvals: this.summaryState('loading'),
+        chores: this.summaryState('loading'),
+        wantEat: this.summaryState('loading')
+      }
+    });
+    await this.loadParentMetrics(revision, generation, childId);
+  },
+  async loadParentMetrics(revision, generation, childId) {
+    const today = shanghaiDate();
+    const metrics = [
+      ['approvals', api.get('/parent/approvals', {
+        childId, page: 1, pageSize: PARENT_SUMMARY_PAGE_SIZE, status: 'PENDING'
+      }).then(result => Number(result.total) || 0)],
+      ['chores', api.get('/chore/instances', { childId, status: 'SUBMITTED' })
+        .then(result => Array.isArray(result) ? result.length : 0)],
+      ['wantEat', api.get('/parent/want-eat', { childId, from: today, to: today })
+        .then(result => Number(result.summary && result.summary.totalItems) || 0)]
+    ];
+    await Promise.all(metrics.map(async ([name, request]) => {
+      try {
+        const value = await request;
+        if (!this.isCurrentLoad(revision, generation) || this.data.childId !== childId) return;
+        this.setData({ ['parentSummary.' + name]: this.summaryState('ready', value) });
+      } catch (error) {
+        if (this.isFatalLoadError(error)) throw error;
+        if (!this.isCurrentLoad(revision, generation) || this.data.childId !== childId) return;
+        this.setData({ ['parentSummary.' + name]: this.summaryState('error', 0, error.message || '暂时无法加载') });
+      }
+    }));
+  },
+  selectParentChild(e) {
+    const index = Number(e.detail.value);
+    const child = this.data.children[index];
+    if (!child || child.childId === this.data.childId) return;
+    const revision = lifecycle.current();
+    const generation = session.generation();
+    this.setData({
+      childIndex: index, childId: child.childId,
+      parentSummaryUnavailable: false, parentSummaryMessage: '',
+      parentSummary: {
+        approvals: this.summaryState('loading'),
+        chores: this.summaryState('loading'),
+        wantEat: this.summaryState('loading')
+      }
+    });
+    return ui.run(this, () => this.loadParentMetrics(revision, generation, child.childId));
+  },
+  retryParentSummary() {
+    if (!this.data.childId) {
+      const revision = lifecycle.current();
+      const generation = session.generation();
+      return ui.run(this, () => this.loadParentHome(revision, generation));
+    }
+    const revision = lifecycle.current();
+    const generation = session.generation();
+    this.setData({
+      parentSummary: {
+        approvals: this.summaryState('loading'),
+        chores: this.summaryState('loading'),
+        wantEat: this.summaryState('loading')
+      }
+    });
+    return ui.run(this, () => this.loadParentMetrics(revision, generation, this.data.childId));
+  },
+  openParentSummary(e) {
+    const page = e.currentTarget.dataset.page;
+    const childId = this.data.childId;
+    if (!page || !childId) return;
+    let query = '?childId=' + encodeURIComponent(childId);
+    if (page === 'want-eat') query += '&range=today';
+    wx.navigateTo({ url: '/pages/' + page + '/index' + query });
   },
   // 孩子端各 tab 的增强数据：失败一律静默降级，绝不阻断首页骨架。
   async loadChildTab(active) {
@@ -85,6 +227,9 @@ ui.page({
       wish: wish ? {
         status: wish.status,
         statusLabel: WISH_STATUS_LABELS[wish.status] || wish.status,
+        noticeText: !wish.enabled ? '心愿菜单尚未开启，普通想吃标记仍可使用'
+          : wish.locked ? '已提交给爸妈，如需调整请先撤回'
+            : wish.canEdit ? '挑几道心愿菜，提交给爸妈' : '当前心愿菜单仅可查看',
         countText: (wish.submittedCount || 0) + ' / ' + (wish.maxDishes || 0)
       } : null,
       confirmStatus: confirm ? confirm.status : null,

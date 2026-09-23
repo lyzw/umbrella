@@ -30,8 +30,9 @@
 .member-section > .empty { padding: 34px 16px; }
 .member-section > .actions { padding: 0 16px 16px; }
 .link-row.selected { background: var(--primary-soft); }
-.member-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.member-copy { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .member-name { font-size: 15px; font-weight: 700; color: #1f2733; overflow-wrap: anywhere; }
+.member-section .badge { flex: 0 0 auto; white-space: nowrap; }
 .flow-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .flow-heading .section-title { margin-bottom: 0; }
 .binding-steps { display: flex; margin: 18px 0 22px; }
