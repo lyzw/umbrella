@@ -34,10 +34,15 @@ V0.0.1 首版客户端，原生 JavaScript / WXML / WXSS，无新增第三方依
 ```bash
 node --test tests/*.test.js
 node scripts/check.mjs
+node scripts/check-recipe-parity.mjs
 node scripts/check.mjs --native
 ```
 
 `--native` 默认使用本机微信开发者工具内置编译器，也可设置 `WECHAT_COMPILER_DIR`。只在内存检查编译产物，不写入儿童数据、不上传代码。结构检查验证 JS/JSON、页面注册、本地模块、事件处理器及静态资源引用；不是完整 WXML 语义或布局测试。
+
+结构检查另外做三项模板静态核对：标签闭合平衡、`wx:for` 必须带 `wx:key`、模板 `{{ }}` 引用的标识符必须在页面 JS 中出现。核对照宽松，只抓「改了模板忘了改 JS」——这类错误在真机上的表现是空白或点击无反应，排查成本远高于一条断言。白名单包含字符串字面量之外的常见例外：`wx:for` 的 `item` / `index`、`wx:for-item` / `wx:for-index` 自定义名、wxs 的 `module` 名，以及 `ui.page` / `ui.guard` 运行时注入的 `busy` / `error` / `role`。
+
+`check-recipe-parity.mjs` 是跨目录的一致性核对（后端 `DishRecipeService` 为唯一真源，比对运营后台 `DishesView.vue` 与本目录 `recipes.js` / `dish-manage/index.js`）：九个配方上限与难度枚举三端必须一致，任一端单独调整都会被拦下。探针按各端现有写法匹配，重构后需同步更新脚本——失配是失败而不是跳过，避免出现「静默通过」的假绿。
 
 开发者工具 CLI 服务端口未开启时，命令行无法打开项目。可直接手动导入，或由开发者在安全设置中开启服务端口后运行：
 

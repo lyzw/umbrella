@@ -652,8 +652,38 @@ List&lt;DishIngredient&gt; items = ingredients.loadByDishId(ownerType, dishId);<
   </div>
 </section>
 
+<section>
+  <h2>十六、验证补强（2026-09-23）</h2>
+  <p>本节四项工作<b>不改变任何运行时行为</b>，只补「能被自动化发现的错误」与「当前完全没有防护的漂移点」。触发点：三批实施完成后复核验证覆盖时发现，同一条配方规则被三端各自实现了一遍（后端 <code>DishRecipeService</code> / 后台 <code>DishesView.vue</code> / 小程序 <code>recipes.js</code>·<code>dish-manage</code>），而<b>各端测试只验证自己的行为</b> —— 任一端单独调上限，两端的测试都仍然是绿的。</p>
+  <table>
+    <tr><th style="width:220px">补强项</th><th>内容与理由</th></tr>
+    <tr>
+      <td>三端一致性核对脚本<br><code>growth-planet-miniapp/scripts/check-recipe-parity.mjs</code>（新增）</td>
+      <td>以后端 <code>DishRecipeService</code> 为唯一真源，比对九个上限（食材条数 30、名称 / 用量各 32、步骤数 20、单步 300、小贴士 500、时长 1–1440、份量 1–20）与难度枚举在运营后台与小程序的声明值；另校验后台配方区四个输入框的 <code>maxlength</code> 不超出后端定义域（菜品名称框的 64 不属于配方，已排除）。探针失配（某端重构改了写法）<b>直接失败并提示更新脚本</b>，而不是静默跳过 —— 静默通过等于没有核对。</td>
+    </tr>
+    <tr>
+      <td>后端正例边界用例<br>（<code>AdminContentIT</code> +2）</td>
+      <td><code>dishRecipeAcceptsBoundaryValues</code>：30 条食材（首条名称与用量各顶 32 字）、20 步（首步 300 字）、小贴士 500 字、时长 1440、份量 20 一次性提交全部通过，并在详情中回验顶格值<b>原样落库、未被截断</b>。<b>为什么必须有正例</b>：既有用例只验越界（31 条 / 301 字 / 1441 / 21），若上限判断被误写成 <code>&gt;=</code>，越界用例依然全绿 —— 只有「恰好等于上限应通过」才能锁住边界方向。<code>familyDishRecipeRejectsSameBoundaries</code>：家庭菜品路径（<code>FamilyDishService → DishRecipeService.validate</code>）在越界时同样返回 400 且文案可定位，防止将来有人给家庭路径另写一套规则。</td>
+    </tr>
+    <tr>
+      <td>结构核对固化进 <code>check.mjs</code></td>
+      <td>批次 C 的两项定向核对（模板标识符存在性、标签闭合平衡）原为一次性临时脚本，现已沉淀为常驻检查，并新增「<code>wx:for</code> 必须带 <code>wx:key</code>」。白名单：<code>wx:for</code> 的 <code>item</code> / <code>index</code>、<code>wx:for-item</code> / <code>wx:for-index</code> 自定义名、wxs 的 <code>module</code>，以及 <code>ui.page</code> / <code>ui.guard</code> 运行时注入的 <code>busy</code> / <code>error</code> / <code>role</code>。首次运行即发现 <code>dev-child-login</code> 未在 <code>data</code> 声明 <code>busy</code>（其余页面均声明）—— 该页因 <code>onShow</code> 必执行 <code>setData({busy:false})</code> 而实际可用，属声明约定不一致而非缺陷，故按框架注入字段纳入白名单，<b>未改页面代码</b>。</td>
+    </tr>
+    <tr>
+      <td>小程序越界用例补齐</td>
+      <td><code>tests/pages.test.js</code> 补「食材用量 33 字」「小贴士 501 字」两例（盘点时曾误判为缺四例，实际「时长 0」与「份量 21」已在既有用例中）。<b>插入位置有约束</b>：<code>collectRecipe</code> 的校验顺序是 食材 → 步骤 → 小贴士 → 时长 → 份量，501 字的贴士若残留在 <code>data</code> 里会抢在「时长越界」之前命中，故该例放在份量之后、并在断言后清空。</td>
+    </tr>
+  </table>
+  <div class="callout info">
+    <b>核对工具本身也做了双向实测</b>：一致性脚本与三项结构核对都先用「故意改坏一端」验证确实失败（分别得到「后台=31 与后端 30 不一致」「模板引用的 <code>formCookStep</code> 不存在」「<code>&lt;view wx:for&gt;</code> 缺少 <code>wx:key</code>」「<code>&lt;/picker&gt;</code> 与 <code>&lt;view&gt;</code> 不匹配」），再用 <code>git checkout</code> 复原并确认工作区干净。新增断言同样用「把期望值改错」确认确实在执行 —— 断言若插进走不到的分支，就是假绿。
+  </div>
+  <div class="callout warn">
+    <b>仍然未覆盖（不因本轮补强而改变）</b>：WXML / WXSS 原生编译（本机无 <code>wcc</code> / <code>wcsc</code>）、运营后台 760px 抽屉的增删行与上下移折行效果、真机输入体验。另发现一处<b>功能缺口</b>（本轮未修，建议单独立项）：小程序 <code>dish-manage</code> 的 <code>ALLERGEN_LABELS</code> 仍是硬编码六个值，而后台前端已改为从 <code>GET /api/admin/dish-references</code> 读取发布目录 —— 后端目录增删时小程序会显示英文码，C 端目前缺少对应的过敏原字典接口。
+  </div>
+</section>
+
 <aside class="audit-nav">
-  <p>变更流程与文档规范遵循 <a href="./成长星球_V0.0.1_审计修订基线.md">成长星球_V0.0.1_审计修订基线.md</a>（审计修订规则与未关闭闸门以该基线为准）；文档索引见 <a href="./README.md">README.md</a>。批次 A（后端）、批次 B（运营后台前端）、批次 C（小程序端）均已实施；实施记录与偏差说明见<b>第十三、十四、十五章</b>。</p>
+  <p>变更流程与文档规范遵循 <a href="./成长星球_V0.0.1_审计修订基线.md">成长星球_V0.0.1_审计修订基线.md</a>（审计修订规则与未关闭闸门以该基线为准）；文档索引见 <a href="./README.md">README.md</a>。批次 A（后端）、批次 B（运营后台前端）、批次 C（小程序端）均已实施；实施记录与偏差说明见<b>第十三、十四、十五章</b>，三端一致性核对与结构核对的补强记录见<b>第十六章</b>。</p>
   <p>关联文档：<a href="./对象存储_七牛云集成_设计与实施规划.html">对象存储 · 七牛云集成</a>（菜品图片上传链路，本次配方字段与其同属菜品库表单改造）、<a href="./运营后台_实现规划与设计.md">运营后台_实现规划与设计.md</a>（M3 内容管理）。</p>
 </aside>
 
