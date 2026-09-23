@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成长星球 · 七牛云对象存储集成 —— 分析、规划与设计</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2733; --ink-2:#4a5568; --ink-3:#718096;
+    --line:#e2e8f0; --accent:#2b6cb0; --accent-soft:#ebf4ff; --warn:#b7791f; --warn-soft:#fffaf0;
+    --ok:#2f855a; --ok-soft:#f0fff4; --danger:#c53030; --danger-soft:#fff5f5; --code:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Segoe UI,sans-serif;
+    line-height:1.7;font-size:15px}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  header.doc{background:linear-gradient(135deg,#2b6cb0,#2c5282);color:#fff;border-radius:14px;padding:28px 32px;margin-bottom:28px;
+    box-shadow:0 6px 20px rgba(43,108,176,.18)}
+  header.doc h1{margin:0 0 8px;font-size:24px;letter-spacing:.3px}
+  header.doc .sub{opacity:.92;font-size:14px}
+  header.doc .meta{margin-top:14px;font-size:13px;opacity:.9;display:flex;gap:18px;flex-wrap:wrap}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 26px;margin-bottom:18px;
+    box-shadow:0 1px 3px rgba(16,24,40,.04)}
+  h2{font-size:18px;margin:0 0 14px;padding-left:11px;border-left:4px solid var(--accent);line-height:1.3}
+  h3{font-size:15px;margin:20px 0 10px;color:var(--accent)}
+  h4{font-size:14px;margin:16px 0 8px;color:var(--ink-2)}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  code{background:var(--code);border:1px solid var(--line);border-radius:5px;padding:1px 6px;
+    font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;color:#2d3748}
+  pre{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px 16px;overflow:auto;font-size:12.5px;line-height:1.6;
+    font-family:"SF Mono",Menlo,Consolas,monospace}
+  pre code{background:none;border:none;color:inherit;padding:0}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f7fafc;color:var(--ink-2);font-weight:600}
+  tr:nth-child(even) td{background:#fcfdff}
+  .tag{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:20px;font-weight:600;vertical-align:middle}
+  .t-new{background:var(--ok-soft);color:var(--ok);border:1px solid #c6f6d5}
+  .t-mod{background:var(--warn-soft);color:var(--warn);border:1px solid #faf089}
+  .t-none{background:#edf2f7;color:#4a5568;border:1px solid var(--line)}
+  .callout{border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13.5px;border:1px solid}
+  .callout.info{background:var(--accent-soft);border-color:#bee3f8}
+  .callout.warn{background:var(--warn-soft);border-color:#fbd38d}
+  .callout.ok{background:var(--ok-soft);border-color:#c6f6d5}
+  .callout b{color:inherit}
+  .flow{counter-reset:step}
+  .flow .s{position:relative;padding:10px 14px 10px 52px;border:1px solid var(--line);border-radius:10px;margin:8px 0;background:#fbfdff}
+  .flow .s::before{counter-increment:step;content:counter(step);position:absolute;left:12px;top:10px;width:26px;height:26px;
+    border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .flow .s b{color:var(--ink)}
+  .flow .s .who{font-size:12px;color:var(--ink-3);display:block;margin-top:2px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .kv{font-size:13.5px}
+  .legend{font-size:12.5px;color:var(--ink-3);margin-top:6px}
+  .pill{font-size:12px;background:#edf2f7;border:1px solid var(--line);border-radius:20px;padding:2px 10px;margin-right:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <h1>成长星球 · 七牛云对象存储集成</h1>
+  <div class="sub">分析 · 规划 · 设计（V1.0，待确认后实施）</div>
+  <div class="meta">
+    <span>项目：growth-planet 后端 + growth-planet-admin 前端</span>
+    <span>日期：2026-09-23</span>
+    <span>范围：基础设施 + 接入 CMS 菜品图片</span>
+  </div>
+</header>
+
+<section>
+  <h2>一、背景与目标</h2>
+  <p><b>现状</b>：系统目前<b>没有任何对象存储 / 文件上传能力</b>——无七牛依赖、无上传代码、<code>image.studykid.cn</code> 尚未被引用；图片仅以 URL 文本字段承载（<code>life_dish.image_url</code>、<code>life_family_dish.image_url</code>），且后台前端<b>没有图片录入控件</b>，实际无法设置菜品图。</p>
+  <p><b>目标</b>：引入七牛云 Kodo（对象存储），建立统一能力——<b>后端签发上传凭证 + 客户端直传 + 公网 URL 拼接</b>；本期打通「CMS 菜品图片」上传闭环，为后续勋章图标、UGC 图片、Banner 等预留同一套能力。</p>
+</section>
+
+<section>
+  <h2>二、已确认选型（用户拍板）</h2>
+  <table>
+    <tr><th style="width:150px">决策项</th><th>结论</th></tr>
+    <tr><td>上传架构</td><td><b>客户端直传 + 后端签发凭证（uptoken）</b>；后端不接触文件字节</td></tr>
+    <tr><td>Bucket 划分</td><td><b>单桶共用一个 bucket</b>，图片用 <code>img/</code>、视频用 <code>video/</code> 前缀区分</td></tr>
+    <tr><td>读取域名</td><td><b>图片/视频同域名</b> <code>image.studykid.cn</code>，以路径区分（不新增视频域名）</td></tr>
+    <tr><td>交付范围</td><td>基础设施 + <b>接入菜品图片（CMS 菜品库）</b></td></tr>
+    <tr><td>Bucket 名</td><td>走环境变量 <code>QINIU_BUCKET</code>（<code>.env.example</code> 占位，不写死）</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>三、现状调研（已核实事实）</h2>
+  <table>
+    <tr><th style="width:230px">事项</th><th>核实结果</th></tr>
+    <tr><td>七牛依赖 / 上传代码</td><td><span class="tag t-none">无</span> 全仓库无 <code>qiniu</code>/<code>oss</code>/<code>storage</code>/Upload 相关代码与依赖</td></tr>
+    <tr><td>配置类约定</td><td><code>sk-growthplanet-core/config/XxxProperties.java</code>（<code>@ConfigurationProperties</code> + Lombok），由 <code>sk-growthplanet-start/config/XxxConfig.java</code>（<code>@Configuration</code> + <code>@EnableConfigurationProperties</code>）注册（参考 <code>JwtProperties</code>/<code>JwtConfig</code>）</td></tr>
+    <tr><td>菜品图片字段</td><td><span class="tag t-none">已存在</span> <code>life_dish.image_url</code>、<code>life_family_dish.image_url</code>（VARCHAR(255)）</td></tr>
+    <tr><td>菜品图片落库链路</td><td><span class="tag t-none">已支持</span> <code>DishReq.imageUrl</code> → <code>CatalogService.createDishAs/updateDishAs</code> → <code>dish.setImageUrl(...)</code>；<code>validateDish</code> 已校验必须是合法 <code>http/https</code> 且禁 userinfo</td></tr>
+    <tr><td>RBAC 模型</td><td><code>AdminResource</code>（常量）+ <code>AdminAction</code>（枚举：view/create/edit/delete/export/approve/config）+ <code>AdminUserContext.requirePerm(res, action)</code>；权限点由 <code>AdminDataInitializer</code> 幂等播种 <code>sys_role_permission</code>（角色级 <code>grant</code> + 差量 <code>supplementPerm</code>）</td></tr>
+    <tr><td>后台控制器约定</td><td><code>sk-growthplanet-admin/.../controller/console/</code>，前缀 <code>/api/admin</code>，统一返回 <code>Result.ok(...)</code> 信封</td></tr>
+    <tr><td>前端约定</td><td><code>src/api/console.js</code>（<code>http</code> 封装，返回 <code>{ data }</code>）；<code>DishesView.vue</code> 表单 <code>reactive</code> 含 <code>imageUrl</code>，但<b>模板无对应控件</b></td></tr>
+    <tr><td>构建方式</td><td>后端使用 <code>mvn -o</code>（离线）；<b>新增依赖需先联网拉取到本地仓库</b>（见风险 R5）</td></tr>
+  </table>
+  <div class="callout ok">
+    <b>结论：</b>本次<b>无需任何 DDL 变更</b>、<b>无需改动菜品落库逻辑</b>。工作集中在「上传凭证接口 + 前端直传控件」两处，加上配置与 RBAC 权限点。
+  </div>
+</section>
+
+<section>
+  <h2>四、方案设计</h2>
+
+  <h3>4.1 总体架构（客户端直传时序）</h3>
+  <div class="flow">
+    <div class="s"><b>运营在「菜品」抽屉选择图片</b><span class="who">前端 DishesView</span></div>
+    <div class="s"><b>请求上传凭证</b>：<code>POST /api/admin/storage/upload-token</code>，body <code>{ bizType:"dish", fileName:"cover.png" }</code><span class="who">前端 → 后端</span></div>
+    <div class="s"><b>后端校验并按需签发</b>：校验权限（对象存储:新建）+ bizType/后缀 → 生成唯一 key → 用 AK/SK 签发 uptoken（限定 key、时效、MIME、大小、insertOnly）→ 返回 <code>{ token, key, publicUrl, uploadHost, ... }</code><span class="who">后端 ObjectStorageService</span></div>
+    <div class="s"><b>直传七牛</b>：<code>POST {uploadHost}</code>，FormData = <code>token + key + file</code><span class="who">前端 → 七牛（后端不经手字节）</span></div>
+    <div class="s"><b>回填并保存</b>：前端 <code>form.imageUrl = publicUrl</code> → 保存菜品时随表单提交 → 后端落库 <code>image_url</code><span class="who">前端 → 后端</span></div>
+  </div>
+  <div class="callout info"><b>为什么直传：</b>节省后端带宽与内存、避免大文件经应用层；后端只做「签发凭证 + 校验」，符合最小权限与可审计。</div>
+
+  <h3>4.2 配置设计（<code>QiniuProperties</code>，前缀 <code>qiniu</code>，<span class="tag t-new">新增</span>）</h3>
+  <table>
+    <tr><th style="width:170px">字段</th><th style="width:230px">环境变量</th><th style="width:170px">默认值</th><th>说明</th></tr>
+    <tr><td><code>accessKey</code></td><td><code>QINIU_ACCESS_KEY</code></td><td>空</td><td>七牛 AccessKey（密钥，仅环境变量）</td></tr>
+    <tr><td><code>secretKey</code></td><td><code>QINIU_SECRET_KEY</code></td><td>空</td><td>七牛 SecretKey（密钥，仅环境变量）</td></tr>
+    <tr><td><code>bucket</code></td><td><code>QINIU_BUCKET</code></td><td>空</td><td>单桶名（占位 <code>growthplanet-oss</code>）</td></tr>
+    <tr><td><code>imageDomain</code></td><td><code>QINIU_IMAGE_DOMAIN</code></td><td><code>image.studykid.cn</code></td><td>读取域名（图/视频同域），代码归一为 <code>https://</code> 前缀</td></tr>
+    <tr><td><code>uploadHost</code></td><td><code>QINIU_UPLOAD_HOST</code></td><td><code>https://upload.qiniup.com</code></td><td>上传入口；机房不同可覆盖（z1/z2/na0/as0）</td></tr>
+    <tr><td><code>tokenTtlSeconds</code></td><td><code>QINIU_TOKEN_TTL</code></td><td><code>3600</code></td><td>上传凭证有效期（秒）</td></tr>
+    <tr><td><code>imgPrefix</code></td><td>—</td><td><code>img/</code></td><td>图片 key 前缀</td></tr>
+    <tr><td><code>videoPrefix</code></td><td>—</td><td><code>video/</code></td><td>视频 key 前缀</td></tr>
+    <tr><td><code>imageMaxBytes</code></td><td>—</td><td><code>5242880</code></td><td>图片大小上限 5&nbsp;MB</td></tr>
+    <tr><td><code>videoMaxBytes</code></td><td>—</td><td><code>209715200</code></td><td>视频大小上限 200&nbsp;MB</td></tr>
+  </table>
+  <h4>启动校验策略（快速失败 + 优雅降级）</h4>
+  <ul>
+    <li><b>全空</b>（AK/SK/Bucket/Domain 均无）：记 <code>WARN</code>，上传凭证接口返回 <code>E503 存储未配置</code>，<b>不阻断启动</b>（便于 dev/CI 无凭证环境）。</li>
+    <li><b>部分配置</b>（有填但不全）：<b>启动失败</b>，防止线上误配导致上传静默失效。</li>
+    <li><b>测试环境</b>：<code>application-test.yml</code> 注入 dummy 值，使凭证生成（HMAC 签名，离线可算）可在 IT 中断言。</li>
+  </ul>
+
+  <h3>4.3 后端组件清单</h3>
+  <table>
+    <tr><th style="width:80px">状态</th><th>文件</th><th>职责</th></tr>
+    <tr><td><span class="tag t-new">新增</span></td><td><code>core/config/QiniuProperties.java</code></td><td>配置属性（上表字段）</td></tr>
+    <tr><td><span class="tag t-new">新增</span></td><td><code>start/config/QiniuConfig.java</code></td><td><code>@Configuration + @EnableConfigurationProperties(QiniuProperties.class)</code> + AK/SK 启动校验</td></tr>
+    <tr><td><span class="tag t-new">新增</span></td><td><code>core/service/ObjectStorageService.java</code></td><td><code>genUploadToken(bizType,fileName)</code>、<code>publicUrl(key)</code>、<code>isConfigured()</code>；用 <code>com.qiniu.util.Auth</code> + <code>Policy</code> 签凭证</td></tr>
+    <tr><td><span class="tag t-new">新增</span></td><td><code>core/dto/request/AdminUploadTokenReq.java</code></td><td><code>{ bizType, fileName }</code> + 校验注解</td></tr>
+    <tr><td><span class="tag t-new">新增</span></td><td><code>core/dto/response/UploadTokenResp.java</code></td><td><code>{ uploadToken, key, publicUrl, uploadHost, expiresInSeconds, maxSizeBytes, mimeLimit }</code></td></tr>
+    <tr><td><span class="tag t-new">新增</span></td><td><code>admin/.../controller/console/AdminStorageController.java</code></td><td><code>POST /api/admin/storage/upload-token</code>，返回 <code>Result&lt;UploadTokenResp&gt;</code></td></tr>
+    <tr><td><span class="tag t-mod">修改</span></td><td><code>core/common/constant/AdminResource.java</code></td><td>新增资源常量 <code>STORAGE = "对象存储"</code> 并加入 <code>ALL</code></td></tr>
+    <tr><td><span class="tag t-mod">修改</span></td><td><code>start/config/AdminDataInitializer.java</code></td><td><code>supplementPerm(OP, STORAGE, "create")</code> 差量补播（OP 已播种，需走 supplement 而非 grant）</td></tr>
+    <tr><td><span class="tag t-mod">修改</span></td><td><code>pom.xml</code>（core）</td><td>新增 <code>com.qiniu:qiniu-java-sdk:7.19.0</code></td></tr>
+    <tr><td><span class="tag t-mod">修改</span></td><td><code>application.yml</code> / <code>application-dev.yml</code> / <code>application-test.yml</code></td><td>新增 <code>qiniu:</code> 配置块（dev/test 占位）</td></tr>
+    <tr><td><span class="tag t-new">新增</span></td><td><code>start/src/test/.../AdminStorageIT.java</code></td><td>凭证签发 / 参数校验 / 越权 403</td></tr>
+  </table>
+
+  <h3>4.4 Key 生成规则</h3>
+  <pre><code>图片：img/{bizType}/{yyyy}/{MM}/{uuid32}.{ext}     例：img/dish/2026/09/9f3c1a2b...e1.png
+视频：video/{bizType}/{yyyy}/{MM}/{uuid32}.{ext}   例：video/dish/2026/09/... .mp4
+公网：{imageDomain}/{key}  →  https://image.studykid.cn/img/dish/2026/09/....png
+策略：Policy.insertOnly(1) 防覆盖 + mimeLimit + fsizeLimit</code></pre>
+  <ul>
+    <li>后缀白名单：图片 <code>jpg/jpeg/png/webp/gif</code>；视频 <code>mp4/mov/webm</code>（视频本期仅预留能力，不接入业务）。</li>
+    <li>UUID 去连字符，长度 32；按 <code>yyyy/MM</code> 分目录，便于运维与 CDN 命中。</li>
+  </ul>
+
+  <h3>4.5 RBAC 权限点</h3>
+  <p><b>推荐（决策点 D1）</b>：新增资源 <b>「对象存储」</b>，动作<b>复用「新建」</b>（语义=新建一个存储对象）→ <code>requirePerm(STORAGE, "create")</code>；给 <b>OP</b> 补播。与项目既有扩展方式一致（此前已按需新增 <code>报表导出</code>/<code>核验记录</code>/<code>合规清单</code> 等资源）。</p>
+  <p><b>备选</b>：不新增资源，按 <code>bizType</code> 映射到目标资源权限（<code>dish → 菜品库:编辑</code>），零 RBAC 变更但权限隐式。二者择一，见第十一节 D1。</p>
+
+  <h3>4.6 菜品图片接入（前端 <span class="tag t-mod">修改</span>）</h3>
+  <ul>
+    <li><code>src/api/console.js</code>：新增 <code>getUploadToken(payload)</code>。</li>
+    <li><code>src/views/DishesView.vue</code>：抽屉新增「菜品图片」表单项 —— <code>el-upload</code>（<code>picture-card</code>、<code>:limit=1</code>、<code>:http-request</code> 自定义、隐藏默认列表），流程：取凭证 → 直传 → 回填 <code>form.imageUrl</code> → 展示缩略图与「移除」；无权限时隐藏。</li>
+  </ul>
+
+  <h3>4.7 部署前置（七牛控制台，非代码）</h3>
+  <div class="callout warn">
+    <ol style="margin:0">
+      <li>创建 Kodo bucket，绑定域名 <code>image.studykid.cn</code>（配置 HTTPS 证书；域名需 ICP 备案）；</li>
+      <li>配置 bucket <b>CORS</b>：允许后台站点域名 <code>POST</code> 直传（放行 <code>token</code>、<code>key</code>、<code>file</code> 等表单字段）；</li>
+      <li>记录 AK/SK，以环境变量 <code>QINIU_ACCESS_KEY</code>/<code>QINIU_SECRET_KEY</code> 注入部署环境。</li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <h2>五、接口契约</h2>
+  <h4>POST <code>/api/admin/storage/upload-token</code>　权限：对象存储:新建</h4>
+  <pre><code>// 请求
+{ "bizType": "dish", "fileName": "cover.png" }
+
+// 响应（Result 信封）
+{
+  "code": 0,
+  "data": {
+    "uploadToken": "ak:...:signature",
+    "key": "img/dish/2026/09/9f3c1a2b4d5e6f708192a3b4c5d6e7f8.png",
+    "publicUrl": "https://image.studykid.cn/img/dish/2026/09/....png",
+    "uploadHost": "https://upload.qiniup.com",
+    "expiresInSeconds": 3600,
+    "maxSizeBytes": 5242880,
+    "mimeLimit": "image/*"
+  },
+  "message": "ok"
+}</code></pre>
+  <table>
+    <tr><th style="width:110px">错误码</th><th>场景</th></tr>
+    <tr><td><code>E400</code></td><td><code>bizType</code> 不在白名单 / 后缀不允许 / 文件名缺失</td></tr>
+    <tr><td><code>E403</code></td><td>当前角色无「对象存储:新建」权限</td></tr>
+    <tr><td><code>E503</code></td><td>七牛未配置（AK/SK/Bucket/Domain 全空）</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>六、数据与迁移</h2>
+  <ul>
+    <li><b>无 DDL 变更</b>：<code>image_url</code> 列已存在于 <code>life_dish</code> 与 <code>life_family_dish</code>；<code>DishReq.imageUrl</code> 已落库。</li>
+    <li><b>无新增迁移脚本</b>：权限点播种走 <code>AdminDataInitializer</code> 幂等补播（<code>supplementPerm</code>），不新增 SQL，符合「新增资源须同步汇总 schema」之外的既有做法。</li>
+  </ul>
+</section>
+
+<section>
+  <h2>七、安全与合规</h2>
+  <ul>
+    <li><b>密钥</b>：AK/SK 仅走环境变量，不写死、不入库、不打印日志；<code>.env.example</code> 仅占位。</li>
+    <li><b>最小权限凭证</b>：短时效（默认 1h）+ 限定单一 key + <code>insertOnly</code> + <code>mimeLimit</code> + <code>fsizeLimit</code>，即使凭证泄露影响面可控。</li>
+    <li><b>前端直传</b>：文件不经后端，减少带宽与数据面；后端不接收、不落盘用户文件内容。</li>
+    <li><b>URL 校验</b>：沿用既有 <code>validateDish</code>（仅 <code>http/https</code>、禁 userinfo），防 SSRF/注入式 URL。</li>
+  </ul>
+</section>
+
+<section>
+  <h2>八、测试计划</h2>
+  <table>
+    <tr><th style="width:150px">层级</th><th>用例</th></tr>
+    <tr><td>集成 IT（<code>AdminStorageIT</code>）</td><td>① OP 取凭证成功：<code>uploadToken</code> 非空、<code>key</code> 以 <code>img/dish/</code> 开头、<code>publicUrl</code> 以 <code>https://image.studykid.cn/img/dish/</code> 开头；② 非法 <code>bizType</code> → 400；③ 非法后缀（如 <code>.exe</code>）→ 400；④ 无权限角色（CR）→ 403</td></tr>
+    <tr><td>回归</td><td>全量 IT（~200 用例）确保零破坏</td></tr>
+    <tr><td>前端</td><td><code>vite build</code> 通过；无真实凭证时验证接口降级提示；有凭证环境手工验证直传闭环</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>九、风险</h2>
+  <table>
+    <tr><th style="width:60px">编号</th><th style="width:240px">风险</th><th>应对</th></tr>
+    <tr><td>R1</td><td>七牛 CORS / 域名备案未就绪 → 直传失败</td><td>列入「部署前置」清单；联调前先打通控制台配置</td></tr>
+    <tr><td>R2</td><td>单桶 + 单域名，图/视频混存</td><td>以 <code>img/</code>、<code>video/</code> 前缀隔离；CDN 缓存策略后续可细分</td></tr>
+    <tr><td>R3</td><td>上传入口与 bucket 机房不匹配</td><td><code>QINIU_UPLOAD_HOST</code> 可配置覆盖</td></tr>
+    <tr><td>R4</td><td>无凭证环境（dev/CI）启动</td><td>全空时降级 503，不阻断启动</td></tr>
+    <tr><td>R5</td><td>项目用 <code>mvn -o</code> 离线构建，新依赖本地仓库缺失</td><td>实施第一步先联网拉取 SDK（<code>mvn dependency:get</code> 或非离线构建一次）沉淀到本地仓库，再恢复离线验证</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>十、实施步骤与交付（分批）</h2>
+  <table>
+    <tr><th style="width:90px">批次</th><th>内容</th><th>验证</th><th>提交</th></tr>
+    <tr><td><b>批次 A</b><br>后端基础设施</td><td>QiniuProperties + QiniuConfig + ObjectStorageService + 2 DTO + AdminStorageController + <code>AdminResource.STORAGE</code> + initializer 补播 + pom 依赖 + yml 配置 + AdminStorageIT</td><td>IT 全绿 + 全量回归</td><td><code>feat(storage): 七牛对象存储基础设施与上传凭证接口</code></td></tr>
+    <tr><td><b>批次 B</b><br>前端接入菜品图片</td><td>console.js（getUploadToken）+ DishesView.vue（图片上传控件）</td><td>vite build 通过</td><td><code>feat(admin-web): 菜品图片接入七牛直传</code></td></tr>
+  </table>
+  <p class="legend">按项目约定：agent 代码需先经你「代码确认」，再按功能分批提交，<b>不 push</b>。</p>
+</section>
+
+<section>
+  <h2>十一、待确认决策点</h2>
+  <table>
+    <tr><th style="width:50px">编号</th><th>决策</th><th>推荐</th></tr>
+    <tr><td>D1</td><td>权限模型：新增「对象存储」资源 vs 按 bizType 映射</td><td><b>新增资源「对象存储」+ 复用「新建」动作</b>（显式、可审计、与既有扩展一致）</td></tr>
+    <tr><td>D2</td><td>是否为「上传凭证签发」落一条审计</td><td>本期<b>不落</b>（签发动作高频、信息量低；如需可后续加）</td></tr>
+    <tr><td>D3</td><td>凭证有效期 / 大小上限默认值</td><td>1h / 图片 5MB（可调）</td></tr>
+    <tr><td>D4</td><td>Bucket 名</td><td>环境变量占位 <code>QINIU_BUCKET</code>（部署时填真实值）</td></tr>
+  </table>
+  <div class="callout info">请确认以上方案与决策点；<b>确认后</b>我按「批次 A → 批次 B」实施，每批完成跑验证并等你审阅。</div>
+</section>
+
+</div>
+</body>
+</html>
