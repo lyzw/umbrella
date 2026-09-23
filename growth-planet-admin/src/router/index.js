@@ -27,7 +27,12 @@ const routes = [
       { path: 'consent-logs', name: 'consentLogs', component: () => import('../views/ConsentLogsView.vue'), meta: { title: '同意留痕', menu: '合规与隐私' } },
       { path: 'privacy-requests', name: 'privacyRequests', component: () => import('../views/PrivacyRequestsView.vue'), meta: { title: '隐私工单', menu: '合规与隐私' } },
       { path: 'privacy-verifications', name: 'privacyVerifications', component: () => import('../views/VerificationsView.vue'), meta: { title: '核验记录', menu: '合规与隐私' } },
-      { path: 'compliance', name: 'compliance', component: () => import('../views/ComplianceView.vue'), meta: { title: '合规清单', menu: '合规与隐私' } }
+      { path: 'compliance', name: 'compliance', component: () => import('../views/ComplianceView.vue'), meta: { title: '合规清单', menu: '合规与隐私' } },
+      { path: 'dashboard-overview', name: 'dashboardOverview', component: () => import('../views/OverviewView.vue'), meta: { title: '运营总览', menu: '运营看板' } },
+      { path: 'dashboard-meals', name: 'dashboardMeals', component: () => import('../views/MealsDashboardView.vue'), meta: { title: '餐食看板', menu: '运营看板' } },
+      { path: 'dashboard-allowance', name: 'dashboardAllowance', component: () => import('../views/AllowanceDashboardView.vue'), meta: { title: '零花钱看板', menu: '运营看板' } },
+      { path: 'dashboard-chores', name: 'dashboardChores', component: () => import('../views/ChoresDashboardView.vue'), meta: { title: '家务健康看板', menu: '运营看板' } },
+      { path: 'dashboard-medals', name: 'dashboardMedals', component: () => import('../views/MedalsDashboardView.vue'), meta: { title: '勋章看板', menu: '运营看板' } }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/workbench' }

@@ -50,6 +50,16 @@
           <el-menu-item index="/privacy-verifications">核验记录</el-menu-item>
           <el-menu-item index="/compliance">合规清单</el-menu-item>
         </el-sub-menu>
+        <el-sub-menu v-if="canSeeDashboard" index="dashboard">
+          <template #title>
+            <el-icon><TrendCharts /></el-icon><span>运营看板</span>
+          </template>
+          <el-menu-item index="/dashboard-overview">运营总览</el-menu-item>
+          <el-menu-item index="/dashboard-meals">餐食看板</el-menu-item>
+          <el-menu-item index="/dashboard-allowance">零花钱看板</el-menu-item>
+          <el-menu-item index="/dashboard-chores">家务健康看板</el-menu-item>
+          <el-menu-item index="/dashboard-medals">勋章看板</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 
@@ -72,7 +82,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Monitor, User, Document, Goods, DataAnalysis, Lock } from '@element-plus/icons-vue'
+import { Monitor, User, Document, Goods, DataAnalysis, Lock, TrendCharts } from '@element-plus/icons-vue'
 import { auth, doLogout, hasPerm } from '../stores/auth'
 
 const route = useRoute()
@@ -94,6 +104,8 @@ const canSeeBiz = computed(() =>
 const canSeePrivacy = computed(() =>
   hasPerm('同意留痕', 'view') || hasPerm('隐私工单', 'view')
   || hasPerm('核验记录', 'view') || hasPerm('合规清单', 'view'))
+// 运营看板菜单：拥有「运营看板:view」权限可见（SA 全可见；CP 无，符合 §3.4 矩阵）
+const canSeeDashboard = computed(() => hasPerm('运营看板', 'view'))
 
 async function onLogout() {
   await doLogout()

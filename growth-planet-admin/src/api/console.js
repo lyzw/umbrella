@@ -275,3 +275,18 @@ export const listVerifications = (params) => http.get('/api/admin/privacy-verifi
 export const getComplianceChecklist = () => http.get('/api/admin/compliance-checklist')
 export const checkCompliance = (itemKey, checked) =>
   http.put('/api/admin/compliance-checklist', { itemKey, checked })
+
+
+/** 运营总览 */
+export const getDashboardOverview = () => http.get('/api/admin/dashboard/overview')
+/** 餐食看板 */
+export const getDashboardMeals = () => http.get('/api/admin/dashboard/meals')
+/** 零花钱看板 */
+export const getDashboardAllowance = () => http.get('/api/admin/dashboard/allowance')
+/** 家务与健康看板 */
+export const getDashboardChores = () => http.get('/api/admin/dashboard/chores')
+/** 勋章看板 */
+export const getDashboardMedals = () => http.get('/api/admin/dashboard/medals')
+/** 报表导出（domain: overview/meals/allowance/chores/medals） */
+export const exportReport = (domain) =>
+  http.post(`/api/admin/reports/export?domain=${domain}`, null, { responseType: 'blob' })
