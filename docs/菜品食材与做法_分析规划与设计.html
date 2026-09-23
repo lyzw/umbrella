@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成长星球 · 菜品「食材 / 做法」信息维护 —— 分析、规划与设计 V1.1</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --card:#ffffff; --ink:#1f2733; --ink-2:#4a5568; --ink-3:#718096;
+    --line:#e2e8f0; --accent:#2b6cb0; --accent-soft:#ebf4ff; --warn:#b7791f; --warn-soft:#fffaf0;
+    --ok:#2f855a; --ok-soft:#f0fff4; --danger:#c53030; --danger-soft:#fff5f5; --code:#f1f5f9;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",Segoe UI,sans-serif;
+    line-height:1.7;font-size:15px}
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+  header.doc{background:linear-gradient(135deg,#2b6cb0,#2c5282);color:#fff;border-radius:14px;padding:28px 32px;margin-bottom:28px;
+    box-shadow:0 6px 20px rgba(43,108,176,.18)}
+  header.doc h1{margin:0 0 8px;font-size:24px;letter-spacing:.3px}
+  header.doc .sub{opacity:.92;font-size:14px}
+  header.doc .meta{margin-top:14px;font-size:13px;opacity:.9;display:flex;gap:18px;flex-wrap:wrap}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 26px;margin-bottom:18px;
+    box-shadow:0 1px 3px rgba(16,24,40,.04)}
+  h2{font-size:18px;margin:0 0 14px;padding-left:11px;border-left:4px solid var(--accent);line-height:1.3}
+  h3{font-size:15px;margin:20px 0 10px;color:var(--accent)}
+  h4{font-size:14px;margin:16px 0 8px;color:var(--ink-2)}
+  p{margin:8px 0}
+  ul,ol{margin:8px 0 8px 4px;padding-left:22px}
+  li{margin:4px 0}
+  code{background:var(--code);border:1px solid var(--line);border-radius:5px;padding:1px 6px;
+    font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;color:#2d3748}
+  pre{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px 16px;overflow:auto;font-size:12.5px;line-height:1.6;
+    font-family:"SF Mono",Menlo,Consolas,monospace}
+  pre code{background:none;border:none;color:inherit;padding:0}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#f7fafc;color:var(--ink-2);font-weight:600}
+  tr:nth-child(even) td{background:#fcfdff}
+  .tag{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:20px;font-weight:600;vertical-align:middle}
+  .t-rec{background:var(--ok-soft);color:var(--ok);border:1px solid #c6f6d5}
+  .t-alt{background:#edf2f7;color:#4a5568;border:1px solid var(--line)}
+  .t-risk{background:var(--danger-soft);color:var(--danger);border:1px solid #fed7d7}
+  .callout{border-radius:10px;padding:12px 16px;margin:12px 0;font-size:13.5px;border:1px solid}
+  .callout.info{background:var(--accent-soft);border-color:#bee3f8}
+  .callout.warn{background:var(--warn-soft);border-color:#fbd38d}
+  .callout.ok{background:var(--ok-soft);border-color:#c6f6d5}
+  .flow{counter-reset:step}
+  .flow .s{position:relative;padding:10px 14px 10px 52px;border:1px solid var(--line);border-radius:10px;margin:8px 0;background:#fbfdff}
+  .flow .s::before{counter-increment:step;content:counter(step);position:absolute;left:12px;top:10px;width:26px;height:26px;
+    border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .flow .s b{color:var(--ink)}
+  .flow .s .who{font-size:12px;color:var(--ink-3);display:block;margin-top:2px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .kv{font-size:13.5px}
+  .legend{font-size:12.5px;color:var(--ink-3);margin-top:6px}
+  aside.audit-nav{margin-top:26px;font-size:12.5px;color:var(--ink-3);border-top:1px dashed var(--line);padding-top:14px}
+  aside.audit-nav a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <h1>成长星球 · 菜品「食材 / 做法」信息维护</h1>
+  <div class="sub">分析 · 规划 · 设计（V1.1 —— 选型与设计已确认；批次 A 后端、批次 B 运营后台前端、批次 C 小程序均已实施）</div>
+  <div class="meta">
+    <span>项目：growth-planet 后端 + growth-planet-admin 运营后台 + growth-planet-miniapp</span>
+    <span>日期：2026-09-23</span>
+    <span>状态：批次 A（后端）已实施 · AdminContentIT 14/14 · 全量回归 209/209；批次 B（运营后台前端）已实施 · vite build 通过；批次 C（小程序）已实施 · Node 测试 80/80 · 结构检查 PASS</span>
+  </div>
+</header>
+
+<section>
+  <h2>一、需求与目标</h2>
+  <p><b>原始需求</b>：菜品的创建，增加食材、做法等信息维护。</p>
+  <p><b>交付范围（V1.1 已确认）</b>：在菜品录入与展示链路上补齐<b>配方信息</b> —— 食材清单（名称 + 用量）、做法步骤（有序文本）、小贴士、烹饪时长、份量、难度；覆盖<b>预置菜品（运营后台）与家庭菜品（家长端小程序）两侧</b>，并在小程序「孩子想吃」页提供查看入口。</p>
+  <table>
+    <tr><th style="width:210px">本期必须达成</th><th>说明</th></tr>
+    <tr><td>预置菜品配方维护</td><td>运营后台可录入、修改、清空并完整回显六项配方信息。</td></tr>
+    <tr><td>家庭菜品配方维护</td><td>家长在小程序菜品管理页同样可维护配方。</td></tr>
+    <tr><td>C 端可查看</td><td>家长在「孩子想吃」清单中可展开查看该菜的食材与做法。</td></tr>
+    <tr><td>契约向后兼容</td><td>不传新字段的既有调用方一行都不用改。</td></tr>
+  </table>
+  <p><b>目标之外</b>：不做食材用量单位字典与营养换算、不做成本核算、不做配方版本历史、不做「配方完整度」强校验闸门（不使用配方缺失阻断上下架）。</p>
+</section>
+
+<section>
+  <h2>二、现状调研（已核实事实）</h2>
+  <p>以下结论均来自代码与脚本实读。</p>
+  <table>
+    <tr><th style="width:200px">调研项</th><th>核实结果</th></tr>
+    <tr>
+      <td>是否已有配方能力</td>
+      <td><b>完全没有</b>。<code>ingredient</code> / <code>食材</code> / <code>做法</code> / <code>cookStep</code> 在后端 Java、SQL、后台前端代码中<b>零命中</b>；仅小程序两处说明文案出现过「烹饪」「不含食材用量」。</td>
+    </tr>
+    <tr>
+      <td><code>life_dish</code> 列</td>
+      <td><code>id, category_id, name, image_url, virtual_price, calories, tags, allergens(JSON), allergen_status, spice_level, status, create_time, update_time, delete_at</code>。无配方字段。</td>
+    </tr>
+    <tr>
+      <td><code>life_family_dish</code> 列</td>
+      <td>与上表同构，另有 <code>family_id / visibility / review_status / reject_reason / version</code>。同样无配方字段。</td>
+    </tr>
+    <tr>
+      <td>两表自增序列</td>
+      <td><b>相互独立</b>，故裸 <code>dish_id</code> 在跨表场景会撞号 —— 这是既有 <code>DishRef = {type:"PRESET"|"FAMILY", id}</code> 存在的原因。任何跨两表引用的新表都<b>必须携带类型判别列</b>。</td>
+    </tr>
+    <tr>
+      <td>JSON 字段既有先例</td>
+      <td><code>Dish.allergens</code> 用 <code>@TableField(typeHandler = JacksonTypeHandler.class)</code> + 实体 <code>@TableName(autoResultMap = true)</code>，<b>运行正常</b>；DDL 侧有 <code>CHECK (JSON_TYPE(allergens) = 'ARRAY')</code> 先例可复制。</td>
+    </tr>
+    <tr>
+      <td>清空字段的落库前提</td>
+      <td><code>imageUrl / calories / tags</code> 均标注 <code>updateStrategy = FieldStrategy.ALWAYS</code>。不标注时 MyBatis-Plus 默认策略会<b>跳过 null/空值</b>，「清空配方」写不进库。<span class="tag t-risk">必须复制该写法</span></td>
+    </tr>
+    <tr>
+      <td>请求体严格模式</td>
+      <td><code>DishReq</code> 与 <code>FamilyDishReq</code> 都用 <code>@JsonAnySetter</code> 拒绝未知字段 → 反序列化抛错被包成 <code>HttpMessageNotReadableException</code>，统一返回 E-400「参数不合法」。<b>推论：后端必须先于前端上线。</b></td>
+    </tr>
+    <tr>
+      <td>软删与唯一键的既有约定</td>
+      <td>软删用 <code>delete_at BIGINT DEFAULT 0</code>，且<b>唯一键必须包含 <code>delete_at</code></b>（先例：<code>usr_child_want_eat</code> 的唯一键含该列），否则软删后重插会撞唯一键。</td>
+    </tr>
+    <tr>
+      <td>权限模型</td>
+      <td>预置菜品走 <code>菜品库</code> 的 view / create / edit / delete；家庭菜品走 C 端家长鉴权。<b>均无需新增 <code>AdminResource</code>，也不需要动播种逻辑。</b></td>
+    </tr>
+    <tr>
+      <td>迁移脚本约定</td>
+      <td>生产迁移写 <code>sk-growthplanet-start/sql/vNNN_xxx.sql</code>（含回滚注释），<b>同内容追加进 <code>sql/growth_planet.sql</code></b>（测试汇总，<code>application-test.yml</code> 只登记它 + <code>v008_admin.sql</code>）。最新编号为 v010。</td>
+    </tr>
+    <tr>
+      <td>产品侧现成缺口</td>
+      <td>小程序「孩子想吃」页原文写着「采购汇总仅按菜品去重，<b>不含食材用量</b>」。本期的食材结构化正是补齐该缺口的前置条件。</td>
+    </tr>
+  </table>
+</section>
+
+<section>
+  <h2>三、已确认选型（V1.1 变更）</h2>
+  <table>
+    <tr><th style="width:150px">决策项</th><th style="width:250px">你的选择</th><th>影响</th></tr>
+    <tr>
+      <td>存储形态</td>
+      <td><b>混合式：食材走子表 + 做法走 JSON</b></td>
+      <td>新增 <code>life_dish_ingredient</code> 结构化子表（可聚合、可索引，为「按食材采购清单」铺路）；做法、小贴士等展示型文本保留在主表 JSON / 标量列。</td>
+    </tr>
+    <tr>
+      <td>字段范围</td>
+      <td><b>食材 + 做法 + 小贴士 + 烹饪时长 + 份量 + 难度</b></td>
+      <td>预置与家庭两张菜品表各新增 5 列（做法/小贴士/时长/份量/难度），食材落到子表。</td>
+    </tr>
+    <tr>
+      <td>作用范围</td>
+      <td><b>预置菜品 + 家庭菜品</b></td>
+      <td>需同步改 <code>FamilyDish</code> 实体、<code>FamilyDishReq</code>、家庭菜品写路径，以及小程序 <code>dish-manage</code> 表单。</td>
+    </tr>
+    <tr>
+      <td>C 端展示</td>
+      <td><b>小程序「孩子想吃」页加查看入口</b></td>
+      <td>新增 C 端只读配方端点（懒加载），并在想吃清单中提供展开面板。</td>
+    </tr>
+  </table>
+  <div class="callout warn">
+    <b>工作量提示（如实告知）</b>：这四项组合后，范围约为「仅预置菜品 + 全 JSON 存储 + 不做 C 端」最小方案的 <b>3 至 4 倍</b>，其中新增风险集中在三处 —— 跨两表的食材子表归属完整性、家庭菜品写路径的回归面、小程序 WXML 渲染无法被 Node 测试覆盖。因此本文档把实施切成 <b>A（后端）→ B（运营后台前端）→ C（小程序）</b> 三批，每批独立验证、独立提交，避免一次改动过大难以定位问题。
+  </div>
+  <div class="callout info">
+    <b>补一个我替你定了的子选择</b>：食材子表采用<b>单表 + <code>owner_type</code> 判别列</b>（<code>PRESET</code> / <code>FAMILY</code>），而不是预置、家庭各建一张表。理由：两表结构完全相同、字段永不对称演化；单表让「批量装配食材」「按食材聚合」只需一条 SQL，而拆两表会让每个查询、每个测试都分叉。这与既有 <code>DishRef</code> 用类型判别列表达「两套独立序列」的思路一致。<b>若你更希望物理隔离成两张表，请在确认时说明，我会改第四、六章。</b>
+  </div>
+</section>
+
+<section>
+  <h2>四、数据模型设计</h2>
+  <h3>4.1 迁移脚本 <code>sql/v011_dish_recipe.sql</code></h3>
+  <p>新增该文件（含回滚注释），并把同内容追加到 <code>sql/growth_planet.sql</code> 末尾。</p>
+  <pre><code>-- =====================================================================
+-- v011_dish_recipe：菜品配方信息（食材子表 + 做法 / 小贴士 / 时长 / 份量 / 难度）
+-- 目标：预置菜品与家庭菜品同时支持配方维护，为「按食材聚合采购清单」预留基础。
+-- 回滚：
+--   ALTER TABLE life_dish DROP CHECK chk_dish_cook_steps, DROP CHECK chk_dish_cook_minutes,
+--         DROP CHECK chk_dish_servings, DROP CHECK chk_dish_difficulty;
+--   ALTER TABLE life_dish DROP COLUMN cook_steps, DROP COLUMN cook_tips,
+--         DROP COLUMN cook_minutes, DROP COLUMN servings, DROP COLUMN difficulty;
+--   ALTER TABLE life_family_dish DROP CHECK chk_fdish_cook_steps, DROP CHECK chk_fdish_cook_minutes,
+--         DROP CHECK chk_fdish_servings, DROP CHECK chk_fdish_difficulty;
+--   ALTER TABLE life_family_dish DROP COLUMN cook_steps, DROP COLUMN cook_tips,
+--         DROP COLUMN cook_minutes, DROP COLUMN servings, DROP COLUMN difficulty;
+--   DROP TABLE IF EXISTS life_dish_ingredient;
+-- =====================================================================
+
+-- ① 食材清单：预置 / 家庭共用一张表，owner_type 判别
+--    注意：life_dish 与 life_family_dish 自增序列独立，故 (dish_id) 单独无法定位；
+--    跨表无法建外键，归属完整性由服务层保证（见六章）。
+CREATE TABLE life_dish_ingredient (
+  id          BIGINT      NOT NULL AUTO_INCREMENT,
+  owner_type  VARCHAR(16) NOT NULL               COMMENT 'PRESET=预置菜品 FAMILY=家庭菜品',
+  dish_id     BIGINT      NOT NULL               COMMENT 'owner_type 对应菜品表的主键',
+  name        VARCHAR(32) NOT NULL               COMMENT '食材名称',
+  amount      VARCHAR(32) DEFAULT NULL           COMMENT '用量（自由文本：200g / 适量）',
+  sort        INT         NOT NULL DEFAULT 0     COMMENT '展示顺序，0 起',
+  create_time DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_time DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  delete_at   BIGINT      NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_dish_ingredient_order (owner_type, dish_id, delete_at, sort),
+  KEY idx_dish_ingredient (owner_type, dish_id, delete_at),
+  CONSTRAINT chk_ingredient_owner CHECK (owner_type IN ('PRESET', 'FAMILY')),
+  CONSTRAINT chk_ingredient_sort  CHECK (sort >= 0 AND sort < 30)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='菜品食材清单（预置/家庭共用）';
+
+-- ② 做法与轻量配方属性：预置菜品
+ALTER TABLE life_dish
+  ADD COLUMN cook_steps   JSON         NOT NULL DEFAULT (JSON_ARRAY()) COMMENT '做法步骤（有序文本数组）',
+  ADD COLUMN cook_tips    VARCHAR(500) DEFAULT NULL                    COMMENT '烹饪小贴士',
+  ADD COLUMN cook_minutes INT          DEFAULT NULL                    COMMENT '预计烹饪时长（分钟）',
+  ADD COLUMN servings     TINYINT      DEFAULT NULL                    COMMENT '份量（人份）',
+  ADD COLUMN difficulty   VARCHAR(16)  DEFAULT NULL                    COMMENT '难度：EASY/MEDIUM/HARD',
+  ADD CONSTRAINT chk_dish_cook_steps   CHECK (JSON_TYPE(cook_steps) = 'ARRAY'),
+  ADD CONSTRAINT chk_dish_cook_minutes CHECK (cook_minutes IS NULL OR cook_minutes BETWEEN 1 AND 1440),
+  ADD CONSTRAINT chk_dish_servings     CHECK (servings IS NULL OR servings BETWEEN 1 AND 20),
+  ADD CONSTRAINT chk_dish_difficulty   CHECK (difficulty IS NULL OR difficulty IN ('EASY','MEDIUM','HARD'));
+
+-- ③ 做法与轻量配方属性：家庭菜品（列定义与约束同上，仅表名/约束名副缀不同）
+ALTER TABLE life_family_dish
+  ADD COLUMN cook_steps   JSON         NOT NULL DEFAULT (JSON_ARRAY()) COMMENT '做法步骤（有序文本数组）',
+  ADD COLUMN cook_tips    VARCHAR(500) DEFAULT NULL                    COMMENT '烹饪小贴士',
+  ADD COLUMN cook_minutes INT          DEFAULT NULL                    COMMENT '预计烹饪时长（分钟）',
+  ADD COLUMN servings     TINYINT      DEFAULT NULL                    COMMENT '份量（人份）',
+  ADD COLUMN difficulty   VARCHAR(16)  DEFAULT NULL                    COMMENT '难度：EASY/MEDIUM/HARD',
+  ADD CONSTRAINT chk_fdish_cook_steps   CHECK (JSON_TYPE(cook_steps) = 'ARRAY'),
+  ADD CONSTRAINT chk_fdish_cook_minutes CHECK (cook_minutes IS NULL OR cook_minutes BETWEEN 1 AND 1440),
+  ADD CONSTRAINT chk_fdish_servings     CHECK (servings IS NULL OR servings BETWEEN 1 AND 20),
+  ADD CONSTRAINT chk_fdish_difficulty   CHECK (difficulty IS NULL OR difficulty IN ('EASY','MEDIUM','HARD'));</code></pre>
+  <div class="callout info">
+    <b>唯一键为什么是 <code>(owner_type, dish_id, delete_at, sort)</code></b>：<code>sort</code> 入键保证同一菜品的展示顺序不重复（并发写入不会产生两个 sort=0）；<code>delete_at</code> 入键遵循既有软删约定，使「软删旧行 → 插入新行」不会相撞。<b>漏掉 delete_at 会让每次编辑菜品直接报唯一键冲突。</b>
+  </div>
+  <div class="callout warn">
+    <b>为什么 <code>cook_steps</code> 用 JSON 而不进子表</b>：做法是<b>有序纯文本</b>，没有「按步骤内容聚合」的场景，进子表只增加装配成本而无查询收益；食材则明确有「按名称聚合采购」的二期待验证需求，所以两者分治 —— 这正是混合式选型的用意。
+  </div>
+  <h3>4.2 食材子表写入策略</h3>
+  <p>每次保存菜品时<b>整体替换</b>该菜品的食材集合，与菜品主表写入同一事务：</p>
+  <div class="flow">
+    <div class="s"><b>软删旧行</b><span class="who">UPDATE life_dish_ingredient SET delete_at = UNIX_TIMESTAMP()*1000 WHERE owner_type=? AND dish_id=? AND delete_at=0</span></div>
+    <div class="s"><b>批量插入新行</b><span class="who">按请求数组下标写入 sort=0,1,2…；一次批量 insert，不做逐条循环</span></div>
+    <div class="s"><b>菜品软删时级联</b><span class="who">删除菜品的同时把其食材行一并软删，避免"菜没了食材还在"的悬挂数据</span></div>
+  </div>
+  <p class="legend">不做「差量比对」更新：配方条目量级为个位数，整体替换的代码与心智成本都远低于差量算法，收益为零。</p>
+
+  <h3>4.3 实体与 DTO 改动清单</h3>
+  <table>
+    <tr><th style="width:290px">文件</th><th>改动</th></tr>
+    <tr>
+      <td><code>dto/DishIngredient.java</code> <span class="tag t-rec">新增</span></td>
+      <td><code>record DishIngredient(@NotBlank @Size(max=32) String name, @Size(max=32) String amount)</code> —— 请求与响应共用。</td>
+    </tr>
+    <tr>
+      <td><code>entity/DishIngredientRow.java</code> <span class="tag t-rec">新增</span></td>
+      <td>子表实体：<code>id / ownerType / dishId / name / amount / sort</code> + 标准三字段。</td>
+    </tr>
+    <tr>
+      <td><code>mapper/DishIngredientMapper.java</code> <span class="tag t-rec">新增</span></td>
+      <td><code>extends BaseMapper&lt;DishIngredientRow&gt;</code>。</td>
+    </tr>
+    <tr>
+      <td><code>entity/Dish.java</code></td>
+      <td>新增 <code>cookSteps</code>（JSON）、<code>cookTips</code>、<code>cookMinutes</code>、<code>servings</code>、<code>difficulty</code>，<b>全部标注 <code>updateStrategy = FieldStrategy.ALWAYS</code></b>；另加 <code>@TableField(exist = false) List&lt;DishIngredient&gt; ingredients</code> 作为装配用的瞬时字段（不进 SQL）。</td>
+    </tr>
+    <tr>
+      <td><code>entity/FamilyDish.java</code></td>
+      <td>同上五项（列名一致）。</td>
+    </tr>
+    <tr>
+      <td><code>dto/request/DishReq.java</code></td>
+      <td>新增六个<b>可选</b>字段：<code>ingredients / cookSteps / cookTips / cookMinutes / servings / difficulty</code>。</td>
+    </tr>
+    <tr>
+      <td><code>dto/request/FamilyDishReq.java</code></td>
+      <td>同上，保持与 <code>DishReq</code> 字段全集一致（既有约定：家庭菜品「字段复用 DishReq 的全集」）。</td>
+    </tr>
+    <tr>
+      <td><code>dto/response/DishRecipeResp.java</code> <span class="tag t-rec">新增</span></td>
+      <td><code>record DishRecipeResp(List&lt;DishIngredient&gt; ingredients, List&lt;String&gt; cookSteps, String cookTips, Integer cookMinutes, Integer servings, String difficulty)</code>。</td>
+    </tr>
+    <tr>
+      <td><code>dto/response/DishResp.java</code></td>
+      <td>新增 <code>Integer cookMinutes / Integer servings / String difficulty</code>（轻量标量，列表也带）+ <code>Integer ingredientCount / Integer stepCount</code>（列表摘要）+ <code>DishRecipeResp recipe</code>（<b>仅详情路径填充，其余为 null</b>）。</td>
+    </tr>
+  </table>
+  <h3>4.4 响应为什么这样切分</h3>
+  <table>
+    <tr><th style="width:230px">数据</th><th style="width:150px">放在哪</th><th>理由</th></tr>
+    <tr><td>时长 / 份量 / 难度</td><td><code>DishResp</code> 平铺</td><td>各只有几字节，列表页可以直接显示「30 分钟 · 2 人份 · 简单」。</td></tr>
+    <tr><td>食材条数 / 步骤数</td><td><code>DishResp</code> 平铺</td><td>让列表用极小代价显示摘要，无需为列表额外查询子表。</td></tr>
+    <tr><td>食材明细 / 做法步骤 / 小贴士</td><td><code>DishResp.recipe</code>（可空）</td><td>做法与小贴士是长文本。若平铺，<code>GET /api/admin/dishes</code>（20 条）与菜单类响应会被显著撑大，且前端无法区分「本响应没带」与「这道菜确实没配方」——<code>recipe=null</code> 与 <code>recipe.ingredients=[]</code> 语义精确分开。</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>五、接口设计</h2>
+  <h3>5.1 运营后台（扩展现有端点，不新增）</h3>
+  <table>
+    <tr><th style="width:330px">端点</th><th>变化</th></tr>
+    <tr><td><code>POST /api/admin/dishes</code></td><td>请求体接受六个新字段（可选）；响应含 <code>recipe</code>。权限仍为 <code>菜品库:create</code>。</td></tr>
+    <tr><td><code>PUT /api/admin/dishes/{id}</code></td><td>同上；传空数组 / null 即<b>清空</b>（食谱行软删、标量置空）。权限 <code>菜品库:edit</code>。</td></tr>
+    <tr><td><code>GET /api/admin/dishes/{id}</code></td><td>响应含完整 <code>recipe</code>（编辑抽屉数据来源，调用方式不变）。</td></tr>
+    <tr><td><code>GET /api/admin/dishes</code></td><td><code>recipe=null</code> + 五个轻量字段（时长/份量/难度/食材数/步骤数）。</td></tr>
+  </table>
+  <h3>5.2 小程序 C 端（新增 1 个只读端点）</h3>
+  <pre><code>GET /api/mini/dishes/{type}/{dishId}/recipe
+  type   : PRESET | FAMILY
+  dishId : 对应菜品 id
+
+200 -> Result&lt;DishRecipeResp&gt;
+  { "code": "0", "data": {
+      "ingredients": [ { "name": "猪肉", "amount": "200g" } ],
+      "cookSteps":   [ "猪肉切薄片…", "热锅冷油…" ],
+      "cookTips":    "给孩子吃可以少放辣椒。",
+      "cookMinutes": 20, "servings": 2, "difficulty": "EASY" } }</code></pre>
+  <table>
+    <tr><th style="width:190px">要点</th><th>设计</th></tr>
+    <tr>
+      <td>为什么单独一个端点</td>
+      <td>想吃清单页一次可能列出十余道菜，把做法长文本塞进清单响应是纯浪费。做成<b>按需懒加载</b>：用户点开某道菜才请求，清单保持轻量。</td>
+    </tr>
+    <tr>
+      <td>鉴权与隔离 <span class="tag t-risk">安全红线</span></td>
+      <td>需 C 端 token，登录角色为家长或孩子均可（只读、非敏感）。<b><code>type=FAMILY</code> 时必须校验该菜品的 <code>family_id</code> 等于当前登录用户所属家庭</b>，不等则按「不存在」处理 —— 归属字段一律从鉴权派生，绝不接受客户端传入的 <code>familyId</code>。</td>
+    </tr>
+    <tr>
+      <td>下架菜品能否看</td>
+      <td>沿用既有可见性规则：家庭菜品按现有 <code>visibility / review_status</code> 判定；预置菜品下架则返回 E-404。<span class="legend">与「想吃清单里本来能看到什么」保持一致，不额外放宽。</span></td>
+    </tr>
+    <tr>
+      <td>错误码</td>
+      <td>不新增，复用 E-400 / E-404。</td>
+    </tr>
+  </table>
+  <h3>5.3 请求体示例（运营后台创建）</h3>
+  <pre><code>{
+  "categoryId": 3, "name": "辣椒炒肉", "virtualPrice": 0, "calories": 600,
+  "tags": "家常,下饭", "allergens": ["PEANUT"], "allergenStatus": "DECLARED",
+  "spiceLevel": 3, "status": "OFF_SALE",
+  "ingredients": [ { "name": "猪肉", "amount": "200g" },
+                   { "name": "青椒", "amount": "3 个" },
+                   { "name": "蒜",   "amount": "适量" } ],
+  "cookSteps": [ "猪肉切薄片，加少许生抽抓匀腌制 10 分钟",
+                 "青椒去籽切块，蒜切片备用",
+                 "热锅冷油爆香蒜片，下肉片大火翻炒至变色",
+                 "下青椒继续翻炒 2 分钟，调味出锅" ],
+  "cookTips": "给孩子吃可以少放辣椒，改用彩椒。",
+  "cookMinutes": 20, "servings": 2, "difficulty": "EASY"
+}</code></pre>
+  <div class="callout warn">
+    <b>上线顺序硬约束</b>：<code>DishReq</code> / <code>FamilyDishReq</code> 都用 <code>@JsonAnySetter</code> 拒绝未知字段。前端（后台或小程序）先于后端部署时，新字段会被旧后端判为未知字段并返回 E-400。<b>批次 A 必须先上线。</b>
+  </div>
+</section>
+
+<section>
+  <h2>六、服务层设计</h2>
+  <h3>6.1 写入（预置与家庭共用一套逻辑）</h3>
+  <table>
+    <tr><th style="width:250px">步骤</th><th>说明</th></tr>
+    <tr><td>① 校验</td><td><code>validateRecipe</code> 统一校验六个字段（规则见 6.3），预置与家庭菜品共用，避免两套规则漂移。</td></tr>
+    <tr><td>② 主表写入</td><td><code>applyRecipe(dish, req)</code> 填充做法/小贴士/时长/份量/难度（归一化：空串→null，null→空数组）。</td></tr>
+    <tr><td>③ 食材替换</td><td><code>replaceIngredients(ownerType, dishId, items)</code>：软删旧行 + 批量插入新行，同一事务。</td></tr>
+    <tr><td>④ 审计</td><td>沿用现有 <code>DISH_CREATE / DISH_UPDATE</code> 审计记录，<b>不新增审计类型</b>。</td></tr>
+  </table>
+  <p><b>owner_type 的传递是这部分最容易出错的地方</b>：预置路径固定传 <code>PRESET</code>，家庭路径固定传 <code>FAMILY</code>，<b>不允许由请求参数决定</b> —— 否则客户端可通过构造参数把食材写进别人的菜。</p>
+  <h3>6.2 读取装配（防 N+1）</h3>
+  <pre><code>// 列表路径：一次 SQL 取回整页菜品的食材，内存分组
+Map&lt;Long, List&lt;DishIngredient&gt;&gt; byDish =
+        ingredients.loadByDishIds(ownerType, dishIds);   // IN (...) 单次查询
+// 详情路径：单菜品单次查询
+List&lt;DishIngredient&gt; items = ingredients.loadByDishId(ownerType, dishId);</code></pre>
+  <p>给 <code>dishResponse(dish, categoryNames, withRecipe)</code> 增加第三个<b>显式</b>布尔参数，由各调用点传入；不使用「categoryNames == null 就当详情」这类隐式推断（后人极易改错）。</p>
+  <table>
+    <tr><th style="width:270px">调用点</th><th>withRecipe</th></tr>
+    <tr><td><code>getDishAs</code> / <code>createDishAs</code> / <code>updateDishAs</code></td><td><b>true</b></td></tr>
+    <tr><td><code>queryDishes</code>（后台列表 / 家长自建菜品列表）</td><td>false（仅 count）</td></tr>
+    <tr><td><code>daily</code> / <code>getFamilyMenu</code> / <code>familyDishResponse</code></td><td>false（仅 count）</td></tr>
+    <tr><td><code>GET /api/mini/dishes/{type}/{dishId}/recipe</code></td><td>专用 DTO，不使用 <code>DishResp</code></td></tr>
+  </table>
+  <p class="legend">注意：<code>FamilyDishReq</code> 没有 <code>status</code> 字段（家庭菜品的上下架由独立接口控制），所以家庭路径的「在售必须先声明过敏原」闸门位置与预置不同，本次<b>不改动该既有逻辑</b>。</p>
+  <h3>6.3 校验规则（统一）</h3>
+  <table>
+    <tr><th style="width:150px">字段</th><th style="width:230px">约束</th><th>失败处理（message 带具体原因）</th></tr>
+    <tr><td>ingredients</td><td>可选，≤ 30 条</td><td>E-400「食材最多 30 条」</td></tr>
+    <tr><td>ingredients[].name</td><td>去空白后非空，≤ 32 字，<b>忽略大小写与首尾空白后不得重复</b></td><td>E-400「食材名称不能为空」/「食材名称重复：猪肉」</td></tr>
+    <tr><td>ingredients[].amount</td><td>可空，≤ 32 字</td><td>E-400「食材用量最长 32 字」</td></tr>
+    <tr><td>cookSteps</td><td>可选，≤ 20 步；每步去空白后非空、≤ 300 字</td><td>E-400「第 3 步做法不能为空」</td></tr>
+    <tr><td>cookTips</td><td>可空，≤ 500 字</td><td>E-400「小贴士最长 500 字」</td></tr>
+    <tr><td>cookMinutes</td><td>可空；填写时 ∈ [1, 1440]</td><td>E-400「烹饪时长需在 1 至 1440 分钟之间」</td></tr>
+    <tr><td>servings</td><td>可空；填写时 ∈ [1, 20]</td><td>E-400「份量需在 1 至 20 人份之间」</td></tr>
+    <tr><td>difficulty</td><td>可空；∈ {EASY, MEDIUM, HARD}</td><td>E-400「难度取值不合法」</td></tr>
+    <tr><td>与在售的关系</td><td><b>不设闸门</b></td><td>配方缺失不阻断上下架</td></tr>
+  </table>
+  <div class="callout ok">
+    <b>关键取舍</b>：六个字段全部可选、且不参与「在售」闸门。既有的 R5-c 红线（在售必须先声明过敏原）是为了<b>儿童安全</b>；配方缺失不构成安全风险。若把配方也设为在售必填，存量菜品将无法上下架，属于自伤型约束。配方完整度只在前端做提示（见 7.4）。
+  </div>
+</section>
+
+<section>
+  <h2>七、运营后台前端（批次 B）</h2>
+  <h3>7.1 表单结构</h3>
+  <ul>
+    <li>编辑抽屉宽度由 <code>420px</code> 提升到 <code>760px</code> —— 食材行内编辑与步骤卡片需要横向空间。</li>
+    <li>表单分为三组，用 <code>el-divider</code> 分隔：<b>基础信息</b>（现有字段，位置顺序不动）、<b>配方信息</b>（食材 / 做法 / 小贴士）、<b>烹饪属性</b>（时长 / 份量 / 难度）。</li>
+  </ul>
+  <h3>7.2 食材编辑（结构化行列表）</h3>
+  <ul>
+    <li>每行：序号（只读）+ 名称输入（32）+ 用量输入（32）+ 上移 / 下移 / 删除。</li>
+    <li>底部「添加食材」按钮；达 30 条时 <code>disabled</code> 并提示上限。</li>
+    <li>不使用 <code>allow-create</code> 的 tag 输入 —— 历史教训：过敏原下拉曾因「无候选项 + 允许盲输」让用户反复踩校验失败（上一批已移除 <code>allow-create</code>）。行列表把名称与用量显式分开，没有格式歧义。</li>
+  </ul>
+  <h3>7.3 做法编辑（有序步骤卡片）</h3>
+  <ul>
+    <li>每步一张卡片：序号 + 多行文本框（300 字，带字数统计）+ 上移 / 下移 / 删除；底部「添加步骤」，上限 20。</li>
+    <li>提交前若存在空白步骤，提示先删除该步 —— 与后端「不接受空步」对齐。</li>
+  </ul>
+  <h3>7.4 其它</h3>
+  <ul>
+    <li>列表新增「配方」列：显示「食材 5 · 步骤 4」；无配方显示 <code>—</code>；数据来自 <code>ingredientCount / stepCount</code>，不需额外请求。时长/份量/难度可合并进同一列显示。</li>
+    <li><code>validateForm()</code> 追加前置校验：食材名称必填/不重复、步骤非空、各长度与范围上限与后端一致。目标仍是把报错提前到本地。</li>
+    <li><code>openEdit</code> 走 <code>GET /dishes/{id}</code>（含 recipe）。回填必须归一化：<code>data.recipe || { ingredients: [], cookSteps: [], cookTips: null }</code> —— <b>上一批刚因「多解一层 data」导致页面整片 TypeError</b>，新增字段取值一律先兜底再绑定。</li>
+    <li>可选（不阻塞交付）：配方为空时在表单顶部给一条浅色提示「建议补齐食材与做法，便于家长照做」。</li>
+  </ul>
+</section>
+
+<section>
+  <h2>八、小程序端（批次 C）</h2>
+  <h3>8.1 家长菜品管理页 <code>pages/dish-manage</code></h3>
+  <ul>
+    <li>表单新增：食材行列表（名称 + 用量，支持增删排序）、做法步骤列表（增删排序）、小贴士、时长、份量、难度选择。</li>
+    <li><code>ALLERGEN_LABELS</code> 这类展示映射的既有写法可复用：难度用 <code>{ EASY: '简单', MEDIUM: '中等', HARD: '有挑战' }</code> 映射为中文标签，<b>落库仍是英文枚举</b>（与后端 CHECK 一致）。</li>
+    <li>列表行显示「食材 N · 步骤 M · 30 分钟」摘要。</li>
+    <li>小程序原生模板需要 <code>wx:for</code> 渲染动态行，输入事件用既有 <code>ui.input</code> 机制统一处理，避免为每个下标写死处理函数。</li>
+  </ul>
+  <h3>8.2 「孩子想吃」页 <code>pages/want-eat</code> 展示入口</h3>
+  <ul>
+    <li>清单中每道菜增加「看做法」按钮，点击后<b>懒加载</b>调用 <code>GET /api/mini/dishes/{type}/{dishId}/recipe</code>，在页面内展开面板显示：食材表（名称 · 用量）、有序步骤、时长 / 份量 / 难度、小贴士。</li>
+    <li>加载中显示占位、失败显示可重试提示；已加载的菜缓存于页面 data，避免反复折叠重复请求。</li>
+    <li>该页底部的既有说明文案（「采购汇总仅按菜品去重，不含食材用量」）本期<b>不改动</b> —— 采购汇总升级为真正的食材聚合属于独立一期，本次只落数据结构与查看入口。</li>
+  </ul>
+  <h3>8.3 验证方式</h3>
+  <table>
+    <tr><th style="width:230px">层次</th><th>手段</th></tr>
+    <tr><td>逻辑与接口封装</td><td><code>node --test tests/*.test.js</code>（既有 69 项基线 + 新增配方相关用例）</td></tr>
+    <tr><td>结构检查</td><td><code>node scripts/check.mjs</code>，必要时加 <code>--native</code> 走原生模板编译</td></tr>
+    <tr><td>渲染效果 <span class="tag t-risk">无法自动化</span></td><td>WXML 实际渲染、滚动与折叠交互<b>必须由你在开发者工具/真机确认</b>；Node 测试覆盖不到渲染层，我不会把它算作已验证。</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>九、兼容性与回归影响</h2>
+  <table>
+    <tr><th style="width:240px">影响面</th><th>评估</th></tr>
+    <tr><td>既有 27 个测试类</td><td>创建/更新菜品用例均不传新字段 ⇒ 六字段可选使它们<b>零改动</b>通过。</td></tr>
+    <tr><td>家庭菜品既有用例</td><td><code>FamilyDishReq</code> 只<b>增</b>可选字段，既有请求体不变；但家庭菜品写路径新增了子表写入，需重点回归。</td></tr>
+    <tr><td>菜单 / 想吃 / 推荐响应</td><td>仅新增轻量标量（时长/份量/难度/两个 count），无破坏性变更。</td></tr>
+    <tr><td>测试库建表</td><td>DDL 必须同时进 <code>growth_planet.sql</code>，否则 Testcontainers 库缺列/缺表 ⇒ 菜品相关用例整片失败。</td></tr>
+    <tr><td>回归基线</td><td>205 → <b>约 209</b>（新增 3 至 4 个用例，最终以实际交付为准）。</td></tr>
+  </table>
+  <h3>新增测试用例清单</h3>
+  <table>
+    <tr><th style="width:250px">用例</th><th>覆盖点</th></tr>
+    <tr><td><code>dishRecipeRoundTrip</code></td><td>预置菜品六字段往返一致、顺序保持；列表 <code>recipe=null</code> 且 count 正确。</td></tr>
+    <tr><td><code>dishRecipeClear</code></td><td>更新为空 → 食材行软删、做法清空、标量置 null。<b>专门兜住 <code>updateStrategy</code> 漏配。</b></td></tr>
+    <tr><td><code>dishRecipeValidation</code></td><td>31 条食材 / 重复食材 / 空步骤 / 时长越界 / 难度非法 → 各自 400 且 message 可定位。</td></tr>
+    <tr><td><code>familyDishRecipeOwnership</code> <span class="tag t-risk">安全</span></td><td>家庭菜品写配方只落 <code>FAMILY</code> 行；<b>跨家庭读配方被拒</b>；菜品软删后食材行同步软删。</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>十、实施分批计划</h2>
+  <div class="flow">
+    <div class="s"><b>批次 A · 后端（已实施，见第十三章）</b>
+      <span class="who">v011 DDL（子表 + 两张表各 5 列）+ growth_planet.sql 追加 → DishIngredient / DishIngredientRow / DishIngredientMapper / DishRecipeResp → Dish / FamilyDish / DishReq / FamilyDishReq / DishResp → CatalogService（校验 + 写入 + 装配 + 级联软删）→ C 端 recipe 端点 → AdminContentIT 4 个用例</span>
+      <span class="who">验证：<code>mvn -o compile</code> → 单跑 AdminContentIT → 全量回归（约 209）→ 必须 0 失败</span>
+    </div>
+    <div class="s"><b>批次 B · 运营后台前端（已实施，见第十四章）</b>
+      <span class="who">DishesView.vue：抽屉加宽 + 三组表单 + 食材行编辑 + 步骤卡片 + 小贴士 + 时长/份量/难度 + 列表配方列 + 前置校验</span>
+      <span class="who">验证：<code>vite build</code>；接口静态审计确认无未定义引用</span>
+    </div>
+    <div class="s"><b>批次 C · 小程序（已实施，见第十五章）</b>
+      <span class="who"><code>dish-manage</code> 表单扩展 + <code>want-eat</code> 看做法面板 + <code>services/recipes.js</code> 封装 + 11 个 Node 用例</span>
+      <span class="who">验证：<code>node --test</code> 80/80 + <code>node scripts/check.mjs</code> PASS；渲染效果交由你在开发者工具确认</span>
+    </div>
+    <div class="s"><b>审阅与提交</b>
+      <span class="who">三批分别等你审阅，确认后按功能分批提交（不 push）</span>
+    </div>
+  </div>
+  <p class="legend">批次之间存在上线顺序依赖（A 必须先上），但 B 与 C 的编码可并行；验证阶段必须串行 —— 本工作区同一时间只允许一个 Maven 测试进程，且改 <code>src</code> 期间不跑 Maven。</p>
+</section>
+
+<section>
+  <h2>十一、风险与回滚</h2>
+  <table>
+    <tr><th style="width:60px">编号</th><th style="width:250px">风险</th><th>应对</th></tr>
+    <tr>
+      <td>R1</td>
+      <td>食材子表跨两表引用，<b>无外键约束</b></td>
+      <td>归属完整性由服务层保证：<code>owner_type</code> 由代码路径固定传入（不接受请求参数）；菜品软删级联软删食材行；用 <code>familyDishRecipeOwnership</code> 用例覆盖跨家庭越权与悬挂数据。</td>
+    </tr>
+    <tr>
+      <td>R2</td>
+      <td>唯一键漏含 <code>delete_at</code> ⇒ 每次编辑撞唯一键</td>
+      <td>DDL 已按先例包含；若报 <code>DuplicateKeyException</code>（会映射为 E-007）即说明此处出错。</td>
+    </tr>
+    <tr>
+      <td>R3</td>
+      <td>漏配 <code>updateStrategy = ALWAYS</code> ⇒ 清空配方不生效</td>
+      <td><code>dishRecipeClear</code> 用例兜住。</td>
+    </tr>
+    <tr>
+      <td>R4</td>
+      <td>列表路径 N+1 查询子表</td>
+      <td>强制走批量装配 <code>loadByDishIds</code>；code review 时检查是否存在逐条查询。</td>
+    </tr>
+    <tr>
+      <td>R5</td>
+      <td>前端先上线 ⇒ 旧后端 E-400</td>
+      <td>固定部署顺序：A 先上。</td>
+    </tr>
+    <tr>
+      <td>R6</td>
+      <td>DDL 只进 v011 未进 <code>growth_planet.sql</code></td>
+      <td>写入批次 A 的验收标准，两处必须同改。</td>
+    </tr>
+    <tr>
+      <td>R7</td>
+      <td>小程序渲染层无自动化覆盖</td>
+      <td>如实标注为「待你在开发者工具确认」，不计入已验证。</td>
+    </tr>
+    <tr>
+      <td>R8</td>
+      <td>默认 profile 无 <code>catalog-reference</code>，创建菜品仍被过敏原校验拦截</td>
+      <td><b>与本次无关的既有前提</b>（上一批已在前端给出橙色提示）。实操验证请用 dev profile。</td>
+    </tr>
+    <tr>
+      <td>回滚</td>
+      <td>—</td>
+      <td>代码回滚到提交前即恢复；DDL 回滚见 v011 文件头（两张表各 <code>DROP CHECK</code> ×4 + <code>DROP COLUMN</code> ×5，再 <code>DROP TABLE</code>）。新增的都是附加列与独立表，不影响既有字段与数据。</td>
+    </tr>
+  </table>
+</section>
+
+<section>
+  <h2>十二、已确认决策记录</h2>
+  <table>
+    <tr><th style="width:60px">编号</th><th style="width:150px">决策点</th><th style="width:250px">结论</th><th>落点</th></tr>
+    <tr><td>D1</td><td>存储形态</td><td>混合式（食材子表 + 做法 JSON）</td><td>四章 4.1 / 4.2</td></tr>
+    <tr><td>D2</td><td>字段范围</td><td>食材、做法、小贴士、时长、份量、难度</td><td>四章 4.1 / 6.3</td></tr>
+    <tr><td>D3</td><td>作用范围</td><td>预置菜品 + 家庭菜品</td><td>四章 4.3 / 六章 6.1 / 八章 8.1</td></tr>
+    <tr><td>D4</td><td>C 端展示</td><td>「孩子想吃」页加查看入口（懒加载）</td><td>五章 5.2 / 八章 8.2</td></tr>
+    <tr><td>D5</td><td>食材子表拆分方式</td><td><b>已确认</b>：单表 + <code>owner_type</code>（PRESET / FAMILY）判别，不物理拆两表</td><td>四章 4.1 / 六章 6.1</td></tr>
+  </table>
+  <div class="callout info">
+    <b>下一步</b>：批次 A（后端）、批次 B（运营后台前端）、批次 C（小程序）均已实施完成，等待你审阅与授权提交。三批共 4 个待提交单元（http 契约修复 A–E、F1/F2/F3、批次 A、批次 B+C）需按功能分批落库，回滚点均为 <code>2fd1365</code>。
+  </div>
+</section>
+
+<section>
+  <h2>十三、实施记录（批次 A · 后端）</h2>
+  <p>批次 A 于 2026-09-23 实施完成：<b>编译通过、<code>AdminContentIT</code> 14/14、全量回归 209/209（Failures 0 / Errors 0，7m21s）</b>。以下为落地清单与实施中的偏差记录，偏差均以「不改变对外契约」为前提。</p>
+  <table>
+    <tr><th style="width:70px">类型</th><th style="width:330px">文件</th><th>说明</th></tr>
+    <tr><td>DDL</td><td><code>sql/v011_dish_recipe.sql</code></td><td>新增食材子表 + 两张菜品表各 5 列与 4 条 CHECK；同内容追加进 <code>growth_planet.sql</code>（R6 验收项，两处已同改）。</td></tr>
+    <tr><td>新增</td><td><code>entity/DishIngredientRow</code>、<code>mapper/DishIngredientMapper</code>、<code>dto/DishIngredient</code>、<code>dto/response/DishRecipeResp</code></td><td>食材行实体 / Mapper / 请求响应共用 record / 配方响应 record。</td></tr>
+    <tr><td>扩展</td><td><code>entity/Dish</code>、<code>entity/FamilyDish</code></td><td>各加 <code>cookSteps / cookTips / cookMinutes / servings / difficulty</code>（全部 <code>updateStrategy = ALWAYS</code>）+ 瞬时字段 <code>ingredients</code>。</td></tr>
+    <tr><td>扩展</td><td><code>dto/request/DishReq</code>、<code>FamilyDishReq</code></td><td>各加六个可选字段，无 Bean Validation 注解（见偏差 ③）。</td></tr>
+    <tr><td>扩展</td><td><code>dto/response/DishResp</code>、<code>FamilyDishResp</code></td><td>各加 3 个轻量标量 + 2 个计数；<code>DishResp</code> 另加可空 <code>recipe</code>。</td></tr>
+    <tr><td>服务</td><td><code>service/DishRecipeService</code>（新增）</td><td>配方校验 / 归一化 / 整体替换 / 批量装配 / 级联软删，供两条写路径共用。</td></tr>
+    <tr><td>服务</td><td><code>service/CatalogService</code></td><td>预置菜品写入与校验接入；<code>dishResponse</code> 增加第三个显式布尔参数 <code>withRecipe</code>；新增 <code>dishRecipe(type, dishId)</code> 与按 owner_type 分组的批量装配。</td></tr>
+    <tr><td>服务</td><td><code>service/FamilyDishService</code></td><td>家庭菜品写路径同步接入（create / update / delete / list / detail）。</td></tr>
+    <tr><td>接口</td><td><code>controller/MenuController</code></td><td>新增 <code>GET /api/mini/dishes/{type}/{dishId}/recipe</code>（CHILD / PARENT 均可读，FAMILY 校验家庭归属）。</td></tr>
+    <tr><td>测试</td><td><code>AdminContentIT</code></td><td>新增 4 用例：<code>dishRecipeRoundTrip</code>、<code>dishRecipeClear</code>、<code>dishRecipeValidation</code>、<code>familyDishRecipeOwnership</code>。</td></tr>
+  </table>
+  <div class="callout warn">
+    <b>与本文档的四处偏差（均已实施，不改变对外契约）</b>
+    <ol>
+      <li><b>抽出共用服务 <code>DishRecipeService</code></b>：六章原把配方逻辑落在 <code>CatalogService</code>，但家庭菜品写路径在 <code>FamilyDishService</code>；两条路径各写一套必然规则漂移，故统一收敛到新服务。</li>
+      <li><b><code>FamilyDishResp</code> 也加了 5 个摘要字段</b>：4.3 变更清单未列它，但 8.1 要求家庭菜品列表行显示「食材 N · 步骤 M · 30 分钟」，而列表走的正是该 DTO。未加 <code>recipe</code> 字段 —— 家庭菜品配方回显统一走 C 端 recipe 端点。</li>
+      <li><b><code>DishIngredient</code> 未挂 Bean Validation 注解</b>：4.3 写的是 <code>@NotBlank @Size(max=32)</code>，但若在 <code>DishReq</code> 上启用级联校验，DTO 注解会在 <code>validate(req)</code> 阶段抢先失败，把 6.3 要求的中文原因（如「食材名称重复：猪肉」）降级为笼统的字段名列表。改为由 <code>DishRecipeService.validate</code> 全权校验。</li>
+      <li><b>食材插入走 MyBatis-Plus 的 <code>insert(Collection)</code></b>（4.2 的要求），一次批量写入而非逐条循环。</li>
+    </ol>
+  </div>
+  <div class="callout info">
+    <b>实施中踩到的一个真坑</b>：断言「家庭菜品的食材没写进预置菜品」时<b>不能只用 <code>dish_id</code></b> —— <code>life_dish</code> 与 <code>life_family_dish</code> 自增序列独立，同一个 <code>dish_id</code> 在两表中本来就是不同菜品（既有 <code>DishRef</code> 教训的翻版）。必须以 <code>(owner_type, dish_id)</code> 为完整键，测试最终按「本次写入的食材名 + owner_type」定位断言。
+  </div>
+  <p><b>三批均已实施</b>：批次 B（运营后台前端配方编辑器，见第十四章）与批次 C（小程序表单 + 「看做法」面板，见第十五章）已分别实施完成，各自独立验证。</p>
+  <p>三批共同存在一条部署顺序硬约束 —— <code>DishReq</code> / <code>FamilyDishReq</code> 用 <code>@JsonAnySetter</code> 拒绝未知字段，<b>后端必须先于前端上线</b>，否则新前端把配方字段发给旧后端会被判为未知字段并返回 E-400。批次 A 已上线为前提，B 可安全部署。</p>
+</section>
+
+<section>
+  <h2>十四、实施记录（批次 B · 运营后台前端）</h2>
+  <p>批次 B 于 2026-09-23 实施完成：admin 前端 <code>vite build</code> 通过（<code>DishesView</code> chunk 10.95 kB → 18.55 kB）。改动集中在单个文件 <code>growth-planet-admin/src/views/DishesView.vue</code>，未新增或修改任何 API 封装。</p>
+  <table>
+    <tr><th style="width:110px">位置</th><th>改动</th></tr>
+    <tr><td>编辑抽屉</td><td>宽度 420px → <b>760px</b>；表单按「基础信息 / 配方信息 / 烹饪属性」三组以 <code>el-divider</code> 分区，基础信息字段顺序与位置不变。</td></tr>
+    <tr><td>食材编辑</td><td>结构化行列表：序号（只读）+ 名称（≤32）+ 用量（≤32）+ 上移 / 下移 / 删除；底部「添加食材」，达 30 条时 disabled。<b>刻意不用 allow-create 的 tag 输入</b> —— 过敏原曾因「无候选项 + 允许盲输」让用户反复踩校验失败。</td></tr>
+    <tr><td>做法编辑</td><td>有序步骤卡片：序号 + 「第 N 步」+ 多行文本（300 字，带字数统计）+ 上移 / 下移 / 删除；底部「添加步骤」，上限 20。</td></tr>
+    <tr><td>小贴士</td><td>多行文本，500 字带计数（与后端 <code>MAX_TIPS</code> 对齐）。</td></tr>
+    <tr><td>烹饪属性</td><td>时长（1–1440）/ 份量（1–20）/ 难度下拉（EASY 简单、MEDIUM 中等、HARD 有挑战，可清空）。落库仍是英文枚举。</td></tr>
+    <tr><td>列表列</td><td>新增「配方」列：第一行「食材 N · 步骤 M」，第二行时长 / 份量 / 难度摘要；全无则显示 <code>—</code>。数据取自列表响应已有的 <code>ingredientCount</code> / <code>stepCount</code> / <code>cookMinutes</code> / <code>servings</code> / <code>difficulty</code>，<b>不新增任何请求</b>。</td></tr>
+    <tr><td>前置校验</td><td><code>validateForm()</code> 追加 <code>validateRecipe()</code>：食材名称必填 / 忽略大小写去重 / 长度上限、步骤非空与长度、小贴士长度、时长与份量范围、难度取值。规则与报错文案对齐后端 <code>DishRecipeService.validate</code>，仅做提前拦截，最终判定仍以后端为准。</td></tr>
+    <tr><td>回填</td><td><code>openEdit</code> 走 <code>GET /dishes/{id}</code>（详情路径才带 <code>recipe</code>）；<code>data.recipe || {}</code> 后逐字段兜底，<code>cookMinutes</code> / <code>servings</code> 用 <code>?? null</code>，失败给出错误提示而非静默抛出。</td></tr>
+    <tr><td>空态</td><td>抽出 <code>emptyRecipe()</code> 供 <code>openCreate</code> 显式重置配方字段 —— <code>form</code> 是长期复用的 reactive 对象，不重置会残留上一道菜编辑过的食材与步骤。</td></tr>
+    <tr><td>提交归一化</td><td>用量 / 小贴士 / 难度的空串一律转 <code>null</code>。空串难度会被后端 <code>validate</code> 判为「难度取值不合法」，必须在本地转掉。</td></tr>
+  </table>
+  <div class="callout warn">
+    <b>与本文档 7.x 的两处偏差</b>
+    <ol>
+      <li><b>难度用可清空的 <code>el-select</code></b>（7.4 未指定控件形态）：六个配方字段全部可选，clearable 才能表达「不填」这一合法状态。</li>
+      <li><b>「配方为空」提示放在抽屉内</b>（7.4 原文为「表单顶部」）：仅在<b>编辑</b>一道完全无配方的菜品时出现，新建时不打扰。</li>
+    </ol>
+  </div>
+  <div class="callout info">
+    <b>验证边界（不夸大）</b>：<code>vite build</code> 只证明编译与模板语法通过 —— <b>模板中引用的标识符是否在 <code>script setup</code> 顶层定义，构建期并不校验</b>（要到渲染时才报 undefined，与上一批 <code>DishesView</code> 运行时报错同源）。本次已逐个核对模板标识符，但增删行、上下移、字数统计与 760px 下的折行效果仍需在浏览器实际确认，不计入「已自动化验证」。
+  </div>
+</section>
+
+<section>
+  <h2>十五、实施记录（批次 C · 小程序端）</h2>
+  <p>批次 C 于 2026-09-23 实施完成：小程序 <code>node --test tests/*.test.js</code> <b>80/80 通过</b>（基线 69 + 新增 11）、<code>node scripts/check.mjs</code> <b>PASS</b>（17 页 / 31 JS / <b>266 事件绑定</b>，每条 <code>bind</code> 都有对应 handler）。新增 <code>services/recipes.js</code>，改动 <code>pages/dish-manage</code> 与 <code>pages/want-eat</code> 两页三件套。</p>
+  <table>
+    <tr><th style="width:150px">位置</th><th>改动</th></tr>
+    <tr><td><code>services/recipes.js</code>（新增）</td><td>配方领域封装：难度选项与中文映射（<code>difficultyIndex</code> / <code>difficultyValue</code> / <code>difficultyLabel</code>）、<code>recipeKey(type, dishId)</code>、<code>presentRecipe</code> 展示归一化、<code>recipeSummary</code> 列表摘要、<code>fetchRecipe</code>。两页共用同一份映射与容量上限，避免 <code>ALLERGEN_LABELS</code> 式的重复定义漂移。</td></tr>
+    <tr><td><code>dish-manage</code> 表单</td><td>新增第 3 组「食材与做法（选填）」：食材行（序号 + 名称 + 用量 + 上/下移/删除）、做法步骤卡片（序号 + 多行文本 + 上/下移/删除）、小贴士、时长、份量、难度选择；「安全信息」顺延为第 4 组。<b>分组顺序的理由</b>：过敏原闸门是儿童安全项，放在提交前最后一组做最终确认。</td></tr>
+    <tr><td>输入机制</td><td>复用既有 <code>ui.input</code>，用 <code>data-field="formIngredients[{{index}}].name"</code> 这类<b>数据路径</b>写入，不为每个下标写死 handler。<code>wx:key</code> 用模块内自增行 key，避免增删排序时输入框串行。</td></tr>
+    <tr><td>提交</td><td><code>collectRecipe()</code> 做本地校验 + 归一化：空行（食材无名称 / 步骤空白）<b>直接丢弃</b>，用户不必把空行删干净；名称忽略大小写去重、长度与容量上限、时长 1–1440、份量 1–20，文案与后端一致。</td></tr>
+    <tr><td>编辑回填</td><td><code>edit()</code> 改为：先同步填基础信息与列表摘要，再懒加载 <code>GET /api/mini/dishes/FAMILY/{id}/recipe</code> 回填完整配方（含时长 / 份量 / 难度）。回填前校验 <code>formDishId</code> 未变，避免用户已关表单或改编辑别的菜时错填。</td></tr>
+    <tr><td>列表摘要</td><td>卡片新增「配方：食材 N · 步骤 M · 30 分钟 · 中等」，全部取自列表响应已有字段，<b>不为每行发配方请求</b>。</td></tr>
+    <tr><td><code>want-eat</code> 看做法</td><td>每条想吃记录加「看做法」按钮，点击懒加载 <code>GET /api/mini/dishes/{type}/{dishId}/recipe</code>，页内展开面板显示时长/份量/难度、食材表、有序步骤、小贴士；加载中占位、失败给重试入口。<b>已加载结果按 <code>type:dishId</code> 缓存</b>，折叠再展开不发第二次请求。</td></tr>
+    <tr><td>缓存失效</td><td>换孩子、换周区间、页面隐藏三种场景显式清空 <code>recipeStates</code> —— 否则会串显示上一个孩子 / 上一周的菜。</td></tr>
+    <tr><td>缺失菜品</td><td><code>missing=true</code>（菜品已下架 / 删除）的条目不提供「看做法」入口，省一次必然 404 的请求。</td></tr>
+  </table>
+  <div class="callout warn">
+    <b>与本文档 8.x 的三处偏差</b>
+    <ol>
+      <li><b>配方明细的错误处理不走页面级错误条</b>：加载失败只写本条目的 <code>recipeStates[key] = { status: 'error', message }</code>，在面板内展示并可重试；仅 401 / E-010 仍交给 <code>ui.run</code> 统一跳登录 / 家庭页。理由是页面级 error 条会让「一道菜的配方没加载出来」看起来像整页故障。</li>
+      <li><b>家庭菜品表单的新增分组顺序</b>（8.1 只说「表单新增」）：配方组放在「营养与口味」之后、「安全信息」之前，过敏原仍是最后一组。</li>
+      <li><b>保存时的空行丢弃</b>（8.1 未涉及）：后端不接受空名称 / 空步骤，前端在提交时静默丢弃整行空白，而不是让用户为「填了一半」吃 E-400。</li>
+    </ol>
+  </div>
+  <div class="callout warn">
+    <b>一个必须知道的数据语义</b>：配方是<b>整体替换</b>语义 —— 后端把「不带 <code>ingredients</code>」与「<code>ingredients: []</code>」都归一化为空，因此<b>任何一次不携带完整配方的保存都会清空原有食材与做法</b>。这正是 <code>edit()</code> 在配方明细加载失败时必须明确警示「保存会覆盖原有配方」的原因；小程序端不存在「只改某一条食材」的局部提交。
+  </div>
+  <div class="callout info">
+    <b>验证边界（不夸大）</b>：本机<b>未安装微信开发者工具</b>（<code>wcc</code> / <code>wcsc</code> 二进制不存在），因此 <code>check.mjs --native</code> 无法运行，WXML / WXSS 的<b>原生编译未验证</b>。作为替代，本次额外做了两项定向核对：① 两个页面模板中 <code>{{ }}</code> 引用的标识符全部在 <code>script</code> 中存在（剔除字符串字面量后零缺失）；② <code>&lt;view&gt;</code> / <code>&lt;block&gt;</code> 标签闭合平衡。<b>但 WXML 实际渲染、滚动、<code>textarea</code> 与底部固定操作条的遮挡关系、以及真机下的输入体验必须由你在开发者工具 / 真机确认</b>，不计入「已自动化验证」。
+  </div>
+</section>
+
+<aside class="audit-nav">
+  <p>变更流程与文档规范遵循 <a href="./成长星球_V0.0.1_审计修订基线.md">成长星球_V0.0.1_审计修订基线.md</a>（审计修订规则与未关闭闸门以该基线为准）；文档索引见 <a href="./README.md">README.md</a>。批次 A（后端）、批次 B（运营后台前端）、批次 C（小程序端）均已实施；实施记录与偏差说明见<b>第十三、十四、十五章</b>。</p>
+  <p>关联文档：<a href="./对象存储_七牛云集成_设计与实施规划.html">对象存储 · 七牛云集成</a>（菜品图片上传链路，本次配方字段与其同属菜品库表单改造）、<a href="./运营后台_实现规划与设计.md">运营后台_实现规划与设计.md</a>（M3 内容管理）。</p>
+</aside>
+
+</div>
+</body>
+</html>
