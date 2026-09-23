@@ -398,6 +398,78 @@ class AdminContentIT extends BaseIT {
                 + "WHERE owner_type='FAMILY' AND dish_id=? AND delete_at=0", Integer.class, dishId)).isZero();
     }
 
+    @Test
+    @DisplayName("菜品配方边界：恰好顶到上限的取值必须全部通过（防上限被误写成 >=）")
+    void dishRecipeAcceptsBoundaryValues() throws Exception {
+        String token = adminLogin();
+        long categoryId = seedCategory("IT边界分类-" + System.nanoTime());
+
+        // 30 条食材：首条名称与用量各顶到 32 字，其余用短名；覆盖「恰好等于上限」与常规值两种形态。
+        StringBuilder ingredients = new StringBuilder();
+        for (int i = 0; i < 30; i++) {
+            ingredients.append(i == 0 ? "" : ",");
+            ingredients.append(i == 0
+                    ? "{\"name\":\"" + "菜".repeat(32) + "\",\"amount\":\"" + "克".repeat(32) + "\"}"
+                    : "{\"name\":\"食材" + i + "\"}");
+        }
+        // 20 步：首步顶到 300 字
+        StringBuilder steps = new StringBuilder();
+        for (int i = 0; i < 20; i++) {
+            steps.append(i == 0 ? "" : ",").append('"')
+                    .append(i == 0 ? "步".repeat(300) : "第 " + (i + 1) + " 步").append('"');
+        }
+        String tips = "贴".repeat(500);
+
+        var created = mockMvc.perform(post("/api/admin/dishes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(JSON)
+                        .content("{\"categoryId\":" + categoryId + ",\"name\":\"IT边界配方菜-"
+                                + System.nanoTime() + "\",\"virtualPrice\":9.00,\"spiceLevel\":0,"
+                                + "\"status\":\"OFF_SALE\",\"allergens\":[],\"allergenStatus\":\"UNKNOWN\","
+                                + "\"ingredients\":[" + ingredients + "],"
+                                + "\"cookSteps\":[" + steps + "],\"cookTips\":\"" + tips + "\","
+                                + "\"cookMinutes\":1440,\"servings\":20,\"difficulty\":\"HARD\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.ingredientCount").value(30))
+                .andExpect(jsonPath("$.data.stepCount").value(20))
+                .andExpect(jsonPath("$.data.cookMinutes").value(1440))
+                .andExpect(jsonPath("$.data.servings").value(20))
+                .andExpect(jsonPath("$.data.difficulty").value("HARD"))
+                .andReturn();
+        long dishId = bodyOf(created).path("dishId").asLong();
+
+        // 详情：顶格取值必须原样落库 —— 截断或归一化吞掉最后一个字符都会在这里暴露
+        mockMvc.perform(get("/api/admin/dishes/" + dishId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.recipe.ingredients.length()").value(30))
+                .andExpect(jsonPath("$.data.recipe.ingredients[0].name").value("菜".repeat(32)))
+                .andExpect(jsonPath("$.data.recipe.ingredients[0].amount").value("克".repeat(32)))
+                .andExpect(jsonPath("$.data.recipe.cookSteps.length()").value(20))
+                .andExpect(jsonPath("$.data.recipe.cookSteps[0]").value("步".repeat(300)))
+                .andExpect(jsonPath("$.data.recipe.cookTips").value(tips));
+    }
+
+    @Test
+    @DisplayName("家庭菜品配方校验：与预置菜品共用同一套规则，越界同样 400 且原因可定位")
+    void familyDishRecipeRejectsSameBoundaries() throws Exception {
+        long categoryId = seedCategory("IT家庭校验分类-" + System.nanoTime());
+        var family = setupFamily();
+
+        // 小贴士 501 字：走的是 FamilyDishService → DishRecipeService.validate 同一条校验，
+        // 若哪天有人给家庭路径单独写一套规则，本用例会失败。
+        mockMvc.perform(post("/api/mini/parent/family-dish")
+                        .header("Authorization", "Bearer " + family.parentToken())
+                        .contentType(JSON)
+                        .content("{\"categoryId\":" + categoryId + ",\"name\":\"IT家庭越界菜\","
+                                + "\"virtualPrice\":8.00,\"spiceLevel\":0,\"allergens\":[],"
+                                + "\"allergenStatus\":\"UNKNOWN\",\"cookTips\":\"" + "贴".repeat(501) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("E-400"))
+                .andExpect(jsonPath("$.message").value("参数不合法：小贴士最长 500 字"));
+    }
+
     /** 断言某条配方字段被拒时的 E-400 与可定位原因（避免笼统的「参数不合法」）。 */
     private void assertRecipeRejected(String token, String base, String recipeField, String expectedMessage)
             throws Exception {

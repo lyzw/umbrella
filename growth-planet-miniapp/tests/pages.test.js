@@ -1263,6 +1263,9 @@ test('我的菜品：配方本地校验与后端规则一致', async () => {
   page.setData({ formIngredients: [{ key: 'a', name: '番'.repeat(33) }] });
   await page.save();
   assert.match(page.data.error, /食材名称最长 32 字/);
+  page.setData({ formIngredients: [{ key: 'a', name: '番茄', amount: 'g'.repeat(33) }] });
+  await page.save();
+  assert.match(page.data.error, /食材用量最长 32 字/);
   page.setData({ formIngredients: [{ key: 'a', name: '番茄' }], formCookSteps: [{ key: 'b', text: 'x'.repeat(301) }] });
   await page.save();
   assert.match(page.data.error, /第 1 步做法最长 300 字/);
@@ -1275,6 +1278,12 @@ test('我的菜品：配方本地校验与后端规则一致', async () => {
   page.setData({ formCookMinutes: '15', formServings: '21' });
   await page.save();
   assert.match(page.data.error, /1 至 20 人份/);
+  // 小贴士必须在份量之后再验：collectRecipe 的校验顺序是 食材 → 步骤 → 小贴士 → 时长 → 份量，
+  // 若提前把 501 字的贴士留在 data 里，后面「时长越界」那条会先撞上贴士校验而误判。
+  page.setData({ formServings: '2', formCookTips: '好'.repeat(501) });
+  await page.save();
+  assert.match(page.data.error, /小贴士最长 500 字/);
+  page.setData({ formCookTips: '少放盐' });
   assert.equal(posts, 0, '校验未通过时绝不发请求');
   page.setData({ formServings: '' });
   await page.save();
