@@ -99,6 +99,14 @@ export const listDishes = (filter) => {
 }
 
 export const getDish = (id) => http.get(`/api/admin/dishes/${id}`)
+
+/**
+ * 菜品表单参考字典：过敏原候选值来自后端发布目录（compliance.allergens），
+ * 前端不得硬编码——取值不在目录内会被后端判 E-400。
+ * @returns 信封 data = { allergens: string[], catalogReady: boolean }
+ */
+export const getDishReferences = () => http.get('/api/admin/dish-references')
+
 export const createDish = (payload) => http.post('/api/admin/dishes', payload)
 export const updateDish = (id, payload) => http.put(`/api/admin/dishes/${id}`, payload)
 export const deleteDish = (id) => http.delete(`/api/admin/dishes/${id}`)
