@@ -290,3 +290,34 @@ export const getDashboardMedals = () => http.get('/api/admin/dashboard/medals')
 /** 报表导出（domain: overview/meals/allowance/chores/medals） */
 export const exportReport = (domain) =>
   http.post(`/api/admin/reports/export?domain=${domain}`, null, { responseType: 'blob' })
+
+// ==================== 对象存储（七牛云 Kodo 客户端直传） ====================
+
+/**
+ * 申请客户端直传凭证。
+ * @param {{bizType: string, fileName: string}} payload bizType: dish/medal/ugc/banner
+ * @returns 凭证与 key、公网 URL、上传入口、限制参数（后端不接触文件字节）
+ */
+export const getUploadToken = (payload) => http.post('/api/admin/storage/upload-token', payload)
+
+/**
+ * 直传七牛：取凭证 → multipart 上传 → 返回可直接落库的公网 URL。
+ * @param {File} file 待上传文件
+ * @param {string} bizType 业务类型（默认 dish）
+ * @returns {Promise<{publicUrl: string, key: string}>}
+ */
+export async function uploadToQiniu(file, bizType = 'dish') {
+  const { data } = await getUploadToken({ bizType, fileName: file.name })
+  const formData = new FormData()
+  formData.append('token', data.uploadToken)
+  formData.append('key', data.key)
+  formData.append('file', file)
+
+  const resp = await fetch(data.uploadHost, { method: 'POST', body: formData })
+  const body = await resp.json().catch(() => null)
+  if (!resp.ok || (body && body.error)) {
+    throw new Error((body && body.error) || `上传失败（HTTP ${resp.status}）`)
+  }
+  return { publicUrl: data.publicUrl, key: data.key }
+}
+

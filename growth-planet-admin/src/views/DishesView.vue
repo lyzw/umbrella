@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { listDishes, createDish, updateDish, deleteDish, toggleDishStatus, listCategories, createCategory, updateCategory, deleteCategory } from '../api/console'
+import { listDishes, createDish, updateDish, deleteDish, toggleDishStatus, listCategories, createCategory, updateCategory, deleteCategory, uploadToQiniu } from '../api/console'
 import { hasPerm } from '../stores/auth'
 
 const loading = ref(false)
@@ -14,6 +14,9 @@ const canCreate = computed(() => hasPerm('菜品库', 'create'))
 const canEdit = computed(() => hasPerm('菜品库', 'edit'))
 const canDelete = computed(() => hasPerm('菜品库', 'delete'))
 const canManageCategory = computed(() => hasPerm('菜品分类', 'view'))
+// 对象存储上传权限（七牛直传凭证签发）
+const canUploadImage = computed(() => hasPerm('对象存储', 'create'))
+const uploading = ref(false)
 
 async function load() {
   loading.value = true
@@ -58,6 +61,31 @@ async function openEdit(row) {
     status: data.status
   })
   drawer.value = true
+}
+
+// 图片大小上限（与后端 fsizeLimit 一致）
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024
+
+/**
+ * el-upload 自定义上传：取七牛凭证 → 直传 → 回填 form.imageUrl。
+ * 后端不接触文件字节，仅签发短时效凭证。
+ */
+async function uploadImage({ file }) {
+  if (!file) return
+  if (file.size > IMAGE_MAX_BYTES) {
+    ElMessage.warning('图片不能超过 5MB')
+    return
+  }
+  uploading.value = true
+  try {
+    const { publicUrl } = await uploadToQiniu(file, 'dish')
+    form.imageUrl = publicUrl
+    ElMessage.success('图片上传成功')
+  } catch (e) {
+    ElMessage.error(e.message || '图片上传失败')
+  } finally {
+    uploading.value = false
+  }
 }
 
 async function submit() {
@@ -195,6 +223,21 @@ onMounted(() => { load(); loadCategories() })
           <el-select v-model="form.categoryId" style="width:100%">
             <el-option v-for="c in categories" :key="c.categoryId" :label="c.name" :value="c.categoryId" />
           </el-select>
+        </el-form-item>
+        <el-form-item label="菜品图片">
+          <div style="display:flex;align-items:center;gap:12px">
+            <el-image v-if="form.imageUrl" :src="form.imageUrl" fit="cover"
+              style="width:88px;height:88px;border-radius:6px;border:1px solid #e4e7ed;background:#f5f7fa" />
+            <el-upload v-if="canUploadImage" :show-file-list="false" :http-request="uploadImage"
+              accept="image/jpeg,image/png,image/webp,image/gif" :disabled="uploading">
+              <el-button :loading="uploading">{{ form.imageUrl ? '更换图片' : '上传图片' }}</el-button>
+            </el-upload>
+            <el-button v-if="canUploadImage && form.imageUrl" link type="danger" @click="form.imageUrl = ''">移除</el-button>
+            <span v-if="!canUploadImage" style="font-size:12px;color:#909399">无上传权限</span>
+          </div>
+          <div style="font-size:12px;color:#909399;line-height:1.5">
+            支持 jpg / png / webp / gif，单个不超过 5MB；由七牛云对象存储托管
+          </div>
         </el-form-item>
         <el-form-item label="售价(星币)"><el-input-number v-model="form.virtualPrice" :min="0" :precision="2" /></el-form-item>
         <el-form-item label="卡路里"><el-input-number v-model="form.calories" :min="0" /></el-form-item>
