@@ -1,5 +1,6 @@
 package cn.studykid.growthplanet.dto.request;
 
+import cn.studykid.growthplanet.dto.DishIngredient;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -32,6 +33,15 @@ public class FamilyDishReq {
     private String allergenStatus;
     @NotNull @Min(0) @Max(3)
     private Integer spiceLevel;
+
+    // ---- v011 配方字段：与 DishReq 保持字段全集一致（六个全部可选） ----
+    // 校验规则由 DishRecipeService.validate 统一执行，不在此处挂 Bean Validation 注解。
+    private List<DishIngredient> ingredients;
+    private List<String> cookSteps;
+    private String cookTips;
+    private Integer cookMinutes;
+    private Integer servings;
+    private String difficulty;
 
     @JsonAnySetter
     public void rejectUnknownField(String name, Object value) {

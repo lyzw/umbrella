@@ -32,4 +32,10 @@ public class FamilyDishResp {
     private Integer spiceLevel;
     private String status;
     private Integer version;
+    // ---- v011 配方摘要（与 DishResp 对齐；明细回显走 GET /api/mini/dishes/{type}/{dishId}/recipe） ----
+    private Integer cookMinutes;
+    private Integer servings;
+    private String difficulty;
+    private Integer ingredientCount;
+    private Integer stepCount;
 }

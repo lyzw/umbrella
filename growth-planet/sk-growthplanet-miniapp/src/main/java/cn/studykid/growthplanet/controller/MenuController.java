@@ -112,6 +112,16 @@ public class MenuController {
         return Result.ok(catalog.daily(sourceType, menuDate, mealType, childId));
     }
 
+    /**
+     * C 端菜品配方（食材 / 做法 / 小贴士 / 时长 / 份量 / 难度）：懒加载，点开某道菜才请求，
+     * 让想吃清单保持轻量。家长与孩子都可读；type=FAMILY 时后端校验菜品归属当前登录家庭。
+     */
+    @GetMapping("/dishes/{type}/{dishId}/recipe")
+    @RequireRole({RoleEnum.CHILD, RoleEnum.PARENT})
+    public Result<DishRecipeResp> dishRecipe(@PathVariable String type, @PathVariable @Positive Long dishId) {
+        return Result.ok(catalog.dishRecipe(type, dishId));
+    }
+
     @PostMapping("/menu/mark-favorite")
     @RequireRole(RoleEnum.CHILD)
     public Result<WantEatResp> favorite(@RequestBody @Valid MarkFavoriteReq req) {

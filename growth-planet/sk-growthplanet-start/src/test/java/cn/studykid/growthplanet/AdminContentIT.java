@@ -133,6 +133,284 @@ class AdminContentIT extends BaseIT {
     }
 
     @Test
+    @DisplayName("菜品参考字典下发过敏原发布目录；E-400 透出具体原因")
+    void dishReferencesAndErrorDetail() throws Exception {
+        String token = adminLogin();
+        long categoryId = seedCategory("IT字典分类-" + System.nanoTime());
+
+        // 字典来自 compliance.allergens（test.yml = PEANUT/MILK/EGG），前端不得硬编码
+        mockMvc.perform(get("/api/admin/dish-references")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.catalogReady").value(true))
+                .andExpect(jsonPath("$.data.allergens.length()").value(3))
+                .andExpect(jsonPath("$.data.allergens[0]").value("PEANUT"));
+
+        // R5-c 被拒时 message 必须带具体原因，而不是笼统的「参数不合法」
+        mockMvc.perform(post("/api/admin/dishes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(JSON)
+                        .content("{\"categoryId\":" + categoryId + ",\"name\":\"未声明菜\",\"virtualPrice\":9.00,"
+                                + "\"spiceLevel\":1,\"status\":\"ON_SALE\",\"allergens\":[],"
+                                + "\"allergenStatus\":\"UNKNOWN\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("参数不合法：上架菜品必须先声明过敏原"));
+
+        // 目录外的过敏原取值同样给出可定位提示
+        mockMvc.perform(post("/api/admin/dishes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(JSON)
+                        .content("{\"categoryId\":" + categoryId + ",\"name\":\"越界过敏原菜\",\"virtualPrice\":9.00,"
+                                + "\"spiceLevel\":1,\"status\":\"OFF_SALE\",\"allergens\":[\"SHRIMP\"],"
+                                + "\"allergenStatus\":\"DECLARED\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("E-400"))
+                .andExpect(jsonPath("$.message").value("参数不合法：过敏原取值不在发布目录内，或存在空值 / 重复值 / 超长值"));
+
+        // 分类不存在同样可定位
+        mockMvc.perform(post("/api/admin/dishes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(JSON)
+                        .content("{\"categoryId\":99999999,\"name\":\"无分类菜\",\"virtualPrice\":9.00,"
+                                + "\"spiceLevel\":1,\"status\":\"OFF_SALE\",\"allergens\":[],"
+                                + "\"allergenStatus\":\"UNKNOWN\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("参数不合法：菜品分类不存在或已停用"));
+    }
+
+    @Test
+    @DisplayName("菜品配方：六字段往返一致、顺序保持；列表只带摘要且 recipe=null")
+    void dishRecipeRoundTrip() throws Exception {
+        String token = adminLogin();
+        long categoryId = seedCategory("IT配方分类-" + System.nanoTime());
+        String name = "IT辣椒炒肉-" + System.nanoTime();
+
+        var created = mockMvc.perform(post("/api/admin/dishes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(JSON)
+                        .content("{\"categoryId\":" + categoryId + ",\"name\":\"" + name + "\","
+                                + "\"virtualPrice\":12.00,\"spiceLevel\":3,\"status\":\"OFF_SALE\","
+                                + "\"allergens\":[],\"allergenStatus\":\"UNKNOWN\","
+                                + "\"ingredients\":[{\"name\":\"猪肉\",\"amount\":\"200g\"},"
+                                + "{\"name\":\"青椒\",\"amount\":\"3 个\"},{\"name\":\"蒜\"}],"
+                                + "\"cookSteps\":[\"猪肉切薄片腌制 10 分钟\",\"热锅冷油爆香蒜片\"],"
+                                + "\"cookTips\":\"给孩子吃可以少放辣椒。\","
+                                + "\"cookMinutes\":20,\"servings\":2,\"difficulty\":\"EASY\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(0))
+                .andExpect(jsonPath("$.data.ingredientCount").value(3))
+                .andExpect(jsonPath("$.data.stepCount").value(2))
+                .andExpect(jsonPath("$.data.cookMinutes").value(20))
+                .andExpect(jsonPath("$.data.servings").value(2))
+                .andExpect(jsonPath("$.data.difficulty").value("EASY"))
+                // 顺序必须与请求数组下标一致（sort 0,1,2）
+                .andExpect(jsonPath("$.data.recipe.ingredients[0].name").value("猪肉"))
+                .andExpect(jsonPath("$.data.recipe.ingredients[1].name").value("青椒"))
+                .andExpect(jsonPath("$.data.recipe.ingredients[2].name").value("蒜"))
+                .andExpect(jsonPath("$.data.recipe.ingredients[2].amount").doesNotExist())
+                .andExpect(jsonPath("$.data.recipe.cookSteps[0]").value("猪肉切薄片腌制 10 分钟"))
+                .andExpect(jsonPath("$.data.recipe.cookSteps[1]").value("热锅冷油爆香蒜片"))
+                .andExpect(jsonPath("$.data.recipe.cookTips").value("给孩子吃可以少放辣椒。"))
+                .andReturn();
+        long dishId = bodyOf(created).path("dishId").asLong();
+
+        // 详情：配方完整（编辑抽屉的数据来源）
+        mockMvc.perform(get("/api/admin/dishes/" + dishId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.recipe.ingredients.length()").value(3))
+                .andExpect(jsonPath("$.data.recipe.cookSteps.length()").value(2));
+
+        // 列表：recipe 不携带（null），但摘要计数与标量要平铺出来
+        mockMvc.perform(get("/api/admin/dishes").param("keyword", name)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].recipe").doesNotExist())
+                .andExpect(jsonPath("$.data.items[0].ingredientCount").value(3))
+                .andExpect(jsonPath("$.data.items[0].stepCount").value(2))
+                .andExpect(jsonPath("$.data.items[0].difficulty").value("EASY"));
+    }
+
+    @Test
+    @DisplayName("菜品配方清空：更新为空 → 食材行软删、做法清空、标量置 null")
+    void dishRecipeClear() throws Exception {
+        String token = adminLogin();
+        long categoryId = seedCategory("IT清空分类-" + System.nanoTime());
+        String name = "IT清空配方菜-" + System.nanoTime();
+
+        var created = mockMvc.perform(post("/api/admin/dishes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(JSON)
+                        .content("{\"categoryId\":" + categoryId + ",\"name\":\"" + name + "\","
+                                + "\"virtualPrice\":12.00,\"spiceLevel\":1,\"status\":\"OFF_SALE\","
+                                + "\"allergens\":[],\"allergenStatus\":\"UNKNOWN\","
+                                + "\"ingredients\":[{\"name\":\"土豆\",\"amount\":\"2 个\"}],"
+                                + "\"cookSteps\":[\"削皮切丝\"],\"cookTips\":\"少油\","
+                                + "\"cookMinutes\":15,\"servings\":2,\"difficulty\":\"EASY\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        long dishId = bodyOf(created).path("dishId").asLong();
+
+        // 传空数组 / null 即清空：这是 updateStrategy=ALWAYS 的验收点（漏配则旧值会残留）
+        mockMvc.perform(put("/api/admin/dishes/" + dishId)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(JSON)
+                        .content("{\"categoryId\":" + categoryId + ",\"name\":\"" + name + "\","
+                                + "\"virtualPrice\":12.00,\"spiceLevel\":1,\"status\":\"OFF_SALE\","
+                                + "\"allergens\":[],\"allergenStatus\":\"UNKNOWN\","
+                                + "\"ingredients\":[],\"cookSteps\":[]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.ingredientCount").value(0))
+                .andExpect(jsonPath("$.data.stepCount").value(0))
+                .andExpect(jsonPath("$.data.cookMinutes").doesNotExist())
+                .andExpect(jsonPath("$.data.servings").doesNotExist())
+                .andExpect(jsonPath("$.data.recipe.ingredients.length()").value(0))
+                .andExpect(jsonPath("$.data.recipe.cookSteps.length()").value(0))
+                .andExpect(jsonPath("$.data.recipe.cookTips").doesNotExist());
+
+        // 详情二次确认：清空真的落库，而不只是响应层为空
+        mockMvc.perform(get("/api/admin/dishes/" + dishId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.recipe.ingredients.length()").value(0))
+                .andExpect(jsonPath("$.data.recipe.cookTips").doesNotExist());
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM life_dish_ingredient "
+                + "WHERE owner_type='PRESET' AND dish_id=? AND delete_at=0", Integer.class, dishId)).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM life_dish_ingredient "
+                + "WHERE owner_type='PRESET' AND dish_id=? AND delete_at>0", Integer.class, dishId)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("菜品配方校验：条数/重复/空步/时长越界/难度非法 → 各自 400 且原因可定位")
+    void dishRecipeValidation() throws Exception {
+        String token = adminLogin();
+        long categoryId = seedCategory("IT配方校验分类-" + System.nanoTime());
+        String base = "{\"categoryId\":" + categoryId + ",\"name\":\"IT配方校验菜-" + System.nanoTime()
+                + "\",\"virtualPrice\":9.00,\"spiceLevel\":1,\"status\":\"OFF_SALE\","
+                + "\"allergens\":[],\"allergenStatus\":\"UNKNOWN\"";
+
+        StringBuilder tooMany = new StringBuilder();
+        for (int i = 0; i < 31; i++) {
+            tooMany.append(i == 0 ? "" : ",").append("{\"name\":\"食材").append(i).append("\"}");
+        }
+        assertRecipeRejected(token, base, "\"ingredients\":[" + tooMany + "]",
+                "参数不合法：食材最多 30 条");
+        // 去空白后同名（含大小写差异）即重复
+        assertRecipeRejected(token, base, "\"ingredients\":[{\"name\":\"猪肉\"},{\"name\":\" 猪肉 \"}]",
+                "参数不合法：食材名称重复：猪肉");
+        assertRecipeRejected(token, base, "\"cookSteps\":[\"切菜\",\"  \"]",
+                "参数不合法：第 2 步做法不能为空");
+        assertRecipeRejected(token, base, "\"cookMinutes\":1441",
+                "参数不合法：烹饪时长需在 1 至 1440 分钟之间");
+        assertRecipeRejected(token, base, "\"difficulty\":\"EXPERT\"",
+                "参数不合法：难度取值不合法");
+    }
+
+    @Test
+    @DisplayName("家庭菜品配方归属：只落 FAMILY 行；跨家庭读配方 404；菜品软删级联软删食材")
+    void familyDishRecipeOwnership() throws Exception {
+        String token = adminLogin();
+        long categoryId = seedCategory("IT家庭配方分类-" + System.nanoTime());
+        var owner = setupFamily();
+        var other = setupFamily();
+
+        var created = mockMvc.perform(post("/api/mini/parent/family-dish")
+                        .header("Authorization", "Bearer " + owner.parentToken())
+                        .contentType(JSON)
+                        .content("{\"categoryId\":" + categoryId + ",\"name\":\"IT家庭番茄蛋\","
+                                + "\"virtualPrice\":8.00,\"spiceLevel\":0,\"allergens\":[],"
+                                + "\"allergenStatus\":\"UNKNOWN\","
+                                + "\"ingredients\":[{\"name\":\"番茄\",\"amount\":\"2 个\"},"
+                                + "{\"name\":\"鸡蛋\",\"amount\":\"3 个\"}],"
+                                + "\"cookSteps\":[\"番茄切块\",\"鸡蛋打散炒熟\",\"合炒调味\"],"
+                                + "\"cookTips\":\"不放味精。\","
+                                + "\"cookMinutes\":10,\"servings\":2,\"difficulty\":\"EASY\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.ingredientCount").value(2))
+                .andExpect(jsonPath("$.data.stepCount").value(3))
+                .andReturn();
+        long dishId = bodyOf(created).path("dishId").asLong();
+
+        // 食材只落 FAMILY 行：owner_type 由代码路径固定，绝不接受请求参数。
+        // 注意 (owner_type, dish_id) 才是完整键 —— life_dish 与 life_family_dish 自增序列独立，
+        // 单看 dish_id 会跨表撞号（既有 DishRef 教训），故按本次写入的食材名定位再断言 owner_type。
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM life_dish_ingredient "
+                + "WHERE owner_type='FAMILY' AND dish_id=? AND delete_at=0", Integer.class, dishId)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM life_dish_ingredient "
+                + "WHERE dish_id=? AND name IN ('番茄','鸡蛋') AND owner_type='FAMILY'", Integer.class, dishId))
+                .isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM life_dish_ingredient "
+                + "WHERE dish_id=? AND name IN ('番茄','鸡蛋') AND owner_type<>'FAMILY'", Integer.class, dishId))
+                .isZero();
+
+        // 本家庭家长可读
+        mockMvc.perform(get("/api/mini/dishes/FAMILY/" + dishId + "/recipe")
+                        .header("Authorization", "Bearer " + owner.parentToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.ingredients[0].name").value("番茄"))
+                .andExpect(jsonPath("$.data.ingredients[1].amount").value("3 个"))
+                .andExpect(jsonPath("$.data.cookSteps.length()").value(3))
+                .andExpect(jsonPath("$.data.difficulty").value("EASY"));
+
+        // 孩子也能读本家庭菜品配方（「孩子想吃」页看做法）
+        grant(owner);
+        approve(owner);
+        mockMvc.perform(get("/api/mini/dishes/FAMILY/" + dishId + "/recipe")
+                        .header("Authorization", "Bearer " + owner.childToken()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.ingredients.length()").value(2));
+
+        // 跨家庭读：按「不存在」处理，不泄露「这盘菜存在但不属于你」
+        mockMvc.perform(get("/api/mini/dishes/FAMILY/" + dishId + "/recipe")
+                        .header("Authorization", "Bearer " + other.parentToken()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("E-404"));
+
+        // 下架的预置菜品 → 404（沿用既有可见性规则，不额外放宽）
+        var preset = mockMvc.perform(post("/api/admin/dishes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(JSON)
+                        .content("{\"categoryId\":" + categoryId + ",\"name\":\"IT预置配方菜-" + System.nanoTime()
+                                + "\",\"virtualPrice\":9.00,\"spiceLevel\":0,\"status\":\"OFF_SALE\","
+                                + "\"allergens\":[],\"allergenStatus\":\"UNKNOWN\","
+                                + "\"cookSteps\":[\"一步搞定\"],\"cookMinutes\":5}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        long presetId = bodyOf(preset).path("dishId").asLong();
+        mockMvc.perform(get("/api/mini/dishes/PRESET/" + presetId + "/recipe")
+                        .header("Authorization", "Bearer " + owner.parentToken()))
+                .andExpect(status().isNotFound());
+
+        // type 只接受 PRESET / FAMILY
+        mockMvc.perform(get("/api/mini/dishes/SCHOOL/" + presetId + "/recipe")
+                        .header("Authorization", "Bearer " + owner.parentToken()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("E-400"));
+
+        // 家庭菜品软删后食材行同步软删（避免悬挂数据）
+        mockMvc.perform(delete("/api/mini/parent/family-dish/" + dishId)
+                        .param("expectedVersion", "0")
+                        .header("Authorization", "Bearer " + owner.parentToken()))
+                .andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM life_dish_ingredient "
+                + "WHERE owner_type='FAMILY' AND dish_id=? AND delete_at=0", Integer.class, dishId)).isZero();
+    }
+
+    /** 断言某条配方字段被拒时的 E-400 与可定位原因（避免笼统的「参数不合法」）。 */
+    private void assertRecipeRejected(String token, String base, String recipeField, String expectedMessage)
+            throws Exception {
+        mockMvc.perform(post("/api/admin/dishes")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(JSON)
+                        .content(base + "," + recipeField + "}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("E-400"))
+                .andExpect(jsonPath("$.message").value(expectedMessage));
+    }
+
+    @Test
     @DisplayName("分类生命周期：创建/更新/删除；被菜品引用时拒绝删除")
     void categoryLifecycleAndUsedGuard() throws Exception {
         String token = adminLogin();
@@ -357,6 +635,10 @@ class AdminContentIT extends BaseIT {
         long categoryId = seedCategory("ITRA分类-" + System.nanoTime());
 
         mockMvc.perform(get("/api/admin/dishes")
+                        .header("Authorization", "Bearer " + raToken))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(get("/api/admin/dish-references")
                         .header("Authorization", "Bearer " + raToken))
                 .andExpect(status().isForbidden());
 

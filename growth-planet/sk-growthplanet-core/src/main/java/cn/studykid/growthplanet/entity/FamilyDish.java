@@ -1,5 +1,6 @@
 package cn.studykid.growthplanet.entity;
 
+import cn.studykid.growthplanet.dto.DishIngredient;
 import com.baomidou.mybatisplus.annotation.*;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import lombok.Data;
@@ -40,6 +41,21 @@ public class FamilyDish {
     /** 驳回原因（review_status=REJECTED 时有值，运营审核留痕）。 */
     @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String rejectReason;
+    // ---- v011 配方字段：做法与小贴士（食材明细落 life_dish_ingredient，owner_type=FAMILY） ----
+    // updateStrategy=ALWAYS 是必需的：清空配方时才能把 null / 空数组真正写回库（R3）。
+    @TableField(typeHandler = JacksonTypeHandler.class, updateStrategy = FieldStrategy.ALWAYS)
+    private List<String> cookSteps;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String cookTips;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer cookMinutes;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private Integer servings;
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
+    private String difficulty;
+    /** 瞬时字段：食材明细由 DishRecipeService 装配，不参与本表 SQL。 */
+    @TableField(exist = false)
+    private List<DishIngredient> ingredients;
     private Integer version;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

@@ -5,6 +5,7 @@ import cn.studykid.growthplanet.common.context.UserContext;
 import cn.studykid.growthplanet.common.exception.BizException;
 import cn.studykid.growthplanet.common.result.ResultCode;
 import cn.studykid.growthplanet.config.ComplianceProperties;
+import cn.studykid.growthplanet.dto.DishIngredient;
 import cn.studykid.growthplanet.dto.request.*;
 import cn.studykid.growthplanet.dto.response.*;
 import cn.studykid.growthplanet.entity.*;
@@ -58,6 +59,8 @@ public class CatalogService {
     private final BusinessTime time;
     private final MedalDefinitionMapper medalDefs;
     private final MedalService medalService;
+    /** 配方（食材子表 + 做法 / 小贴士 / 时长 / 份量 / 难度）读写；与家庭菜品路径共用同一套规则。 */
+    private final DishRecipeService recipes;
     /** 批量发布用：每条 item 走独立事务（REQUIRES_NEW），单条失败不回滚整批。 */
     private final TransactionTemplate perItemTransactions;
 
@@ -65,7 +68,7 @@ public class CatalogService {
             MenuDailyMapper menus, FamilyMapper families, ChildProfileMapper profiles,
             ChildWantEatMapper wantEats, WishMenuMapper wishMenus, ChildAuthorizationService authorization,
             ComplianceProperties policy, AuditService audit, Validator validator, BusinessTime time,
-            MedalDefinitionMapper medalDefs, MedalService medalService,
+            MedalDefinitionMapper medalDefs, MedalService medalService, DishRecipeService recipes,
             PlatformTransactionManager transactionManager) {
         this.categories = categories;
         this.dishes = dishes;
@@ -82,6 +85,7 @@ public class CatalogService {
         this.time = time;
         this.medalDefs = medalDefs;
         this.medalService = medalService;
+        this.recipes = recipes;
         this.perItemTransactions = new TransactionTemplate(transactionManager);
         this.perItemTransactions.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
@@ -129,6 +133,8 @@ public class CatalogService {
         Dish dish = new Dish();
         applyDish(dish, req);
         dishes.insert(dish);
+        // 食材整体替换与菜品主表同事务；applyDish 已把归一化结果放进瞬时字段，响应无需回查
+        recipes.replace(DishRecipeService.OWNER_PRESET, dish.getId(), req.getIngredients());
         audit.record("DISH_CREATE", actorId, null, "DISH", dish.getId(), null, null);
         return dishResponse(dish);
     }
@@ -145,6 +151,8 @@ public class CatalogService {
         Dish dish = lockDish(dishId);
         applyDish(dish, req);
         requireUpdated(dishes.updateById(dish));
+        // 传空数组 / null 即清空：旧食材行整体软删；标量靠 updateStrategy=ALWAYS 写回 null
+        recipes.replace(DishRecipeService.OWNER_PRESET, dishId, req.getIngredients());
         audit.record("DISH_UPDATE", actorId, null, "DISH", dishId, null, null);
         return dishResponse(dish);
     }
@@ -162,6 +170,8 @@ public class CatalogService {
         requireUpdated(dishes.update(null, new UpdateWrapper<Dish>().eq("id", dishId)
                 .set("status", "OFF_SALE").setSql("delete_at = UNIX_TIMESTAMP() * 1000")
                 .setSql("update_time = CURRENT_TIMESTAMP")));
+        // 级联软删食材行，避免「菜没了食材还在」的悬挂数据
+        recipes.softDelete(DishRecipeService.OWNER_PRESET, dishId);
         audit.record("DISH_DELETE", actorId, null, "DISH", dishId, null, null);
     }
 
@@ -206,6 +216,60 @@ public class CatalogService {
                 .stream().map(this::categoryResponse).toList();
     }
 
+    /**
+     * C 端配方（只读、懒加载）：清单页一次列十余道菜，把做法长文本塞进清单响应是纯浪费，
+     * 因此单独开端点，用户点开某道菜才请求。家长与孩子均可读（只读、非敏感）。
+     * <p>
+     * 隔离红线：type=FAMILY 时 family_id 必须等于当前登录用户所属家庭，归属一律从鉴权派生、
+     * 绝不接受客户端传入 familyId；不等时按「不存在」处理，不泄露「这盘菜存在但不属于你」。
+     * 可见性沿用既有规则：预置菜品下架即 E-404，家庭菜品不额外放宽。
+     */
+    public DishRecipeResp dishRecipe(String type, Long dishId) {
+        LoginUser ctx = requireRole("CHILD", "PARENT");
+        if (!Set.of("PRESET", "FAMILY").contains(type)) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        }
+        positive(dishId);
+        if ("PRESET".equals(type)) {
+            Dish dish = dishes.selectById(dishId);
+            if (dish == null || !"ON_SALE".equals(dish.getStatus())) {
+                throw new BizException(ResultCode.E404_NOT_FOUND);
+            }
+            return recipeOf(DishRecipeService.OWNER_PRESET, dishId, dish.getCookSteps(), dish.getCookTips(),
+                    dish.getCookMinutes(), dish.getServings(), dish.getDifficulty());
+        }
+        Long familyId = currentFamilyId(ctx);
+        FamilyDish fd = familyDishes.selectOne(new QueryWrapper<FamilyDish>()
+                .eq("id", dishId).eq("family_id", familyId).eq("delete_at", 0L));
+        if (fd == null) {
+            throw new BizException(ResultCode.E404_NOT_FOUND);
+        }
+        return recipeOf(DishRecipeService.OWNER_FAMILY, dishId, fd.getCookSteps(), fd.getCookTips(),
+                fd.getCookMinutes(), fd.getServings(), fd.getDifficulty());
+    }
+
+    private DishRecipeResp recipeOf(String ownerType, Long dishId, List<String> cookSteps, String cookTips,
+            Integer cookMinutes, Integer servings, String difficulty) {
+        return new DishRecipeResp(recipes.loadByDishId(ownerType, dishId),
+                cookSteps == null ? List.of() : cookSteps, cookTips, cookMinutes, servings, difficulty);
+    }
+
+    /**
+     * 取当前登录用户的家庭 id：孩子走绑定关系（boundChild），家长走成员身份校验。
+     * 只读路径，故不加行锁 —— 与 requireCurrentFamilyParent 的写路径锁策略区分开。
+     */
+    private Long currentFamilyId(LoginUser ctx) {
+        if ("CHILD".equals(ctx.getRole())) {
+            return authorization.boundChild(ctx.getUserId()).getFamilyId();
+        }
+        Long familyId = ctx.firstFamilyId();
+        if (familyId == null) {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        authorization.requireParent(familyId);
+        return familyId;
+    }
+
     private PageResp<DishResp> queryDishes(int page, int pageSize, Long categoryId, String status, String keyword,
             String allergenStatus) {
         long offset = offset(page, pageSize);
@@ -223,8 +287,12 @@ public class CatalogService {
                 .eq(allergenStatus != null, "allergen_status", allergenStatus)
                 .like(keyword != null, "name", keyword);
         long total = dishes.selectCount(query);
-        List<DishResp> items = dishes.selectList(query.orderByAsc("id")
-                .last("LIMIT " + offset + ", " + pageSize)).stream().map(this::dishResponse).toList();
+        List<Dish> pageItems = dishes.selectList(query.orderByAsc("id")
+                .last("LIMIT " + offset + ", " + pageSize));
+        // 列表路径：一次 IN 查询取回整页食材做计数摘要，不逐条查子表（防 N+1）
+        attachPresetIngredients(pageItems);
+        Map<Long, String> categoryNames = categoryNamesOf(pageItems);
+        List<DishResp> items = pageItems.stream().map(dish -> dishResponse(dish, categoryNames)).toList();
         return new PageResp<>(items, total, page, pageSize);
     }
 
@@ -317,6 +385,8 @@ public class CatalogService {
             return null;
         }
         Map<String, Dish> current = visibleDishesByRef(menu.getDishIds(), familyId);
+        // 菜单路径仅带计数字段（时长/份量/难度/食材数/步骤数），做法长文本不进清单响应
+        attachIngredientsByRef(current);
         Map<Long, String> categoryNames = categoryNamesOf(current.values());
         List<DishResp> visible = new ArrayList<>();
         List<String> missing = new ArrayList<>();
@@ -361,6 +431,7 @@ public class CatalogService {
             throw new BizException(ResultCode.E404_NOT_FOUND);
         }
         Map<String, Dish> current = visibleDishesByRef(menu.getDishIds(), menu.getFamilyId());
+        attachIngredientsByRef(current);
         Map<Long, String> categoryNames = categoryNamesOf(current.values());
         boolean submittable = "CHILD".equals(ctx.getRole()) && "FAMILY".equals(sourceType)
                 && time.today().equals(menuDate);
@@ -1191,9 +1262,18 @@ public class CatalogService {
 
     private void validateDish(DishReq req) {
         validate(req);
+        // 配方六个字段全部可选、且不参与「在售」闸门；规则与可定位的中文原因由 DishRecipeService 统一给出
+        recipes.validate(req.getIngredients(), req.getCookSteps(), req.getCookTips(),
+                req.getCookMinutes(), req.getServings(), req.getDifficulty());
         DishCategory category = categories.selectById(req.getCategoryId());
-        if (category == null || !"ENABLED".equals(category.getStatus()) || !validAllergens(req.getAllergens())) {
-            throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
+        if (category == null || !"ENABLED".equals(category.getStatus())) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "菜品分类不存在或已停用");
+        }
+        if (!validAllergens(req.getAllergens())) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT,
+                    policy.getCatalogReference() == null || policy.getCatalogReference().isBlank()
+                            ? "过敏原发布目录未配置（compliance.catalog-reference）"
+                            : "过敏原取值不在发布目录内，或存在空值 / 重复值 / 超长值");
         }
         // R5-c：上架即对儿童可见 ⇒ 必须先声明过敏原。未声明只能存在于下架态（保留草稿式录入体验），
         // 避免「未登记过敏原」的菜悄悄上线让孩子点不了（safetyStatus 会判 UNKNOWN、canSelect=false）。
@@ -1249,17 +1329,45 @@ public class CatalogService {
         dish.setAllergenStatus(req.getAllergenStatus());
         dish.setSpiceLevel(req.getSpiceLevel());
         dish.setStatus(req.getStatus());
-    }
-
-    /** 单品响应：分类名单查（非列表路径用，最多一次查询）。 */
-    private DishResp dishResponse(Dish dish) {
-        return dishResponse(dish, null);
+        applyRecipe(dish, req);
     }
 
     /**
-     * 列表路径响应：分类名由调用方批量预取后传入（categoryNames 为 null 时才回退单查），避免 N+1。
+     * 配方字段填充（归一化：空串 → null、null / 空数组 → 空列表）。
+     * cookSteps 归一化成空数组而非 null 是有意的：列定义 NOT NULL，且让「清空做法」可落库。
      */
+    private void applyRecipe(Dish dish, DishReq req) {
+        dish.setCookSteps(DishRecipeService.normalizeSteps(req.getCookSteps()));
+        dish.setCookTips(DishRecipeService.normalizeTips(req.getCookTips()));
+        dish.setCookMinutes(req.getCookMinutes());
+        dish.setServings(req.getServings());
+        dish.setDifficulty(DishRecipeService.normalizeDifficulty(req.getDifficulty()));
+        dish.setIngredients(DishRecipeService.normalizeIngredients(req.getIngredients()));
+    }
+
+    /**
+     * 单品响应（详情路径）：确保食材明细已装配后返回完整 recipe。
+     * 创建 / 更新路径已把归一化结果放进瞬时字段，这里不再回查；其余情况单次查询补齐。
+     */
+    private DishResp dishResponse(Dish dish) {
+        if (dish.getIngredients() == null) {
+            dish.setIngredients(recipes.loadByDishId(DishRecipeService.OWNER_PRESET, dish.getId()));
+        }
+        return dishResponse(dish, null, true);
+    }
+
+    /** 列表 / 菜单路径响应：只带轻量摘要与计数，recipe 为 null（明细不进清单响应）。 */
     private DishResp dishResponse(Dish dish, Map<Long, String> categoryNames) {
+        return dishResponse(dish, categoryNames, false);
+    }
+
+    /**
+     * 统一响应装配：withRecipe 由调用点显式传入，不用「categoryNames == null 就当详情」这类隐式推断。
+     * 食材明细未装配时按空列表处理，与「这道菜确实没配方」的语义一致。
+     */
+    private DishResp dishResponse(Dish dish, Map<Long, String> categoryNames, boolean withRecipe) {
+        List<DishIngredient> ingredientItems = dish.getIngredients() == null ? List.of() : dish.getIngredients();
+        List<String> cookSteps = dish.getCookSteps() == null ? List.of() : dish.getCookSteps();
         return DishResp.builder().dishId(dish.getId()).categoryId(dish.getCategoryId())
                 .categoryName(categoryNames == null ? categoryName(dish.getCategoryId())
                         : categoryNames.get(dish.getCategoryId()))
@@ -1267,7 +1375,12 @@ public class CatalogService {
                 .imageUrl(dish.getImageUrl()).virtualPrice(dish.getVirtualPrice().setScale(2).toPlainString())
                 .calories(dish.getCalories()).tags(dish.getTags()).allergens(dish.getAllergens())
                 .allergenStatus(dish.getAllergenStatus()).spiceLevel(dish.getSpiceLevel())
-                .status(dish.getStatus()).sourceType("PRESET").build();
+                .status(dish.getStatus()).sourceType("PRESET")
+                .cookMinutes(dish.getCookMinutes()).servings(dish.getServings()).difficulty(dish.getDifficulty())
+                .ingredientCount(ingredientItems.size()).stepCount(cookSteps.size())
+                .recipe(withRecipe ? new DishRecipeResp(ingredientItems, cookSteps, dish.getCookTips(),
+                        dish.getCookMinutes(), dish.getServings(), dish.getDifficulty()) : null)
+                .build();
     }
 
     private String categoryName(Long categoryId) {
@@ -1296,6 +1409,51 @@ public class CatalogService {
         return categoryNameMap(dishes.stream().map(Dish::getCategoryId).toList());
     }
 
+    /**
+     * 列表路径批量装配食材（全部为预置菜品）：一次 IN 查询后内存分组，未命中（确无食材）的补空列表。
+     * 补空列表而非留 null 是关键：让「确无配方」与「本响应没带配方」在响应里可区分。
+     */
+    private void attachPresetIngredients(Collection<Dish> dishList) {
+        List<Dish> targets = dishList.stream().filter(Objects::nonNull).toList();
+        if (targets.isEmpty()) {
+            return;
+        }
+        Map<Long, List<DishIngredient>> grouped = recipes.loadByDishIds(DishRecipeService.OWNER_PRESET,
+                targets.stream().map(Dish::getId).toList());
+        targets.forEach(dish -> dish.setIngredients(grouped.getOrDefault(dish.getId(), List.of())));
+    }
+
+    /**
+     * 菜单路径批量装配食材：入参可能是预置与家庭菜品的混合集合，按 ref key 的 type 前缀分组，
+     * 每种 owner_type 各一次 IN 查询（最多 2 次），同样不做逐条查询。
+     */
+    private void attachIngredientsByRef(Map<String, Dish> byRefKey) {
+        if (byRefKey.isEmpty()) {
+            return;
+        }
+        attachIngredientsOfType(byRefKey, DishRecipeService.OWNER_PRESET);
+        attachIngredientsOfType(byRefKey, DishRecipeService.OWNER_FAMILY);
+        byRefKey.values().forEach(dish -> {
+            if (dish.getIngredients() == null) {
+                dish.setIngredients(List.of());
+            }
+        });
+    }
+
+    private void attachIngredientsOfType(Map<String, Dish> byRefKey, String ownerType) {
+        List<Long> ids = byRefKey.keySet().stream().filter(key -> key.startsWith(ownerType + ":"))
+                .map(key -> Long.valueOf(key.substring(ownerType.length() + 1))).toList();
+        if (ids.isEmpty()) {
+            return;
+        }
+        recipes.loadByDishIds(ownerType, ids).forEach((dishId, items) -> {
+            Dish dish = byRefKey.get(ownerType + ":" + dishId);
+            if (dish != null) {
+                dish.setIngredients(items);
+            }
+        });
+    }
+
     /** 家庭私有菜品 → Dish 临时对象（复制字段，用于统一的安全校验与点单，不持久化）。 */
     private Dish toDish(FamilyDish fd) {
         Dish dish = new Dish();
@@ -1310,6 +1468,12 @@ public class CatalogService {
         dish.setAllergenStatus(fd.getAllergenStatus());
         dish.setSpiceLevel(fd.getSpiceLevel());
         dish.setStatus(fd.getStatus());
+        // v011 配方标量一并复制，否则菜单里的家庭菜品摘要（时长 / 份量 / 难度）会丢
+        dish.setCookSteps(fd.getCookSteps());
+        dish.setCookTips(fd.getCookTips());
+        dish.setCookMinutes(fd.getCookMinutes());
+        dish.setServings(fd.getServings());
+        dish.setDifficulty(fd.getDifficulty());
         return dish;
     }
 
@@ -1318,9 +1482,11 @@ public class CatalogService {
         return familyDishResponse(fd, null);
     }
 
-    /** 家庭私有菜品 → 响应（分类名批量预取版，避免列表 N+1）。 */
+    /** 家庭私有菜品 → 响应（分类名批量预取版，避免列表 N+1）；食材按 owner_type=FAMILY 装配。 */
     private DishResp familyDishResponse(FamilyDish fd, Map<Long, String> categoryNames) {
-        DishResp resp = dishResponse(toDish(fd), categoryNames);
+        Dish dish = toDish(fd);
+        dish.setIngredients(recipes.loadByDishId(DishRecipeService.OWNER_FAMILY, fd.getId()));
+        DishResp resp = dishResponse(dish, categoryNames);
         resp.setSourceType("FAMILY");
         return resp;
     }
