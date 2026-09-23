@@ -41,6 +41,18 @@ public class Result<T> implements Serializable {
         return of(resultCode.getCode(), resultCode.getMessage(), null);
     }
 
+    /**
+     * 以指定业务码 + 自定义提示构造失败响应。
+     *
+     * <p>业务码 {@code message} 是类别级通用文案（如「参数不合法」），不足以定位问题。
+     * 服务层抛 {@link BizException} 时带的具体原因经此处透出，避免前端只能看到笼统提示。
+     * {@code message} 为空时回退为业务码默认文案。</p>
+     */
+    public static <T> Result<T> fail(ResultCode resultCode, String message) {
+        return of(resultCode.getCode(),
+                message == null || message.isBlank() ? resultCode.getMessage() : message, null);
+    }
+
     /** 以指定业务码 + 数据构造响应（用于如撤回降级 E-010 仍带 data 的场景）。 */
     public static <T> Result<T> of(ResultCode resultCode, T data) {
         return of(resultCode.getCode(), resultCode.getMessage(), data);

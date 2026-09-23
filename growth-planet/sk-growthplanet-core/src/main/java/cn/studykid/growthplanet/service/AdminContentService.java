@@ -5,6 +5,7 @@ import cn.studykid.growthplanet.common.context.AdminUserContext;
 import cn.studykid.growthplanet.common.enums.AdminAction;
 import cn.studykid.growthplanet.common.exception.BizException;
 import cn.studykid.growthplanet.common.result.ResultCode;
+import cn.studykid.growthplanet.config.ComplianceProperties;
 import cn.studykid.growthplanet.dto.request.AdminChoreTaskCreateReq;
 import cn.studykid.growthplanet.dto.request.AdminChoreTaskUpdateReq;
 import cn.studykid.growthplanet.dto.request.AdminMedalReq;
@@ -19,6 +20,7 @@ import cn.studykid.growthplanet.dto.response.AdminMenuRowResp;
 import cn.studykid.growthplanet.dto.response.AdminUgcDishResp;
 import cn.studykid.growthplanet.dto.response.AdminWishConfigResp;
 import cn.studykid.growthplanet.dto.response.DishCategoryResp;
+import cn.studykid.growthplanet.dto.response.DishReferenceResp;
 import cn.studykid.growthplanet.dto.response.DishResp;
 import cn.studykid.growthplanet.dto.response.MenuUpsertResp;
 import cn.studykid.growthplanet.dto.response.PageResp;
@@ -89,11 +91,12 @@ public class AdminContentService {
     private final FamilyMapper families;
     private final AuditService audit;
     private final Validator validator;
+    private final ComplianceProperties compliance;
 
     public AdminContentService(CatalogService catalog, DishMapper dishes, DishCategoryMapper categories,
             FamilyDishMapper familyDishes, MenuDailyMapper menus, ChoreTaskMapper chores,
             MedalDefinitionMapper medalDefs, MedalAwardMapper medalAwards, FamilySettingMapper familySettings,
-            FamilyMapper families, AuditService audit, Validator validator) {
+            FamilyMapper families, AuditService audit, Validator validator, ComplianceProperties compliance) {
         this.catalog = catalog;
         this.dishes = dishes;
         this.categories = categories;
@@ -106,6 +109,7 @@ public class AdminContentService {
         this.families = families;
         this.audit = audit;
         this.validator = validator;
+        this.compliance = compliance;
     }
 
     private Long actor() {
@@ -128,6 +132,18 @@ public class AdminContentService {
     public DishResp getDish(Long dishId) {
         AdminUserContext.requirePerm(AdminResource.DISH, AdminAction.VIEW.code());
         return catalog.getDishAs(dishId);
+    }
+
+    /**
+     * 菜品表单参考字典：下发受发布目录约束的过敏原候选值。
+     * 前端不得硬编码该列表（与 {@code compliance.allergens} 不一致时会拿到笼统 E-400）。
+     */
+    public DishReferenceResp getDishReferences() {
+        AdminUserContext.requirePerm(AdminResource.DISH, AdminAction.VIEW.code());
+        List<String> allergens = List.copyOf(compliance.getAllergens());
+        boolean catalogReady = compliance.getCatalogReference() != null
+                && !compliance.getCatalogReference().isBlank() && !allergens.isEmpty();
+        return new DishReferenceResp(allergens, catalogReady);
     }
 
     public DishResp createDish(DishReq req) {

@@ -15,6 +15,7 @@ import cn.studykid.growthplanet.dto.response.AdminMenuRowResp;
 import cn.studykid.growthplanet.dto.response.AdminUgcDishResp;
 import cn.studykid.growthplanet.dto.response.AdminWishConfigResp;
 import cn.studykid.growthplanet.dto.response.DishCategoryResp;
+import cn.studykid.growthplanet.dto.response.DishReferenceResp;
 import cn.studykid.growthplanet.dto.response.DishResp;
 import cn.studykid.growthplanet.dto.response.MenuUpsertResp;
 import cn.studykid.growthplanet.dto.response.PageResp;
@@ -64,6 +65,12 @@ public class AdminContentController {
     @GetMapping("/dishes/{id}")
     public Result<DishResp> dishDetail(@PathVariable Long id) {
         return Result.ok(service.getDish(id));
+    }
+
+    /** 菜品表单参考字典（过敏原发布目录）：候选值随环境配置变化，前端不得硬编码。 */
+    @GetMapping("/dish-references")
+    public Result<DishReferenceResp> dishReferences() {
+        return Result.ok(service.getDishReferences());
     }
 
     @PostMapping("/dishes")
