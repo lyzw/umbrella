@@ -55,6 +55,9 @@ public final class AdminResource {
 
     public static final String HELP = "手册/FAQ";
 
+    /** 对象存储（七牛云 Kodo）：图片/视频资源上传凭证签发。 */
+    public static final String STORAGE = "对象存储";
+
     /**
      * 全部资源，按控制台模块顺序排列，用作权限矩阵的行顺序（M0–M10）。
      * 注意：须在以上常量之后声明，避免静态初始化顺序问题。
@@ -70,5 +73,6 @@ public final class AdminResource {
             NOTICE_TPL, NOTICE_STAT,
             ALERT_RULE, ALERT_LIST, CHANNEL,
             GLOBAL_PARAM, ENUM_DICT, FEATURE_SWITCH,
-            HELP);
+            HELP,
+            STORAGE);
 }

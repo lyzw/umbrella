@@ -11,6 +11,12 @@ spring:
 wx:
   mock: true
 
+# 七牛对象存储：本地联调时通过环境变量注入真实凭证
+# （QINIU_ACCESS_KEY / QINIU_SECRET_KEY / QINIU_BUCKET）；未注入时上传凭证接口降级 E-503，不影响启动。
+# 其余字段（读取域名 / 上传入口 / 凭证有效期）继承 application.yml 的默认值。
+qiniu:
+  image-domain: image.studykid.cn
+
 jwt:
   secret: synthetic-only-development-secret-01234567890123456789
   # 后台运营端独立密钥（与 C 端隔离）。

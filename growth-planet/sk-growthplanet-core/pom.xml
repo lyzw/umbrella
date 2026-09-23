@@ -71,6 +71,14 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
+        <!-- 七牛云 Kodo 对象存储 SDK：仅用于签发客户端直传凭证（Auth + Policy），
+             不做服务端中转上传。传递依赖 okhttp/gson 为 runtime 作用域。 -->
+        <dependency>
+            <groupId>com.qiniu</groupId>
+            <artifactId>qiniu-java-sdk</artifactId>
+            <version>${qiniu.version}</version>
+        </dependency>
+
         <!-- Lombok（optional 不传递，接口模块需自行声明） -->
         <dependency>
             <groupId>org.projectlombok</groupId>

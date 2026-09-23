@@ -18,6 +18,13 @@ jwt:
   secret: synthetic-only-test-secret-01234567890123456789012345
   admin-secret: synthetic-only-admin-secret-012345678901234567890123
 
+# 七牛对象存储：测试专用合成凭证，仅用于断言上传凭证签发（HMAC 签名离线可算，不发真实网络请求）。
+qiniu:
+  access-key: synthetic-only-test-ak
+  secret-key: synthetic-only-test-sk
+  bucket: synthetic-only-test-bucket
+  image-domain: image.studykid.cn
+
 compliance:
   collection-enabled: true
   self-attestation-accepted: true

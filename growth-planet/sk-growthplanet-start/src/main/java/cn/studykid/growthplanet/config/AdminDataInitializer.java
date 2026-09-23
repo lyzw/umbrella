@@ -214,6 +214,10 @@ public class AdminDataInitializer implements CommandLineRunner {
         supplementPerm(roleMap, "RA", AdminResource.PRIVACY_TICKET, "view");
         supplementPerm(roleMap, "RA", AdminResource.VERIFY, "view");
         supplementPerm(roleMap, "RA", AdminResource.COMPLIANCE, "view");
+
+        // 对象存储补播：新增资源「对象存储」+ 复用「新建」动作（语义=新建一个存储对象）。
+        // OP 已在基线播种（按角色粒度幂等会整体跳过），故走 supplementPerm 差量补播。
+        supplementPerm(roleMap, "OP", AdminResource.STORAGE, "create");
     }
 
     /** 按（角色×资源×动作）粒度补播：仅当该权限点尚不存在时插入，用于存量角色的差量基线。 */

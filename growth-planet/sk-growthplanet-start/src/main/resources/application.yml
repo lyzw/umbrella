@@ -50,6 +50,19 @@ wx:
   appid: ${WX_APPID:}
   secret: ${WX_SECRET:}
 
+# 七牛云对象存储（Kodo）：客户端直传，后端仅签发上传凭证，不接触文件字节。
+# access-key / secret-key / bucket 三者「全空」= 未启用（上传接口降级 E-503，不阻断启动）；
+# 「部分配置」= 误配，启动即失败（防止线上上传静默失效）。密钥请经环境变量注入，勿写入代码库。
+qiniu:
+  access-key: ${QINIU_ACCESS_KEY:}
+  secret-key: ${QINIU_SECRET_KEY:}
+  bucket: ${QINIU_BUCKET:}
+  # 读取域名（图片/视频同域，以 img/ 与 video/ 路径前缀区分），代码归一为 https:// 前缀。
+  image-domain: ${QINIU_IMAGE_DOMAIN:image.studykid.cn}
+  # 上传入口；bucket 机房不同可覆盖（z1/z2/na0/as0 等）。
+  upload-host: ${QINIU_UPLOAD_HOST:https://upload.qiniup.com}
+  token-ttl-seconds: ${QINIU_TOKEN_TTL:3600}
+
 # 后台运营端首个超级管理员引导配置（仅当 sys_admin_user 为空时播种，见 AdminDataInitializer）。
 # 生产环境请通过环境变量覆盖默认密码，避免使用弱口令。
 console:
