@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { cents, money, shanghaiDate, selectable, filterDishes } = require('../miniprogram/utils/domain');
 const { createOperations } = require('../miniprogram/services/operations');
 const { createClient } = require('../miniprogram/services/client');
+const recipes = require('../miniprogram/services/recipes');
 
 test('金额整数分运算，不接受负数、小数截断或科学计数法', () => {
   assert.equal(cents('18.01') + cents('0.09'), 1810);
@@ -99,4 +100,36 @@ test('会话到期清理token及未知结果命令，不保存儿童档案字段
   assert.equal(session.get(), null);
   assert.equal(storage.size, 0);
   assert.equal(operations.pending('grant:1'), null);
+});
+test('配方：难度映射与下标互转对称，未知值不越位', () => {
+  assert.equal(recipes.difficultyLabel('EASY'), '简单');
+  assert.equal(recipes.difficultyLabel('HARD'), '有挑战');
+  assert.equal(recipes.difficultyLabel(''), '');
+  assert.equal(recipes.difficultyLabel(null), '');
+  assert.equal(recipes.difficultyLabel('LEGACY'), 'LEGACY', '未知枚举原样展示，不静默吞掉');
+  assert.equal(recipes.difficultyIndex('MEDIUM'), 2);
+  assert.equal(recipes.difficultyIndex('LEGACY'), 0, '未知值落到「未设置」，不误选相邻档位');
+  assert.equal(recipes.difficultyValue(3), 'HARD');
+  assert.equal(recipes.difficultyValue(undefined), '');
+});
+test('配方：展示归一化区分「空配方」与「字段为空」', () => {
+  const full = recipes.presentRecipe({
+    ingredients: [{ name: '番茄', amount: '2 个' }, { name: '鸡蛋', amount: null }],
+    cookSteps: ['打蛋', '下锅'], cookTips: '少放盐', cookMinutes: 15, servings: 3, difficulty: 'EASY'
+  });
+  assert.equal(full.status, 'ready');
+  assert.equal(full.empty, false);
+  assert.equal(full.ingredients[1].amountText, '适量', '未填用量显示「适量」而不是空白');
+  assert.deepEqual(full.steps.map(step => step.no), [1, 2]);
+  assert.equal(full.meta, '15 分钟 · 3 人份 · 简单');
+  assert.equal(recipes.presentRecipe({ ingredients: [], cookSteps: [], cookTips: null }).empty, true);
+  assert.equal(recipes.presentRecipe(null).empty, true, '响应缺字段不能当成有配方');
+});
+test('配方：列表摘要缺项省略，全缺时给出明确文案', () => {
+  assert.equal(recipes.recipeSummary({ ingredientCount: 3, stepCount: 5, cookMinutes: 30 }),
+    '食材 3 · 步骤 5 · 30 分钟');
+  assert.equal(recipes.recipeSummary({ ingredientCount: 3 }), '食材 3');
+  assert.equal(recipes.recipeSummary({}), '未填写配方');
+  assert.equal(recipes.recipeSummary(null), '未填写配方');
+  assert.equal(recipes.recipeKey('FAMILY', '7'), 'FAMILY:7', '两表自增序列独立，必须带 type');
 });

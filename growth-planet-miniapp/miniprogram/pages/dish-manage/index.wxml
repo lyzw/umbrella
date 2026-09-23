@@ -32,6 +32,7 @@
           <text class="badge">{{item.spiceLabel}}</text>
         </view>
         <view class="small">{{item.allergenLabel}}</view>
+        <view class="small recipe-line">配方：{{item.recipeSummary}}{{item.difficultyLabel ? ' · ' + item.difficultyLabel : ''}}</view>
         <view class="price">{{item.virtualPrice}} <text class="small">虚拟单位 / 份</text></view>
         <view class="dish-actions">
           <button bindtap="edit" data-id="{{item.dishId}}" disabled="{{busy}}">编辑</button>
@@ -97,7 +98,68 @@
     </view>
 
     <view class="form-section">
-      <view class="form-section-heading"><view class="step-number">3</view><view><view class="section-title">安全信息</view><view class="small">过敏信息会直接影响儿童是否可点选</view></view></view>
+      <view class="form-section-heading"><view class="step-number">3</view><view><view class="section-title">食材与做法（选填）</view><view class="small">供孩子与家长查看，不填也能保存与上架</view></view></view>
+      <view wx:if="{{formRecipeNotice}}" class="recipe-notice">{{formRecipeNotice}}</view>
+      <view class="field">
+        <view class="label">食材（最多 {{maxIngredients}} 条）</view>
+        <view wx:for="{{formIngredients}}" wx:key="key" class="recipe-row">
+          <view class="recipe-row-head">
+            <text class="recipe-row-index">{{index + 1}}</text>
+            <view class="recipe-row-tools">
+              <button class="row-action" data-index="{{index}}" data-delta="-1" bindtap="moveIngredient" disabled="{{busy || index === 0}}">上移</button>
+              <button class="row-action" data-index="{{index}}" data-delta="1" bindtap="moveIngredient" disabled="{{busy || index === formIngredients.length - 1}}">下移</button>
+              <button class="row-action danger" data-index="{{index}}" bindtap="removeIngredient" disabled="{{busy}}">删除</button>
+            </view>
+          </view>
+          <view class="recipe-row-fields">
+            <input value="{{item.name}}" data-field="formIngredients[{{index}}].name" bindinput="input" maxlength="32" placeholder="食材名称，如 番茄" disabled="{{busy}}" />
+            <input value="{{item.amount}}" data-field="formIngredients[{{index}}].amount" bindinput="input" maxlength="32" placeholder="用量，如 2 个" disabled="{{busy}}" />
+          </view>
+        </view>
+        <button class="add-row" bindtap="addIngredient" disabled="{{busy || formIngredients.length >= maxIngredients}}">+ 添加食材</button>
+        <view class="small field-help">只填名称也可保存；整行留空时保存会自动忽略，无需手动删干净。</view>
+      </view>
+
+      <view class="field">
+        <view class="label">做法步骤（最多 {{maxSteps}} 步）</view>
+        <view wx:for="{{formCookSteps}}" wx:key="key" class="recipe-row">
+          <view class="recipe-row-head">
+            <text class="recipe-row-index">{{index + 1}}</text>
+            <view class="recipe-row-tools">
+              <button class="row-action" data-index="{{index}}" data-delta="-1" bindtap="moveStep" disabled="{{busy || index === 0}}">上移</button>
+              <button class="row-action" data-index="{{index}}" data-delta="1" bindtap="moveStep" disabled="{{busy || index === formCookSteps.length - 1}}">下移</button>
+              <button class="row-action danger" data-index="{{index}}" bindtap="removeStep" disabled="{{busy}}">删除</button>
+            </view>
+          </view>
+          <textarea value="{{item.text}}" data-field="formCookSteps[{{index}}].text" bindinput="input" maxlength="300" placeholder="描述这一步怎么做" disabled="{{busy}}" auto-height />
+        </view>
+        <button class="add-row" bindtap="addStep" disabled="{{busy || formCookSteps.length >= maxSteps}}">+ 添加步骤</button>
+        <view class="small field-help">步骤按当前顺序保存，孩子看到的也是这个顺序。</view>
+      </view>
+
+      <view class="field">
+        <view class="label">小贴士（选填）</view>
+        <textarea value="{{formCookTips}}" data-field="formCookTips" bindinput="input" maxlength="500" placeholder="如：给孩子吃可减少辣椒用量" disabled="{{busy}}" auto-height />
+      </view>
+
+      <view class="field">
+        <view class="label">烹饪时长（分钟，选填）</view>
+        <input type="number" value="{{formCookMinutes}}" data-field="formCookMinutes" bindinput="input" maxlength="4" placeholder="如 25" disabled="{{busy}}" />
+      </view>
+      <view class="field">
+        <view class="label">份量（人份，选填）</view>
+        <input type="number" value="{{formServings}}" data-field="formServings" bindinput="input" maxlength="2" placeholder="如 3" disabled="{{busy}}" />
+      </view>
+      <view class="field">
+        <view class="label">难度（选填）</view>
+        <picker range="{{difficultyOptions}}" value="{{formDifficultyIndex}}" bindchange="pickDifficulty" disabled="{{busy}}">
+          <view class="picker">{{difficultyOptions[formDifficultyIndex]}}⌄</view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="form-section">
+      <view class="form-section-heading"><view class="step-number">4</view><view><view class="section-title">安全信息</view><view class="small">过敏信息会直接影响儿童是否可点选</view></view></view>
       <view class="field">
         <view class="label">过敏原</view>
         <checkbox-group class="allergen-grid" bindchange="allergens">

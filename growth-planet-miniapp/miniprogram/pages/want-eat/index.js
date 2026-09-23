@@ -2,6 +2,7 @@ const api = require('../../services/api');
 const ui = require('../../utils/page');
 const { shanghaiDate } = require('../../utils/domain');
 const { loadChildren } = require('../../services/children');
+const recipes = require('../../services/recipes');
 
 // 看板一次展示 7 天；与后端 31 天上限相比留有充足余量。
 const RANGE_DAYS = 7;
@@ -45,7 +46,9 @@ ui.page({
     role: '', busy: false, error: '', receipt: '', ready: false,
     children: [], childLabels: [], childIndex: 0, childId: '',
     today: '', from: '', to: '', rangeLabel: '',
-    days: [], summary: [], totalItems: 0, expiredCount: 0
+    days: [], summary: [], totalItems: 0, expiredCount: 0,
+    // 配方按菜品缓存：同一道菜多次展开只请求一次。键 = type:dishId。
+    recipeOpenKey: '', recipeStates: {}
   },
   onShow() {
     if (!ui.guard(this, 'PARENT')) return;
@@ -99,6 +102,9 @@ ui.page({
           statusLabel: STATUS_LABELS[item.status] || item.status,
           statusClass: statusClass(item.status),
           flags: flagText(item),
+          // 菜品已下架/删除时后端按 404 处理，不给「看做法」入口，省一次必然失败的请求。
+          canViewRecipe: !item.missing && !!item.name,
+          recipeKey: recipes.recipeKey(item.type, item.id),
           actions: STATUS_ACTIONS.filter(action => action.status !== item.status)
         }))
       }))
@@ -109,7 +115,9 @@ ui.page({
     const child = this.data.children[index];
     if (!child) return;
     return ui.run(this, async () => {
-      this.setData({ childIndex: index, childId: child.childId, receipt: '' });
+      // 换孩子即换一批菜，配方缓存必须一起清，否则会串显示前一个孩子的菜。
+      this.setData({ childIndex: index, childId: child.childId, receipt: '',
+        recipeOpenKey: '', recipeStates: {} });
       await this.read();
     });
   },
@@ -117,8 +125,35 @@ ui.page({
     const delta = Number(e.currentTarget.dataset.delta) * RANGE_DAYS;
     return ui.run(this, async () => {
       const from = shiftDate(this.data.from, delta);
-      this.setData({ from, to: shiftDate(from, RANGE_DAYS - 1), receipt: '' });
+      this.setData({ from, to: shiftDate(from, RANGE_DAYS - 1), receipt: '',
+        recipeOpenKey: '', recipeStates: {} });
       await this.read();
+    });
+  },
+  /**
+   * 「看做法」：首次点击懒加载配方并展开，已加载的直接切换展开/折叠（不重复请求）。
+   * 加载失败只写本条目的状态并给出重试入口；401 / E-010 仍交给 ui.run 统一跳转。
+   */
+  toggleRecipe(e) {
+    const key = e.currentTarget.dataset.key;
+    const loaded = this.data.recipeStates[key];
+    if (loaded && loaded.status === 'ready') {
+      this.setData({ recipeOpenKey: this.data.recipeOpenKey === key ? '' : key });
+      return;
+    }
+    const [type, dishId] = String(key).split(':');
+    return ui.run(this, async () => {
+      this.setData({ recipeOpenKey: key,
+        recipeStates: Object.assign({}, this.data.recipeStates, { [key]: { status: 'loading' } }) });
+      try {
+        const payload = await recipes.fetchRecipe(type, dishId);
+        this.setData({ recipeStates: Object.assign({}, this.data.recipeStates,
+          { [key]: recipes.presentRecipe(payload) }) });
+      } catch (error) {
+        if (error.status === 401 || error.code === 'E-010') throw error;
+        this.setData({ recipeStates: Object.assign({}, this.data.recipeStates,
+          { [key]: { status: 'error', message: error.message || '配方加载失败，请重试' } }) });
+      }
     });
   },
   mark(e) {
@@ -131,6 +166,7 @@ ui.page({
     });
   },
   onHide() {
-    this.setData({ days: [], summary: [], ready: false, receipt: '', error: '' });
+    this.setData({ days: [], summary: [], ready: false, receipt: '', error: '',
+      recipeOpenKey: '', recipeStates: {} });
   }
 });

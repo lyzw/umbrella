@@ -40,6 +40,41 @@
               data-id="{{dish.wantEatId}}" data-status="{{action.status}}" data-version="{{dish.version}}"
               bindtap="mark">{{action.label}}</button>
           </view>
+          <view wx:if="{{dish.canViewRecipe}}" class="recipe-actions">
+            <button class="compact-action" data-key="{{dish.recipeKey}}" bindtap="toggleRecipe"
+              disabled="{{busy}}">{{recipeOpenKey === dish.recipeKey ? '收起做法' : '看做法'}}</button>
+          </view>
+          <view wx:if="{{recipeOpenKey === dish.recipeKey && recipeStates[dish.recipeKey]}}" class="recipe-panel">
+            <view wx:if="{{recipeStates[dish.recipeKey].status === 'loading'}}" class="small">正在加载做法…</view>
+            <block wx:elif="{{recipeStates[dish.recipeKey].status === 'error'}}">
+              <view class="small flag-line">{{recipeStates[dish.recipeKey].message}}</view>
+              <button class="compact-action" data-key="{{dish.recipeKey}}" bindtap="toggleRecipe" disabled="{{busy}}">重试</button>
+            </block>
+            <block wx:else>
+              <view wx:if="{{recipeStates[dish.recipeKey].empty}}" class="small">这道菜还没有录入食材与做法。</view>
+              <block wx:else>
+                <view wx:if="{{recipeStates[dish.recipeKey].meta}}" class="small recipe-meta">{{recipeStates[dish.recipeKey].meta}}</view>
+                <view wx:if="{{recipeStates[dish.recipeKey].hasIngredients}}" class="recipe-block">
+                  <view class="recipe-subtitle">食材</view>
+                  <view wx:for="{{recipeStates[dish.recipeKey].ingredients}}" wx:key="name" wx:for-item="ing" class="recipe-ingredient">
+                    <text class="recipe-ingredient-name">{{ing.name}}</text>
+                    <text class="recipe-ingredient-amount">{{ing.amountText}}</text>
+                  </view>
+                </view>
+                <view wx:if="{{recipeStates[dish.recipeKey].hasSteps}}" class="recipe-block">
+                  <view class="recipe-subtitle">做法</view>
+                  <view wx:for="{{recipeStates[dish.recipeKey].steps}}" wx:key="no" wx:for-item="step" class="recipe-step">
+                    <text class="recipe-step-no">{{step.no}}</text>
+                    <text class="recipe-step-text">{{step.text}}</text>
+                  </view>
+                </view>
+                <view wx:if="{{recipeStates[dish.recipeKey].cookTips}}" class="recipe-block">
+                  <view class="recipe-subtitle">小贴士</view>
+                  <view class="small">{{recipeStates[dish.recipeKey].cookTips}}</view>
+                </view>
+              </block>
+            </block>
+          </view>
         </view>
       </view>
     </view>

@@ -11,6 +11,14 @@ const ui = require('../miniprogram/utils/page');
 const { shanghaiDate } = require('../miniprogram/utils/domain');
 const methods = { get: api.get, post: api.post, put: api.put, del: api.del, getDocument: api.getDocument };
 let modals, navigation;
+// 真实 wx 的 setData 支持数据路径（如 formIngredients[0].name），而只做扁平赋值的桩测不出
+// 路径写错（例：下标越界后被静默忽略）。这里补上路径支持，让测试与真机行为一致。
+function setPath(target, path, value) {
+  const keys = String(path).replace(/\[(\d+)\]/g, '.$1').split('.');
+  let node = target;
+  for (const key of keys.slice(0, -1)) node = node[key];
+  node[keys[keys.length - 1]] = value;
+}
 function loadPage(name, role = 'PARENT') {
   modals = [];
   navigation = [];
@@ -30,7 +38,7 @@ function loadPage(name, role = 'PARENT') {
   delete require.cache[require.resolve(filename)];
   require(filename);
   const page = { ...definition, data: structuredClone(definition.data),
-    setData(data) { Object.assign(this.data, data); } };
+    setData(data) { for (const [key, value] of Object.entries(data)) setPath(this.data, key, value); } };
   page.data.role = role;
   if (page.onLoad) page.onLoad({});
   return page;
@@ -532,7 +540,8 @@ test('我的菜品：编辑带版本号，上下架与删除需二次确认', as
   api.post = async (endpoint, body) => { calls.push({ method: 'post', endpoint, body }); return { dishId: '7' }; };
   api.del = async (endpoint, query) => { calls.push({ method: 'del', endpoint, query }); };
 
-  page.edit(event({ id: '7' }));
+  // 编辑会额外懒加载配方明细（v011），必须等它结束再保存：加载期间页面 busy，save 会被拦。
+  await page.edit(event({ id: '7' }));
   assert.equal(page.data.showForm, true);
   assert.equal(page.data.formVersion, 4);
   assert.equal(page.data.formAllergenIndex, 0);
@@ -1193,4 +1202,213 @@ test('心愿菜单：家长只看到孩子已提交的菜，保存设置带乐�
   await page.wishSettingSave();
   assert.deepEqual(sent, { endpoint: '/parent/wish-setting',
     body: { maxDishes: 3, enabled: true, expectedVersion: 4 } });
+});
+test('我的菜品：食材与做法整体提交，空行自动丢弃', async () => {
+  const page = loadPage('dish-manage');
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return { dishId: '9' }; };
+  page.create();
+  page.setData({ formName: '番茄炒蛋', formCategoryId: '3', formVirtualPrice: '8.5' });
+  // 路径写入走 ui.input（data-field），与真机一致：下标由 wx:for 的 index 拼出。
+  page.input(event({ field: 'formIngredients[0].name' }, ' 番茄 '));
+  page.input(event({ field: 'formIngredients[0].amount' }, '2 个'));
+  page.addIngredient();
+  page.input(event({ field: 'formIngredients[1].amount' }, '留空名称会被丢弃'));
+  page.addIngredient();
+  page.input(event({ field: 'formIngredients[2].name' }, '鸡蛋'));
+  page.input(event({ field: 'formCookSteps[0].text' }, '打蛋'));
+  page.addStep();
+  page.input(event({ field: 'formCookSteps[1].text' }, '   '));
+  page.addStep();
+  page.input(event({ field: 'formCookSteps[2].text' }, '下锅翻炒'));
+  page.input(event({ field: 'formCookTips' }, ' 给孩子吃可少放盐 '));
+  page.input(event({ field: 'formCookMinutes' }, '15'));
+  page.input(event({ field: 'formServings' }, '3'));
+  page.pickDifficulty(event({}, 1));
+  await page.save();
+  assert.deepEqual(sent.endpoint, '/parent/family-dish');
+  assert.deepEqual(sent.body.ingredients, [{ name: '番茄', amount: '2 个' }, { name: '鸡蛋', amount: '' }]);
+  assert.deepEqual(sent.body.cookSteps, ['打蛋', '下锅翻炒']);
+  assert.equal(sent.body.cookTips, '给孩子吃可少放盐');
+  assert.equal(sent.body.cookMinutes, 15);
+  assert.equal(sent.body.servings, 3);
+  assert.equal(sent.body.difficulty, 'EASY');
+});
+test('我的菜品：配方行增删移不会越界或串行', async () => {
+  const page = loadPage('dish-manage');
+  page.create();
+  page.setData({ formIngredients: [{ key: 'a', name: '番茄', amount: '' }, { key: 'b', name: '鸡蛋', amount: '' }] });
+  page.moveIngredient(event({ index: 0, delta: -1 }));
+  assert.deepEqual(page.data.formIngredients.map(row => row.name), ['番茄', '鸡蛋'], '首行上移应原样返回');
+  page.moveIngredient(event({ index: 1, delta: 1 }));
+  assert.deepEqual(page.data.formIngredients.map(row => row.name), ['番茄', '鸡蛋'], '末行下移应原样返回');
+  page.moveIngredient(event({ index: 0, delta: 1 }));
+  assert.deepEqual(page.data.formIngredients.map(row => row.name), ['鸡蛋', '番茄']);
+  page.removeIngredient(event({ index: 0 }));
+  assert.deepEqual(page.data.formIngredients.map(row => row.name), ['番茄']);
+  // 容量上限：达到 30 条后「添加食材」不再增长（按钮同时会被 disabled）。
+  page.setData({ formIngredients: Array.from({ length: 30 }, (unused, index) => ({ key: 'k' + index, name: '菜' + index })) });
+  page.addIngredient();
+  assert.equal(page.data.formIngredients.length, 30);
+});
+test('我的菜品：配方本地校验与后端规则一致', async () => {
+  const page = loadPage('dish-manage');
+  let posts = 0;
+  api.post = async () => { posts++; };
+  page.create();
+  page.setData({ formName: '测试菜', formCategoryId: '3', formVirtualPrice: '8.00' });
+  page.setData({ formIngredients: [{ key: 'a', name: '番茄' }, { key: 'b', name: '番茄' }] });
+  await page.save();
+  assert.match(page.data.error, /食材名称重复：番茄/);
+  page.setData({ formIngredients: [{ key: 'a', name: '番'.repeat(33) }] });
+  await page.save();
+  assert.match(page.data.error, /食材名称最长 32 字/);
+  page.setData({ formIngredients: [{ key: 'a', name: '番茄' }], formCookSteps: [{ key: 'b', text: 'x'.repeat(301) }] });
+  await page.save();
+  assert.match(page.data.error, /第 1 步做法最长 300 字/);
+  page.setData({ formCookSteps: [{ key: 'b', text: '打蛋' }], formCookMinutes: '1441' });
+  await page.save();
+  assert.match(page.data.error, /1 至 1440/);
+  page.setData({ formCookMinutes: '0' });
+  await page.save();
+  assert.match(page.data.error, /1 至 1440/);
+  page.setData({ formCookMinutes: '15', formServings: '21' });
+  await page.save();
+  assert.match(page.data.error, /1 至 20 人份/);
+  assert.equal(posts, 0, '校验未通过时绝不发请求');
+  page.setData({ formServings: '' });
+  await page.save();
+  assert.equal(posts, 1);
+});
+test('我的菜品：列表只显示配方摘要，编辑时才拉取配方明细回填', async () => {
+  const page = loadPage('dish-manage');
+  const calls = [];
+  api.get = async (endpoint) => {
+    calls.push(endpoint);
+    if (endpoint === '/parent/dish-category') return [{ categoryId: '3', name: '主食', status: 'ENABLED' }];
+    return { items: [{ ...familyDish, version: 4, ingredientCount: 2, stepCount: 1, cookMinutes: 15,
+      difficulty: 'MEDIUM' }], total: 1, page: 1, pageSize: 20 };
+  };
+  await page.loadCategories();
+  await page.read();
+  assert.deepEqual(calls, ['/parent/dish-category', '/parent/family-dish'], '列表不为每行请求配方');
+  assert.equal(page.data.dishes[0].recipeSummary, '食材 2 · 步骤 1 · 15 分钟');
+  assert.equal(page.data.dishes[0].difficultyLabel, '中等');
+
+  api.get = async endpoint => {
+    calls.push(endpoint);
+    return { ingredients: [{ name: '番茄', amount: '2 个' }, { name: '鸡蛋', amount: null }],
+      cookSteps: ['打蛋', '下锅'], cookTips: '少放盐', cookMinutes: 15, servings: 3, difficulty: 'MEDIUM' };
+  };
+  await page.edit(event({ id: '7' }));
+  assert.deepEqual(calls[2], '/dishes/FAMILY/7/recipe');
+  assert.deepEqual(page.data.formIngredients.map(row => row.name + '|' + row.amount), ['番茄|2 个', '鸡蛋|']);
+  assert.deepEqual(page.data.formCookSteps.map(row => row.text), ['打蛋', '下锅']);
+  assert.equal(page.data.formCookTips, '少放盐');
+  assert.equal(page.data.formCookMinutes, '15');
+  assert.equal(page.data.formServings, '3');
+  assert.equal(page.data.formDifficultyIndex, 2);
+  assert.equal(page.data.formRecipeNotice, '');
+});
+test('我的菜品：配方明细加载失败时警示覆盖风险且不污染页面级错误', async () => {
+  const page = loadPage('dish-manage');
+  api.get = async endpoint => {
+    if (endpoint === '/parent/dish-category') return [{ categoryId: '3', name: '主食', status: 'ENABLED' }];
+    if (endpoint.endsWith('/recipe')) throw Object.assign(new Error('服务暂不可用'), { status: 503, code: 'E-005' });
+    return { items: [{ ...familyDish, version: 4 }], total: 1, page: 1, pageSize: 20 };
+  };
+  await page.loadCategories();
+  await page.read();
+  await page.edit(event({ id: '7' }));
+  assert.match(page.data.formRecipeNotice, /覆盖原有食材与做法/);
+  assert.equal(page.data.error, '');
+  assert.equal(page.data.busy, false);
+});
+test('家长想吃看板：看做法懒加载一次并缓存，折叠不重发', async () => {
+  const page = loadPage('want-eat');
+  const today = shanghaiDate();
+  page.setData({ today, from: today, to: today, childId: child.childId });
+  const calls = [];
+  api.get = async endpoint => {
+    if (endpoint === '/parent/want-eat') {
+      return { childId: child.childId, from: today, to: today, today, expiredCount: 0,
+        days: [{ menuDate: today, meals: [{ mealType: 'LUNCH', sourceType: 'FAMILY', menuId: '20',
+          items: [{ wantEatId: '31', type: 'PRESET', id: '99', name: '合成餐食', status: 'MARKED', version: 0,
+            expired: false, allergyConflict: false, disliked: false, missing: false }] }] }],
+        summary: { totalItems: 1, dishes: [] } };
+    }
+    calls.push(endpoint);
+    return { ingredients: [{ name: '番茄', amount: '2 个' }], cookSteps: ['切块', '翻炒'],
+      cookTips: '少放盐', cookMinutes: 15, servings: 3, difficulty: 'EASY' };
+  };
+  await page.read();
+  const dish0 = page.data.days[0].meals[0].items[0];
+  assert.equal(dish0.recipeKey, 'PRESET:99');
+  assert.equal(dish0.canViewRecipe, true);
+
+  await page.toggleRecipe(event({ key: 'PRESET:99' }));
+  assert.equal(page.data.recipeOpenKey, 'PRESET:99');
+  const state = page.data.recipeStates['PRESET:99'];
+  assert.equal(state.status, 'ready');
+  assert.equal(state.meta, '15 分钟 · 3 人份 · 简单');
+  assert.deepEqual(state.steps.map(step => step.no), [1, 2]);
+  assert.equal(state.ingredients[0].amountText, '2 个');
+  assert.deepEqual(calls, ['/dishes/PRESET/99/recipe']);
+
+  await page.toggleRecipe(event({ key: 'PRESET:99' }));
+  assert.equal(page.data.recipeOpenKey, '', '已加载的条目再点只折叠');
+  await page.toggleRecipe(event({ key: 'PRESET:99' }));
+  assert.equal(page.data.recipeOpenKey, 'PRESET:99');
+  assert.equal(calls.length, 1, '折叠再展开必须命中缓存');
+});
+test('家长想吃看板：配方加载失败给重试入口，菜品缺失时不给入口', async () => {
+  const page = loadPage('want-eat');
+  const today = shanghaiDate();
+  page.setData({ today, from: today, to: today, childId: child.childId });
+  api.get = async endpoint => {
+    if (endpoint === '/parent/want-eat') {
+      return { childId: child.childId, from: today, to: today, today, expiredCount: 0,
+        days: [{ menuDate: today, meals: [{ mealType: 'DINNER', sourceType: 'FAMILY', menuId: '20',
+          items: [
+            { wantEatId: '31', type: 'FAMILY', id: '7', name: '家庭菜', status: 'MARKED', version: 0,
+              expired: false, allergyConflict: false, disliked: false, missing: false },
+            { wantEatId: '32', type: 'PRESET', id: '99', name: null, status: 'MARKED', version: 0,
+              expired: false, allergyConflict: false, disliked: false, missing: true }] }] }],
+        summary: { totalItems: 0, dishes: [] } };
+    }
+    throw Object.assign(new Error('连接失败，请检查网络后重试'), { status: 0, code: 'E-005' });
+  };
+  await page.read();
+  const items = page.data.days[0].meals[0].items;
+  assert.equal(items[0].canViewRecipe, true);
+  assert.equal(items[1].canViewRecipe, false, '菜品已下架/删除：不给必然 404 的入口');
+
+  await page.toggleRecipe(event({ key: 'FAMILY:7' }));
+  const state = page.data.recipeStates['FAMILY:7'];
+  assert.equal(state.status, 'error');
+  assert.match(state.message, /连接失败/);
+  assert.equal(page.data.error, '', '局部失败不污染页面级错误条');
+  assert.equal(page.data.busy, false, 'busy 必须复位，否则重试按钮点不动');
+});
+test('家长想吃看板：换孩子与换区间清空配方缓存，避免串显示', async () => {
+  const page = loadPage('want-eat');
+  const today = shanghaiDate();
+  page.setData({ today, from: today, to: today, childId: child.childId,
+    children: [{ childId: '1' }, { childId: '2' }], childLabels: ['一', '二'],
+    recipeStates: { 'PRESET:99': { status: 'ready' } }, recipeOpenKey: 'PRESET:99' });
+  api.get = async () => ({ childId: '2', from: today, to: today, today, expiredCount: 0,
+    days: [], summary: { totalItems: 0, dishes: [] } });
+  await page.switchChild(event({}, 1));
+  assert.equal(page.data.childId, '2');
+  assert.deepEqual(page.data.recipeStates, {});
+  assert.equal(page.data.recipeOpenKey, '');
+
+  page.setData({ recipeStates: { 'PRESET:99': { status: 'ready' } }, recipeOpenKey: 'PRESET:99' });
+  await page.shiftRange(event({ delta: '-1' }));
+  assert.deepEqual(page.data.recipeStates, {});
+  assert.equal(page.data.recipeOpenKey, '');
+
+  page.setData({ recipeStates: { 'PRESET:99': { status: 'ready' } }, recipeOpenKey: 'PRESET:99' });
+  page.onHide();
+  assert.deepEqual(page.data.recipeStates, {});
 });
