@@ -1,8 +1,44 @@
 .picker { margin-bottom: 12px; }
+.filters { display: grid; gap: 12px; margin-bottom: 18px; }
+.filter-field { min-width: 0; }
+.filter-label { display: block; margin-bottom: 6px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.picker-control {
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: space-between;
+  margin-bottom: 0;
+  background: var(--surface-2);
+  border-color: var(--primary-border);
+  color: var(--primary-ink);
+}
+.picker-chevron { flex: 0 0 auto; margin-left: 12px; color: var(--primary); font-size: 18px; line-height: 1; }
+.inbox-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  margin-bottom: 18px;
+  background: var(--primary-soft);
+  border: 1px solid var(--primary-border);
+  border-radius: var(--radius-lg);
+}
+.inbox-summary-main { min-width: 0; }
+.eyebrow { display: block; margin-bottom: 2px; color: var(--primary-ink); font-size: 13px; font-weight: 800; }
+.inbox-count { color: var(--primary); font-size: 32px; font-weight: 800; line-height: 1.1; }
+.inbox-label { margin-left: 6px; color: var(--primary-ink); font-size: 14px; font-weight: 700; }
+.inbox-note { flex: 0 1 150px; color: var(--primary-ink); font-size: 13px; line-height: 1.5; text-align: right; }
+.list-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 4px 0 12px; }
+.list-heading-title { min-width: 0; color: #172033; font-size: 18px; font-weight: 800; }
+.list-heading .muted { flex: 0 1 auto; text-align: right; }
 /* 确认单/审批记录：整卡可点，按压有反馈 */
 .record { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 4px; transition: transform var(--motion-fast), background-color var(--motion-fast); }
 .record:active { transform: scale(.99); background: var(--surface-2); }
-.record .row { align-items: baseline; }
+.record-main, .record-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; width: 100%; }
+.record-date, .record-amount { min-width: 0; overflow-wrap: anywhere; }
+.record-date { color: #172033; font-weight: 800; }
+.record-amount { flex: 0 1 auto; color: var(--primary-ink); font-weight: 700; text-align: right; }
+.record-meta { align-items: center; }
 /* 审批操作区与普通内容分区做出层级区分 */
 .section { background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: 16px; }
 /* 合计金额在详情页更醒目，但保持虚拟单位语义 */
@@ -32,6 +68,12 @@
   box-shadow: 0 -8px 24px rgba(32, 55, 92, .08);
 }
 @media (max-width: 340px) {
+  .inbox-summary { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .inbox-note { flex-basis: auto; text-align: left; }
+  .list-heading { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .list-heading .muted { text-align: left; }
+  .record-main { align-items: flex-start; flex-direction: column; gap: 4px; }
+  .record-amount { text-align: left; }
   .adjustment-actions { grid-template-columns: 1fr; }
   .decision-bar { grid-template-columns: 1fr 1.2fr; padding-left: 12px; padding-right: 12px; }
 }

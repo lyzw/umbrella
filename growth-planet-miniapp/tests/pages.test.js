@@ -245,6 +245,59 @@ test('提报只传服务端允许的字段，未知结果保留原键和请求',
     items: [{ dishRef: { type: 'PRESET', id: '99' }, quantity: 1 }], remark: '', previousConfirmId: '5' });
   assert.equal(page.data.pendingSubmit, false);
 });
+test('家长审批列表突出待处理数量并使用服务端总数', async () => {
+  const page = loadPage('confirmation');
+  const calls = [];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    return { items: [{ confirmId: '21', status: 'PENDING', menuDate: '2026-09-23', totalAmount: '20.00' }], total: 7 };
+  };
+  page.setData({ role: 'PARENT', childId: child.childId, page: 1, status: 'PENDING', statusIndex: 0 });
+
+  await page.readList();
+
+  assert.deepEqual(calls[0], {
+    endpoint: '/parent/approvals',
+    query: { childId: child.childId, page: 1, pageSize: 20, status: 'PENDING' }
+  });
+  assert.equal(page.data.pendingTotal, 7);
+  assert.equal(page.data.listHeading, '待我处理');
+  assert.match(page.data.listDescription, /7/);
+  assert.equal(page.data.records[0].label, '等待家长确认');
+});
+test('审批历史筛选使用后端支持的独立状态', async () => {
+  const page = loadPage('confirmation');
+  const queries = [];
+  api.get = async (endpoint, query) => {
+    queries.push(query);
+    return { items: [], total: 0 };
+  };
+  page.setData({ role: 'PARENT', childId: child.childId, page: 1, status: 'PENDING', statusIndex: 0 });
+
+  page.filter(event({}, 1));
+  await new Promise(resolve => setImmediate(resolve));
+
+  assert.equal(page.data.status, 'COMPLETED');
+  assert.equal(page.data.listHeading, '已完成');
+  assert.equal(queries.at(-1).status, 'COMPLETED');
+  assert.ok(['PENDING', 'COMPLETED', 'REJECTED', 'CANCELLED'].includes(queries.at(-1).status));
+});
+test('审批列表总数异常时按空列表处理并回退到有效页码', async () => {
+  const page = loadPage('confirmation');
+  const pages = [];
+  api.get = async (endpoint, query) => {
+    pages.push(query.page);
+    return { items: [], total: 'invalid' };
+  };
+  page.setData({ role: 'PARENT', childId: child.childId, page: 2, status: 'PENDING', statusIndex: 0 });
+
+  await page.readList();
+
+  assert.deepEqual(pages, [2, 1]);
+  assert.equal(page.data.page, 1);
+  assert.equal(page.data.total, 0);
+  assert.equal(page.data.pendingTotal, 0);
+});
 test('E-011绝不自动批准；二次同意使用完整且最新的预览版本', async () => {
   const page = loadPage('confirmation');
   page.data.detail = { confirmId: '21', version: 2, totalAmount: '20.00', status: 'PENDING' };

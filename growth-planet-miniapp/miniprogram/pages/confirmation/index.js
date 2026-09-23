@@ -4,9 +4,18 @@ const { loadChildren } = require('../../services/children');
 const { operations } = require('../../services/operations');
 const context = require('../../services/context');
 const { statusLabels, safeDish, dishRef, dishKey, id } = require('../../utils/domain');
+const approvalFilters = [
+  { value: 'PENDING', label: '待我处理' },
+  { value: 'COMPLETED', label: '已完成' },
+  { value: 'REJECTED', label: '需调整' },
+  { value: 'CANCELLED', label: '已撤回' }
+];
+const childStatusLabels = ['待确认', '已完成', '需调整', '已撤回'];
+const approvalStatusValues = approvalFilters.map(item => item.value);
 ui.page({
   data: { role: '', busy: false, error: '', children: [], childId: '', childIndex: 0, records: [], page: 1, total: 0,
-    status: 'PENDING', statuses: ['待确认', '已完成', '需调整', '已撤回'], statusIndex: 0,
+    pendingTotal: 0, listHeading: '待我处理', listDescription: '正在加载待处理餐单',
+    status: 'PENDING', statuses: approvalFilters.map(item => item.label), statusIndex: 0,
     detail: null, draft: null, remark: '', reason: '', preview: null, suggestions: [], editing: false,
     showAdjustment: false, pendingSubmit: false, pendingApprove: false, pendingDecision: false },
   input: ui.input,
@@ -22,16 +31,39 @@ ui.page({
       const childId = draft ? draft.childId : (requested || existing || children[0]).childId;
       if (this.query) this.query.childId = '';
       this.setData({ children, childId, childIndex: Math.max(0, children.findIndex(c => c.childId === childId)),
+        statuses: this.data.role === 'PARENT' ? approvalFilters.map(item => item.label) : childStatusLabels,
         draft, pendingSubmit: !!operations.pending('submit:' + childId) });
       if (this.query && this.query.id) { const confirmId = id(this.query.id); this.query.id = null; await this.readDetail(confirmId); }
       else if (!draft) await this.readList();
     });
   },
-  async readList() {
+  async readList(recoverPage = true) {
     const { childId, page, status, role } = this.data;
+    const pageSize = 20;
     this.setData({ records: [] });
-    const result = await api.get(role === 'PARENT' ? '/parent/approvals' : '/menu/confirms', { childId, page, pageSize: 20, status });
-    this.setData({ records: result.items.map(item => ({ ...item, label: statusLabels[item.status] })), total: result.total });
+    const result = await api.get(role === 'PARENT' ? '/parent/approvals' : '/menu/confirms', { childId, page, pageSize, status });
+    const items = result && Array.isArray(result.items) ? result.items : [];
+    const rawTotal = Number(result && result.total);
+    const total = Number.isFinite(rawTotal) && rawTotal >= 0 ? Math.floor(rawTotal) : 0;
+    const lastPage = Math.max(1, Math.ceil(total / pageSize));
+    if (recoverPage && page > lastPage) {
+      this.setData({ page: lastPage });
+      return this.readList(false);
+    }
+    const filter = approvalFilters.find(item => item.value === status) || approvalFilters[0];
+    const listHeading = role === 'PARENT'
+      ? filter.label
+      : this.data.statuses[this.data.statusIndex] || statusLabels[status] || '确认记录';
+    const listDescription = role === 'PARENT'
+      ? (status === 'PENDING' ? `还有 ${total} 份餐单待你处理` : `共 ${total} 份${filter.label}餐单`)
+      : `共 ${total} 份确认记录`;
+    this.setData({
+      records: items.map(item => ({ ...item, label: statusLabels[item.status] || item.status })),
+      total,
+      pendingTotal: role === 'PARENT' && status === 'PENDING' ? total : this.data.pendingTotal,
+      listHeading,
+      listDescription
+    });
   },
   async readDetail(confirmId) {
     const detail = await api.get('/menu/confirm/' + confirmId);
@@ -62,16 +94,27 @@ ui.page({
   refresh() { return ui.run(this, () => this.data.detail ? this.readDetail(this.data.detail.confirmId) : this.readList()); },
   child(e) {
     const index = Number(e.detail.value);
-    this.setData({ childIndex: index, childId: this.data.children[index].childId, page: 1, detail: null,
-      pendingSubmit: !!operations.pending('submit:' + this.data.children[index].childId) });
-    ui.run(this, () => this.readList());
+    const selected = this.data.children[index];
+    if (!selected) return;
+    this.setData({ childIndex: index, childId: selected.childId, page: 1, detail: null,
+      pendingSubmit: !!operations.pending('submit:' + selected.childId) });
+    return ui.run(this, () => this.readList());
   },
   filter(e) {
     const index = Number(e.detail.value);
-    this.setData({ statusIndex: index, status: ['PENDING', 'COMPLETED', 'REJECTED', 'CANCELLED'][index], page: 1 });
-    ui.run(this, () => this.readList());
+    const status = approvalStatusValues[index];
+    if (!status) return;
+    this.setData({ statusIndex: index, status, page: 1 });
+    return ui.run(this, () => this.readList());
   },
-  next(e) { this.setData({ page: this.data.page + Number(e.currentTarget.dataset.delta) }); ui.run(this, () => this.readList()); },
+  next(e) {
+    const delta = Number(e.currentTarget.dataset.delta);
+    const nextPage = this.data.page + delta;
+    if (![-1, 1].includes(delta) || nextPage < 1) return;
+    if (delta > 0 && this.data.page * 20 >= this.data.total) return;
+    this.setData({ page: nextPage });
+    return ui.run(this, () => this.readList());
+  },
   submit() {
     return ui.run(this, async () => {
       const draft = this.data.draft;
