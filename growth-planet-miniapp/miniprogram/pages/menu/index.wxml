@@ -47,10 +47,10 @@
   <!-- 心愿菜单（P3）：位于「每日想吃」相关区块下方。儿童勾选候选池并提交，家长查看并配置上限。 -->
   <view wx:if="{{role === 'CHILD' && wish}}" class="wish-section">
     <view class="quick-head">
-      <text class="quick-title">今天的心愿菜单</text>
+      <text class="quick-title">{{wish.titleText}}</text>
       <text class="small">已选 {{wish.countText}} 道 · {{wish.statusLabel}}</text>
     </view>
-    <view class="notice">{{wish.locked ? '已提交给爸妈，撤回后可继续调整。' : wish.canEdit ? '从下面菜谱里加入想吃的菜，勾选后提交给爸妈。' : '该日期不在可编辑范围（今天起 7 天内），仅可回看。'}}</view>
+    <view class="notice">{{wish.noticeText}}</view>
     <view wx:if="{{wish.items.length}}" class="wish-pool">
       <view wx:for="{{wish.items}}" wx:key="key" class="wish-chip {{item.checked ? 'selected' : ''}} {{item.missing || !item.selectable ? 'wish-chip-disabled' : ''}}" bindtap="wishToggle" data-key="{{item.key}}">
         <text class="wish-chip-mark">{{item.checked ? '✓' : '○'}}</text>
@@ -61,7 +61,7 @@
     </view>
     <view wx:else class="small">还没有想吃的菜，从下面的菜谱里加入吧。</view>
     <view class="parent-actions wish-actions">
-      <button class="primary" bindtap="wishSubmit" disabled="{{busy || !wish.canEdit || !wishSelected.length}}">提交心愿菜单</button>
+      <button bindtap="wishSubmit" disabled="{{busy || !wish.canEdit || !wishSelected.length}}">提交心愿菜单</button>
       <button wx:if="{{wish.locked}}" bindtap="wishWithdraw" disabled="{{busy}}">撤回</button>
     </view>
     <view wx:if="{{wish.canEdit}}" class="wish-catalog">
@@ -77,7 +77,7 @@
         </view>
         <button class="compact-action" bindtap="wishMark" data-type="{{item.type}}" data-id="{{item.id}}" data-marked="{{item.marked}}" disabled="{{busy || (!item.selectable && !item.marked)}}">{{item.actionLabel}}</button>
       </view>
-      <view class="wish-pager">
+      <view wx:if="{{wishTotal > wishPageSize || wishPage > 1}}" class="wish-pager">
         <button bindtap="wishPageDelta" data-delta="-1" disabled="{{busy || wishPage <= 1}}">上一页</button>
         <text class="small">第 {{wishPage}} 页 · 共 {{wishTotal}} 道</text>
         <button bindtap="wishPageDelta" data-delta="1" disabled="{{busy || wishPage * wishPageSize >= wishTotal}}">下一页</button>
@@ -90,7 +90,7 @@
       <text class="small">{{wish.menuDate}} · {{wish.statusLabel}}</text>
     </view>
     <picker wx:if="{{children.length > 1}}" class="child-picker" range="{{childLabels}}" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view>{{childLabels[childIndex]}}⌄</view></picker>
-    <view class="notice">{{wish.locked ? '已提交 · ' + wish.submitTimeText : wish.status === 'WITHDRAWN' ? '孩子已撤回，可等待重新提交。' : '孩子今天还没有提交心愿菜单（该功能可选，不强制每天创建）。'}}</view>
+    <view class="notice">{{wish.locked ? '已提交 · ' + wish.submitTimeText : wish.status === 'WITHDRAWN' ? '孩子已撤回，可等待重新提交。' : !wish.enabled ? '心愿菜单未开启；普通「想吃」标记仍可用。' : '孩子还没有提交当天的心愿菜单（该功能可选，不强制每天创建）。'}}</view>
     <view wx:if="{{wish.items.length}}" class="wish-pool">
       <view wx:for="{{wish.items}}" wx:key="key" class="wish-chip selected" data-key="{{item.key}}">
         <text class="wish-chip-mark">✓</text>

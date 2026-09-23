@@ -112,7 +112,7 @@
 .wish-dish { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; padding: 10px 12px; border: 1px solid #e6ebf2; border-radius: var(--radius-md); background: #fff; }
 .wish-dish-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .wish-dish-name { font-size: 14px; font-weight: 700; color: #1f2733; }
-.wish-dish .compact-action { margin-top: 0; }
+.wish-dish .compact-action { flex: 0 0 auto; margin-top: 0; white-space: nowrap; }
 .wish-pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
 .wish-pager button { flex: 0 0 auto; min-height: 40px; }
 .wish-setting { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--primary-border); }

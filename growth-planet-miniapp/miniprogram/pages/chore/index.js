@@ -1,7 +1,7 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
 const { loadChildren } = require('../../services/children');
-const { cents, money } = require('../../utils/domain');
+const { cents, money, shanghaiDate } = require('../../utils/domain');
 
 const STATUS = {
   CLAIMED:   { label: '待完成', cls: 'normal' },
@@ -21,12 +21,18 @@ ui.page({
     // 健康打卡（仅孩子端，并入「任务」tab）
     checkItems: [], doneCount: 0, totalCount: 0, streak: 0
   },
+  onLoad(query) {
+    this.requestedChildId = query && query.childId ? query.childId : '';
+  },
   go: ui.go,
   onShow() {
     if (!ui.guard(this)) return;
     return ui.run(this, async () => {
       const children = await loadChildren();
-      this.setData({ children, childId: children[0].childId, childIndex: 0 });
+      const requestedChildId = this.requestedChildId || this.data.childId;
+      const childIndex = Math.max(0, children.findIndex(item => item.childId === requestedChildId));
+      this.requestedChildId = '';
+      this.setData({ children, childId: children[childIndex].childId, childIndex });
       await this.read();
       if (this.data.role === 'CHILD') await this.readChild();
     });

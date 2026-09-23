@@ -453,6 +453,7 @@ ui.page({
       }
       await this.loadWishCatalog();
     } catch (error) {
+      if (error.cancelled || error.status === 401 || error.code === 'E-010') throw error;
       this.wishRaw = null;
       this.setData({ wish: null, wishDishes: [], wishTotal: 0 });
     }
@@ -460,6 +461,8 @@ ui.page({
   renderWish() {
     const wish = this.wishRaw;
     if (!wish) return;
+    const today = wish.today || shanghaiDate();
+    const inWindow = wish.menuDate >= today && wish.menuDate <= shiftDate(today, WISH_WINDOW_DAYS);
     const items = (wish.items || []).map(item => {
       const flags = [];
       // 不可选时复用菜单页统一安全提示：区分"菜品未登记（找管理员）"与"档案过敏信息需更新（找家长）"。
@@ -482,22 +485,40 @@ ui.page({
     const selectedSet = new Set(selected);
     // 家长端只看"孩子确实提交了"的菜；候选池明细属于孩子端，撤回后仍回显上次提交集合。
     const visible = this.data.role === 'PARENT' ? items.filter(item => item.submitted) : items;
+    const statusLabel = WISH_STATUS_LABELS[wish.status] || wish.status;
+    const canEdit = Boolean(wish.enabled && wish.canEdit && inWindow && !wish.locked);
+    const noticeText = !wish.enabled
+      ? '心愿菜单功能尚未开启，普通「想吃」标记仍可正常使用。'
+      : wish.locked
+        ? '已提交给爸妈，当前不可修改；如需调整请先撤回。'
+        : !inWindow
+          ? '该日期不在可编辑范围（今天起 7 天内），仅可回看。'
+          : wish.canEdit
+            ? '从下面菜谱里加入心愿，勾选后提交给爸妈。'
+            : '当前暂不可编辑，请稍后重试。';
     this.setData({
       wishSelected: this.data.role === 'PARENT' ? [] : selected,
       wish: Object.assign({}, wish, {
         items: visible.map(item => Object.assign({}, item, { checked: selectedSet.has(item.key) })),
-        statusLabel: WISH_STATUS_LABELS[wish.status] || wish.status,
+        today,
+        inWindow,
+        canEdit,
+        statusLabel,
+        titleText: wish.menuDate === today ? '今天的心愿菜单' : wish.menuDate + '的心愿菜单',
         submitTimeText: String(wish.submitTime || '').replace('T', ' ').slice(0, 16),
-        countText: selected.length + ' / ' + wish.maxDishes
+        countText: selected.length + ' / ' + wish.maxDishes,
+        noticeText
       })
     });
   },
   wishEditableWindow() {
-    const today = shanghaiDate();
-    return this.data.menuDate >= today && this.data.menuDate <= shiftDate(today, WISH_WINDOW_DAYS);
+    const wish = this.data.wish;
+    const today = wish && wish.today || shanghaiDate();
+    return Boolean((!wish || (wish.enabled && wish.canEdit && !wish.locked))
+      && this.data.menuDate >= today && this.data.menuDate <= shiftDate(today, WISH_WINDOW_DAYS));
   },
   async loadWishCatalog() {
-    if (!this.wishEditableWindow()) {
+    if (!this.wishEditableWindow() || (this.data.wish && !this.data.wish.canEdit)) {
       this.setData({ wishDishes: [], wishTotal: 0 });
       return;
     }
@@ -513,13 +534,13 @@ ui.page({
         typeLabel: item.type === 'FAMILY' ? '家庭菜谱' : '预置菜谱',
         // 与菜单页共用同一套安全提示：区分"菜品未登记"（找管理员）与"档案过敏信息需更新"（找家长）。
         safetyLabel: safetyLabel(item),
-        actionLabel: item.marked ? '移出' : '加入'
+        actionLabel: item.marked ? '移出心愿' : '加入心愿'
       }))
     });
   },
   wishToggle(e) {
     const wish = this.data.wish;
-    if (this.data.busy || !wish || !wish.canEdit) return;
+    if (this.data.busy || !wish || !wish.canEdit || !wish.inWindow) return;
     const key = e.currentTarget.dataset.key;
     const selected = (this.data.wishSelected || []).slice();
     const index = selected.indexOf(key);
@@ -584,11 +605,12 @@ ui.page({
   wishMark(e) {
     return ui.run(this, async () => {
       const { type, id, marked } = e.currentTarget.dataset;
-      const adding = marked !== 'true';
+      const wish = this.data.wish;
+      if (wish && (!wish.canEdit || !wish.inWindow)) return;
+      const adding = !(marked === true || marked === 'true');
       const key = type + ':' + id;
       const previous = (this.data.wishSelected || []).slice();
       await api.post('/child/wish-mark', { menuDate: this.data.menuDate, type, id, selected: adding });
-      const wish = this.data.wish;
       const selected = previous.filter(item => item !== key);
       if (adding && wish && selected.length < wish.maxDishes) selected.push(key);
       this.wishSelectionTouched = true;
