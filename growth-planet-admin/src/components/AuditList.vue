@@ -97,7 +97,7 @@ async function load(page = filter.page) {
   loading.value = true
   filter.page = page
   try {
-    const data = await exporter(filter)
+    const { data } = await exporter(filter)
     rows.value = data.items
     total.value = data.total
   } catch (e) {
@@ -109,7 +109,7 @@ async function load(page = filter.page) {
 
 async function openDetail(row) {
   try {
-    detail.data = await auditLogDetail(row.id)
+    detail.data = (await auditLogDetail(row.id)).data
     detail.visible = true
   } catch (e) {
     ElMessage.error(e.message)

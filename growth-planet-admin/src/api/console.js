@@ -1,4 +1,4 @@
-import { http } from './http'
+import { http, getToken } from './http'
 
 /** 后台登录 */
 export const login = (username, password) =>
@@ -287,9 +287,23 @@ export const getDashboardAllowance = () => http.get('/api/admin/dashboard/allowa
 export const getDashboardChores = () => http.get('/api/admin/dashboard/chores')
 /** 勋章看板 */
 export const getDashboardMedals = () => http.get('/api/admin/dashboard/medals')
-/** 报表导出（domain: overview/meals/allowance/chores/medals） */
-export const exportReport = (domain) =>
-  http.post(`/api/admin/reports/export?domain=${domain}`, null, { responseType: 'blob' })
+/**
+ * 报表导出（domain: overview/meals/allowance/chores/medals）。
+ * 注意：该接口返回 text/csv 二进制，不能走 http 信封（http 强制解析 JSON），
+ * 故与 exportAuditLogs/exportBizCsv 一致，直接 fetch 并返回 Blob，由调用方触发下载。
+ * @returns {Promise<Blob>}
+ */
+export async function exportReport(domain) {
+  const resp = await fetch(`/api/admin/reports/export?domain=${domain}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${getToken()}` }
+  })
+  if (!resp.ok) {
+    const env = await resp.json().catch(() => null)
+    throw new Error(env?.message || `导出失败（HTTP ${resp.status}）`)
+  }
+  return resp.blob()
+}
 
 // ==================== 对象存储（七牛云 Kodo 客户端直传） ====================
 

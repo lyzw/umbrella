@@ -42,14 +42,14 @@ async function load() {
   if (!roleCode.value) return
   loading.value = true
   try {
-    matrix.value = await permissionMatrix(roleCode.value)
+    matrix.value = (await permissionMatrix(roleCode.value)).data
   } finally {
     loading.value = false
   }
 }
 
 onMounted(async () => {
-  roles.value = await listRoles()
+  roles.value = (await listRoles()).data
   // 默认展示 OP（日常运营最常用），若不存在则取第一个
   const op = roles.value.find(r => r.code === 'OP')
   roleCode.value = (op || roles.value[0])?.code || ''

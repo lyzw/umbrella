@@ -103,7 +103,7 @@ async function load(p = page.value) {
   loading.value = true
   page.value = p
   try {
-    const data = await listAccounts(p, pageSize, keyword.value.trim())
+    const { data } = await listAccounts(p, pageSize, keyword.value.trim())
     rows.value = data.items
     total.value = data.total
   } finally {
@@ -112,7 +112,7 @@ async function load(p = page.value) {
 }
 
 async function loadRoles() {
-  roles.value = await listRoles()
+  roles.value = (await listRoles()).data
 }
 
 function openCreate() {

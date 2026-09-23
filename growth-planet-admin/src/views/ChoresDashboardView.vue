@@ -61,8 +61,8 @@ async function load() {
 async function onExport() {
   exporting.value = true
   try {
-    const res = await exportReport('chores')
-    downloadBlob(res.data, `report-chores-${Date.now()}.csv`)
+    const blob = await exportReport('chores')
+    downloadBlob(blob, `report-chores-${Date.now()}.csv`)
     ElMessage.success('导出成功')
   } catch (e) {
     ElMessage.error('导出失败：无权限或网络异常')

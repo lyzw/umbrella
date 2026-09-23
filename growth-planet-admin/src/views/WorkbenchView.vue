@@ -45,7 +45,7 @@ const generatedAt = computed(() => data.value?.generatedAt || '-')
 onMounted(async () => {
   loading.value = true
   try {
-    data.value = await workbench()
+    data.value = (await workbench()).data
   } finally {
     loading.value = false
   }

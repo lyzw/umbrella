@@ -16,7 +16,7 @@ export const auth = reactive({
 
 export async function doLogin(username, password) {
   const resp = await api.login(username, password)
-  setToken(resp.token)
+  setToken(resp.data.token)
   auth.loaded = false
   await fetchMe()
   return resp
@@ -25,7 +25,7 @@ export async function doLogin(username, password) {
 export async function fetchMe() {
   if (!getToken()) return false
   try {
-    const data = await api.me()
+    const { data } = await api.me()
     auth.adminId = data.adminId
     auth.username = data.username
     auth.name = data.name

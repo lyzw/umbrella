@@ -1,6 +1,11 @@
 /**
  * 后台 API 客户端：统一附加 Admin JWT、解析 Result 信封、401 处理。
  * 约定：后端统一返回 { code, message, data, requestId }，code=0 表示成功。
+ *
+ * 契约：request() 成功时 resolve 出**完整信封**，调用方按需取用：
+ *   const { data } = await listDishes(query)   // data 即业务数据
+ *   const resp = await login(u, p)             // resp.data.token
+ * code !== 0 时直接 throw（message 为后端提示）。
  */
 const TOKEN_KEY = 'gp_admin_token'
 
@@ -50,11 +55,12 @@ async function request(method, url, body) {
   if (Number(envelope.code) !== 0) {
     throw new Error(envelope.message || `业务错误（code=${envelope.code}）`)
   }
-  return envelope.data
+  return envelope
 }
 
 export const http = {
   get: (url) => request('GET', url),
   post: (url, body) => request('POST', url, body),
-  put: (url, body) => request('PUT', url, body)
+  put: (url, body) => request('PUT', url, body),
+  delete: (url) => request('DELETE', url)
 }
