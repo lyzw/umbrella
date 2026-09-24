@@ -53,7 +53,7 @@
 .badge.ok { color: #08764e; background: var(--positive-soft); }
 .badge.normal { color: var(--muted); background: var(--surface-2); }
 
-.publish-bar { position: sticky; bottom: 0; margin-top: 20px; padding-top: 12px; background: #f7f9fc; }
+.publish-bar { position: sticky; bottom: 0; margin-top: 20px; padding-top: 12px; padding-bottom: env(safe-area-inset-bottom); background: #f7f9fc; }
 .publish-bar .primary { width: 100%; }
 
 @media (max-width: 420px) {

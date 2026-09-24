@@ -69,7 +69,7 @@
 .stepper .icon-button { background: var(--primary-soft); color: var(--primary); border: 1px solid var(--primary-border); font-size: 20px; }
 .quantity { width: 32px; text-align: center; font-variant-numeric: tabular-nums; }
 .header { flex-wrap: wrap; }
-.checkout-panel { position: sticky; bottom: 12px; z-index: 5; margin-top: 18px; padding: 14px; border: 1px solid #e6ebf2; border-radius: var(--radius-lg); background: rgba(255, 255, 255, .98); box-shadow: var(--shadow-strong); }
+.checkout-panel { position: sticky; bottom: 12px; z-index: 5; margin-top: 18px; padding: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom)); border: 1px solid #e6ebf2; border-radius: var(--radius-lg); background: rgba(255, 255, 255, .98); box-shadow: var(--shadow-strong); }
 .checkout-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .checkout-note { color: #687386; font-size: 12px; margin-top: 2px; }
 .checkout-panel .primary { width: 100%; }
@@ -99,6 +99,8 @@
   .dish-image { width: 82px; height: 82px; flex-basis: 82px; }
   .menu-select-control { min-width: 44px; width: 44px; padding: 8px 4px; }
   .menu-select-control text { display: none; }
+  .checkout-panel { padding: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+  .checkout-panel .parent-actions button { flex: 1 1 calc(50% - 4px); min-width: 0; padding-left: 8px; padding-right: 8px; }
 }
 /* 心愿菜单（P3）：候选池勾选 + 菜谱目录 + 家长设置 */
 .wish-section { margin: 14px 0 16px; padding: 14px; border: 1px solid var(--primary-border); border-radius: var(--radius-lg); background: var(--primary-soft); }
