@@ -8,6 +8,7 @@ const { shanghaiDate, dishKey, selectable } = require('../../utils/domain');
 const CHILD_HOME_TABS = ['meal', 'task', 'growth', 'me'];
 const PARENT_HOME_TABS = ['home', 'me'];
 const PARENT_SUMMARY_PAGE_SIZE = 1;
+const CHILD_MEAL_SOURCES = ['FAMILY', 'SCHOOL'];
 // 心愿菜单状态文案（与 menu 页同源，避免重复依赖）。
 const WISH_STATUS_LABELS = { NONE: '未创建', SUBMITTED: '已提交', WITHDRAWN: '已撤回' };
 // 爸妈确认状态 → 儿童化文案（确认单全页已降级为点餐内状态条）。
@@ -184,6 +185,12 @@ ui.page({
     let query = '?childId=' + encodeURIComponent(childId);
     if (page === 'want-eat') query += '&range=today';
     wx.navigateTo({ url: '/pages/' + page + '/index' + query });
+  },
+  openMealSource(e) {
+    if (this.data.busy || this.data.role !== 'CHILD') return;
+    const sourceType = e && e.currentTarget && e.currentTarget.dataset.source;
+    if (!CHILD_MEAL_SOURCES.includes(sourceType)) return;
+    wx.navigateTo({ url: '/pages/menu/index?sourceType=' + sourceType });
   },
   // 孩子端各 tab 的增强数据：失败一律静默降级，绝不阻断首页骨架。
   async loadChildTab(active) {

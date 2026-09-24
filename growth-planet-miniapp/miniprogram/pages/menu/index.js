@@ -8,6 +8,7 @@ const SPICE = ['无辣', '微辣', '中辣', '重辣'];
 const MEALS = ['BREAKFAST', 'LUNCH', 'DINNER'];
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const WEEK_DAYS = 7;
+const CHILD_MEAL_SOURCES = ['FAMILY', 'SCHOOL'];
 
 function shiftDate(date, delta) {
   const [year, month, day] = date.split('-').map(Number);
@@ -33,9 +34,19 @@ ui.page({
     wish: null, wishSelected: [], wishDishes: [], wishTab: 'FAMILY', wishKeyword: '',
     wishPage: 1, wishPageSize: 10, wishTotal: 0, wishSettings: null, wishMaxDraft: 5,
     wishEnabledDraft: true, wishDishRange: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
-  onLoad(query) { this.previousConfirmId = query.previousConfirmId || null; this.initialChildId = query.childId || null; },
+  onLoad(query) {
+    const params = query || {};
+    this.previousConfirmId = params.previousConfirmId || null;
+    this.initialChildId = params.childId || null;
+    this.initialSourceType = CHILD_MEAL_SOURCES.includes(params.sourceType) ? params.sourceType : null;
+  },
   onShow() {
     if (!ui.guard(this)) return;
+    const sourceType = this.data.role === 'CHILD' && !this.previousConfirmId
+      ? (this.initialSourceType || 'FAMILY')
+      : 'FAMILY';
+    this.initialSourceType = null;
+    this.setData({ sourceType });
     this.renderSourceNotice();
     this.quantities = {};
     this.allDishes = [];
@@ -46,7 +57,7 @@ ui.page({
     this.recommendDishes = [];
     this.wishRaw = null;
     this.wishSelectionTouched = false;
-    ui.run(this, async () => {
+    return ui.run(this, async () => {
       if (this.data.role === 'PARENT') {
         await this.loadParent();
         return;

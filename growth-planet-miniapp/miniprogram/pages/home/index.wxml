@@ -20,7 +20,7 @@
         <view class="hero-description">{{role === 'PARENT' ? '查看餐单、审批记录和虚拟零花钱额度。' : '看看今天的家庭和学校餐单，选好后再告诉爸妈。'}}</view>
       </view>
       <view class="hero-visual" aria-hidden="true">{{role === 'PARENT' ? '🛡️' : '🍱'}}</view>
-      <button class="primary hero-action" bindtap="go" data-page="menu">{{role === 'PARENT' ? '查看家庭菜单' : '去点餐'}}</button>
+      <button wx:if="{{role === 'PARENT'}}" class="primary hero-action" bindtap="go" data-page="menu">查看家庭菜单</button>
     </view>
 
     <!-- 家长端：先展示明确对应当前儿童的可执行摘要，再进入完整功能页 -->
@@ -134,19 +134,18 @@
       </view>
 
       <view class="meal-summary">
-        <view class="meal-summary-col">
+        <view class="meal-summary-col" bindtap="openMealSource" data-source="FAMILY" hover-class="meal-summary-col-active" aria-role="button">
           <text class="meal-summary-num">{{familyCount}}</text>
-          <text class="meal-summary-label">今日家庭餐</text>
+          <text class="meal-summary-label">家庭午餐</text>
         </view>
         <view class="meal-summary-divider"></view>
-        <view class="meal-summary-col">
+        <view class="meal-summary-col" bindtap="openMealSource" data-source="SCHOOL" hover-class="meal-summary-col-active" aria-role="button">
           <text class="meal-summary-num">{{schoolCount}}</text>
-          <text class="meal-summary-label">今日学校餐</text>
+          <text class="meal-summary-label">学校午餐</text>
         </view>
-        <button class="primary meal-summary-action" bindtap="go" data-page="menu">去点餐</button>
       </view>
 
-      <view class="section-title">今天吃什么？</view>
+      <view wx:if="{{recommend.length}}" class="section-title">今天吃什么？</view>
       <scroll-view wx:if="{{recommend.length}}" scroll-x class="quick-scroll">
         <view wx:for="{{recommend}}" wx:key="key" class="quick-card" bindtap="quickFavorite" data-key="{{item.key}}" hover-class="quick-card-active">
           <view class="quick-card-emoji" aria-hidden="true">🍽️</view>
@@ -156,7 +155,7 @@
         </view>
       </scroll-view>
 
-      <view class="section-title">我爱吃</view>
+      <view wx:if="{{frequent.length}}" class="section-title">我爱吃</view>
       <scroll-view wx:if="{{frequent.length}}" scroll-x class="quick-scroll">
         <view wx:for="{{frequent}}" wx:key="key" class="quick-card" bindtap="quickFavorite" data-key="{{item.key}}" hover-class="quick-card-active">
           <view class="quick-card-emoji" aria-hidden="true">⭐</view>

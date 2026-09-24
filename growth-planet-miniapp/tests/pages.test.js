@@ -61,6 +61,70 @@ const dish = { dishId: '99', name: '合成餐食', virtualPrice: '10.01', spiceL
 const familyDish = { dishId: '7', categoryId: '3', name: '家庭番茄炒蛋', virtualPrice: '8.00', spiceLevel: 1,
   sourceType: 'FAMILY', canSelect: true, status: 'ON_SALE', allergenStatus: 'DECLARED', allergyConflict: false };
 
+test('首页餐单统计分别进入家庭和学校午餐，拦截无效来源与忙碌操作', () => {
+  const page = loadPage('home', 'CHILD');
+  page.openMealSource(event({ source: 'FAMILY' }));
+  page.openMealSource(event({ source: 'SCHOOL' }));
+  assert.deepEqual(navigation, [
+    '/pages/menu/index?sourceType=FAMILY',
+    '/pages/menu/index?sourceType=SCHOOL'
+  ]);
+  page.openMealSource(event({ source: 'UNKNOWN' }));
+  page.openMealSource(event());
+  page.openMealSource();
+  page.setData({ busy: true });
+  page.openMealSource(event({ source: 'SCHOOL' }));
+  assert.equal(navigation.length, 2);
+  const parent = loadPage('home', 'PARENT');
+  parent.openMealSource(event({ source: 'SCHOOL' }));
+  assert.deepEqual(navigation, []);
+});
+test('首页餐单来源在首次加载消费，学校仍不可提交，返回时不覆盖用户切换', async () => {
+  const page = loadPage('menu', 'CHILD');
+  page.onLoad({ sourceType: 'SCHOOL' });
+  api.get = async endpoint => {
+    assert.equal(endpoint, '/family/binding');
+    return child;
+  };
+  const sources = [];
+  page.read = async () => {
+    sources.push(page.data.sourceType);
+    page.setData({ menu: { canSubmit: true }, count: 1 });
+  };
+  await page.onShow();
+  assert.deepEqual(sources, ['SCHOOL']);
+  assert.equal(page.data.mealType, 'LUNCH');
+  assert.match(page.data.schoolBoundaryText, /学校/);
+  await page.checkout();
+  assert.deepEqual(navigation, []);
+  page.setData({ sourceType: 'FAMILY' });
+  await page.onShow();
+  assert.deepEqual(sources, ['SCHOOL', 'FAMILY']);
+});
+test('餐单来源参数不影响家长维护、非法来源或重新提报', async () => {
+  for (const scenario of [
+    { role: 'PARENT', query: { sourceType: 'SCHOOL' } },
+    { role: 'CHILD', query: { sourceType: 'INVALID' } },
+    { role: 'CHILD', query: { sourceType: 'SCHOOL', previousConfirmId: '21' } }
+  ]) {
+    const page = loadPage('menu', scenario.role);
+    page.onLoad(scenario.query);
+    let loaded = false;
+    if (scenario.role === 'PARENT') page.loadParent = async () => { loaded = true; };
+    else page.read = async () => { loaded = true; };
+    api.get = async endpoint => {
+      if (endpoint === '/family/binding') return child;
+      assert.equal(endpoint, '/menu/confirm/21');
+      return { status: 'REJECTED', menuDate: shanghaiDate(), mealType: 'DINNER' };
+    };
+    await page.onShow();
+    assert.equal(loaded, true);
+    assert.equal(page.data.sourceType, 'FAMILY');
+    assert.equal(page.data.error, '');
+    if (scenario.query.previousConfirmId) assert.equal(page.data.mealType, 'DINNER');
+  }
+});
+
 test('多孩选择器使用关系或昵称拼接 childId，且不改写原儿童对象', () => {
   assert.equal(childDisplayName({ childId: '1', relationLabel: '女儿', nickname: '小星' }), '女儿 · 1');
   assert.equal(childDisplayName({ childId: '2', nickname: '小月' }), '小月 · 2');
