@@ -11,12 +11,17 @@
     </picker>
   </view>
 
+  <view wx:if="{{medalTotal}}" class="medal-overview">
+    <text class="medal-overview-label">成长进度</text>
+    <text class="medal-overview-value">已点亮 {{medalEarned}} / 共 {{medalTotal}} 枚</text>
+  </view>
+
   <view class="grid">
     <view wx:for="{{medals}}" wx:key="definitionId" class="medal {{item.earned ? 'on' : 'off'}}">
       <view class="icon">{{item.definition.icon}}</view>
       <view class="medal-name">{{item.definition.name}}</view>
       <view class="medal-description">{{item.definition.description}}</view>
-      <view class="medal-state">{{item.earned ? '已点亮' : (item.definition.threshold > 1 ? '进度 ' + item.progress + '/' + item.definition.threshold : '未点亮')}}</view>
+      <view class="medal-state">{{item.stateText}}</view>
     </view>
   </view>
 

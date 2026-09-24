@@ -745,10 +745,42 @@ test('勋章列表生成顶层稳定键供视图循环使用', async () => {
       earned: true,
       progress: 1,
       definition: { definitionId: 'medal-1', name: '初次完成', description: '完成一次家务', threshold: 1 }
+    }, {
+      earned: false,
+      progress: 0,
+      definition: { definitionId: 'medal-2', name: '连续完成', description: '完成十次家务', threshold: 10 }
     }];
   };
   await page.read();
   assert.equal(page.data.medals[0].definitionId, 'medal-1');
+  assert.equal(page.data.medals[0].stateText, '已点亮');
+  assert.equal(page.data.medals[1].stateText, '进度 0/10');
+  assert.equal(page.data.medalEarned, 1);
+  assert.equal(page.data.medalTotal, 2);
+});
+test('首页成长区展示勋章已点亮与总数，阈值为1也显示进度文案', async () => {
+  const page = loadPage('home', 'CHILD');
+  api.get = async endpoint => {
+    if (endpoint === '/medal/awards') {
+      return [{
+        earned: false,
+        progress: 0,
+        definition: { definitionId: 'medal-1', name: '初次完成', threshold: 1 }
+      }, {
+        earned: true,
+        progress: 10,
+        definition: { definitionId: 'medal-2', name: '连续完成', threshold: 10 }
+      }];
+    }
+    if (endpoint === '/wallet/overview') return { balance: '12.00' };
+    if (endpoint === '/child/check-in/calendar') return { currentStreak: 2 };
+    throw new Error('未预期接口 ' + endpoint);
+  };
+  await page.loadGrowth(child.childId);
+  assert.equal(page.data.medalEarned, 1);
+  assert.equal(page.data.medalTotal, 2);
+  assert.equal(page.data.medals[0].stateText, '进度 0/1');
+  assert.equal(page.data.medals[1].stateText, '已点亮');
 });
 test('请求期间会话到期仍回到登录页，而不是保留受保护页面', async () => {
   const page = loadPage('profile');

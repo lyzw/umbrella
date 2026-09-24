@@ -4,6 +4,7 @@ const ui = require('../../utils/page');
 const lifecycle = require('../../services/lifecycle');
 const { loadChildren, displayChildren } = require('../../services/children');
 const { shanghaiDate, dishKey, selectable } = require('../../utils/domain');
+const { summarizeMedals } = require('../../utils/medal');
 
 const CHILD_HOME_TABS = ['meal', 'task', 'growth', 'me'];
 const PARENT_HOME_TABS = ['home', 'me'];
@@ -33,7 +34,7 @@ ui.page({
     recommend: [], frequent: [], wish: null,
     confirmStatus: null, confirmId: null,
     // 成长增强区块（只读）
-    medals: [], balance: '', streak: 0
+    medals: [], medalEarned: 0, medalTotal: 0, balance: '', streak: 0
   },
   go: ui.go,
   onLoad(query) {
@@ -249,8 +250,11 @@ ui.page({
       api.get('/wallet/overview', { childId }).catch(() => null),
       api.get('/child/check-in/calendar', { month: shanghaiDate().slice(0, 7) }).catch(() => null)
     ]);
+    const medalSummary = summarizeMedals(medals);
     this.setData({
-      medals: (medals || []).map(item => ({ ...item, definitionId: item.definition.definitionId })),
+      medals: medalSummary.medals,
+      medalEarned: medalSummary.medalEarned,
+      medalTotal: medalSummary.medalTotal,
       balance: overview ? overview.balance : '',
       streak: calendar ? (calendar.currentStreak || 0) : 0
     });

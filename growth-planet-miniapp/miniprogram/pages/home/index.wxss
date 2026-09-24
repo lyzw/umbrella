@@ -61,8 +61,8 @@
 .profile-title { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
 .profile-badge { margin-left: auto; padding: 3px 8px; border-radius: 8px; background: #dcfce7; color: #15803d; font-size: 12px; font-weight: 700; }
 .logout-button { width: 100%; margin-top: 18px; background: #fef2f2; color: #b91c1c; }
-.child-progress { display: flex; gap: 8px; margin-bottom: 12px; }
-.child-progress-chip { padding: 5px 12px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 13px; font-weight: 700; }
+.child-progress { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.child-progress-chip { display: inline-flex; align-items: center; min-height: 30px; padding: 5px 12px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 13px; line-height: 20px; font-weight: 700; overflow-wrap: anywhere; }
 .meal-summary { display: flex; align-items: stretch; gap: 0; padding: 4px 0 12px; margin-bottom: 14px; border-bottom: 1px solid #e6ebf2; }
 .meal-summary-col { display: flex; flex: 1 1 0; flex-direction: column; align-items: center; justify-content: center; min-width: 0; padding: 8px 6px; }
 .meal-summary-col-active { background: #f7f9fc; border-radius: 10px; }
@@ -95,6 +95,9 @@
 .balance-card .amount { font-size: 30px; font-weight: 800; color: #1f2733; margin: 4px 0; }
 .balance-card .unit { font-size: 13px; font-weight: 600; color: #687386; margin-left: 6px; }
 .balance-card .small { font-size: 11px; color: #687386; }
+.growth-section-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.growth-section-heading .section-title { margin-bottom: 12px; }
+.growth-medal-summary { color: #687386; font-size: 12px; line-height: 1.45; font-weight: 700; }
 .medal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
 .medal { padding: 12px 8px; border-radius: 14px; text-align: center; background: #f7f9fc; border: 1px solid #e6ebf2; }
 .medal.on { background: var(--c-medal-soft); border-color: #fcd34d; }

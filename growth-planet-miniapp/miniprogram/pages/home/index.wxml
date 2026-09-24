@@ -128,8 +128,8 @@
 
     <!-- 孩子端：首页只答「今天吃什么 / 我想吃」，移除了所有成人功能入口 -->
     <block wx:else>
-      <view wx:if="{{medals.length || streak}}" class="child-progress">
-        <text wx:if="{{medals.length}}" class="child-progress-chip">🏅 {{medals.length}} 枚</text>
+      <view wx:if="{{medalTotal || streak}}" class="child-progress">
+        <text wx:if="{{medalTotal}}" class="child-progress-chip">🏅 已点亮 {{medalEarned}} / {{medalTotal}} 枚</text>
         <text wx:if="{{streak}}" class="child-progress-chip">🔥 连续 {{streak}} 天</text>
       </view>
 
@@ -198,12 +198,15 @@
       <text class="small">只读余额，不能在这里消费或转账</text>
     </view>
 
-    <view class="section-title">勋章墙</view>
+    <view class="growth-section-heading">
+      <text class="section-title">勋章墙</text>
+      <text wx:if="{{medalTotal}}" class="growth-medal-summary">已点亮 {{medalEarned}} / {{medalTotal}}</text>
+    </view>
     <view wx:if="{{medals.length}}" class="medal-grid">
       <view wx:for="{{medals}}" wx:key="definitionId" class="medal {{item.earned ? 'on' : 'off'}}">
         <view class="icon">{{item.definition.icon}}</view>
         <view class="medal-name">{{item.definition.name}}</view>
-        <view class="medal-state">{{item.earned ? '已点亮' : (item.definition.threshold > 1 ? '进度 ' + item.progress + '/' + item.definition.threshold : '未点亮')}}</view>
+        <view class="medal-state">{{item.stateText}}</view>
       </view>
     </view>
     <view wx:else class="empty">还没有勋章，去完成任务解锁吧</view>
