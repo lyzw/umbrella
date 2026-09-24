@@ -10,8 +10,32 @@
       <view class="field"><text class="label">学校</text><picker range="{{schoolOptions}}" bindchange="school"><view class="picker">{{school}}</view></picker></view>
       <view class="field"><text class="label">过敏原编码（合成开发目录）</text><checkbox-group bindchange="allergies"><label wx:for="{{allergyOptions}}" wx:key="code" class="check"><checkbox value="{{item.code}}" checked="{{item.checked}}" />{{item.code}}</label></checkbox-group></view>
     </view>
-    <view class="field"><text class="label">不喜欢的食物（逗号分隔）</text><textarea value="{{dislikesText}}" data-field="dislikesText" bindinput="input" maxlength="1299" /></view>
-    <view class="field"><text class="label">口味偏好（逗号分隔）</text><textarea value="{{tastesText}}" data-field="tastesText" bindinput="input" maxlength="1299" /></view>
+    <view class="field">
+      <text class="label">不喜欢的食物</text>
+      <view wx:if="{{dislikes.length}}" class="preference-chips">
+        <view wx:for="{{dislikes}}" wx:key="*this" class="preference-chip">
+          <text class="preference-chip-text">{{item}}</text>
+          <button class="preference-remove" bindtap="removePreference" data-field="dislikes" data-index="{{index}}" aria-label="删除{{item}}">×</button>
+        </view>
+      </view>
+      <view class="preference-entry">
+        <input value="{{dislikesText}}" data-field="dislikesText" bindinput="input" bindconfirm="addPreference" confirm-type="done" maxlength="1299" placeholder="输入食物名称，可用逗号分隔" />
+        <button class="preference-add" bindtap="addPreference" data-field="dislikesText" disabled="{{busy}}">添加</button>
+      </view>
+    </view>
+    <view class="field">
+      <text class="label">口味偏好</text>
+      <view wx:if="{{tastes.length}}" class="preference-chips">
+        <view wx:for="{{tastes}}" wx:key="*this" class="preference-chip">
+          <text class="preference-chip-text">{{item}}</text>
+          <button class="preference-remove" bindtap="removePreference" data-field="tastes" data-index="{{index}}" aria-label="删除{{item}}">×</button>
+        </view>
+      </view>
+      <view class="preference-entry">
+        <input value="{{tastesText}}" data-field="tastesText" bindinput="input" bindconfirm="addPreference" confirm-type="done" maxlength="1299" placeholder="输入口味名称，可用逗号分隔" />
+        <button class="preference-add" bindtap="addPreference" data-field="tastesText" disabled="{{busy}}">添加</button>
+      </view>
+    </view>
     <button class="primary" bindtap="save" disabled="{{busy}}" loading="{{busy}}">保存</button>
   </view>
   <view wx:if="{{error}}" class="error">{{error}}</view>

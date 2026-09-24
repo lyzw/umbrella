@@ -151,6 +151,21 @@ test('儿童仅提交非安全偏好，不注入childId或allergies', async () =
   page.onHide();
   assert.equal(page.data.dislikesText, '');
 });
+test('偏好使用可删除标签，保存时合并输入草稿并去重', async () => {
+  const page = loadPage('profile', 'CHILD');
+  page.setData({ ready: true, dislikes: ['芹菜', '香菜'], tastes: ['清淡'], dislikesText: '鱼，芹菜', tastesText: '少盐' });
+  page.removePreference(event({ field: 'dislikes', index: 0 }));
+  await page.addPreference(event({ field: 'tastesText' }));
+  let sent;
+  api.put = async (endpoint, body) => { sent = { endpoint, body }; };
+  api.get = async () => ({ dislikes: sent.body.dislikes, tastes: sent.body.tastes });
+  await page.save();
+  assert.deepEqual(sent, { endpoint: '/child/preferences', body: {
+    dislikes: ['香菜', '鱼', '芹菜'], tastes: ['清淡', '少盐']
+  } });
+  assert.deepEqual(page.data.dislikes, ['香菜', '鱼', '芹菜']);
+  assert.equal(page.data.tastesText, '');
+});
 test('档案已有的非配置过敏原仍保留在回显选项中', async () => {
   const page = loadPage('profile');
   api.get = async endpoint => endpoint.includes('consent') ? { currentStatus: 'GRANTED' }
