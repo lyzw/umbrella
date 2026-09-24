@@ -218,7 +218,11 @@ ui.page({
       clearTimeout(this.timer);
     });
   },
-  resubmit() { wx.navigateTo({ url: '/pages/menu/index?previousConfirmId=' + this.data.detail.confirmId }); },
+  resubmit() {
+    const confirmId = this.data.detail && this.data.detail.confirmId;
+    if (!confirmId) return;
+    return ui.openPage(this, '/pages/menu/index?previousConfirmId=' + encodeURIComponent(confirmId));
+  },
   backList() {
     clearTimeout(this.timer);
     this.setData({ detail: null, draft: null, preview: null, showAdjustment: false, editing: false, suggestions: [], reason: '' });

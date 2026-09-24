@@ -427,12 +427,12 @@ ui.page({
     }));
     context.setCart({ menuId: this.data.menu.menuId, childId: this.data.childId, items,
       previousConfirmId: this.previousConfirmId, total: this.data.total });
-    wx.navigateTo({ url: '/pages/confirmation/index?compose=1' });
+    return ui.openPage(this, '/pages/confirmation/index?compose=1');
   },
-  goDishManage() { wx.navigateTo({ url: '/pages/dish-manage/index' }); },
+  goDishManage() { return ui.openPage(this, '/pages/dish-manage/index'); },
   goWeekPlan() {
     if (this.data.role !== 'PARENT' || this.data.busy) return;
-    wx.navigateTo({ url: '/pages/menu-week/index' });
+    return ui.openPage(this, '/pages/menu-week/index');
   },
   category(e) {
     this.setData({ categoryId: e.currentTarget.dataset.id || '' });

@@ -62,7 +62,27 @@ async function run(page, action) {
 function input(event) {
   this.setData({ [event.currentTarget.dataset.field]: event.detail.value });
 }
-function go(event) { wx.navigateTo({ url: '/pages/' + event.currentTarget.dataset.page + '/index' }); }
+function openPage(page, url) {
+  if (!page || !url || page.__navigationPending || typeof wx.navigateTo !== 'function') return null;
+  page.__navigationPending = true;
+  let released = false;
+  const release = () => {
+    if (released) return;
+    released = true;
+    page.__navigationPending = false;
+  };
+  try {
+    return wx.navigateTo({ url, complete: release });
+  } catch (error) {
+    release();
+    throw error;
+  }
+}
+function go(event) {
+  const page = event && event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.page;
+  if (!page) return null;
+  return openPage(this, '/pages/' + page + '/index');
+}
 const CHILD_TAB_ROUTES = {
   meal: '/pages/home/index?tab=meal',
   task: '/pages/chore/index',
@@ -111,4 +131,4 @@ function loginCode() {
   },
     fail: () => reject(new Error('微信登录失败，请重试')) }));
 }
-module.exports = { page, guard, run, input, go, openTab, back, confirm, loginCode };
+module.exports = { page, guard, run, input, go, openPage, openTab, back, confirm, loginCode };

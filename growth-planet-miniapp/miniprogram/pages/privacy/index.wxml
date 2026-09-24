@@ -1,4 +1,5 @@
 <view class="page parent">
+  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
   <view class="header"><view class="title">同意与数据权利</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
   <picker wx:if="{{children.length}}" range="{{children}}" range-key="displayName" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">当前儿童 · {{children[childIndex].displayName}}</view></picker>
   <view wx:if="{{error}}" class="error">{{error}}</view>

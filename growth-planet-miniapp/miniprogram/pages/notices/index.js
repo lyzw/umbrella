@@ -28,7 +28,9 @@ ui.page({
       // 已读写入是辅助动作，不能阻塞家长进入心愿菜单；页面离开后由生命周期保护迟到响应。
       this.read({ currentTarget: { dataset: { id: noticeId } } });
     }
-    return wx.navigateTo({ url: '/pages/menu/index?childId=' + e.currentTarget.dataset.childId });
+    const childId = e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.childId;
+    if (!childId) return;
+    return ui.openPage(this, '/pages/menu/index?childId=' + encodeURIComponent(childId));
   },
   onHide() { this.setData({ records: [] }); }
 });

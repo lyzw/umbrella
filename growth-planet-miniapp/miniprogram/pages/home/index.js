@@ -185,13 +185,13 @@ ui.page({
     if (!page || !childId) return;
     let query = '?childId=' + encodeURIComponent(childId);
     if (page === 'want-eat') query += '&range=today';
-    wx.navigateTo({ url: '/pages/' + page + '/index' + query });
+    return ui.openPage(this, '/pages/' + page + '/index' + query);
   },
   openMealSource(e) {
     if (this.data.busy || this.data.role !== 'CHILD') return;
     const sourceType = e && e.currentTarget && e.currentTarget.dataset.source;
     if (!CHILD_MEAL_SOURCES.includes(sourceType)) return;
-    wx.navigateTo({ url: '/pages/menu/index?sourceType=' + sourceType });
+    return ui.openPage(this, '/pages/menu/index?sourceType=' + sourceType);
   },
   // 孩子端各 tab 的增强数据：失败一律静默降级，绝不阻断首页骨架。
   async loadChildTab(active) {

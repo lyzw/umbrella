@@ -1,5 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '../miniprogram');
 const api = require('../miniprogram/services/api');
@@ -27,7 +28,7 @@ function loadPage(name, role = 'PARENT') {
     setStorageSync() {}, removeStorageSync() {}, getStorageSync() {},
     showModal(options) { modals.push(options); options.success({ confirm: true }); },
     reLaunch(options) { navigation.push(options.url); }, redirectTo(options) { navigation.push(options.url); },
-    navigateTo(options) { navigation.push(options.url); }, showToast() {},
+    navigateTo(options) { navigation.push(options.url); if (options.complete) options.complete(); }, showToast() {},
     getAccountInfoSync: () => ({ miniProgram: { envVersion: 'develop' } })
   };
   session.clear();
@@ -117,6 +118,28 @@ test('首页餐单来源在首次加载消费，学校仍不可提交，返回�
   await page.onShow();
   assert.deepEqual(sources, ['SCHOOL', 'FAMILY']);
 });
+test('二级页面连续点击只触发一次navigateTo，并在导航失败后可重试', () => {
+  const page = loadPage('home', 'PARENT');
+  const calls = [];
+  let complete;
+  global.wx.navigateTo = options => {
+    calls.push(options.url);
+    complete = options.complete;
+  };
+
+  page.go(event({ page: 'family' }));
+  page.go(event({ page: 'family' }));
+  assert.deepEqual(calls, ['/pages/family/index']);
+
+  complete();
+  page.go(event({ page: 'family' }));
+  assert.deepEqual(calls, ['/pages/family/index', '/pages/family/index']);
+});
+test('一级入口仍使用根路由，不因二级导航锁影响角色切换', () => {
+  const page = loadPage('home', 'PARENT');
+  page.changeTab({ detail: { key: 'wallet' } });
+  assert.deepEqual(navigation, ['/pages/wallet/index']);
+});
 test('餐单来源参数不影响家长维护、非法来源或重新提报', async () => {
   for (const scenario of [
     { role: 'PARENT', query: { sourceType: 'SCHOOL' } },
@@ -182,6 +205,26 @@ test('二级页返回优先退出页面栈，无页面栈时回到角色对应�
       { type: 'reLaunch', options: { url: '/pages/chore/index' } },
       { type: 'reLaunch', options: { url: '/pages/home/index?tab=me' } }
     ]);
+  } finally {
+    global.wx = previousWx;
+    if (previousGetCurrentPages === undefined) delete global.getCurrentPages;
+    else global.getCurrentPages = previousGetCurrentPages;
+  }
+});
+test('隐私页属于家长我的模块并提供统一返回入口', () => {
+  const template = fs.readFileSync(path.join(root, 'pages/privacy/index.wxml'), 'utf8');
+  assert.match(template, /<page-back[^>]+fallback-tab="me"/);
+
+  const previousWx = global.wx;
+  const previousGetCurrentPages = global.getCurrentPages;
+  const calls = [];
+  global.wx = {
+    reLaunch(options) { calls.push(options.url); }
+  };
+  try {
+    global.getCurrentPages = () => [];
+    ui.back({ data: { role: 'PARENT' } }, 'me');
+    assert.deepEqual(calls, ['/pages/home/index?tab=me']);
   } finally {
     global.wx = previousWx;
     if (previousGetCurrentPages === undefined) delete global.getCurrentPages;
