@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成长星球 · 现代化 UI/UX 重设计方案</title>
+<link rel="preconnect" href="https://miaoda.feishu.cn">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Baloo+2:wght@600;700;800" media="print" onload="this.media='all'">
+<style>
+:root{
+  --ink:#1a1d26; --muted:#8a90a0; --line:#e9ebf0; --paper:#eef0f4;
+  --kid-primary:#2f6bff; --kid-primary-soft:#eef3ff;
+  --kid-food:#e8590c; --kid-green:#12b886; --kid-gold:#e8a013; --kid-pink:#e64980;
+  --par-bg:#f6f7f8; --par-primary:#0b8a66; --par-ink:#16241f; --par-warn:#e89016; --par-danger:#e5484d;
+  --shadow-phone:0 24px 50px -24px rgba(20,30,60,.25);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans SC",-apple-system,"PingFang SC",sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+.wrap{max-width:1320px;margin:0 auto;padding:56px 32px 120px}
+
+/* ---------- 顶部 ---------- */
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;flex-wrap:wrap;margin-bottom:20px}
+.kick{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--kid-primary);text-transform:uppercase;margin-bottom:14px}
+.kick::before{content:"";width:26px;height:2px;background:var(--kid-primary)}
+h1{font-size:46px;font-weight:900;letter-spacing:-.5px;line-height:1.08}
+h1 .grad{color:var(--kid-primary)}
+.hero p.lead{max-width:560px;color:var(--muted);font-size:16px;margin-top:16px}
+.hero .meta{font-size:13px;color:var(--muted);text-align:right}
+.hero .meta b{display:block;font-size:15px;color:var(--ink)}
+
+/* ---------- 原则条 ---------- */
+.principles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:44px 0 10px}
+.princ{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px}
+.princ .ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;margin-bottom:12px;background:#eef3ff;color:var(--kid-primary)}
+.princ h3{font-size:15px;margin-bottom:6px}
+.princ p{font-size:13px;color:var(--muted)}
+
+/* ---------- 区块标题 ---------- */
+.section{margin-top:64px}
+.section > h2{font-size:26px;font-weight:900;margin-bottom:6px}
+.section > .sub{color:var(--muted);font-size:14px;margin-bottom:28px;max-width:720px}
+.role-tag{display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;margin-right:10px;vertical-align:middle}
+.role-tag.kid{background:#ece9ff;color:#5a4bd6}
+.role-tag.par{background:#e3f6ef;color:#0b7d5e}
+
+/* ---------- 设计系统色板 ---------- */
+.sysgrid{display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:20px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px}
+.panel h4{font-size:13px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-bottom:16px;font-weight:700}
+.swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sw{border-radius:14px;overflow:hidden;border:1px solid rgba(0,0,0,.05)}
+.sw .chip{height:64px}
+.sw .lab{padding:8px 10px;font-size:11px;color:var(--muted)}
+.sw .lab b{display:block;color:var(--ink);font-size:12px}
+.type-row{display:flex;align-items:baseline;gap:14px;padding:11px 0;border-bottom:1px dashed var(--line)}
+.type-row:last-child{border:0}
+.type-row .spec{font-size:11px;color:var(--muted);width:120px;flex:none}
+.type-row .demo{color:var(--ink)}
+.d1{font-family:"Baloo 2","Noto Sans SC";font-size:30px;font-weight:800}
+.d2{font-size:21px;font-weight:900}
+.d3{font-size:16px;font-weight:700}
+.d4{font-size:14px;font-weight:500}
+.d5{font-size:12px;color:var(--muted)}
+.spacebar{display:flex;align-items:flex-end;gap:10px;margin-top:6px}
+.spacebar i{background:var(--kid-primary);border-radius:6px;display:block}
+.spacebar span{font-size:11px;color:var(--muted)}
+
+/* ---------- 导航架构 ---------- */
+.ia{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.iacol h5{font-size:14px;margin-bottom:12px}
+.tabs{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;justify-content:space-around}
+.tab{text-align:center;font-size:11px;color:var(--muted)}
+.tab .ic{width:40px;height:40px;border-radius:14px;display:grid;place-items:center;margin:0 auto 6px;background:#f2f3f8;color:var(--muted)}
+.tab.on .ic{background:var(--kid-primary);color:#fff;box-shadow:none}
+.tab.on{color:var(--ink);font-weight:700}
+
+/* ---------- 手机陈列 ---------- */
+.phones{display:flex;flex-wrap:wrap;gap:34px;justify-content:flex-start}
+.phone{width:280px;flex:none}
+.phone .frame{width:280px;height:600px;border-radius:42px;padding:10px;background:#1b1e26;box-shadow:var(--shadow-phone);position:relative;overflow:hidden}
+.phone.par .frame{background:#1b1e26}
+.screen{width:100%;height:100%;border-radius:34px;overflow:hidden;position:relative;display:flex;flex-direction:column}
+/* 儿童屏：干净浅底 */
+.screen.kid{background:#f5f6f8;color:var(--ink)}
+/* 家长屏 */
+.screen.par{background:var(--par-bg);color:var(--par-ink)}
+.statusbar{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:11px;font-weight:700;flex:none}
+.screen.par .statusbar{color:var(--par-ink)}
+.sbody{flex:1;overflow:hidden;padding:0 16px}
+.phonecap{text-align:center;margin-top:16px}
+.phonecap b{display:block;font-size:14px}
+.phonecap span{font-size:12px;color:var(--muted)}
+
+/* 底部 tab（儿童）：白色贴底 */
+.tabbar{position:absolute;left:10px;right:10px;bottom:10px;height:60px;border-radius:20px;background:#fff;display:flex;justify-content:space-around;align-items:center;border:1px solid #eceef2;box-shadow:0 6px 20px -10px rgba(20,30,60,.12)}
+.tabbar .t{text-align:center;font-size:9px;color:#9aa0ad}
+.tabbar .t .i{width:26px;height:26px;margin:0 auto 2px;display:grid;place-items:center}
+.tabbar .t.on{color:var(--kid-primary);font-weight:700}
+.tabbar .t.on .i{color:var(--kid-primary)}
+.tabbar .t.center .i{width:46px;height:46px;border-radius:50%;background:var(--kid-primary);color:#fff;margin-top:-22px;box-shadow:0 8px 16px -6px rgba(47,107,255,.5)}
+
+/* 通用卡片 */
+.glass{background:#fff;border:1px solid #eceef2;border-radius:16px;box-shadow:0 1px 2px rgba(20,30,60,.04)}
+.pcard{background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(20,40,80,.05)}
+
+/* 食材图占位 */
+.food{width:46px;height:46px;border-radius:12px;flex:none;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.f1{background:#e8590c}
+.f2{background:#2f9e6f}
+.f3{background:#7048e8}
+.f4{background:#e8a013}
+.f5{background:#2f6bff}
+
+/* 小标签 */
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:2px 7px;border-radius:999px;font-weight:700}
+.chip.hot{background:rgba(255,138,76,.2);color:#ffb37f}
+.chip.safe{background:rgba(45,212,167,.18);color:#5fe0bb}
+.chip.al{background:rgba(229,72,77,.2);color:#ff9a9d}
+.chip.gold{background:rgba(255,201,77,.2);color:#ffd87a}
+
+.footnote{margin-top:60px;padding-top:24px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+
+/* ---------- 新增：启动 / 登录 / 家庭 / 弹层 / 周表 ---------- */
+.splash{background:#fff;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.splash .planet{width:84px;height:84px;border-radius:22px;background:var(--kid-primary);display:grid;place-items:center;margin-bottom:20px;font-family:"Baloo 2";font-size:34px;font-weight:800;color:#fff}
+.splash h3{font-size:24px;font-weight:900;letter-spacing:2px}
+.splash p{font-size:12px;opacity:.6;margin-top:8px}
+.rolepick{display:flex;flex-direction:column;gap:12px;padding:0 6px}
+.rolecard{display:flex;align-items:center;gap:14px;padding:16px;border-radius:20px;border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06)}
+.rolecard .ic{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;flex:none}
+.rolecard.kid .ic{background:var(--kid-primary-soft);color:var(--kid-primary)}
+.rolecard.par .ic{background:#e6f7f0;color:var(--par-primary)}
+.rolecard b{font-size:15px;display:block}
+.rolecard span{font-size:11px;opacity:.65}
+.memberrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f0f1f4}
+.avatar{width:42px;height:42px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:800;color:#fff}
+.tag-pref{display:inline-block;font-size:11px;padding:5px 11px;border-radius:99px;background:#eef0f4;margin:0 6px 8px 0}
+.tag-pref.off{opacity:.4}
+.invitebox{background:#fff8ec;border:1px dashed #e8a013;border-radius:18px;padding:16px;text-align:center}
+.invitebox code{font-family:"Baloo 2";font-size:26px;font-weight:800;letter-spacing:4px;color:var(--kid-gold)}
+/* 家长白卡风格复用 pcard */
+.searchbar{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e6eae7;border-radius:14px;padding:10px 14px;font-size:13px;color:var(--muted);margin-bottom:12px}
+/* bottom sheet 演示：在手机屏内模拟弹出 */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:26px 26px 0 0;padding:18px;color:var(--par-ink);box-shadow:0 -12px 40px rgba(0,0,0,.25)}
+.sheet .grip{width:38px;height:4px;border-radius:99px;background:#e2e6e3;margin:0 auto 14px}
+.weekgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:9px}
+.weekgrid .d{padding:6px 2px;border-radius:8px;background:#fff}
+.weekgrid .d.today{background:var(--par-primary);color:#fff;font-weight:700}
+.weekgrid .dot{width:5px;height:5px;border-radius:50%;margin:3px auto 0}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:90px;background:rgba(26,29,38,.9);color:#fff;font-size:12px;padding:9px 16px;border-radius:99px;white-space:nowrap}
+
+/* ===== 美团式双栏点餐台 ===== */
+.menubody{display:flex;flex:1;overflow:hidden;padding:0}
+.side{width:74px;flex:none;background:#eef1ef;overflow-y:auto}
+.side .cat{padding:13px 6px;text-align:center;font-size:11px;color:#5a6572;position:relative}
+.side .cat.on{background:#fff;color:var(--par-primary);font-weight:800}
+.side .cat.on::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 3px 3px 0;background:var(--par-primary)}
+.menucol{flex:1;background:#fff;overflow-y:auto;padding:10px 10px 74px}
+.dishrow{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f0f2f0}
+.dishrow .food{width:52px;height:52px;border-radius:12px;font-size:14px}
+.dishinfo{flex:1;min-width:0}
+.dishinfo .nm{font-size:13px;font-weight:700;color:var(--par-ink)}
+.spicepick{display:inline-flex;gap:4px;margin-top:5px}
+.spicepick .s{font-size:9px;padding:2px 7px;border-radius:99px;background:#f1f3f2;color:#7a848f}
+.spicepick .s.on{background:#ffe3d6;color:#e05a2b;font-weight:700}
+.pricerow{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.price{font-size:13px;font-weight:800;color:#e05a2b}
+.price small{font-size:9px;color:#9aa3ad;font-weight:400}
+.addbtn{width:22px;height:22px;border-radius:50%;background:var(--par-primary);color:#fff;display:grid;place-items:center;font-size:14px;line-height:1}
+.remarkchip{display:inline-flex;align-items:center;gap:2px;font-size:9px;color:#9aa3ad;background:#f5f7f6;border-radius:6px;padding:2px 6px;margin-top:5px}
+.cartbar{position:absolute;left:10px;right:10px;bottom:10px;height:50px;border-radius:16px;background:#22302b;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-shadow:0 10px 24px -8px rgba(20,40,40,.5)}
+/* 详情弹层内 */
+.spicegroup{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}
+.spicegroup .opt{padding:7px 14px;border-radius:99px;background:#f1f3f2;font-size:12px;color:#5a6572}
+.spicegroup .opt.on{background:#ffe3d6;color:#e05a2b;font-weight:800;border:1px solid #ffb99a}
+.remarkinput{background:#f5f7f6;border-radius:12px;padding:10px 12px;font-size:12px;color:var(--muted);margin-top:6px}
+.quicktag{display:inline-block;font-size:10px;background:#fff;border:1px solid #e2e6e3;border-radius:99px;padding:3px 9px;margin:6px 6px 0 0;color:#5a6572}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= HERO ================= -->
+  <div class="hero">
+    <div>
+      <span class="kick">Growth Planet · UI/UX Redesign</span>
+      <h1>亲子点餐与零花钱，<br>做得<span class="grad">顺手一点</span></h1>
+      <p class="lead">面向家长与孩子双角色的小程序界面重设计。不沿用旧界面，只围绕「点餐—审批—零花钱—家务—勋章」这条核心循环，重新组织信息层级与操作路径。</p>
+    </div>
+    <div class="meta">
+      <b>资深产品设计提案</b>
+      双角色 · 游戏化 · 高保真原型<br>
+      概念：星野成长（Stellar Growth）
+    </div>
+  </div>
+
+  <!-- ================= 设计原则 ================= -->
+  <div class="principles">
+    <div class="princ"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h3>孩子的一屏一心事</h3><p>儿童首页只回答三件事：今天吃什么、今天做什么、我攒了多少成长值。</p></div>
+    <div class="princ"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h3>家长的零摩擦决策</h3><p>审批一屏看完，关键风险前置，同意/拒绝一步到位，不打断手势。</p></div>
+    <div class="princ"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 4.9L20 8l-4 3.9.9 5.6L12 14.9 7.1 17.5 8 11.9 4 8l5.6-1.1z"/></svg></div><h3>成长可见即可玩</h3><p>余额、打卡、勋章汇成一颗会长大的星球；每一次正确选择都有即时反馈。</p></div>
+    <div class="princ"><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>安全不靠说教</h3><p>无辣、过敏、额度等约束用颜色与状态自然呈现，危险动作二次显式确认。</p></div>
+  </div>
+
+  <!-- ================= 设计系统 ================= -->
+  <div class="section">
+    <h2>设计系统 Design Tokens</h2>
+    <p class="sub">同一套语言、两种情绪：孩子端是发光的夜空，家长端是安静的桌面。圆角、阴影与动效全端统一，仅以色温区分角色。</p>
+    <div class="sysgrid">
+      <div class="panel">
+        <h4>色彩 · 儿童端 / 家长端</h4>
+        <div class="swatches">
+          <div class="sw"><div class="chip" style="background:#6c5ce7"></div><div class="lab"><b>星紫</b>#6C5CE7</div></div>
+          <div class="sw"><div class="chip" style="background:#4a9ff5"></div><div class="lab"><b>航蓝</b>#4A9FF5</div></div>
+          <div class="sw"><div class="chip" style="background:#ff8a4c"></div><div class="lab"><b>食橙</b>#FF8A4C</div></div>
+          <div class="sw"><div class="chip" style="background:#2dd4a7"></div><div class="lab"><b>叶绿</b>#2DD4A7</div></div>
+          <div class="sw"><div class="chip" style="background:#ffc94d"></div><div class="lab"><b>星光金</b>#FFC94D</div></div>
+          <div class="sw"><div class="chip" style="background:#0f9d76"></div><div class="lab"><b>家长墨绿</b>#0F9D76</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h4>字体层级</h4>
+        <div class="type-row"><span class="spec">Display / 30-34</span><span class="demo d1">今日星值 128</span></div>
+        <div class="type-row"><span class="spec">Title / 21</span><span class="demo d2">午餐想吃什么</span></div>
+        <div class="type-row"><span class="spec">Headline / 16</span><span class="demo d3">番茄炖牛腩</span></div>
+        <div class="type-row"><span class="spec">Body / 14</span><span class="demo d4">已选 2 份 · 共 48 星币</span></div>
+        <div class="type-row"><span class="spec">Caption / 12</span><span class="demo d5">含花生，过敏者慎选</span></div>
+      </div>
+      <div class="panel">
+        <h4>圆角 · 间距 · 阴影</h4>
+        <p style="font-size:12px;color:var(--muted);margin-bottom:10px">卡片圆角 20px / 按钮 999 胶囊 / 手机内边距 16px</p>
+        <div class="spacebar">
+          <span>8</span><i style="width:8px;height:26px"></i>
+          <span>12</span><i style="width:12px;height:26px"></i>
+          <span>16</span><i style="width:16px;height:26px"></i>
+          <span>22</span><i style="width:22px;height:26px"></i>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin-top:14px">儿童端：玻璃拟态 + 柔和辉光；家长端：扁平白卡 + 极浅投影，信息密度更高。动效 200ms 缓出，按压反馈 120ms。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 信息架构 ================= -->
+  <div class="section">
+    <h2>信息架构与导航</h2>
+    <p class="sub">底部 Tab 收敛到 5 个高频入口；发布菜单、审批、设置等低频能力收进「我的」与右上角，不再占首屏。</p>
+    <div class="ia">
+      <div class="iacol">
+        <h5><span class="role-tag kid">儿童端</span>五个 Tab</h5>
+        <div class="tabs">
+          <div class="tab on"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></div>今日</div>
+          <div class="tab"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg></div>餐单</div>
+          <div class="tab"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg></div>成长星</div>
+          <div class="tab"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v6a6 6 0 01-12 0z"/><path d="M6 5H3v2a3 3 0 003 3M18 5h3v2a3 3 0 01-3 3"/></svg></div>任务</div>
+          <div class="tab"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>我的</div>
+        </div>
+      </div>
+      <div class="iacol">
+        <h5><span class="role-tag par">家长端</span>四个 Tab</h5>
+        <div class="tabs">
+          <div class="tab on"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></div>看板</div>
+          <div class="tab"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>审批</div>
+          <div class="tab"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5M15 20c0-2 1.5-3.5 4-3.5"/></svg></div>家庭</div>
+          <div class="tab"><div class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>我的</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 高保真屏 ================= -->
+  <div class="section">
+    <h2><span class="role-tag kid">儿童端</span>核心页面高保真</h2>
+    <p class="sub">从左到右：今日首页 → 餐单点餐 → 想吃与审批进度 → 我的星币钱包 → 成长星与勋章。</p>
+    <div class="phones">
+      <!-- 屏1 儿童今日 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>成长星</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <div>
+                <div style="font-size:12px;opacity:.7">早上好</div>
+                <div style="font-size:20px;font-weight:900">今天想吃点什么</div>
+              </div>
+              <div style="width:42px;height:42px;border-radius:50%;background:#e64980;display:grid;place-items:center;font-weight:800">小</div>
+            </div>
+            <!-- 星球成长卡 -->
+            <div class="glass" style="padding:18px;text-align:center;margin-bottom:14px">
+              <div style="font-size:11px;opacity:.7;margin-bottom:8px">本周成长值</div>
+              <div style="width:92px;height:92px;margin:0 auto 10px;border-radius:50%;background:var(--kid-primary);box-shadow:none;display:grid;place-items:center;font-family:'Baloo 2';font-size:30px;font-weight:800">128</div>
+              <div style="font-size:12px;opacity:.8">再攒 <b style="color:var(--kid-gold)">22</b> 升级</div>
+              <div style="height:8px;border-radius:99px;background:#e6e9ef;margin-top:10px;overflow:hidden"><div style="width:83%;height:100%;border-radius:99px;background:var(--kid-gold)"></div></div>
+            </div>
+            <!-- 今日餐预告 -->
+            <div style="font-size:12px;opacity:.6;margin:0 2px 8px">今日午餐预告</div>
+            <div class="glass" style="padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <div class="food f1">牛</div>
+              <div style="flex:1"><div style="font-size:14px;font-weight:700">番茄炖牛腩</div><div style="font-size:11px;opacity:.65">+ 米饭 · 紫菜蛋花汤</div></div>
+              <span class="chip safe">不辣</span>
+            </div>
+            <!-- 今日任务 -->
+            <div style="font-size:12px;opacity:.6;margin:0 2px 8px">今日任务 · 完成 +12 星值</div>
+            <div class="glass" style="padding:6px 12px">
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f1f4"><span style="width:20px;height:20px;border-radius:7px;background:#e6f7f0;display:grid;place-items:center;color:#5fe0bb">✓</span><span style="font-size:13px;flex:1">收拾餐桌</span><b style="font-size:12px;color:var(--kid-gold)">+6</b></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 0"><span style="width:20px;height:20px;border-radius:7px;border:1.5px solid #d0d4dc"></span><span style="font-size:13px;flex:1">吃完盘中不挑食</span><b style="font-size:12px;color:var(--kid-gold)">+6</b></div>
+            </div>
+          </div>
+          <div class="tabbar">
+            <div class="t on"><div class="i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg></div>今日</div>
+            <div class="t"><div class="i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4zM4 12h16v8H4z"/></svg></div>餐单</div>
+            <div class="t center"><div class="i"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 4.9L20 8l-4 3.9.9 5.6L12 14.9 7.1 17.5 8 11.9 4 8l5.6-1.1z"/></svg></div></div>
+            <div class="t"><div class="i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v6a6 6 0 01-12 0z"/></svg></div>任务</div>
+            <div class="t"><div class="i"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>我的</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>儿童 · 今日首页</b><span>成长星球一屏聚合：星值 / 餐预告 / 任务</span></div>
+      </div>
+
+      <!-- 屏2 点餐 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>餐单</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:4px">
+            <!-- 日期 -->
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+              <div style="flex:1;text-align:center;padding:8px 0;border-radius:14px;background:#e9edf3;font-size:11px"><div style="opacity:.7">今天</div><b>周四</b></div>
+              <div style="flex:1;text-align:center;padding:8px 0;font-size:11px;opacity:.6"><div>明天</div><b>周五</b></div>
+              <div style="flex:1;text-align:center;padding:8px 0;font-size:11px;opacity:.6"><div>周六</div><b>周末</b></div>
+            </div>
+            <!-- 餐次 -->
+            <div style="display:flex;background:#eef0f4;border-radius:99px;padding:4px;margin-bottom:14px">
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;border-radius:99px;background:#fff;color:#232a63;font-weight:800">午餐</div>
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;opacity:.7">早餐</div>
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;opacity:.7">晚餐</div>
+            </div>
+            <!-- 菜品 -->
+            <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:70px">
+              <div class="glass" style="padding:11px;display:flex;align-items:center;gap:11px">
+                <div class="food f1">牛</div>
+                <div style="flex:1"><div style="font-size:14px;font-weight:700">番茄炖牛腩</div><div style="margin-top:3px"><span class="chip safe">不辣</span> <span class="chip gold">16 币</span></div></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:24px;height:24px;border-radius:50%;background:#e6e9ef">−</span><b style="font-size:13px">2</b><span style="width:24px;height:24px;border-radius:50%;background:var(--kid-food)">+</span></div>
+              </div>
+              <div class="glass" style="padding:11px;display:flex;align-items:center;gap:11px">
+                <div class="food f2">西</div>
+                <div style="flex:1"><div style="font-size:14px;font-weight:700">清炒西兰花</div><div style="margin-top:3px"><span class="chip safe">不辣</span> <span class="chip gold">8 币</span></div></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="width:24px;height:24px;border-radius:50%;background:#e6e9ef">−</span><b style="font-size:13px">1</b><span style="width:24px;height:24px;border-radius:50%;background:var(--kid-food)">+</span></div>
+              </div>
+              <div class="glass" style="padding:11px;display:flex;align-items:center;gap:11px;opacity:.85">
+                <div class="food f3">宫</div>
+                <div style="flex:1"><div style="font-size:14px;font-weight:700">宫保鸡丁</div><div style="margin-top:3px"><span class="chip hot">微辣</span> <span class="chip al">含花生</span></div></div>
+                <span style="font-size:10px;opacity:.6">不可选</span>
+              </div>
+            </div>
+          </div>
+          <!-- 结算条 -->
+          <div style="position:absolute;left:14px;right:14px;bottom:12px;height:58px;border-radius:20px;background:var(--kid-food);display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:none">
+            <div><div style="font-size:10px;opacity:.85">已选 3 份</div><b style="font-size:17px">共 40 星币</b></div>
+            <div style="font-size:14px;font-weight:800">发给家长 ›</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>儿童 · 餐单点餐</b><span>份数步进 / 风险菜品置灰 / 底部结算</span></div>
+      </div>
+
+      <!-- 屏3 想吃与进度 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>我想吃</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="font-size:20px;font-weight:900;margin-bottom:4px">我想吃 <span style="color:var(--kid-pink)">♥</span></div>
+            <div style="font-size:12px;opacity:.65;margin-bottom:16px">点一下小心心，家长周末会安排</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+              <div class="glass" style="padding:12px;text-align:center"><div class="food f4" style="margin:0 auto 8px;width:44px;height:44px">薯</div><div style="font-size:12px">香酥薯条</div><div style="font-size:10px;color:var(--kid-pink)">♥ 已标记</div></div>
+              <div class="glass" style="padding:12px;text-align:center;opacity:.75"><div class="food f5" style="margin:0 auto 8px;width:44px;height:44px">鱼</div><div style="font-size:12px">清蒸鲈鱼</div><div style="font-size:10px;opacity:.6">♡ 想吃</div></div>
+            </div>
+            <div style="font-size:12px;opacity:.6;margin:0 2px 8px">我的点餐进度</div>
+            <div class="glass" style="padding:16px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:12px"><b>午餐 · 番茄牛腩套餐</b><span style="color:var(--kid-gold)">审批中</span></div>
+              <div style="display:flex;align-items:center">
+                <div style="flex:1;text-align:center"><div style="width:26px;height:26px;border-radius:50%;background:var(--kid-green);margin:0 auto 4px;display:grid;place-items:center;font-size:11px">✓</div><span style="font-size:9px;opacity:.7">已提交</span></div>
+                <div style="flex:1;height:2px;background:var(--kid-gold);margin-bottom:16px"></div>
+                <div style="flex:1;text-align:center"><div style="width:26px;height:26px;border-radius:50%;background:var(--kid-gold);margin:0 auto 4px;display:grid;place-items:center;font-size:11px">…</div><span style="font-size:9px;opacity:.8">家长确认</span></div>
+                <div style="flex:1;height:2px;background:#e9edf3;margin-bottom:16px"></div>
+                <div style="flex:1;text-align:center"><div style="width:26px;height:26px;border-radius:50%;background:#e6e9ef;margin:0 auto 4px;display:grid;place-items:center;font-size:11px">☆</div><span style="font-size:9px;opacity:.5">开饭</span></div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>儿童 · 想吃 & 审批进度</b><span>心愿标记 + 流程节点可视化</span></div>
+      </div>
+
+      <!-- 屏4 钱包 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>星币钱包</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div class="glass" style="padding:20px;background:#fff8ec;border:1px solid #ffe7bd;margin-bottom:16px">
+              <div style="font-size:11px;opacity:.75">我的星币余额</div>
+              <div style="font-family:'Baloo 2';font-size:40px;font-weight:800;color:var(--kid-gold)">268</div>
+              <div style="font-size:11px;opacity:.75">本月已用 142 · 额度 400</div>
+              <div style="height:7px;border-radius:99px;background:#e6e9ef;margin-top:10px;overflow:hidden"><div style="width:36%;height:100%;background:var(--kid-gold)"></div></div>
+            </div>
+            <div style="font-size:12px;opacity:.6;margin:0 2px 8px">最近流水</div>
+            <div class="glass" style="padding:6px 14px">
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f1f4"><div class="food f1" style="width:34px;height:34px;border-radius:10px;font-size:11px">餐</div><div style="flex:1;font-size:13px">午餐点餐</div><b style="font-size:13px;color:#ff9a9d">−40</b></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f1f4"><div class="food f2" style="width:34px;height:34px;border-radius:10px;font-size:11px">务</div><div style="flex:1;font-size:13px">完成收拾餐桌</div><b style="font-size:13px;color:#5fe0bb">+6</b></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 0"><div class="food f4" style="width:34px;height:34px;border-radius:10px;font-size:11px">奖</div><div style="flex:1;font-size:13px">家长发放零花钱</div><b style="font-size:13px;color:#5fe0bb">+100</b></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>儿童 · 星币钱包</b><span>余额/额度进度 + 分类流水</span></div>
+      </div>
+
+      <!-- 屏5 成长星 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>成长星</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px;text-align:center">
+            <div style="font-size:18px;font-weight:900">连续打卡 <span style="color:var(--kid-gold)">12 天</span></div>
+            <div style="width:130px;height:130px;margin:16px auto;border-radius:50%;background:var(--kid-food);box-shadow:none;display:grid;place-items:center;font-family:'Baloo 2';font-size:46px;font-weight:800;color:#fff">12</div>
+            <div style="font-size:12px;opacity:.7;margin-bottom:18px">已连续打卡 12 天</div>
+            <div style="font-size:12px;opacity:.6;text-align:left;margin:0 2px 8px">我的勋章</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+              <div class="glass" style="padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffc94d" stroke-width="2"><circle cx="12" cy="9" r="6"/><path d="M9 14.5L7 22l5-3 5 3-2-7.5"/></svg><div style="font-size:10px">不挑食</div></div>
+              <div class="glass" style="padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="24" height="24" viewBox="0 0 24 24" fill="#ffc94d"><path d="M12 2l2.4 4.9L20 8l-4 3.9.9 5.6L12 14.9 7.1 17.5 8 11.9 4 8l5.6-1.1z"/></svg><div style="font-size:10px">小帮手</div></div>
+              <div class="glass" style="padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg><div style="font-size:10px">探险家</div></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>儿童 · 成长星 & 勋章</b><span>打卡连续 / 等级进阶 / 勋章墙</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2><span class="role-tag par">家长端</span>核心页面高保真</h2>
+    <p class="sub">从左到右：家庭看板 → 点餐审批（风险前置）→ 本周菜单编排。</p>
+    <div class="phones">
+      <!-- 屏6 家长看板 -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>家长看板</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <div><div style="font-size:12px;color:var(--muted)">小宇的家庭</div><div style="font-size:16px;font-weight:900">今天要处理什么</div></div>
+              <div style="position:relative;width:40px;height:40px;border-radius:50%;background:#e3f6ef;display:grid;place-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0b7d5e" stroke-width="2"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg><span style="position:absolute;top:-2px;right:-2px;width:16px;height:16px;border-radius:50%;background:#e5484d;color:#fff;font-size:10px;display:grid;place-items:center">2</span></div>
+            </div>
+            <!-- 待审批 -->
+            <div style="font-size:12px;color:var(--muted);margin:0 2px 8px">待你处理 · 2</div>
+            <div class="pcard" style="padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;border-left:4px solid var(--par-primary)">
+              <div style="flex:1"><div style="font-size:14px;font-weight:700">小宇的午餐点餐</div><div style="font-size:12px;color:var(--muted);margin-top:2px">3 份 · 40 星币 · 无辣无过敏</div></div>
+              <span style="font-size:11px;font-weight:700;color:#0b7d5e;background:#e3f6ef;padding:4px 10px;border-radius:99px">去审批</span>
+            </div>
+            <div class="pcard" style="padding:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px;border-left:4px solid var(--par-warn)">
+              <div style="flex:1"><div style="font-size:14px;font-weight:700">小宇申请绑定「妹妹」</div><div style="font-size:12px;color:var(--muted);margin-top:2px">需确认年龄与独立同意</div></div>
+              <span style="font-size:11px;font-weight:700;color:#b96f0a;background:#fff3df;padding:4px 10px;border-radius:99px">审核</span>
+            </div>
+            <!-- 孩子动态 -->
+            <div style="font-size:12px;color:var(--muted);margin:0 2px 8px">本周概览</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="pcard" style="padding:14px"><div style="font-size:11px;color:var(--muted)">余额</div><div style="font-size:17px;font-weight:800">268</div></div>
+              <div class="pcard" style="padding:14px"><div style="font-size:11px;color:var(--muted)">连续打卡</div><div style="font-size:17px;font-weight:800;color:#0b7d5e">12 天</div></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · 看板</b><span>待办红点前置 / 孩子一周概览</span></div>
+      </div>
+
+      <!-- 屏7 审批详情 -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>点餐审批</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">今天午餐 · 小宇提报于 5 分钟前</div>
+            <div style="font-size:16px;font-weight:900;margin-bottom:14px">番茄牛腩套餐</div>
+            <div class="pcard" style="padding:6px 14px;margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eef1ef;font-size:13px"><span>番茄炖牛腩 ×2</span><b>32 币</b></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:13px"><span>清炒西兰花 ×1</span><b>8 币</b></div>
+            </div>
+            <!-- 安全条 -->
+            <div style="display:flex;gap:8px;align-items:flex-start;background:#e3f6ef;border-radius:12px;padding:10px 12px;margin-bottom:10px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0b7d5e" stroke-width="2" style="flex:none;margin-top:1px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <div style="font-size:12px;color:#0b5e46">本单无辣、无已知过敏原；余额 268，本次扣 40 后剩余充足。</div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px">
+              <div style="flex:1;height:50px;border-radius:16px;border:1.5px solid #dfe4e1;display:grid;place-items:center;font-size:13px;font-weight:700;color:var(--par-danger)">拒绝</div>
+              <div style="flex:1.6;height:50px;border-radius:16px;background:var(--par-primary);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;box-shadow:0 10px 22px -8px rgba(15,157,118,.6)">同意并扣款</div>
+            </div>
+            <div style="font-size:10px;color:var(--muted);text-align:center;margin-top:10px">同意前将再次核对最新余额与额度</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · 点餐审批</b><span>安全结论前置 / 高风险二次确认</span></div>
+      </div>
+
+      <!-- 屏8 菜单编排 -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>编排菜单</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;gap:8px;margin-bottom:14px">
+              <div style="flex:1;text-align:center;padding:8px 0;border-radius:12px;background:#e3f6ef;color:#0b7d5e;font-size:12px;font-weight:800">周四</div>
+              <div style="flex:1;text-align:center;padding:8px 0;font-size:12px;color:var(--muted)">周五</div>
+              <div style="flex:1;text-align:center;padding:8px 0;font-size:12px;color:var(--muted)">周六</div>
+            </div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:8px">午餐 · 已选 4 道</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+              <span style="background:#fff;border:1px solid #e2e6e3;border-radius:99px;padding:7px 12px;font-size:12px">番茄炖牛腩 ×</span>
+              <span style="background:#fff;border:1px solid #e2e6e3;border-radius:99px;padding:7px 12px;font-size:12px">清炒西兰花 ×</span>
+              <span style="background:#fff;border:1px solid #e2e6e3;border-radius:99px;padding:7px 12px;font-size:12px">米饭 ×</span>
+              <span style="background:#fff;border:1px solid #e2e6e3;border-radius:99px;padding:7px 12px;font-size:12px">紫菜汤 ×</span>
+              <span style="border:1.5px dashed #b9c4bf;border-radius:99px;padding:7px 12px;font-size:12px;color:#0b7d5e">+ 添加菜品</span>
+            </div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:8px">晚餐</div>
+            <div style="border:1.5px dashed #d7ddda;border-radius:14px;padding:18px;text-align:center;font-size:12px;color:var(--muted);margin-bottom:20px">还未安排晚餐</div>
+            <div style="height:50px;border-radius:16px;background:var(--par-primary);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;box-shadow:0 10px 22px -8px rgba(15,157,118,.6)">发布给小宇</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · 菜单编排</b><span>按日按餐次选菜 / 一键发布</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 启动与登录 ================= -->
+  <div class="section">
+    <h2>启动 · 登录 · 角色选择</h2>
+    <p class="sub">打开即进入星球氛围；一次选择身份，后续按角色进入各自首页。不索取头像昵称，降低首次门槛。</p>
+    <div class="phones">
+      <!-- 闪屏 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid splash">
+          <div class="statusbar" style="position:absolute;top:0;left:0;right:0"><span>9:41</span><span></span><span>100%</span></div>
+          <div class="planet">星</div>
+          <h3>成长星球</h3>
+          <p>家长审菜单、发零花钱；孩子点餐、攒奖励</p>
+        </div></div>
+        <div class="phonecap"><b>启动闪屏</b><span>品牌星球 + 一句话价值</span></div>
+      </div>
+      <!-- 角色选择 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>你是谁</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:24px">
+            <div style="font-size:22px;font-weight:900;margin-bottom:6px">欢迎来到星球</div>
+            <div style="font-size:12px;opacity:.6;margin-bottom:24px">先选一个身份，各端数据互不打扰</div>
+            <div class="rolepick">
+              <div class="rolecard kid">
+                <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="9" r="4"/><path d="M4 20c0-3.5 3.5-5.5 8-5.5s8 2 8 5.5"/></svg></div>
+                <div style="flex:1"><b>我是孩子</b><span>点餐、领星币、做任务、集勋章</span></div>
+              </div>
+              <div class="rolecard par">
+                <div class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
+                <div style="flex:1"><b>我是家长</b><span>审菜单、批点餐、发零花钱</span></div>
+              </div>
+            </div>
+            <div style="font-size:10px;opacity:.45;text-align:center;margin-top:26px">登录即代表同意《儿童隐私政策》与《用户协议》</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>角色选择</b><span>身份一次选定，不共用账号</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 家庭与档案 ================= -->
+  <div class="section">
+    <h2>家庭 · 档案 · 菜品目录</h2>
+    <p class="sub">孩子维护自己的口味偏好；家长通过邀请码组网、审批绑定、从菜品目录里挑菜发菜单。</p>
+    <div class="phones">
+      <!-- 儿童家庭 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>我的家</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="font-size:20px;font-weight:900;margin-bottom:14px">我们一家</div>
+            <div class="glass" style="padding:6px 14px">
+              <div class="memberrow"><div class="avatar" style="background:#2f6bff">爸</div><div style="flex:1;font-size:14px">爸爸</div><span class="chip safe">家长</span></div>
+              <div class="memberrow"><div class="avatar" style="background:#e64980">妈</div><div style="flex:1;font-size:14px">妈妈</div><span class="chip safe">家长</span></div>
+              <div class="memberrow" style="opacity:.6"><div class="avatar" style="background:#e9edf3">妹</div><div style="flex:1;font-size:13px">妹妹</div><span class="chip gold">等待加入</span></div>
+            </div>
+            <div class="invitebox" style="margin-top:14px">
+              <div style="font-size:11px;opacity:.85">家庭邀请码</div>
+              <code>7K2M9</code>
+              <div style="font-size:10px;opacity:.7;margin-top:4px">把这串数字告诉家人，他们输入后申请加入</div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>儿童 · 我的家</b><span>成员关系 + 邀请码</span></div>
+      </div>
+      <!-- 儿童我的/档案 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>我的</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+              <div class="avatar" style="width:56px;height:56px;font-size:20px;background:#e64980">小</div>
+              <div><div style="font-size:18px;font-weight:900">小宇</div><div style="font-size:12px;opacity:.65">成长星 Lv.3 · 连续 12 天</div></div>
+            </div>
+            <div style="font-size:12px;opacity:.6;margin:0 2px 8px">我的口味偏好（只有我能改）</div>
+            <div class="glass" style="padding:12px 14px;margin-bottom:16px">
+              <span class="tag-pref">不吃香菜</span><span class="tag-pref">不吃姜</span><span class="tag-pref off">+ 添加忌口</span>
+            </div>
+            <div class="glass" style="padding:6px 14px">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f0f1f4"><span style="font-size:13px">我的星币</span><span style="opacity:.5">268 ›</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #f0f1f4"><span style="font-size:13px">我的勋章</span><span style="opacity:.5">6 枚 ›</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0"><span style="font-size:13px">隐私与权限</span><span style="opacity:.5">›</span></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>儿童 · 我的 / 档案</b><span>口味偏好 + 个人能力入口</span></div>
+      </div>
+      <!-- 家长家庭邀请 -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>家庭管理</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div class="invitebox" style="background:#fff;border:1px dashed #b9c4bf;margin-bottom:16px">
+              <div style="font-size:11px;color:var(--muted)">家庭邀请码（孩子输入后申请加入）</div>
+              <code style="font-family:'Baloo 2';font-size:20px;font-weight:800;letter-spacing:3px;color:var(--par-primary)">7K2M9</code>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin:0 2px 8px">待审批的申请 · 1</div>
+            <div class="pcard" style="padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;border-left:4px solid var(--par-warn)">
+              <div class="avatar" style="width:38px;height:38px;font-size:13px;background:#e8590c">妹</div>
+              <div style="flex:1"><div style="font-size:14px;font-weight:700">妹妹申请加入</div><div style="font-size:11px;color:var(--muted)">自报 7 岁 · 已独立同意</div></div>
+              <span style="font-size:11px;font-weight:700;color:#0b7d5e;background:#e3f6ef;padding:4px 10px;border-radius:99px">通过</span>
+            </div>
+            <div class="pcard" style="padding:14px;display:flex;align-items:center;gap:12px">
+              <div class="avatar" style="width:38px;height:38px;font-size:13px;background:#2f6bff">宇</div>
+              <div style="flex:1"><div style="font-size:14px;font-weight:700">小宇</div><div style="font-size:11px;color:var(--muted)">孩子 · 已绑定</div></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · 家庭管理</b><span>邀请码 + 绑定审批前置</span></div>
+      </div>
+      <!-- 家长 美团式双栏点餐台 -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par" style="padding:0">
+          <div class="statusbar"><span>9:41</span><span>编排菜单</span><span>100%</span></div>
+          <!-- 顶部：日期 + 餐次 -->
+          <div style="display:flex;gap:6px;padding:0 10px 8px">
+            <div style="flex:1;text-align:center;padding:6px 0;border-radius:10px;background:#e3f6ef;color:#0b7d5e;font-size:11px;font-weight:800">周四·午餐</div>
+            <div style="flex:1;text-align:center;padding:6px 0;font-size:11px;color:var(--muted)">周四·晚餐</div>
+            <div style="flex:1;text-align:center;padding:6px 0;font-size:11px;color:var(--muted)">周五</div>
+          </div>
+          <div class="menubody">
+            <!-- 左分类 -->
+            <div class="side">
+              <div class="cat on">全部</div>
+              <div class="cat">热菜</div>
+              <div class="cat">素菜</div>
+              <div class="cat">汤羹</div>
+              <div class="cat">主食</div>
+              <div class="cat">小吃</div>
+            </div>
+            <!-- 右菜品流 -->
+            <div class="menucol">
+              <div class="dishrow">
+                <div class="food f1">牛</div>
+                <div class="dishinfo">
+                  <div class="nm">番茄炖牛腩</div>
+                  <div class="remarkchip">备注：少盐</div>
+                  <div class="pricerow"><span class="price">¥16 <small>可改价</small></span><span class="addbtn">+</span></div>
+                </div>
+              </div>
+              <div class="dishrow">
+                <div class="food f3">宫</div>
+                <div class="dishinfo">
+                  <div class="nm">宫保鸡丁</div>
+                  <div class="spicepick"><span class="s">不辣</span><span class="s on">微辣</span><span class="s">中辣</span></div>
+                  <div class="pricerow"><span class="price">¥14 <small>可改价</small></span><span class="addbtn">+</span></div>
+                </div>
+              </div>
+              <div class="dishrow">
+                <div class="food f2">西</div>
+                <div class="dishinfo">
+                  <div class="nm">清炒西兰花</div>
+                  <div class="pricerow"><span class="price">¥8 <small>可改价</small></span><span class="addbtn">+</span></div>
+                </div>
+              </div>
+              <div class="dishrow">
+                <div class="food f4">麻</div>
+                <div class="dishinfo">
+                  <div class="nm">麻婆豆腐</div>
+                  <div class="spicepick"><span class="s on">微辣</span><span class="s">中辣</span><span class="s">重辣</span></div>
+                  <div class="pricerow"><span class="price">¥10 <small>可改价</small></span><span class="addbtn">+</span></div>
+                </div>
+              </div>
+              <div class="dishrow">
+                <div class="food f5">汤</div>
+                <div class="dishinfo">
+                  <div class="nm">紫菜蛋花汤</div>
+                  <div class="pricerow"><span class="price">¥4 <small>可改价</small></span><span class="addbtn">+</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="cartbar">
+            <div><div style="font-size:10px;opacity:.7">已选 3 道</div><b style="font-size:14px">合计 ¥48</b></div>
+            <div style="font-size:13px;font-weight:800;background:var(--par-primary);padding:8px 16px;border-radius:99px">发布</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · 美团式点餐台</b><span>左分类 / 右菜品流 · 辣度点选 · 改价 · 备注</span></div>
+      </div>
+
+      <!-- 家长 菜品详情弹层 -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par" style="padding:0">
+          <div class="statusbar"><span>9:41</span><span>菜品</span><span>100%</span></div>
+          <div style="flex:1;background:#e8590c;display:flex;align-items:center;justify-content:center;position:relative">
+            <span style="font-family:'Baloo 2';font-size:60px;font-weight:800;color:rgba(255,255,255,.9)">宫</span>
+            <span style="position:absolute;top:14px;right:14px;background:rgba(0,0,0,.25);color:#fff;font-size:11px;padding:4px 10px;border-radius:99px">在售</span>
+          </div>
+          <div class="sheet" style="position:absolute;border-radius:24px 24px 0 0">
+            <div class="grip"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div style="font-size:15px;font-weight:800">宫保鸡丁</div>
+              <div style="font-size:14px;font-weight:800;color:#e05a2b">¥14</div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">川菜 · 含花生（过敏原已提示）</div>
+            <div style="font-size:12px;font-weight:700;margin:12px 0 2px">辣度</div>
+            <div class="spicegroup"><span class="opt">不辣</span><span class="opt on">微辣</span><span class="opt">中辣</span><span class="opt">重辣</span></div>
+            <div style="font-size:12px;font-weight:700;margin-bottom:2px">定价（可按家庭调整）</div>
+            <div style="display:flex;align-items:center;gap:14px;margin:6px 0 12px"><span style="width:28px;height:28px;border-radius:50%;background:#e6eae7;text-align:center;line-height:28px">−</span><b style="font-size:14px;width:56px;text-align:center">¥14</b><span style="width:28px;height:28px;border-radius:50%;background:var(--par-primary);color:#fff;text-align:center;line-height:28px">+</span></div>
+            <div style="font-size:12px;font-weight:700">备注</div>
+            <div><span class="quicktag">少辣</span><span class="quicktag">不要花生</span><span class="quicktag">少油</span></div>
+            <div class="remarkinput">给小宇的备注…</div>
+            <div style="height:46px;border-radius:14px;background:var(--par-primary);color:#fff;display:grid;place-items:center;font-weight:800;margin-top:12px">加入今日菜单</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>点菜品 → 详情弹层</b><span>辣度单选 / 改价 / 备注标签</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 关键交互态 ================= -->
+  <div class="section">
+    <h2>关键交互态</h2>
+    <p class="sub">不止静态页：点菜品弹出详情 Bottom Sheet、整周菜单一眼扫、操作后轻 toast 反馈。</p>
+    <div class="phones">
+      <!-- 菜品详情 bottom sheet -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>餐单</span><span>100%</span></div>
+          <div style="flex:1;padding:16px;opacity:.55">
+            <div class="glass" style="padding:11px;display:flex;align-items:center;gap:11px;margin-bottom:10px"><div class="food f1">牛</div><div style="flex:1"><div style="font-size:14px;font-weight:700">番茄炖牛腩</div></div></div>
+            <div class="glass" style="padding:11px;display:flex;align-items:center;gap:11px"><div class="food f2">西</div><div style="flex:1"><div style="font-size:14px;font-weight:700">清炒西兰花</div></div></div>
+          </div>
+          <div class="sheet">
+            <div class="grip"></div>
+            <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+              <div class="food f1" style="width:56px;height:56px;border-radius:16px;font-size:16px">牛</div>
+              <div style="flex:1"><div style="font-size:17px;font-weight:900">番茄炖牛腩</div><div style="margin-top:3px"><span class="chip safe">不辣</span> <span class="chip gold">16 币 / 份</span></div></div>
+            </div>
+            <div style="font-size:12px;color:#5a6572;line-height:1.6;margin-bottom:12px">慢炖两小时，番茄酸甜开胃，牛腩软烂。配米饭与汤。</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f4f7f6;border-radius:14px;padding:10px 14px">
+              <span style="font-size:13px;color:var(--muted)">份数</span>
+              <div style="display:flex;align-items:center;gap:12px"><span style="width:28px;height:28px;border-radius:50%;background:#e6eae7;text-align:center;line-height:28px">−</span><b>1</b><span style="width:28px;height:28px;border-radius:50%;background:var(--kid-food);color:#fff;text-align:center;line-height:28px">+</span></div>
+            </div>
+            <div style="height:46px;border-radius:14px;background:var(--kid-food);color:#fff;display:grid;place-items:center;font-weight:800;margin-top:12px">加入我的套餐</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>菜品详情 Bottom Sheet</b><span>上滑展开，不离开餐单上下文</span></div>
+      </div>
+      <!-- 周菜单 -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>本周菜单</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="font-size:15px;font-weight:800;margin-bottom:14px">第 39 周</div>
+            <div class="weekgrid" style="margin-bottom:16px">
+              <div class="d"><div>一</div><div class="dot" style="background:#2dd4a7"></div></div>
+              <div class="d"><div>二</div><div class="dot" style="background:#2dd4a7"></div></div>
+              <div class="d today"><div>三</div><div class="dot" style="background:#fff"></div></div>
+              <div class="d"><div>四</div><div class="dot" style="background:#ffc94d"></div></div>
+              <div class="d"><div>五</div><div class="dot" style="background:#ffc94d"></div></div>
+              <div class="d" style="opacity:.4"><div>六</div><div class="dot"></div></div>
+              <div class="d" style="opacity:.4"><div>日</div><div class="dot"></div></div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">周三 · 午餐</div>
+            <div class="pcard" style="padding:6px 14px">
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eef1ef;font-size:13px"><span>番茄炖牛腩</span><span class="chip safe" style="color:#0b7d5e;background:#e3f6ef">不辣</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eef1ef;font-size:13px"><span>清炒西兰花</span><span class="chip safe" style="color:#0b7d5e;background:#e3f6ef">不辣</span></div>
+              <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:13px"><span>米饭 · 紫菜汤</span><span style="color:var(--muted)">标配</span></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px">
+              <div style="flex:1;height:44px;border:1.5px solid #dfe4e1;border-radius:14px;display:grid;place-items:center;font-size:13px;font-weight:700">查看晚餐</div>
+              <div style="flex:1.4;height:44px;background:var(--par-primary);color:#fff;border-radius:14px;display:grid;place-items:center;font-size:13px;font-weight:800">编排明天</div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>周菜单总览</b><span>整周排布一眼扫，按日下钻</span></div>
+      </div>
+      <!-- 操作反馈 toast + 空状态 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>通知</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px;text-align:center">
+            <div style="font-size:18px;font-weight:900;text-align:left;margin-bottom:18px">通知</div>
+            <div style="width:90px;height:90px;margin:30px auto 16px;border-radius:50%;background:#f4f5f8;display:grid;place-items:center">
+              <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.6"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 01-3.4 0"/></svg>
+            </div>
+            <div style="font-size:14px;opacity:.8">暂无新通知</div>
+            <div style="font-size:12px;opacity:.55;margin-top:6px">家长通过审批、发放零花钱时会在这里提醒你</div>
+          </div>
+          <div class="toast">已加入「我想吃」♥</div>
+        </div></div>
+        <div class="phonecap"><b>空状态 + Toast</b><span>温柔空态 + 操作即时反馈</span></div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= 确认单 / 隐私 / 发零花钱 ================= -->
+  <div class="section">
+    <h2>确认单 · 隐私 · 零花钱</h2>
+    <p class="sub">孩子能看进度、能撤回；数据权利由孩子自己掌控；家长发钱与额度在一屏内完成。</p>
+    <div class="phones">
+
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>我的点餐</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;background:#eef0f4;border-radius:12px;padding:4px;margin-bottom:14px">
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;border-radius:9px;background:#fff;font-weight:700">进行中 · 1</div>
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;color:var(--muted)">历史</div>
+            </div>
+            <div class="glass" style="padding:14px;margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">午餐 · 番茄牛腩套餐</b><span class="chip gold">审批中</span></div>
+              <div style="font-size:12px;color:var(--muted);margin-top:6px">3 份 · 共 40 星币 · 今天 11:20 提交</div>
+              <div style="margin-top:12px;text-align:center;font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:10px;padding:8px">撤回这次点餐</div>
+            </div>
+            <div class="glass" style="padding:14px;opacity:.85">
+              <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">周三 · 清蒸鱼套餐</b><span class="chip safe">已通过</span></div>
+              <div style="font-size:12px;color:var(--muted);margin-top:6px">2 份 · 28 星币 · 昨天</div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>儿童 · 我的确认单</b><span>进度可见 / 可撤回 / 历史留痕</span></div>
+      </div>
+
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>隐私与权限</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:12px">这些是你的数据，由你决定。</div>
+            <div class="glass" style="padding:4px 14px">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #f0f1f4"><span style="font-size:14px">我的口味偏好</span><span style="color:var(--muted)">›</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #f0f1f4"><span style="font-size:14px">导出我的数据</span><span style="color:var(--muted)">›</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #f0f1f4"><span style="font-size:14px">申请删除账号</span><span style="color:#c92a2d;font-size:12px">›</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 0"><span style="font-size:14px">我的处理工单</span><span style="color:var(--muted)">›</span></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6">撤回同意或删除账号需家长陪同确认；提交后会在站内通知结果，不会发到微信。</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>儿童 · 隐私与权限</b><span>数据权利孩子可发起，家长陪同</span></div>
+      </div>
+
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>发放零花钱</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+              <div class="avatar" style="width:44px;height:44px;font-size:14px;background:#2f6bff">宇</div>
+              <div><div style="font-size:14px;font-weight:700">发给 小宇</div><div style="font-size:11px;color:var(--muted)">当前余额 268 · 本周已发 100</div></div>
+            </div>
+            <div style="text-align:center;margin:8px 0 14px"><span style="font-family:'Baloo 2';font-size:34px;font-weight:800;color:var(--par-ink)">¥100</span></div>
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px">
+              <span style="width:52px;height:36px;border-radius:10px;background:#fff;border:1px solid #e2e6e3;text-align:center;line-height:34px;font-size:13px">20</span>
+              <span style="width:52px;height:36px;border-radius:10px;background:#fff;border:1px solid #e2e6e3;text-align:center;line-height:34px;font-size:13px">50</span>
+              <span style="width:52px;height:36px;border-radius:10px;background:var(--par-primary);color:#fff;text-align:center;line-height:34px;font-size:13px;font-weight:700">100</span>
+              <span style="width:52px;height:36px;border-radius:10px;background:#fff;border:1px solid #e2e6e3;text-align:center;line-height:34px;font-size:13px">200</span>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:6px">每周额度上限</div>
+            <div style="background:#fff;border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px">本周可花</span><b>¥50 / 周</b></div>
+            <div style="font-size:12px;color:var(--muted);margin:14px 0 6px">备注（孩子可见）</div>
+            <div style="background:#fff;border:1px solid #e2e6e3;border-radius:12px;padding:10px 14px;font-size:13px;color:var(--muted)">这周坚持吃完晚饭，奖励一下</div>
+            <div style="height:48px;border-radius:14px;background:var(--par-primary);color:#fff;display:grid;place-items:center;font-weight:800;margin-top:16px">确认发放</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · 发零花钱</b><span>快捷金额 + 周额度 + 备注</span></div>
+      </div>
+
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>点餐审批</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;background:#ecefee;border-radius:12px;padding:4px;margin-bottom:14px">
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;border-radius:9px;background:#fff;font-weight:700;color:var(--par-primary)">待处理 · 2</div>
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;color:var(--muted)">已通过</div>
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;color:var(--muted)">已拒绝</div>
+            </div>
+            <div class="pcard" style="padding:14px;margin-bottom:10px;border-left:4px solid var(--par-primary)">
+              <div style="display:flex;justify-content:space-between"><b style="font-size:14px">小宇 · 午餐</b><span class="chip safe" style="background:#e6f7f0;color:#0b8a5f">安全</span></div>
+              <div style="font-size:12px;color:var(--muted);margin:6px 0">番茄牛腩套餐 · 3 份 · 40 币</div>
+              <div style="display:flex;gap:8px;margin-top:10px"><div style="flex:1;text-align:center;border:1px solid #dfe4e1;border-radius:9px;padding:7px;font-size:12px">拒绝</div><div style="flex:1.4;text-align:center;background:var(--par-primary);color:#fff;border-radius:9px;padding:7px;font-size:12px;font-weight:700">同意</div></div>
+            </div>
+            <div class="pcard" style="padding:14px;border-left:4px solid var(--par-warn)">
+              <div style="display:flex;justify-content:space-between"><b style="font-size:14px">妹妹 · 晚餐</b><span class="chip" style="background:#fff3df;color:#b96f0a">需确认</span></div>
+              <div style="font-size:12px;color:var(--muted);margin:6px 0">麻婆豆腐 · 中辣 · 余额 12，差 3 币</div>
+              <div style="display:flex;gap:8px;margin-top:10px"><div style="flex:1;text-align:center;border:1px solid #dfe4e1;border-radius:9px;padding:7px;font-size:12px">拒绝</div><div style="flex:1.4;text-align:center;background:var(--par-primary);color:#fff;border-radius:9px;padding:7px;font-size:12px;font-weight:700">同意并补币</div></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · 审批列表</b><span>状态分组 / 风险行直接出操作</span></div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ================= 课表与作业 ================= -->
+  <div class="section">
+    <h2>课表 · 家庭作业</h2>
+    <p class="sub">孩子端的学习场景：一屏看清今天上什么课、今天有什么作业，做完即打卡。</p>
+    <div class="phones">
+
+      <!-- 本周课表 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>本周课表</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;justify-content:space-between;margin-bottom:14px">
+              <div style="text-align:center;flex:1"><div style="font-size:10px;color:var(--muted)">一</div><div style="font-size:12px;color:var(--muted)">—</div></div>
+              <div style="text-align:center;flex:1"><div style="font-size:10px;color:var(--muted)">二</div><div style="font-size:12px;color:var(--muted)">—</div></div>
+              <div style="text-align:center;flex:1"><div style="font-size:10px;color:var(--muted)">三</div><div style="width:28px;height:28px;line-height:28px;margin:0 auto;border-radius:50%;background:var(--kid-primary);color:#fff;font-size:12px;font-weight:700">三</div></div>
+              <div style="text-align:center;flex:1"><div style="font-size:10px;color:var(--muted)">四</div><div style="font-size:12px;color:var(--muted)">—</div></div>
+              <div style="text-align:center;flex:1"><div style="font-size:10px;color:var(--muted)">五</div><div style="font-size:12px;color:var(--muted)">—</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div style="display:flex;gap:10px;align-items:center"><span style="width:34px;font-size:10px;color:var(--muted);text-align:right">1节</span><div style="flex:1;background:#fff;border:1px solid #eceef2;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:700">语文</span><span style="font-size:10px;color:var(--muted)">08:00 · 教室2</span></div><span style="width:8px;height:8px;border-radius:50%;background:#e5484d;flex:none"></span></div>
+              <div style="display:flex;gap:10px;align-items:center"><span style="width:34px;font-size:10px;color:var(--muted);text-align:right">2节</span><div style="flex:1;background:#fff;border:1px solid #eceef2;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:700">数学</span><span style="font-size:10px;color:var(--muted)">08:55 · 教室2</span></div><span style="width:8px;height:8px;border-radius:50%;background:#2f6bff;flex:none"></span></div>
+              <div style="display:flex;gap:10px;align-items:center"><span style="width:34px;font-size:10px;color:var(--muted);text-align:right">3节</span><div style="flex:1;background:#fff;border:1px solid #eceef2;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:700">英语</span><span style="font-size:10px;color:var(--muted)">10:00 · 语音室</span></div><span style="width:8px;height:8px;border-radius:50%;background:#e8a013;flex:none"></span></div>
+              <div style="display:flex;gap:10px;align-items:center"><span style="width:34px;font-size:10px;color:var(--muted);text-align:right">4节</span><div style="flex:1;background:#fff;border:1px solid #eceef2;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:700">体育</span><span style="font-size:10px;color:var(--muted)">10:55 · 操场</span></div><span style="width:8px;height:8px;border-radius:50%;background:#2f9e6f;flex:none"></span></div>
+              <div style="text-align:center;font-size:10px;color:var(--muted);padding:2px 0">— 午休 —</div>
+              <div style="display:flex;gap:10px;align-items:center"><span style="width:34px;font-size:10px;color:var(--muted);text-align:right">5节</span><div style="flex:1;background:#fff;border:1px solid #eceef2;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:700">科学</span><span style="font-size:10px;color:var(--muted)">14:00 · 实验室</span></div><span style="width:8px;height:8px;border-radius:50%;background:#7048e8;flex:none"></span></div>
+              <div style="display:flex;gap:10px;align-items:center"><span style="width:34px;font-size:10px;color:var(--muted);text-align:right">6节</span><div style="flex:1;background:#fff;border:1px solid #eceef2;border-radius:12px;padding:9px 12px;display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:700">美术</span><span style="font-size:10px;color:var(--muted)">14:55 · 画室</span></div><span style="width:8px;height:8px;border-radius:50%;background:#e8590c;flex:none"></span></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>本周课表</b><span>按日切换 / 节次时间轴 / 科目色点</span></div>
+      </div>
+
+      <!-- 家庭作业 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>家庭作业</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;background:#eef0f4;border-radius:12px;padding:4px;margin-bottom:14px">
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;border-radius:9px;background:#fff;font-weight:700">待完成 · 3</div>
+              <div style="flex:1;text-align:center;font-size:12px;padding:7px 0;color:var(--muted)">已完成 · 2</div>
+            </div>
+            <div class="glass" style="padding:14px;margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">数学 · 练习册 P12-13</b><span class="chip al">今天交</span></div>
+              <div style="font-size:12px;color:var(--muted);margin-top:6px">完成第 3、4 大题，写清步骤</div>
+              <div style="margin-top:12px;text-align:center;font-size:13px;color:var(--kid-primary);border:1px solid #bcd0ff;border-radius:10px;padding:8px">标记完成</div>
+            </div>
+            <div class="glass" style="padding:14px;margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">语文 · 背古诗</b><span class="chip gold">明天交</span></div>
+              <div style="font-size:12px;color:var(--muted);margin-top:6px">背诵《春晓》，明天抽查</div>
+              <div style="margin-top:12px;text-align:center;font-size:13px;color:var(--kid-primary);border:1px solid #bcd0ff;border-radius:10px;padding:8px">标记完成</div>
+            </div>
+            <div class="glass" style="padding:14px;opacity:.9">
+              <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">英语 · 听读 15 分钟</b><span class="chip safe">已完成</span></div>
+              <div style="font-size:12px;color:var(--muted);margin-top:6px">Unit 3 课文跟读，家长已确认</div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家庭作业</b><span>待办 / 截止提醒 / 完成打卡</span></div>
+      </div>
+
+      <!-- 作业详情 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>作业详情</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+              <span style="width:8px;height:28px;border-radius:4px;background:#2f6bff"></span>
+              <div><div style="font-size:17px;font-weight:900">数学 · 练习册 P12-13</div><div style="font-size:11px;color:var(--muted)">王老师布置 · 今天 18:00 截止</div></div>
+            </div>
+            <div class="glass" style="padding:14px;margin-bottom:12px">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px">作业要求</div>
+              <div style="font-size:13px;line-height:1.7">完成练习册第 12–13 页第 3、4 大题，应用题要写出列式和答句，字迹工整。</div>
+            </div>
+            <div class="glass" style="padding:14px;margin-bottom:16px">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:8px">预计用时</div>
+              <div style="display:flex;gap:8px">
+                <span style="padding:5px 12px;border-radius:99px;background:#eef0f4;font-size:12px">20 分钟</span>
+                <span style="padding:5px 12px;border-radius:99px;background:#eef0f4;font-size:12px">需家长签字</span>
+              </div>
+            </div>
+            <div style="height:48px;border-radius:14px;background:var(--kid-primary);color:#fff;display:grid;place-items:center;font-weight:800">我做完了</div>
+            <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">标记后家长会看到，连续完成可领星币</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>作业详情</b><span>要求 / 预计用时 / 完成后家长可见</span></div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ================= 工具箱 ================= -->
+  <div class="section">
+    <h2>工具箱</h2>
+    <p class="sub">学习相关的小工具先从考试计时器开始，后续陆续补充。已上线的可点，未上线的先占位。</p>
+    <div class="phones">
+
+      <!-- 工具箱首页 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>工具箱</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div style="font-size:18px;font-weight:900;margin-bottom:4px">学习工具</div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:16px">按学习节奏，一个一个加上来</div>
+
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">正在用</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+              <div class="glass" style="padding:14px;border-top:3px solid var(--kid-primary)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2f6bff" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg>
+                <div style="font-size:13px;font-weight:700;margin-top:10px">考试计时器</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">模拟考场节奏</div>
+              </div>
+              <div class="glass" style="padding:14px;border-top:3px solid var(--kid-food)">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#e8590c" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4M9 2h6"/></svg>
+                <div style="font-size:13px;font-weight:700;margin-top:10px">专注番茄钟</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:2px">25 分钟专注</div>
+              </div>
+            </div>
+
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">即将上线</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="glass" style="padding:14px;opacity:.55"><div style="font-size:13px;font-weight:700">错题本</div><div style="font-size:10px;color:var(--muted);margin-top:2px">整理做错的题</div></div>
+              <div class="glass" style="padding:14px;opacity:.55"><div style="font-size:13px;font-weight:700">口算练习</div><div style="font-size:10px;color:var(--muted);margin-top:2px">每天 10 题</div></div>
+              <div class="glass" style="padding:14px;opacity:.55"><div style="font-size:13px;font-weight:700">背单词打卡</div><div style="font-size:10px;color:var(--muted);margin-top:2px">每天 5 个</div></div>
+              <div class="glass" style="padding:14px;opacity:.55"><div style="font-size:13px;font-weight:700">护眼提醒</div><div style="font-size:10px;color:var(--muted);margin-top:2px">每 20 分钟休息</div></div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>工具箱</b><span>已上线高亮 / 未上线灰显占位</span></div>
+      </div>
+
+      <!-- 考试计时器运行态 -->
+      <div class="phone">
+        <div class="frame"><div class="screen kid">
+          <div class="statusbar"><span>9:41</span><span>考试计时器</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px;text-align:center">
+            <div style="display:flex;gap:6px;justify-content:center;margin-bottom:20px">
+              <span style="padding:5px 14px;border-radius:99px;background:var(--kid-primary);color:#fff;font-size:12px;font-weight:700">数学</span>
+              <span style="padding:5px 14px;border-radius:99px;background:#eef0f4;font-size:12px;color:var(--muted)">语文</span>
+              <span style="padding:5px 14px;border-radius:99px;background:#eef0f4;font-size:12px;color:var(--muted)">英语</span>
+            </div>
+
+            <!-- 进度环 -->
+            <div style="width:180px;height:180px;margin:6px auto 18px;position:relative">
+              <svg width="180" height="180" viewBox="0 0 180 180">
+                <circle cx="90" cy="90" r="80" fill="none" stroke="#eef0f4" stroke-width="10"/>
+                <circle cx="90" cy="90" r="80" fill="none" stroke="#2f6bff" stroke-width="10" stroke-linecap="round"
+                  stroke-dasharray="502" stroke-dashoffset="100" transform="rotate(-90 90 90)"/>
+              </svg>
+              <div style="position:absolute;inset:0;display:grid;place-items:center">
+                <div><div style="font-family:'Baloo 2';font-size:46px;font-weight:800;line-height:1">29:59</div><div style="font-size:11px;color:var(--muted);margin-top:4px">已用 1 秒 / 30 分钟</div></div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:22px">
+              <span style="padding:5px 12px;border-radius:99px;background:#eef0f4;font-size:11px;color:var(--muted)">考试 30 分钟</span>
+              <span style="padding:5px 12px;border-radius:99px;background:#eef0f4;font-size:11px;color:var(--muted)">加时 5 分钟</span>
+            </div>
+
+            <div style="display:flex;gap:12px;justify-content:center">
+              <div style="width:56px;height:56px;border-radius:50%;background:#eef0f4;display:grid;place-items:center;font-size:12px;color:var(--muted)">结束</div>
+              <div style="width:64px;height:64px;border-radius:50%;background:var(--kid-primary);color:#fff;display:grid;place-items:center;font-weight:800;box-shadow:0 10px 20px -8px rgba(47,107,255,.6)">暂停</div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:16px">时间到会震动提醒，不打扰答题</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>模拟考试计时器</b><span>科目切换 / 倒计时环 / 暂停结束</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footnote">
+    本稿为概念性高保真设计，数据为演示占位；菜品图以渐变色块占位，落地时替换为后端 imageUrl。安全规则（无辣、过敏、E-011 二次确认、额度与余额由服务端裁定）在交互中以状态与二次确认呈现，不在此稿改动业务逻辑。
+  </div>
+
+</div>
+</body>
+</html>

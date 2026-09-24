@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>成长星球小程序 · 体验与优化建议（分角色）</title>
+<style>
+  :root{
+    --child:#2878ff; --child-soft:#edf5ff; --child-ink:#154a9e;
+    --parent:#15966a; --parent-soft:#ebf9f3; --parent-ink:#0b6848;
+    --bg:#f7f9fc; --surface:#fff; --line:#e4e9f1; --ink:#172033; --muted:#667085;
+    --p0:#e5484d; --p1:#e89016; --p2:#2878ff; --ok:#22a06b;
+    --radius:14px; --shadow:0 4px 14px rgba(32,55,92,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7;font-size:15px}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 20px 64px}
+  header.hero{background:linear-gradient(120deg,var(--child-soft),var(--parent-soft));border:1px solid var(--line);border-radius:20px;padding:26px 24px;margin-bottom:22px}
+  header.hero h1{margin:0 0 6px;font-size:26px;font-weight:800}
+  header.hero p{margin:0;color:var(--muted);font-size:14px}
+  .tag{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:6px;margin-right:6px}
+  .t-child{background:var(--child-soft);color:var(--child-ink)}
+  .t-parent{background:var(--parent-soft);color:var(--parent-ink)}
+  .legend{margin:0 0 18px;font-size:13px;color:var(--muted)}
+  .legend b{color:var(--ink)}
+  section{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:18px;box-shadow:var(--shadow)}
+  section>h2{margin:0 0 4px;font-size:20px;font-weight:800;display:flex;align-items:center;gap:10px}
+  section>h2 .bar{width:6px;height:22px;border-radius:4px}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+  h3{font-size:16px;margin:18px 0 8px}
+  .finding{border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:12px 0;background:#fff}
+  .finding .head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .finding .ft{font-weight:800;font-size:15px}
+  .sev{padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800;color:#fff}
+  .sev.p0{background:var(--p0)} .sev.p1{background:var(--p1)} .sev.p2{background:var(--p2)}
+  .finding .why{font-size:13px;color:var(--muted);margin:6px 0}
+  .finding code{background:#f1f5fb;padding:1px 6px;border-radius:5px;font-size:12px;color:var(--child-ink)}
+  .finding ul{margin:8px 0 0;padding-left:18px}
+  .finding li{margin:4px 0}
+  .win{background:var(--parent-soft);border-color:#bfe9d6}
+  .win .ft{color:var(--parent-ink)}
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--child-soft);font-weight:700}
+  .note{background:#fff7df;border:1px solid #ffe1a8;border-radius:10px;padding:12px 14px;font-size:13px;color:#8a6400;margin-top:10px}
+  .pill{font-size:12px;padding:2px 8px;border-radius:999px;background:#eef2f7;color:var(--muted);font-weight:700}
+  footer{color:var(--muted);font-size:12px;text-align:center;margin-top:24px}
+  a{color:var(--child)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>成长星球小程序 · 体验与优化建议</h1>
+    <p>评估方式：代码级结构走查 + 交互逻辑分析（非真机运行）。覆盖登录、双角色导航、点餐、确认单、想吃、家务、钱包、健康打卡等核心页面。</p>
+    <p style="margin-top:8px">
+      <span class="tag t-child">学生角色（CHILD · 蓝）</span>
+      <span class="tag t-parent">家长角色（PARENT · 绿）</span>
+      <span class="pill">版本：V0.0.2 信息架构</span>
+    </p>
+  </header>
+
+  <div class="legend">
+    优先级：<b style="color:var(--p0)">P0 高（影响核心转化/可用性）</b> ·
+    <b style="color:var(--p1)">P1 中（明显体验损耗）</b> ·
+    <b style="color:var(--p2)">P2 低（锦上添花）</b>
+  </div>
+
+  <!-- 体验总览 -->
+  <section>
+    <h2><span class="bar" style="background:linear-gradient(var(--child),var(--parent))"></span>一、体验总览与架构判断</h2>
+    <p class="sub">先说结论：这是一套<strong>架构相当成熟</strong>的家庭成长小程序，双角色隔离、儿童化文案、隐私前置、增强功能静默降级都做得很专业。下面的问题集中在「认知负荷」「待办聚合」「低龄友好」三处，属于体验打磨层，不影响主干可用性。</p>
+    <div class="win finding">
+      <div class="head"><span class="ft">✅ 已做对的加分项（建议保留并强化）</span></div>
+      <ul>
+        <li><b>双角色清晰隔离</b>：学生端导航「点餐/任务/成长/我的」，家长端「首页/审批/钱包/我的」，且用蓝/绿双主题色区分角色（<code>app.wxss</code> 的 <code>.parent</code> 覆盖）。</li>
+        <li><b>儿童化温和文案</b>：确认单状态用「已提交，爸妈在看 👀」「今天就能吃到 🎉」，把驳回软化成「爸妈说要调整一下」。</li>
+        <li><b>隐私前置</b>：过敏/忌口由家长在档案维护，孩子端只读（<code>home</code> 我的口味偏好标注「家长维护」），符合未成年人信息最小化原则。</li>
+        <li><b>增强功能静默降级</b>：推荐/常吃/心愿菜单/周条任一处失败都不阻断点餐主流程，容错专业。</li>
+        <li><b>操作幂等层</b>：<code>services/operations.js</code> 对提交/审批/发放做 pending 重试，避免弱网下重复提交——这点很多商用小程序都做不到。</li>
+        <li><b>空态/错误态/skeleton 齐全</b>：加载、空、错误三态都有专门 UI，无障碍含 focus 态、aria 标签、<code>prefers-reduced-motion</code>。</li>
+      </ul>
+    </div>
+    <div class="note">⚠️ 声明：本评估基于源码与页面结构，未做真机/模拟器运行。涉及视觉动效、真机字体渲染、微信 API 实跑的结论，建议在开发者工具中二次走查后再排期。</div>
+  </section>
+
+  <!-- 学生角色 -->
+  <section>
+    <h2><span class="bar" style="background:var(--child)"></span>二、学生角色（孩子 6–12 岁）优化建议</h2>
+    <p class="sub">核心矛盾：孩子面对的是一套<strong>为「表达想吃」设计的、但概念过多的系统</strong>——同一个诉求有三条平行路径，且低龄用户的可读性与即时激励不足。</p>
+
+    <div class="finding">
+      <div class="head"><span class="sev p0">P0</span><span class="ft">①「想吃」三重概念并存，认知负荷过高</span></div>
+      <p class="why">依据：点餐页同时出现「推荐/常吃」卡片（点击=「点一下加入想吃」，调用 <code>mark-favorite</code>）、以及独立的「今天的心愿菜单」区块（勾选 N 道后「提交心愿菜单」），再加上底部「请家长确认」生成确认单。三者在孩子心智里都≈「我想吃」，但分属收藏、提交、下单三种语义。</p>
+      <ul>
+        <li><b>建议</b>：用<strong>视觉层级</strong>拉开三者——♥ 收藏（轻量、可反复）与「心愿菜单」正式提交（家长可见、可限量）必须区分配色与图标；首页推荐卡文案把「加入想吃」改为「收藏这道」或「❤ 我喜欢」，避免与「心愿菜单」撞词。</li>
+        <li><b>建议</b>：在点餐页顶部用一句话说明三者关系（如「❤ 是我爱吃的菜；🌟 心愿菜单是今天请爸妈做的菜；提交后等爸妈确认」），或考虑把「收藏」合并进心愿菜单的候选池，减少并行入口。</li>
+        <li>预期：降低误操作与「我到底点了什么」的困惑，减少家长端收到的无效确认。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p1">P1</span><span class="ft">② 空状态缺「请爸妈发布」引导与一键提醒</span></div>
+      <p class="why">依据：当家长未发布当日餐单，孩子首页 <code>meal-summary</code> 显示 0/0，空态仅提示「还没有推荐菜，去点餐页看看今天的餐单吧」（<code>home/index.wxml</code>）。孩子无法自助，也没有「提醒爸妈」的出口。</p>
+      <ul>
+        <li><b>建议</b>：空态加一个温和按钮「📣 提醒爸妈发布今天餐单」，点击触发一次<strong>订阅消息授权</strong>或应用内通知，让家长端出现待办。</li>
+        <li><b>建议</b>：点餐页若 <code>menu.canSubmit=false</code>，把「请家长确认」按钮直接置灰并标注「今天餐单还没发布哦」，而非点了才报错（当前 <code>checkout()</code> 在切换学校餐单后点击才提示失败）。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p1">P1</span><span class="ft">③ 缺少「完成即奖励」的即时正反馈</span></div>
+      <p class="why">依据：提交心愿、被家长同意、完成家务、打卡成功均只弹 <code>wx.showToast</code>（如 <code>menu</code> 心愿提交「已提交给爸妈」）。成长 tab 是静态卡片（余额/勋章/连续天数），对 6–12 岁缺乏激励钩子。</p>
+      <ul>
+        <li><b>建议</b>：关键里程碑加轻量庆祝动效——心愿被同意、勋章解锁、连续打卡破纪录时用撒花/星星/进度条动画；尊重 <code>prefers-reduced-motion</code>（已全局支持，动效组件只需复用该媒体查询）。</li>
+        <li><b>建议</b>：成长 tab 增加「本周目标」进度，把抽象的虚拟单位变成可视的成长进度。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p1">P1</span><span class="ft">④ 健康打卡藏在「任务」tab 且无主动提醒</span></div>
+      <p class="why">依据：健康打卡被并入 <code>chore</code> 页底部「今日健康打卡」（<code>chore/index.wxml</code>），首页与导航均无独立入口或角标；孩子容易忘记打卡，连续天数易断。</p>
+      <ul>
+        <li><b>建议</b>：首页「成长」或独立入口展示「今日还有 X 项未打卡」红点角标；打卡完成给即时庆祝。</li>
+        <li><b>建议</b>：把打卡与「任务」拆分或至少在任务 tab 顶部加「今日待办」聚合（打卡 + 待提交家务 + 待确认）。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p2">P2</span><span class="ft">⑤ 低龄可读性：导航用单字汉字图标</span></div>
+      <p class="why">依据：底部导航图标为「餐/务/长/我」纯汉字（<code>app-nav/index.js</code> childTabs）。6 岁左右儿童可能不识字，单字辨识度低。</p>
+      <ul>
+        <li><b>建议</b>：图标改为 emoji/图形 + 文字（🍱点餐 / 🧹任务 / ⭐成长 / 👤我的），或在「我的」里提供「大图标模式」开关。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p2">P2</span><span class="ft">⑥ 学校餐单「不能下单」的边界可更前置</span></div>
+      <p class="why">依据：<code>checkout()</code> 仅允许当日家庭餐单；学校餐单只有「标记想吃」且底部确认按钮在 <code>sourceType==='FAMILY'</code> 时才出现。切换 tab 后孩子可能困惑为什么点不了。</p>
+      <ul>
+        <li><b>建议</b>：学校餐单下直接展示「学校餐单由学校安排，只能标记想吃 ❤」的说明卡，避免「请家长确认」按钮忽隐忽现带来的不确定感。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 家长角色 -->
+  <section>
+    <h2><span class="bar" style="background:var(--parent)"></span>三、家长角色（监护人）优化建议</h2>
+    <p class="sub">核心矛盾：家长是<strong>责任最重的一方</strong>（审批餐单、确认家务、发零花钱、配额度、建菜品、配打卡、看想吃），但首页是 7 项功能平铺、待办分散、切换孩子反复，缺少「今日该处理什么」的聚合与召回。</p>
+
+    <div class="finding">
+      <div class="head"><span class="sev p0">P0</span><span class="ft">① 首页无「待办优先级」，功能平铺</span></div>
+      <p class="why">依据：家长首页是 7 条功能入口平铺（待审批/孩子想吃/零花钱/家庭/日程/勋章/健康，<code>home/index.wxml</code>），「待审批」与「勋章墙」同级，无「你今天有 N 件事要处理」的聚合。</p>
+      <ul>
+        <li><b>建议</b>：首页顶部加<strong>「待办汇总」卡</strong>：待审批餐单 N + 待确认家务 M + 过期想吃 K，点击分别跳确认/家务/想吃；下方再按「常用 / 设置」分组，把勋章墙、健康等下移。</li>
+        <li><b>建议</b>：待办数字来自现有的 <code>/notices/unread-count</code> 与各 list 接口，无需新增后端，仅前端聚合。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p1">P1</span><span class="ft">② 审批流分散在两处，无统一待办中心</span></div>
+      <p class="why">依据：餐单审批在 <code>confirmation</code>，家务确认在 <code>chore</code>，是两个独立「待确认」列表，家长需分别进入排查。</p>
+      <ul>
+        <li><b>建议</b>：在「待办汇总」卡下做二级入口，分别跳两页；中长期考虑建统一「待办中心」页聚合两类待处理（需后端提供一个待办列表接口，或前端并发两个列表再合并）。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p1">P1</span><span class="ft">③ 多孩家庭：当前关注孩子不跨页记忆</span></div>
+      <p class="why">依据：家长侧 <code>menu / confirmation / wallet / chore / want-eat</code> 各自有 child picker，每次进页默认第一个孩子（<code>loadChildren()[0]</code>），需反复切换。</p>
+      <ul>
+        <li><b>建议</b>：把「当前关注孩子」提升为家长级上下文（存 session 或全局 store），跨页记忆；切换时同步刷新相关页。多孩家庭体验会显著改善。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p1">P1</span><span class="ft">④ 「孩子想吃」价值高但 3 层才进得去</span></div>
+      <p class="why">依据：<code>want-eat</code> 页含按周「想吃」标记、做法查看、<strong>采购汇总</strong>，是做饭家长的核心工具，但入口在首页列表第 2 项，需再进页。</p>
+      <ul>
+        <li><b>建议</b>：首页「孩子想吃」卡直接展示「今日 X 道想吃的」，并加「📋 一键采购清单」；支持把采购汇总<strong>分享/导出给家庭成员</strong>（生成图片或转发卡片），放大协作价值。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p2">P2</span><span class="ft">⑤ 发放零花钱摩擦：原因必填 + 二次确认</span></div>
+      <p class="why">依据：<code>wallet.grant()</code> 每次发放需填 1–100 字原因并弹确认框，频繁小额发放有摩擦。</p>
+      <ul>
+        <li><b>建议</b>：提供「常用原因」快捷标签（如「完成家务」「表现好」）或默认带出上次原因；保留原因字段（利于孩子理解记账逻辑），但降低输入成本。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p2">P2</span><span class="ft">⑥ 缺少订阅消息召回，家长靠主动打开</span></div>
+      <p class="why">依据：孩子提交餐单/家务后，家长仅能通过应用内通知（铃铛角标）感知，无微信服务通知推送。</p>
+      <ul>
+        <li><b>建议</b>：在「孩子提交成功」页引导一次性<strong>订阅消息</strong>授权（如「开启待确认提醒」），家长微信收到「孩子今天提交了餐单，请确认」。⚠️ 合规：订阅消息必须由<strong>用户主动点击触发</strong>授权，不得静默、不得强制、不得用于营销群发（以微信开放社区最新口径为准）。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p2">P2</span><span class="ft">⑦ 新家长无引导，功能多不知从何开始</span></div>
+      <p class="why">依据：首次进入家长首页即平铺 7 项，新用户缺少「第一步做什么」的指向。</p>
+      <ul>
+        <li><b>建议</b>：首次进入做 3 步轻引导——「发布今日餐单 → 设置零花钱额度 → 建第一个家务」，完成后消失；后续可经「我的」重看。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 跨角色 -->
+  <section>
+    <h2><span class="bar" style="background:linear-gradient(var(--child),var(--parent))"></span>四、跨角色 / 通用建议</h2>
+
+    <div class="finding">
+      <div class="head"><span class="sev p1">P1</span><span class="ft">① 角色「一次选定不可改」缺少自助出口</span></div>
+      <p class="why">依据：登录后选角色「每个账号只能选择一次」（<code>login/index.wxml</code>），孩子若误选家长无法自助纠正。</p>
+      <ul>
+        <li><b>建议</b>：在「我的」提供受限的「切换/解绑角色」入口，需家长验证（如短信/微信验证）后操作，兼顾安全与容错。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p2">P2</span><span class="ft">② 无障碍可再补：语义化角色与字号</span></div>
+      <p class="why">依据：已做 focus 态、aria-label、reduced-motion，基础较好。</p>
+      <ul>
+        <li><b>建议</b>：关键列表项补 <code>aria-role="listitem"</code>；提供「大字模式」开关照顾低龄与长辈；对比度已达标，保持即可。</li>
+      </ul>
+    </div>
+
+    <div class="finding">
+      <div class="head"><span class="sev p0">P0</span><span class="ft">③ 提审合规：未成年人信息类目与隐私</span></div>
+      <p classwhy></p>
+      <p class="why">依据：产品收集儿童口味/过敏/餐食偏好等未成年人信息，且已有独立 <code>privacy</code>（同意与数据权利）页，方向正确。</p>
+      <ul>
+        <li>✅ <b>通过方向</b>：隐私前置、监护人同意、数据权利（撤回/导出/删除）入口齐备。</li>
+        <li>⚠️ <b>注意</b>：微信对「收集不满 14 周岁未成年人个人信息」有专门合规要求（类目资质、监护人同意机制、隐私协议配置）。提审前请核对《微信小程序运营规范》与开放社区最新口径，确认类目与隐私指引填写完整。</li>
+        <li>❌ <b>禁止</b>：不得强制索取与功能无关的未成年人信息，不得绕过监护人同意。</li>
+        <li>官方入口：微信公众平台「设置 → 服务内容 / 用户隐私保护指引」；规则会更新，以最新口径为准。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 优先级汇总 -->
+  <section>
+    <h2><span class="bar" style="background:var(--ink)"></span>五、落地优先级汇总</h2>
+    <table>
+      <thead><tr><th>优先级</th><th>学生端</th><th>家长端</th><th>通用</th></tr></thead>
+      <tbody>
+        <tr><td><span class="sev p0">P0</span></td><td>① 三重「想吃」概念收敛</td><td>① 首页待办聚合</td><td>③ 未成年人信息合规体检</td></tr>
+        <tr><td><span class="sev p1">P1</span></td><td>② 空态提醒爸妈<br>③ 完成正反馈<br>④ 打卡提醒</td><td>② 审批流统一<br>③ 多孩跨页记忆<br>④ 想吃页前置+分享</td><td>① 角色切换出口</td></tr>
+        <tr><td><span class="sev p2">P2</span></td><td>⑤ 低龄图标<br>⑥ 学校餐单边界</td><td>⑤ 发放 friction<br>⑥ 订阅消息召回<br>⑦ 新家长引导</td><td>② 无障碍补强</td></tr>
+      </tbody>
+    </table>
+    <div class="note">建议排期：先啃两个 P0（概念收敛 + 待办聚合，基本纯前端/聚合现有接口即可见效），再按 P1 推进多孩记忆与正反馈，P2 作为体验打磨穿插进行。合规体检（通用③）应在任何对外测试/提审前完成。</div>
+  </section>
+
+  <footer>成长星球小程序体验走查 · 由小程序产品与体验顾问生成 · 结论基于源码结构，落地请以真机走查为准</footer>
+</div>
+</body>
+</html>
