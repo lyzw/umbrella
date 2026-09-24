@@ -1,5 +1,5 @@
 .login-page { min-height: 100vh; padding-top: 34px; }
-.dev-link { margin-top: 22px; text-align: center; font-size: 12px; color: #2878ff; text-decoration: underline; }
+.dev-link { margin-top: 22px; text-align: center; font-size: 12px; color: #2f6bff; text-decoration: underline; }
 .brand-scene { text-align: center; padding: 10px 0 24px; }
 .planet { position: relative; width: 96px; height: 96px; margin: 0 auto 22px; border-radius: 24px; background: var(--primary-soft); box-shadow: none; }
 .planet-ring { position: absolute; left: -18px; right: -18px; top: 42px; height: 20px; border: 4px solid #93c5fd; border-radius: 50%; transform: rotate(-12deg); }
@@ -17,7 +17,7 @@
 .role-option.child { border-color: #c9ddff; }
 .role-option.parent { border-color: #bce9d6; }
 .role-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #fff; }
-.role-option.child .role-icon { background: #2878ff; }
-.role-option.parent .role-icon { background: #15966a; }
+.role-option.child .role-icon { background: #2f6bff; }
+.role-option.parent .role-icon { background: #0b8a66; }
 .role-title { font-size: 16px; font-weight: 800; }
 .role-desc { font-size: 13px; line-height: 1.5; color: #687386; overflow-wrap: anywhere; }

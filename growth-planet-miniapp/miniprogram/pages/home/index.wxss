@@ -13,7 +13,7 @@
 .home-list { overflow: hidden; background: #fff; border: 1px solid #e6ebf2; border-radius: var(--radius-xl); box-shadow: var(--shadow-soft); }
 .home-list-row { width: 100%; min-height: 70px; padding: 11px 14px; background: #fff; border-radius: 0; border-bottom: 1px solid #e6ebf2; display: block; text-align: left; transition: background-color .12s ease, transform .12s ease; }
 .home-list-row:last-child { border-bottom: 0; }
-.home-list-row-active { background: #f7f9fc; transform: scale(.995); }
+.home-list-row-active { background: #f0f1f4; transform: scale(.995); }
 .home-list-row-content { width: 100%; min-height: 48px; display: flex; align-items: center; justify-content: flex-start; gap: 12px; }
 .home-list-icon { width: 42px; min-width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; }
 .confirmation-icon { color: #15803d; background: #dcfce7; }
@@ -65,7 +65,7 @@
 .child-progress-chip { display: inline-flex; align-items: center; min-height: 30px; padding: 5px 12px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); font-size: 13px; line-height: 20px; font-weight: 700; overflow-wrap: anywhere; }
 .meal-summary { display: flex; align-items: stretch; gap: 0; padding: 4px 0 12px; margin-bottom: 14px; border-bottom: 1px solid #e6ebf2; }
 .meal-summary-col { display: flex; flex: 1 1 0; flex-direction: column; align-items: center; justify-content: center; min-width: 0; padding: 8px 6px; }
-.meal-summary-col-active { background: #f7f9fc; border-radius: 10px; }
+.meal-summary-col-active { background: #f0f1f4; border-radius: 10px; }
 .meal-summary-num { font-size: 22px; font-weight: 800; color: #1f2733; line-height: 1.1; }
 .meal-summary-label { max-width: 100%; margin-top: 2px; color: #687386; font-size: 12px; line-height: 18px; white-space: nowrap; }
 .meal-summary-divider { width: 1px; height: 36px; background: #e6ebf2; }
@@ -81,7 +81,7 @@
 }
 .quick-scroll { white-space: nowrap; margin-bottom: 6px; }
 .quick-card { display: inline-flex; flex-direction: column; width: 132px; margin-right: 10px; padding: 14px 12px; background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; box-shadow: var(--shadow-soft); vertical-align: top; }
-.quick-card-active { transform: scale(.97); background: #f7f9fc; }
+.quick-card-active { transform: scale(.97); background: #f0f1f4; }
 .quick-card-emoji { font-size: 26px; }
 .quick-card-name { font-size: 15px; font-weight: 700; color: #1f2733; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 108px; }
 .quick-card-reason { font-size: 11px; color: #687386; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 108px; }
@@ -109,7 +109,7 @@
 .growth-section-heading .section-title { margin-bottom: 12px; }
 .growth-medal-summary { color: #687386; font-size: 12px; line-height: 1.45; font-weight: 700; }
 .medal-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
-.medal { padding: 12px 8px; border-radius: 14px; text-align: center; background: #f7f9fc; border: 1px solid #e6ebf2; }
+.medal { padding: 12px 8px; border-radius: 14px; text-align: center; background: #f0f1f4; border: 1px solid #e6ebf2; }
 .medal.on { background: var(--c-medal-soft); border-color: #fcd34d; }
 .medal .icon { font-size: 28px; }
 .medal-name { font-size: 12px; font-weight: 700; margin-top: 4px; color: #1f2733; }

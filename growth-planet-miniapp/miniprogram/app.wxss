@@ -30,7 +30,7 @@ view, button, input, textarea { box-sizing: border-box; }
   --danger-ink: #9d241b;
   --neutral-ink: #475467;
   --surface: #fff;
-  --surface-2: #f1f5fb;
+  --surface-2: #eef0f4;
   --line: #e4e9f1;
   --hairline: #eef2f7;
   --muted: #667085;
@@ -49,7 +49,7 @@ view, button, input, textarea { box-sizing: border-box; }
   --motion: .2s ease;
   --shadow: 0 10px 28px rgba(32, 55, 92, .08);
   /* V0.0.2 分类语义色：流水分类标签、预算占比图与模块入口底色共用 */
-  --c-meal: #ff7657;
+  --c-meal: #e8590c;
   --c-meal-soft: #fff0eb;
   --c-chore: #22a06b;
   --c-chore-soft: #e9f8f1;
@@ -57,7 +57,7 @@ view, button, input, textarea { box-sizing: border-box; }
   --c-shop-soft: #f0edff;
   --c-exchange: #12b5a5;
   --c-exchange-soft: #e6f8f6;
-  --c-manual: #2878ff;
+  --c-manual: #2f6bff;
   --c-manual-soft: #edf5ff;
   --c-medal: #f5b301;
   --c-medal-soft: #fff8e0;
