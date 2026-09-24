@@ -1095,6 +1095,87 @@ test('菜单页：常吃快捷区接口失败时静默降级，不影响主流�
   assert.equal(page.data.ready, true);
   assert.deepEqual(page.data.dishes.map(item => item.key), ['PRESET:99']);
 });
+test('菜单页：快捷卡和普通菜品行明确都是今天想吃的轻量标记', async () => {
+  const page = loadPage('menu', 'CHILD');
+  api.get = async endpoint => {
+    if (endpoint === '/child/frequent-dish') {
+      return { dishes: [{ type: 'PRESET', id: '99', name: '合成餐食', count: 4 }] };
+    }
+    if (endpoint === '/child/recommend') {
+      return { dishes: [{ type: 'PRESET', id: '99', name: '合成餐食', reasons: ['最近常吃'] }] };
+    }
+    if (endpoint === '/child/menu-week') return { days: [] };
+    if (endpoint === '/child/wish-menu') return { ...emptyWish, menuDate: shanghaiDate() };
+    if (endpoint === '/child/wish-catalog') return { items: [], total: 0, page: 1, pageSize: 10 };
+    return {
+      menuId: '20',
+      sourceType: 'FAMILY',
+      menuDate: shanghaiDate(),
+      mealType: 'LUNCH',
+      canSubmit: true,
+      dishes: [{ ...dish, isFavorite: false, canSelect: true }]
+    };
+  };
+
+  await page.read();
+
+  assert.equal(page.data.recommend[0].actionLabel, '记入今天想吃');
+  assert.equal(page.data.recommend[0].actionHint, '轻量标记，不会提交确认单');
+  assert.equal(page.data.frequent[0].actionLabel, '记入今天想吃');
+  assert.equal(page.data.dishes[0].favoriteAriaLabel, '标记今天想吃');
+
+  page.allDishes = [{ ...dish, isFavorite: true, canSelect: true }];
+  page.quantities = {};
+  page.setData({ menu: { menuId: '20', canSubmit: true, menuDate: shanghaiDate(), mealType: 'LUNCH' } });
+  page.render();
+  assert.equal(page.data.dishes[0].favoriteAriaLabel, '取消今天想吃');
+  assert.equal(page.data.recommend[0].actionLabel, '取消今天想吃');
+  assert.equal(page.data.frequent[0].actionLabel, '取消今天想吃');
+  assert.equal(page.data.frequent[0].actionHint, '轻量标记，不会提交确认单');
+
+  page.allDishes = [];
+  page.render();
+  for (const item of [...page.data.recommend, ...page.data.frequent]) {
+    assert.equal(item.available, false);
+    assert.equal(item.actionLabel, '今日餐单暂无');
+    assert.equal(item.actionHint, '当前日期没有可标记的菜品');
+  }
+});
+test('学校餐单：前置边界提示，仍可标记但不产生家庭确认单', async () => {
+  const page = loadPage('menu', 'CHILD');
+  page.setData({ sourceType: 'SCHOOL' });
+  page.renderSourceNotice();
+  assert.equal(page.data.schoolBoundaryText, '学校餐单只能查看和标记今天想吃，不会生成家长确认单');
+  page.allDishes = [{ ...dish, isFavorite: false }];
+  page.quantities = { 'PRESET:99': 1 };
+  page.setData({ count: 1, childId: child.childId,
+    menu: { menuId: '20', canSubmit: true, menuDate: shanghaiDate(), mealType: 'LUNCH' } });
+  page.checkout();
+  assert.equal(context.takeCart(), null);
+  assert.deepEqual(navigation, []);
+
+  const calls = [];
+  api.post = async (endpoint, body) => { calls.push({ endpoint, body }); };
+  page.read = async () => {};
+  await page.favorite(event({ key: 'PRESET:99' }));
+  assert.deepEqual(calls, [{ endpoint: '/menu/mark-favorite', body: {
+    dishId: '99', dishType: 'PRESET', favorite: true,
+    menuId: '20', menuDate: shanghaiDate(), mealType: 'LUNCH'
+  } }]);
+  assert.equal(context.takeCart(), null);
+
+  page.source(event({ source: 'FAMILY' }));
+  assert.equal(page.data.schoolBoundaryText, '');
+  await new Promise(resolve => setImmediate(resolve));
+  page.read = async () => { throw new Error('餐单暂不可用'); };
+  page.source(event({ source: 'SCHOOL' }));
+  assert.match(page.data.schoolBoundaryText, /学校餐单只能查看/);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(page.data.error, '餐单暂不可用');
+  assert.match(page.data.schoolBoundaryText, /不会生成家长确认单/);
+  page.onHide();
+  assert.equal(page.data.schoolBoundaryText, '');
+});
 test('家长想吃看板：按日期与餐次分组，状态流转回传乐观锁版本', async () => {
   const page = loadPage('want-eat');
   const today = shanghaiDate();
@@ -1449,6 +1530,8 @@ test('心愿菜单：锁定态勾选无效，撤回走确认并带版本', async
 });
 test('心愿菜单：目录复用统一安全提示，并标注已在候选池的菜', async () => {
   const page = loadPage('menu', 'CHILD');
+  page.wishRaw = emptyWish;
+  page.renderWish();
   api.get = async () => ({ items: [
     wishDish,
     { ...wishDish, dishId: '88', name: '待确认菜', allergenStatus: 'UNKNOWN', safetyStatus: 'UNKNOWN', selectable: false },
@@ -1463,6 +1546,8 @@ test('心愿菜单：目录复用统一安全提示，并标注已在候选池�
 });
 test('心愿菜单：目录加入或移出候选池走 wish-mark', async () => {
   const page = loadPage('menu', 'CHILD');
+  page.wishRaw = emptyWish;
+  page.renderWish();
   let sent;
   api.post = async (endpoint, body) => { sent = { endpoint, body }; return emptyWish; };
   api.get = async endpoint => endpoint === '/child/wish-menu' ? emptyWish : { items: [], total: 0 };
@@ -1471,6 +1556,109 @@ test('心愿菜单：目录加入或移出候选池走 wish-mark', async () => {
     body: { menuDate: shanghaiDate(), type: 'PRESET', id: '99', selected: true } });
   await page.wishMark(event({ type: 'PRESET', id: '99', marked: 'true' }));
   assert.equal(sent.body.selected, false);
+});
+test('心愿菜单：四种只读原因分别展示，目录清空且所有操作不发请求', async () => {
+  const page = loadPage('menu', 'CHILD');
+  const today = shanghaiDate();
+  const cases = [
+    { raw: { enabled: false, canEdit: true, locked: false, menuDate: today },
+      label: '未开启', notice: /家长尚未开启/ },
+    { raw: { enabled: true, canEdit: true, locked: true, menuDate: today, status: 'SUBMITTED' },
+      label: '已提交并锁定', notice: /已提交.*不可修改/ },
+    { raw: { enabled: true, canEdit: true, locked: false, menuDate: '2099-01-01' },
+      label: '日期不可编辑', notice: /今天起 7 天内/ },
+    { raw: { enabled: true, canEdit: false, locked: false, menuDate: today },
+      label: '暂不可编辑', notice: /暂不可编辑/ }
+  ];
+  const calls = [];
+  api.get = async endpoint => { calls.push(endpoint); return { items: [], total: 0 }; };
+  api.post = async endpoint => { calls.push(endpoint); return emptyWish; };
+  for (const item of cases) {
+    page.wishRaw = { ...emptyWish, ...item.raw, items: [wishPool()] };
+    page.wishSelectionTouched = true;
+    page.setData({ menuDate: item.raw.menuDate, wishSelected: [], wishDishes: [{ key: 'PRESET:99' }],
+      wishTotal: 30, wishTab: 'FAMILY', wishPage: 2, wishKeyword: '' });
+    page.renderWish();
+    assert.equal(page.data.wish.stateLabel, item.label);
+    assert.match(page.data.wish.noticeText, item.notice);
+    assert.equal(page.data.wish.showCatalog, false);
+    assert.equal(page.data.wish.canEdit, false);
+    assert.deepEqual(page.data.wishDishes, []);
+    assert.equal(page.data.wishTotal, 0);
+    assert.equal(page.data.wish.items.length, 1, '候选池仍可只读回看');
+    await page.wishMark(event({ type: 'PRESET', id: '99', marked: false }));
+    await page.wishCatalogTab(event({ tab: 'PRESET' }));
+    await page.wishSearch(event({}, '番茄'));
+    await page.wishPageDelta(event({ delta: -1 }));
+    await page.loadWishCatalog();
+    assert.equal(page.data.wishTab, 'FAMILY');
+    assert.equal(page.data.wishPage, 2);
+    assert.equal(page.data.wishKeyword, '');
+  }
+  assert.deepEqual(calls, []);
+});
+test('心愿菜单：状态未加载时不允许目录操作，撤回后恢复可编辑目录', async () => {
+  const page = loadPage('menu', 'CHILD');
+  const calls = [];
+  api.get = async endpoint => { calls.push(endpoint); return { items: [], total: 0 }; };
+  api.post = async endpoint => { calls.push(endpoint); return emptyWish; };
+  await page.loadWishCatalog();
+  await page.wishMark(event({ type: 'PRESET', id: '99', marked: false }));
+  await page.wishCatalogTab(event({ tab: 'PRESET' }));
+  await page.wishSearch(event({}, '番茄'));
+  assert.deepEqual(calls, []);
+  assert.equal(page.data.wishTab, 'FAMILY');
+  assert.equal(page.data.wishKeyword, '');
+
+  page.wishRaw = { ...emptyWish, status: 'WITHDRAWN' };
+  page.renderWish();
+  assert.equal(page.data.wish.stateLabel, '已撤回，可重新编辑');
+  assert.equal(page.data.wish.showCatalog, true);
+  await page.wishCatalogTab(event({ tab: 'PRESET' }));
+  assert.deepEqual(calls, ['/child/wish-catalog']);
+  assert.equal(page.data.wishTab, 'PRESET');
+});
+test('心愿菜单：切换日期读取失败后清空旧目录，不能继续标记旧候选', async () => {
+  const page = loadPage('menu', 'CHILD');
+  page.wishRaw = emptyWish;
+  page.renderWish();
+  page.setData({ menuDate: '2099-01-01', wishDishes: [wishDish], wishTotal: 1 });
+  const calls = [];
+  api.get = async endpoint => { calls.push(endpoint); throw new Error('餐单加载失败'); };
+  api.post = async endpoint => { calls.push(endpoint); };
+  await assert.rejects(page.read(), /餐单加载失败/);
+  assert.equal(page.data.wish, null);
+  assert.deepEqual(page.data.wishDishes, []);
+  assert.equal(page.data.wishTotal, 0);
+  await page.wishMark(event({ type: 'PRESET', id: '99', marked: false }));
+  await page.loadWishCatalog();
+  assert.deepEqual(calls, ['/menu/daily']);
+});
+test('心愿菜单：七天窗口含首尾，越界及日期不匹配时不读取目录', async () => {
+  const page = loadPage('menu', 'CHILD');
+  const today = shanghaiDate();
+  const dateAt = delta => {
+    const date = new Date(today + 'T00:00:00Z');
+    date.setUTCDate(date.getUTCDate() + delta);
+    return date.toISOString().slice(0, 10);
+  };
+  const calls = [];
+  api.get = async (endpoint, query) => { calls.push(query.menuDate); return { items: [], total: 0 }; };
+  for (const delta of [-1, 0, 6, 7]) {
+    const menuDate = dateAt(delta);
+    page.setData({ menuDate });
+    page.wishRaw = { ...emptyWish, menuDate, today };
+    page.renderWish();
+    assert.equal(page.data.wish.showCatalog, delta === 0 || delta === 6);
+    await page.loadWishCatalog();
+  }
+  assert.deepEqual(calls, [today, dateAt(6)]);
+  page.wishRaw = emptyWish;
+  page.renderWish();
+  page.setData({ menuDate: dateAt(1) });
+  await page.loadWishCatalog();
+  await page.wishMark(event({ type: 'PRESET', id: '99', marked: false }));
+  assert.deepEqual(calls, [today, dateAt(6)]);
 });
 test('心愿菜单：关闭、锁定和日期越界均为只读，普通想吃仍可用', async () => {
   const page = loadPage('menu', 'CHILD');
@@ -1510,6 +1698,7 @@ test('心愿菜单：wish-mark兼容布尔和字符串标记，鉴权错误不�
   page.renderWish();
   const calls = [];
   api.post = async (endpoint, body) => { calls.push({ endpoint, body }); return emptyWish; };
+  api.get = async endpoint => endpoint === '/child/wish-menu' ? emptyWish : { items: [], total: 0 };
   await page.wishMark(event({ type: 'PRESET', id: '99', marked: false }));
   await page.wishMark(event({ type: 'PRESET', id: '99', marked: 'true' }));
   assert.deepEqual(calls.map(call => call.body.selected), [true, false]);

@@ -31,7 +31,7 @@ ui.page({
   data: { role: '', busy: false, error: '', children: [], childLabels: [], childIndex: 0, childId: '', sourceType: 'FAMILY',
     menuDate: shanghaiDate(), today: shanghaiDate(), mealType: 'LUNCH', meals: ['早餐', '午餐', '晚餐'], mealIndex: 1,
     menu: null, dishes: [], mildOnly: false, favoritesOnly: false, keyword: '', total: '0.00', count: 0,
-    sourceTab: 'FAMILY', missingCount: 0, missingDishIds: [], invalidSelectedCount: 0, ready: false,
+    sourceTab: 'FAMILY', schoolBoundaryText: '', missingCount: 0, missingDishIds: [], invalidSelectedCount: 0, ready: false,
     categories: [], categoryId: '', frequent: [], recommend: [], week: [],
     // 心愿菜单（P3）：候选池跟随菜单日期；儿童勾选提交，家长查看并配置上限。
     wish: null, wishSelected: [], wishDishes: [], wishTab: 'FAMILY', wishKeyword: '',
@@ -40,6 +40,7 @@ ui.page({
   onLoad(query) { this.previousConfirmId = query.previousConfirmId || null; this.initialChildId = query.childId || null; },
   onShow() {
     if (!ui.guard(this)) return;
+    this.renderSourceNotice();
     this.quantities = {};
     this.allDishes = [];
     this.catalogDishes = [];
@@ -107,7 +108,11 @@ ui.page({
     }
     this.quantities = {};
     this.allDishes = [];
-    this.setData({ menu: null, dishes: [], ready: false, total: '0.00', count: 0 });
+    // 切换日期后先清除旧心愿入口，主餐单加载失败时也不能继续操作旧目录。
+    this.wishRaw = null;
+    this.setData({ menu: null, dishes: [], ready: false, total: '0.00', count: 0,
+      wish: null, wishDishes: [], wishTotal: 0 });
+    this.renderSourceNotice();
     const { sourceType, menuDate, mealType, childId } = this.data;
     const menu = await api.get('/menu/daily', { sourceType, menuDate, mealType, childId });
     this.allDishes = menu.dishes || [];
@@ -186,7 +191,11 @@ ui.page({
   decorateRecommend(dishes) {
     return (this.recommendDishes || []).map(item => {
       const match = dishes.find(dish => dishKey(dish) === item.key);
-      return { ...item, available: Boolean(match && match.selectable), isFavorite: Boolean(match && match.isFavorite) };
+      const available = Boolean(match && match.selectable);
+      const isFavorite = Boolean(match && match.isFavorite);
+      return { ...item, available, isFavorite,
+        actionLabel: available ? (isFavorite ? '取消今天想吃' : '记入今天想吃') : '今日餐单暂无',
+        actionHint: available ? '轻量标记，不会提交确认单' : '当前日期没有可标记的菜品' };
     });
   },
   buildCategories(dishes) {
@@ -201,7 +210,11 @@ ui.page({
   decorateFrequent(dishes) {
     return (this.frequentDishes || []).map(item => {
       const match = dishes.find(dish => dishKey(dish) === item.key);
-      return { ...item, available: Boolean(match && match.selectable), isFavorite: Boolean(match && match.isFavorite) };
+      const available = Boolean(match && match.selectable);
+      const isFavorite = Boolean(match && match.isFavorite);
+      return { ...item, available, isFavorite,
+        actionLabel: available ? (isFavorite ? '取消今天想吃' : '记入今天想吃') : '今日餐单暂无',
+        actionHint: available ? '轻量标记，不会提交确认单' : '当前日期没有可标记的菜品' };
     });
   },
   async readParent() {
@@ -272,7 +285,8 @@ ui.page({
       ...dish, key: dishKey(dish), quantity: this.quantities[dishKey(dish)] || 0, selectable: selectable(dish),
       categoryName: dish.categoryName || '',
       safetyLabel: safetyLabel(dish),
-      spiceLabel: SPICE[dish.spiceLevel]
+      spiceLabel: SPICE[dish.spiceLevel],
+      favoriteAriaLabel: dish.isFavorite ? '取消今天想吃' : '标记今天想吃'
     }));
     const categories = this.buildCategories(all);
     const categoryId = categories.some(item => item.id === this.data.categoryId) ? this.data.categoryId : '';
@@ -285,9 +299,17 @@ ui.page({
       frequent: this.decorateFrequent(all), recommend: this.decorateRecommend(all),
       total: money(total), count: selected.length });
   },
+  renderSourceNotice() {
+    this.setData({
+      schoolBoundaryText: this.data.role === 'CHILD' && this.data.sourceType === 'SCHOOL'
+        ? '学校餐单只能查看和标记今天想吃，不会生成家长确认单'
+        : ''
+    });
+  },
   source(e) {
     if (this.data.busy || this.data.role === 'PARENT') return;
     this.setData({ sourceType: e.currentTarget.dataset.source, categoryId: '' });
+    this.renderSourceNotice();
     ui.run(this, () => this.read());
   },
   sourceTab(e) {
@@ -487,14 +509,23 @@ ui.page({
     const visible = this.data.role === 'PARENT' ? items.filter(item => item.submitted) : items;
     const statusLabel = WISH_STATUS_LABELS[wish.status] || wish.status;
     const canEdit = Boolean(wish.enabled && wish.canEdit && inWindow && !wish.locked);
-    const noticeText = !wish.enabled
-      ? '心愿菜单功能尚未开启，普通「想吃」标记仍可正常使用。'
+    const stateLabel = !wish.enabled
+      ? '未开启'
       : wish.locked
-        ? '已提交给爸妈，当前不可修改；如需调整请先撤回。'
+        ? '已提交并锁定'
         : !inWindow
-          ? '该日期不在可编辑范围（今天起 7 天内），仅可回看。'
+          ? '日期不可编辑'
           : wish.canEdit
-            ? '从下面菜谱里加入心愿，勾选后提交给爸妈。'
+            ? (wish.status === 'WITHDRAWN' ? '已撤回，可重新编辑' : '可编辑')
+            : '暂不可编辑';
+    const noticeText = !wish.enabled
+      ? '家长尚未开启心愿菜单；你仍可以用“今天想吃”做轻量标记。'
+      : wish.locked
+        ? '已提交给家长，当前不可修改；如需调整请先撤回。'
+        : !inWindow
+          ? '该日期不在可编辑范围（今天起 7 天内），只能查看已有记录。'
+          : wish.canEdit
+            ? '先加入心愿候选，再提交给家长；提交后会进入家长可见清单。'
             : '当前暂不可编辑，请稍后重试。';
     this.setData({
       wishSelected: this.data.role === 'PARENT' ? [] : selected,
@@ -503,22 +534,27 @@ ui.page({
         today,
         inWindow,
         canEdit,
+        stateLabel,
+        showCatalog: canEdit,
         statusLabel,
         titleText: wish.menuDate === today ? '今天的心愿菜单' : wish.menuDate + '的心愿菜单',
         submitTimeText: String(wish.submitTime || '').replace('T', ' ').slice(0, 16),
         countText: selected.length + ' / ' + wish.maxDishes,
         noticeText
-      })
+      }),
+      wishDishes: canEdit ? this.data.wishDishes : [],
+      wishTotal: canEdit ? this.data.wishTotal : 0
     });
   },
   wishEditableWindow() {
     const wish = this.data.wish;
     const today = wish && wish.today || shanghaiDate();
-    return Boolean((!wish || (wish.enabled && wish.canEdit && !wish.locked))
+    return Boolean(this.data.role === 'CHILD' && wish && wish.showCatalog
+      && wish.enabled && wish.canEdit && !wish.locked && wish.menuDate === this.data.menuDate
       && this.data.menuDate >= today && this.data.menuDate <= shiftDate(today, WISH_WINDOW_DAYS));
   },
   async loadWishCatalog() {
-    if (!this.wishEditableWindow() || (this.data.wish && !this.data.wish.canEdit)) {
+    if (!this.wishEditableWindow()) {
       this.setData({ wishDishes: [], wishTotal: 0 });
       return;
     }
@@ -540,7 +576,7 @@ ui.page({
   },
   wishToggle(e) {
     const wish = this.data.wish;
-    if (this.data.busy || !wish || !wish.canEdit || !wish.inWindow) return;
+    if (this.data.busy || !wish || !wish.showCatalog || !wish.canEdit || !wish.inWindow) return;
     const key = e.currentTarget.dataset.key;
     const selected = (this.data.wishSelected || []).slice();
     const index = selected.indexOf(key);
@@ -603,10 +639,10 @@ ui.page({
     });
   },
   wishMark(e) {
+    const wish = this.data.wish;
+    if (this.data.busy || !this.wishEditableWindow()) return;
     return ui.run(this, async () => {
       const { type, id, marked } = e.currentTarget.dataset;
-      const wish = this.data.wish;
-      if (wish && (!wish.canEdit || !wish.inWindow)) return;
       const adding = !(marked === true || marked === 'true');
       const key = type + ':' + id;
       const previous = (this.data.wishSelected || []).slice();
@@ -619,14 +655,17 @@ ui.page({
     });
   },
   wishCatalogTab(e) {
+    if (this.data.busy || !this.wishEditableWindow()) return;
     this.setData({ wishTab: e.currentTarget.dataset.tab, wishPage: 1, wishKeyword: '' });
     return ui.run(this, () => this.loadWishCatalog());
   },
   wishSearch(e) {
+    if (this.data.busy || !this.wishEditableWindow()) return;
     this.setData({ wishKeyword: e.detail.value, wishPage: 1 });
     return ui.run(this, () => this.loadWishCatalog());
   },
   wishPageDelta(e) {
+    if (this.data.busy || !this.wishEditableWindow()) return;
     const delta = Number(e.currentTarget.dataset.delta);
     const page = this.data.wishPage + delta;
     if (page < 1 || page * this.data.wishPageSize - this.data.wishPageSize >= this.data.wishTotal) return;
@@ -671,7 +710,7 @@ ui.page({
     this.wishSelectionTouched = false;
     this.setData({ dishes: [], menu: null, missingCount: 0, missingDishIds: [], invalidSelectedCount: 0,
       total: '0.00', count: 0, ready: false, categories: [], categoryId: '', frequent: [], recommend: [],
-      week: [], wish: null, wishSelected: [], wishDishes: [], wishTotal: 0, wishSettings: null,
+      week: [], schoolBoundaryText: '', wish: null, wishSelected: [], wishDishes: [], wishTotal: 0, wishSettings: null,
       wishKeyword: '', wishPage: 1 });
   }
 });

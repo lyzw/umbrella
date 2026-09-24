@@ -21,26 +21,29 @@
     <button class="{{sourceType === 'FAMILY' ? 'active' : ''}}" bindtap="source" data-source="FAMILY" disabled="{{busy}}">家庭餐单</button>
     <button class="{{sourceType === 'SCHOOL' ? 'active' : ''}}" bindtap="source" data-source="SCHOOL" disabled="{{busy}}">学校餐单</button>
   </view>
+  <view wx:if="{{schoolBoundaryText}}" class="notice school-boundary-notice">{{schoolBoundaryText}}</view>
   <view wx:if="{{role === 'CHILD' && recommend.length}}" class="quick-section recommend-section">
-    <view class="quick-head"><text class="quick-title">今天吃什么？</text><text class="small">避开过敏与忌口，挑几道试试</text></view>
+    <view class="quick-head"><text class="quick-title">今天吃什么？</text><text class="small">轻点记入今天想吃，不会提交确认单</text></view>
     <scroll-view class="quick-scroll" scroll-x="true" enable-flex="true">
       <view wx:for="{{recommend}}" wx:key="key" class="quick-card {{item.available ? '' : 'quick-card-disabled'}} {{item.isFavorite ? 'quick-card-active' : ''}}" bindtap="quickFavorite" data-key="{{item.key}}">
         <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="quick-image" />
         <view wx:else class="quick-image quick-fallback">🍲</view>
         <view class="quick-name">{{item.name}}</view>
-        <view class="quick-meta">{{item.isFavorite ? '今天已想吃' : item.available ? '加入想吃' : '今日餐单暂无'}}</view>
+        <view class="quick-meta">{{item.actionLabel}}</view>
+        <view class="quick-hint">{{item.actionHint}}</view>
         <view wx:if="{{item.reasonText}}" class="quick-reason">{{item.reasonText}}</view>
       </view>
     </scroll-view>
   </view>
   <view wx:if="{{role === 'CHILD' && frequent.length}}" class="quick-section">
-    <view class="quick-head"><text class="quick-title">孩子常吃</text><text class="small">点一下加入今天的想吃</text></view>
+    <view class="quick-head"><text class="quick-title">孩子常吃</text><text class="small">轻点记入今天想吃，不会提交确认单</text></view>
     <scroll-view class="quick-scroll" scroll-x="true" enable-flex="true">
       <view wx:for="{{frequent}}" wx:key="key" class="quick-card {{item.available ? '' : 'quick-card-disabled'}} {{item.isFavorite ? 'quick-card-active' : ''}}" bindtap="quickFavorite" data-key="{{item.key}}">
         <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="quick-image" />
         <view wx:else class="quick-image quick-fallback">🍲</view>
         <view class="quick-name">{{item.name}}</view>
-        <view class="quick-meta">{{item.isFavorite ? '今天已想吃' : item.available ? '加入想吃' : '今日餐单暂无'}}</view>
+        <view class="quick-meta">{{item.actionLabel}}</view>
+        <view class="quick-hint">{{item.actionHint}}</view>
       </view>
     </scroll-view>
   </view>
@@ -48,23 +51,24 @@
   <view wx:if="{{role === 'CHILD' && wish}}" class="wish-section">
     <view class="quick-head">
       <text class="quick-title">{{wish.titleText}}</text>
-      <text class="small">已选 {{wish.countText}} 道 · {{wish.statusLabel}}</text>
+      <text class="small">已选 {{wish.countText}} 道 · {{wish.stateLabel}}</text>
     </view>
     <view class="notice">{{wish.noticeText}}</view>
     <view wx:if="{{wish.items.length}}" class="wish-pool">
-      <view wx:for="{{wish.items}}" wx:key="key" class="wish-chip {{item.checked ? 'selected' : ''}} {{item.missing || !item.selectable ? 'wish-chip-disabled' : ''}}" bindtap="wishToggle" data-key="{{item.key}}">
+      <view wx:for="{{wish.items}}" wx:key="key" class="wish-chip {{item.checked ? 'selected' : ''}} {{!wish.canEdit || item.missing || !item.selectable ? 'wish-chip-disabled' : ''}}" bindtap="wishToggle" data-key="{{item.key}}">
         <text class="wish-chip-mark">{{item.checked ? '✓' : '○'}}</text>
         <text class="wish-chip-name">{{item.displayName}}</text>
         <text wx:if="{{item.flags}}" class="wish-chip-flag">{{item.flags}}</text>
         <text wx:if="{{item.submitted}}" class="wish-chip-tag">已提交</text>
       </view>
     </view>
-    <view wx:else class="small">还没有想吃的菜，从下面的菜谱里加入吧。</view>
-    <view class="parent-actions wish-actions">
-      <button bindtap="wishSubmit" disabled="{{busy || !wish.canEdit || !wishSelected.length}}">提交心愿菜单</button>
+    <view wx:else class="small">{{wish.showCatalog ? '还没有心愿候选菜品' : '当天暂无心愿菜品记录'}}</view>
+    <view wx:if="{{wish.canEdit}}" class="wish-submit-note">提交后家长才能看到这份心愿清单</view>
+    <view wx:if="{{wish.canEdit || wish.locked}}" class="parent-actions wish-actions">
+      <button wx:if="{{wish.canEdit}}" class="primary" bindtap="wishSubmit" disabled="{{busy || !wishSelected.length}}">提交给家长</button>
       <button wx:if="{{wish.locked}}" bindtap="wishWithdraw" disabled="{{busy}}">撤回</button>
     </view>
-    <view wx:if="{{wish.canEdit}}" class="wish-catalog">
+    <view wx:if="{{wish.showCatalog}}" class="wish-catalog">
       <view class="tabs source-tabs">
         <button class="{{wishTab === 'FAMILY' ? 'active' : ''}}" bindtap="wishCatalogTab" data-tab="FAMILY" disabled="{{busy}}">家庭菜谱</button>
         <button class="{{wishTab === 'PRESET' ? 'active' : ''}}" bindtap="wishCatalogTab" data-tab="PRESET" disabled="{{busy}}">预置菜谱</button>
@@ -75,7 +79,7 @@
           <text class="wish-dish-name">{{item.name}}</text>
           <text class="small">{{item.typeLabel}} · {{item.categoryName || '未分类'}} · {{item.safetyLabel}}</text>
         </view>
-        <button class="compact-action" bindtap="wishMark" data-type="{{item.type}}" data-id="{{item.id}}" data-marked="{{item.marked}}" disabled="{{busy || (!item.selectable && !item.marked)}}">{{item.actionLabel}}</button>
+        <button class="compact-action" bindtap="wishMark" data-type="{{item.type}}" data-id="{{item.id}}" data-marked="{{item.marked}}" disabled="{{busy || !wish.showCatalog || (!item.selectable && !item.marked)}}">{{item.actionLabel}}</button>
       </view>
       <view wx:if="{{wishTotal > wishPageSize || wishPage > 1}}" class="wish-pager">
         <button bindtap="wishPageDelta" data-delta="-1" disabled="{{busy || wishPage <= 1}}">上一页</button>
@@ -112,12 +116,11 @@
   </view>
   <checkbox-group bindchange="filters" class="filter-chips">
     <label class="filter-chip {{mildOnly ? 'selected' : ''}}"><checkbox value="mild" checked="{{mildOnly}}" disabled="{{busy}}" />无辣</label>
-    <label wx:if="{{role === 'CHILD'}}" class="filter-chip {{favoritesOnly ? 'selected' : ''}}"><checkbox value="favorite" checked="{{favoritesOnly}}" disabled="{{busy}}" />我爱吃</label>
+    <label wx:if="{{role === 'CHILD'}}" class="filter-chip {{favoritesOnly ? 'selected' : ''}}"><checkbox value="favorite" checked="{{favoritesOnly}}" disabled="{{busy}}" />今天想吃</label>
   </checkbox-group>
   <scroll-view wx:if="{{categories.length > 2}}" class="category-chips" scroll-x="true" enable-flex="true">
     <view wx:for="{{categories}}" wx:key="id" class="category-chip {{categoryId === item.id ? 'selected' : ''}}" bindtap="category" data-id="{{item.id}}">{{item.name}}<text class="category-count">{{item.count}}</text></view>
   </scroll-view>
-  <view wx:if="{{role === 'CHILD' && sourceType === 'SCHOOL'}}" class="notice">学校餐单仅供查看和标记想吃，不会创建确认单。</view>
   <view wx:if="{{menu && menu.missingDishIds.length}}" class="notice">部分菜品已不可用，请以当前餐单为准。</view>
   <view wx:if="{{role === 'PARENT' && invalidSelectedCount}}" class="notice warning-notice">
     当前选择中有 {{invalidSelectedCount}} 项已下架或删除，移除后才能发布。
@@ -145,7 +148,10 @@
     <view class="dish-content">
       <view class="dish-title-row">
         <view class="section-title">{{item.name}}</view>
-        <button wx:if="{{role === 'CHILD'}}" class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.isFavorite ? '取消想吃' : '标记想吃'}}">{{item.isFavorite ? '♥' : '♡'}}</button>
+        <view wx:if="{{role === 'CHILD'}}" class="favorite-control">
+          <button class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.favoriteAriaLabel}}">{{item.isFavorite ? '♥' : '♡'}}</button>
+          <text class="favorite-caption">{{item.isFavorite ? '今天想吃' : '记入今天想吃'}}</text>
+        </view>
         <label wx:if="{{role === 'PARENT'}}" class="menu-select-control {{item.selected ? 'selected' : ''}} {{!item.available ? 'disabled' : ''}}" catchtap="toggleDish" data-key="{{item.key}}">
           <checkbox checked="{{item.selected}}" disabled="{{busy || !item.available}}" />
           <text>{{item.selected ? '已加入' : '加入菜单'}}</text>
