@@ -1,7 +1,7 @@
 .home-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
 .notification-button { position: relative; flex: 0 0 48px; width: 48px; min-width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(20, 40, 80, .06), 0 6px 18px rgba(20, 40, 80, .06); }
-.notification-icon { font-size: 20px; line-height: 48px; }
-.notification-badge { position: absolute; top: 2px; right: 2px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #c62828; color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+.notification-icon { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #334155; font-size: 16px; line-height: 1; font-weight: 800; }
+.notification-badge { position: absolute; top: 3px; right: 3px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: #c62828; color: #fff; font-size: 11px; line-height: 18px; text-align: center; white-space: nowrap; }
 .environment-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; margin: -8px 0 14px; border-radius: 8px; background: #fffbeb; color: #92400e; font-size: 12px; font-weight: 600; }
 .hero-panel { position: relative; overflow: hidden; background: var(--primary-soft); border: 1px solid var(--primary-border); border-radius: var(--radius-xl); padding: 22px 20px 18px; margin-bottom: 14px; box-shadow: var(--shadow-soft); }
 .hero-copy { position: relative; z-index: 1; padding-right: 86px; }

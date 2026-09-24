@@ -84,3 +84,7 @@
   .invite-panel { align-items: stretch; flex-direction: column; }
   .step-label { font-size: 10px; }
 }
+@media (max-width: 380px) {
+  .invite-panel { align-items: stretch; flex-direction: column; }
+  .invite-panel button { width: 100%; }
+}

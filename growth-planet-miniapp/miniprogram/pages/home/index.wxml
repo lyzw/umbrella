@@ -5,7 +5,7 @@
       <view class="title">{{active === 'me' ? '我的' : active === 'growth' ? '成长' : active === 'task' ? '任务' : '成长星球'}}</view>
     </view>
     <button class="notification-button" bindtap="go" data-page="notices" aria-label="通知中心">
-      <text class="notification-icon">🔔</text>
+      <text class="notification-icon" aria-hidden="true">铃</text>
       <text wx:if="{{unread > 0}}" class="notification-badge">{{unread > 99 ? '99+' : unread}}</text>
     </button>
   </view>
