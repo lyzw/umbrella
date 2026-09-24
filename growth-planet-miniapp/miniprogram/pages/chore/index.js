@@ -204,10 +204,8 @@ ui.page({
   },
   changeTab(e) {
     const key = e.detail.key;
-    if (key === 'task') return;
-    if (['meal', 'growth', 'me'].includes(key)) {
-      return wx.reLaunch({ url: '/pages/home/index?tab=' + key });
-    }
+    if (this.data.role !== 'CHILD' || key === 'task') return;
+    if (['meal', 'growth', 'me'].includes(key)) return ui.openTab(this, key);
   },
   onHide() {
     this.viewToken = (this.viewToken || 0) + 1;

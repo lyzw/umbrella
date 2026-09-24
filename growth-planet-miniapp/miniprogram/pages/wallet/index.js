@@ -161,9 +161,8 @@ ui.page({
   refresh() { return ui.run(this, () => this.read()); },
   changeTab(e) {
     const key = e.detail.key;
-    if (key === 'wallet') return;
-    if (key === 'approvals') return wx.reLaunch({ url: '/pages/confirmation/index' });
-    if (['home', 'me'].includes(key)) return wx.reLaunch({ url: '/pages/home/index?tab=' + key });
+    if (this.data.role !== 'PARENT' || key === 'wallet') return;
+    if (['home', 'me', 'approvals'].includes(key)) return ui.openTab(this, key);
   },
   grant() {
     return ui.run(this, async () => {

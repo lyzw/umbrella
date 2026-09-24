@@ -272,9 +272,14 @@ ui.page({
   },
   changeTab(e) {
     const key = e.detail.key;
-    if (key === 'approvals') return wx.navigateTo({ url: '/pages/confirmation/index' });
-    if (key === 'wallet') return wx.navigateTo({ url: '/pages/wallet/index' });
-    if (key === 'task') return wx.navigateTo({ url: '/pages/chore/index' });
+    const childTabs = ['meal', 'task', 'growth', 'me'];
+    const parentTabs = ['home', 'approvals', 'wallet', 'me'];
+    const tabs = this.data.role === 'PARENT' ? parentTabs : childTabs;
+    if (!tabs.includes(key) || key === this.data.active) return;
+    if ((this.data.role === 'PARENT' && ['approvals', 'wallet'].includes(key))
+      || (this.data.role === 'CHILD' && key === 'task')) {
+      return ui.openTab(this, key);
+    }
     this.setData({ active: key });
     if (this.data.role === 'CHILD' && (key === 'meal' || key === 'growth')) {
       ui.run(this, () => this.loadChildTab(key));

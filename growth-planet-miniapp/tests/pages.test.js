@@ -82,9 +82,11 @@ test('二级页返回优先退出页面栈，无页面栈时回到角色对应�
 
     global.getCurrentPages = () => [{ route: 'pages/menu/index' }];
     ui.back({ data: { role: 'CHILD' } }, 'invalid');
+    ui.back({ data: { role: 'CHILD' } }, 'task');
     ui.back({ data: { role: 'PARENT' } }, 'me');
     assert.deepEqual(calls.slice(1), [
       { type: 'reLaunch', options: { url: '/pages/home/index?tab=meal' } },
+      { type: 'reLaunch', options: { url: '/pages/chore/index' } },
       { type: 'reLaunch', options: { url: '/pages/home/index?tab=me' } }
     ]);
   } finally {
@@ -531,6 +533,31 @@ test('首页只接受当前角色的一级视图，家务页返回对应儿童�
   assert.deepEqual(navigation, ['/pages/home/index?tab=me']);
   chore.changeTab({ detail: { key: 'task' } });
   assert.deepEqual(navigation, ['/pages/home/index?tab=me']);
+});
+test('首页、家务和钱包一级导航统一使用根路由并拒绝非法角色入口', () => {
+  const childHome = loadPage('home', 'CHILD');
+  childHome.setData({ active: 'meal' });
+  childHome.changeTab({ detail: { key: 'task' } });
+  assert.deepEqual(navigation, ['/pages/chore/index']);
+  childHome.changeTab({ detail: { key: 'wallet' } });
+  assert.deepEqual(navigation, ['/pages/chore/index']);
+
+  const parentHome = loadPage('home', 'PARENT');
+  parentHome.setData({ active: 'home' });
+  parentHome.changeTab({ detail: { key: 'approvals' } });
+  parentHome.changeTab({ detail: { key: 'wallet' } });
+  parentHome.changeTab({ detail: { key: 'home' } });
+  assert.deepEqual(navigation, ['/pages/confirmation/index', '/pages/wallet/index']);
+
+  const chore = loadPage('chore', 'CHILD');
+  chore.changeTab({ detail: { key: 'growth' } });
+  chore.changeTab({ detail: { key: 'approvals' } });
+  assert.deepEqual(navigation, ['/pages/home/index?tab=growth']);
+
+  const wallet = loadPage('wallet', 'PARENT');
+  wallet.changeTab({ detail: { key: 'approvals' } });
+  wallet.changeTab({ detail: { key: 'task' } });
+  assert.deepEqual(navigation, ['/pages/confirmation/index']);
 });
 test('家长首页摘要按选中儿童查询，并使用总数和今日单日范围', async () => {
   const page = loadPage('home');

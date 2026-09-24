@@ -63,8 +63,27 @@ function input(event) {
   this.setData({ [event.currentTarget.dataset.field]: event.detail.value });
 }
 function go(event) { wx.navigateTo({ url: '/pages/' + event.currentTarget.dataset.page + '/index' }); }
-const CHILD_HOME_TABS = new Set(['meal', 'task', 'growth', 'me']);
-const PARENT_HOME_TABS = new Set(['home', 'me']);
+const CHILD_TAB_ROUTES = {
+  meal: '/pages/home/index?tab=meal',
+  task: '/pages/chore/index',
+  growth: '/pages/home/index?tab=growth',
+  me: '/pages/home/index?tab=me'
+};
+const PARENT_TAB_ROUTES = {
+  home: '/pages/home/index?tab=home',
+  approvals: '/pages/confirmation/index',
+  wallet: '/pages/wallet/index',
+  me: '/pages/home/index?tab=me'
+};
+function openTab(page, key) {
+  const role = page && page.data && page.data.role;
+  const routes = role === 'CHILD' ? CHILD_TAB_ROUTES : PARENT_TAB_ROUTES;
+  const url = routes[key];
+  if (!url) return null;
+  if (typeof wx.reLaunch === 'function') return wx.reLaunch({ url });
+  if (typeof wx.navigateTo === 'function') return wx.navigateTo({ url });
+  return null;
+}
 function back(page, fallbackTab) {
   let pages = [];
   if (typeof getCurrentPages === 'function') {
@@ -75,12 +94,9 @@ function back(page, fallbackTab) {
   }
   const role = page && page.data && page.data.role;
   const isChild = role === 'CHILD';
-  const tabs = isChild ? CHILD_HOME_TABS : PARENT_HOME_TABS;
-  const tab = tabs.has(fallbackTab) ? fallbackTab : (isChild ? 'meal' : 'home');
-  const url = '/pages/home/index?tab=' + tab;
-  if (typeof wx.reLaunch === 'function') return wx.reLaunch({ url });
-  if (typeof wx.navigateTo === 'function') return wx.navigateTo({ url });
-  return null;
+  const routes = isChild ? CHILD_TAB_ROUTES : PARENT_TAB_ROUTES;
+  const tab = routes[fallbackTab] ? fallbackTab : (isChild ? 'meal' : 'home');
+  return openTab(page, tab);
 }
 function confirm(content, title = '请确认') {
   const revision = lifecycle.current();
@@ -95,4 +111,4 @@ function loginCode() {
   },
     fail: () => reject(new Error('微信登录失败，请重试')) }));
 }
-module.exports = { page, guard, run, input, go, back, confirm, loginCode };
+module.exports = { page, guard, run, input, go, openTab, back, confirm, loginCode };
