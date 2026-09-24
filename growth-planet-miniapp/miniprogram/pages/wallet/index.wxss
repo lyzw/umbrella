@@ -2,14 +2,15 @@
 .child-picker { margin-bottom: 12px; }
 .wallet-tabs { position: sticky; top: 0; z-index: 3; margin: 12px 0 16px; }
 .balance-card {
-  background: var(--primary-soft);
-  border: 1px solid var(--primary-border);
+  background: #fff;
+  border: 1px solid #eceef2;
+  border-top: 3px solid var(--primary);
   border-radius: var(--radius-lg);
   padding: 20px;
   margin-bottom: 14px;
   box-shadow: var(--shadow-soft);
 }
-.balance-card .amount { font-size: 36px; }
+.balance-card .amount { font-size: 30px; }
 .balance-card .row { margin-top: 10px; }
 .board-card { background: var(--primary-soft); border-color: var(--primary-border); }
 .section {

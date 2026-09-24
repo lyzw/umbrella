@@ -19,17 +19,18 @@
   gap: 16px;
   padding: 16px;
   margin-bottom: 18px;
-  background: var(--primary-soft);
-  border: 1px solid var(--primary-border);
+  background: #fff;
+  border: 1px solid #eceef2;
+  border-top: 3px solid var(--primary);
   border-radius: var(--radius-lg);
 }
 .inbox-summary-main { min-width: 0; }
 .eyebrow { display: block; margin-bottom: 2px; color: var(--primary-ink); font-size: 13px; font-weight: 800; }
-.inbox-count { color: var(--primary); font-size: 32px; font-weight: 800; line-height: 1.1; }
+.inbox-count { color: var(--primary); font-size: 26px; font-weight: 800; line-height: 1.1; }
 .inbox-label { margin-left: 6px; color: var(--primary-ink); font-size: 14px; font-weight: 700; }
 .inbox-note { flex: 0 1 150px; color: var(--primary-ink); font-size: 13px; line-height: 1.5; text-align: right; }
 .list-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 4px 0 12px; }
-.list-heading-title { min-width: 0; color: #172033; font-size: 18px; font-weight: 800; }
+.list-heading-title { min-width: 0; color: #172033; font-size: 16px; font-weight: 800; }
 .list-heading .muted { flex: 0 1 auto; text-align: right; }
 /* 确认单/审批记录：整卡可点，按压有反馈 */
 .record { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 4px; transition: transform var(--motion-fast), background-color var(--motion-fast); }
@@ -42,7 +43,7 @@
 /* 审批操作区与普通内容分区做出层级区分 */
 .section { background: var(--surface-2); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: 16px; }
 /* 合计金额在详情页更醒目，但保持虚拟单位语义 */
-.amount { font-size: 28px; }
+.amount { font-size: 24px; }
 /* 草稿提交前的总览卡 */
 .item .row { align-items: baseline; }
 .confirmation-page.has-decision-bar { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }

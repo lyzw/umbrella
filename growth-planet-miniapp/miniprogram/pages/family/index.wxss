@@ -24,7 +24,7 @@
 .invite-panel .section-title { margin-bottom: 4px; }
 .invite-panel button { flex: 0 0 auto; }
 .invite-code { text-align: center; }
-.invite-value { font-size: 28px; font-weight: 800; letter-spacing: 4px; margin-bottom: 4px; }
+.invite-value { font-size: 22px; font-weight: 800; letter-spacing: 4px; margin-bottom: 4px; }
 .member-section { padding: 0; overflow: hidden; }
 .member-section > .section-title { padding: 16px 16px 4px; }
 .member-section > .empty { padding: 34px 16px; }
@@ -79,7 +79,7 @@
   font-size: 13px;
   line-height: 1.7;
 }
-.complete-task { padding: 18px 16px; border: 1px solid var(--primary-border); border-radius: var(--radius-md); background: var(--primary-soft); }
+.complete-task { padding: 18px 16px; border: 1px solid #eceef2; border-top: 3px solid var(--primary); border-radius: var(--radius-md); background: #fff; }
 @media (max-width: 340px) {
   .invite-panel { align-items: stretch; flex-direction: column; }
   .step-label { font-size: 10px; }
