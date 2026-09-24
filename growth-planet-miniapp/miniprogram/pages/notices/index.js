@@ -23,6 +23,11 @@ ui.page({
   go: ui.go,
   // 心愿菜单通知点入家长菜单页：该页「孩子的心愿菜单」卡按 childId 落地到提交清单。
   viewWish(e) {
+    const noticeId = e.currentTarget.dataset.noticeId;
+    if (noticeId) {
+      // 已读写入是辅助动作，不能阻塞家长进入心愿菜单；页面离开后由生命周期保护迟到响应。
+      this.read({ currentTarget: { dataset: { id: noticeId } } });
+    }
     return wx.navigateTo({ url: '/pages/menu/index?childId=' + e.currentTarget.dataset.childId });
   },
   onHide() { this.setData({ records: [] }); }

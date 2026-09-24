@@ -7,7 +7,7 @@
   <view wx:for="{{records}}" wx:key="id" class="item">
     <view class="row"><text>{{item.title}}</text><text class="badge {{item.read ? 'read-badge' : 'unread-badge'}}">{{item.read ? '已读' : '未读'}}</text></view>
     <view class="muted">儿童 {{item.childId}}</view><view class="small">{{item.createTime}}</view>
-    <view class="actions"><button wx:if="{{item.eventType === 'WISH_SUBMIT'}}" bindtap="viewWish" data-child-id="{{item.childId}}" disabled="{{busy}}">查看心愿菜单</button><button wx:if="{{!item.read}}" bindtap="read" data-id="{{item.id}}" disabled="{{busy}}">标记已读</button></view>
+    <view class="actions"><button wx:if="{{item.eventType === 'WISH_SUBMIT'}}" bindtap="viewWish" data-child-id="{{item.childId}}" data-notice-id="{{item.id}}" disabled="{{busy}}">查看心愿菜单</button><button wx:if="{{!item.read}}" bindtap="read" data-id="{{item.id}}" disabled="{{busy}}">标记已读</button></view>
   </view>
   <view class="actions"><button bindtap="next" data-delta="-1" disabled="{{busy || page === 1}}">上一页</button><button bindtap="next" data-delta="1" disabled="{{busy || page * 20 >= total}}">下一页</button></view>
   <view class="section"><button bindtap="go" data-page="confirmation" disabled="{{busy}}">查看确认单</button></view>

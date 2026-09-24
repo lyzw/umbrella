@@ -511,6 +511,19 @@ test('未读消息映射真实后端事件，已读写入不伪造订阅送达',
   await page.read(event({ id: '9' }));
   assert.equal(page.data.records[0].read, true);
 });
+test('查看心愿菜单立即跳转，标记已读失败不阻断查看', async () => {
+  const page = loadPage('notices');
+  let readStarted = false;
+  api.post = async endpoint => {
+    readStarted = true;
+    assert.equal(endpoint, '/notices/9/read');
+    throw new Error('网络暂不可用');
+  };
+  page.viewWish(event({ childId: child.childId, noticeId: '9' }));
+  assert.equal(readStarted, true);
+  assert.deepEqual(navigation, ['/pages/menu/index?childId=' + child.childId]);
+  await Promise.resolve();
+});
 test('隐藏期间的迟到响应不会恢复敏感表单', async () => {
   const page = loadPage('profile');
   Object.assign(api, methods);
