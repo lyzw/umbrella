@@ -160,11 +160,18 @@
 
 **Goal:** 让一级入口行为稳定，二级页面可以清楚返回所属模块，避免重复压栈和角色错位。
 
-- [ ] 建立一级页面与二级页面清单，明确每个页面的导航归属和返回目标。
-- [ ] 复核 `home/chore/wallet` 的底部导航高亮、重复点击和返回栈行为。
-- [ ] 为餐单审批、家庭绑定、菜品管理、日程、勋章、健康、通知和隐私页统一二级页返回策略。
-- [ ] 验证儿童和家长切换后不会保留另一角色的 `active` 状态或错误入口。
+- [x] 建立一级页面与二级页面清单，明确每个页面的导航归属和返回目标。
+- [x] 复核 `home/chore/wallet` 的底部导航高亮、重复点击和返回栈行为。
+- [x] 为餐单审批、家庭绑定、菜品管理、日程、勋章、健康、通知和隐私页统一二级页返回策略。
+- [x] 验证儿童和家长切换后不会保留另一角色的 `active` 状态或错误入口。
 - [ ] 检查首页新增功能后的列表长度、重复入口和首屏任务优先级，低频功能统一放入“我的”。
+
+**Route ownership recorded in this batch:**
+
+- 儿童一级入口：`meal -> /pages/home/index?tab=meal`、`task -> /pages/chore/index`、`growth -> /pages/home/index?tab=growth`、`me -> /pages/home/index?tab=me`。
+- 家长一级入口：`home -> /pages/home/index?tab=home`、`approvals -> /pages/confirmation/index`、`wallet -> /pages/wallet/index`、`me -> /pages/home/index?tab=me`。
+- 二级页面由 `page-back` 返回所属一级入口；餐单、确认单、家庭、菜品、日程、勋章、健康、通知、隐私和档案页不再自行定义互相冲突的返回策略。
+- 导航锁、页面栈、锁屏恢复、角色切换和系统返回键仍需在微信开发者工具及真机复核。
 
 **Exit Criteria:**
 - 任意页面最多一次明确操作即可回到所属一级页面。

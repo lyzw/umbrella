@@ -16,6 +16,8 @@ V0.0.1 首版客户端，原生 JavaScript / WXML / WXSS，无新增第三方依
 | 通知 | 本人分页、未读筛选和已读操作，不声明订阅送达 |
 | 隐私 | 同意撤回、导出/删除申请、重新核验、工单查询、鉴权导出内容查看 |
 
+页面导航约定：一级入口使用根路由切换，二级页面统一使用页面级导航锁避免连续点击重复压栈；二级页面通过 `page-back` 返回所属一级入口，隐私页归属家长“我的”模块。该行为已由 Node 页面测试覆盖，页面栈、系统返回键、锁屏恢复和真机字体仍需平台验收。
+
 ## 导入运行
 
 1. 在微信开发者工具导入本目录：`/Users/zhouwei/my-workspace/umbrella/growth-planet-miniapp`。项目配置已指向 `miniprogram/`，默认游客 AppID，不需构建 npm。
@@ -38,7 +40,7 @@ node scripts/check-recipe-parity.mjs
 node scripts/check.mjs --native
 ```
 
-`--native` 默认使用本机微信开发者工具内置编译器，也可设置 `WECHAT_COMPILER_DIR`。只在内存检查编译产物，不写入儿童数据、不上传代码。结构检查验证 JS/JSON、页面注册、本地模块、事件处理器及静态资源引用；不是完整 WXML 语义或布局测试。
+`--native` 默认使用本机微信开发者工具内置编译器，也可设置 `WECHAT_COMPILER_DIR`。当前环境缺少内置 `wcc` 时，该命令会先输出结构检查结果，再以非零状态结束；只在内存检查编译产物，不写入儿童数据、不上传代码。结构检查验证 JS/JSON、页面注册、本地模块、事件处理器及静态资源引用；不是完整 WXML 语义或布局测试。
 
 结构检查另外做三项模板静态核对：标签闭合平衡、`wx:for` 必须带 `wx:key`、模板 `{{ }}` 引用的标识符必须在页面 JS 中出现。核对照宽松，只抓「改了模板忘了改 JS」——这类错误在真机上的表现是空白或点击无反应，排查成本远高于一条断言。白名单包含字符串字面量之外的常见例外：`wx:for` 的 `item` / `index`、`wx:for-item` / `wx:for-index` 自定义名、wxs 的 `module` 名，以及 `ui.page` / `ui.guard` 运行时注入的 `busy` / `error` / `role`。
 
