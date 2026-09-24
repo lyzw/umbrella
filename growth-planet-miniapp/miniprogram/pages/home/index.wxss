@@ -1,12 +1,12 @@
 .home-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-.notification-button { position: relative; flex: 0 0 48px; width: 48px; min-width: 48px; height: 48px; min-height: 48px; padding: 0; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(20, 40, 80, .06), 0 6px 18px rgba(20, 40, 80, .06); }
+.notification-button { position: relative; flex: 0 0 44px; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 50%; background: #fff; border: 1px solid #eceef2; box-shadow: none; }
 .notification-icon { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #334155; font-size: 16px; line-height: 1; font-weight: 800; }
 .notification-badge { position: absolute; top: 3px; right: 3px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: #c62828; color: #fff; font-size: 11px; line-height: 18px; text-align: center; white-space: nowrap; }
 .environment-chip { display: inline-flex; align-items: center; min-height: 28px; padding: 4px 10px; margin: -8px 0 14px; border-radius: 8px; background: #fffbeb; color: #92400e; font-size: 12px; font-weight: 600; }
-.hero-panel { position: relative; overflow: hidden; background: var(--primary-soft); border: 1px solid var(--primary-border); border-radius: var(--radius-xl); padding: 22px 20px 18px; margin-bottom: 14px; box-shadow: var(--shadow-soft); }
+.hero-panel { position: relative; overflow: hidden; background: #fff; border: 1px solid #eceef2; border-radius: var(--radius-xl); padding: 20px 18px 16px; margin-bottom: 14px; box-shadow: var(--shadow-soft); border-top: 3px solid var(--primary); }
 .hero-copy { position: relative; z-index: 1; padding-right: 86px; }
 .hero-kicker { color: var(--primary); font-size: 12px; font-weight: 700; margin-bottom: 6px; }
-.hero-title { font-size: 22px; line-height: 1.4; font-weight: 800; }
+.hero-title { font-size: 19px; line-height: 1.4; font-weight: 800; }
 .hero-description { color: #5b6776; font-size: 14px; line-height: 1.65; margin-top: 8px; }
 .hero-visual { position: absolute; right: 16px; top: 26px; width: 64px; height: 64px; border-radius: 18px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 32px; box-shadow: 0 8px 20px rgba(20, 40, 80, .08); }
 .hero-action { width: 100%; margin-top: 18px; }
@@ -33,7 +33,7 @@
 .parent-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; border-top: 1px solid #e6ebf2; }
 .parent-summary-item { min-width: 0; padding: 14px 8px 4px; text-align: center; border-right: 1px solid #e6ebf2; }
 .parent-summary-item:last-child { border-right: 0; }
-.parent-summary-value { display: block; min-height: 28px; overflow-wrap: anywhere; color: #1f2733; font-size: 24px; line-height: 1.1; font-weight: 800; }
+.parent-summary-value { display: block; min-height: 24px; overflow-wrap: anywhere; color: #1f2733; font-size: 19px; line-height: 1.1; font-weight: 700; }
 .parent-summary-value.summary-loading { color: #94a3b8; }
 .parent-summary-value.summary-error { color: #b91c1c; }
 .parent-summary-label { display: block; margin-top: 5px; color: #334155; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
@@ -66,7 +66,7 @@
 .meal-summary { display: flex; align-items: stretch; gap: 0; padding: 4px 0 12px; margin-bottom: 14px; border-bottom: 1px solid #e6ebf2; }
 .meal-summary-col { display: flex; flex: 1 1 0; flex-direction: column; align-items: center; justify-content: center; min-width: 0; padding: 8px 6px; }
 .meal-summary-col-active { background: #f7f9fc; border-radius: 10px; }
-.meal-summary-num { font-size: 26px; font-weight: 800; color: #1f2733; line-height: 1.1; }
+.meal-summary-num { font-size: 22px; font-weight: 800; color: #1f2733; line-height: 1.1; }
 .meal-summary-label { max-width: 100%; margin-top: 2px; color: #687386; font-size: 12px; line-height: 18px; white-space: nowrap; }
 .meal-summary-divider { width: 1px; height: 36px; background: #e6ebf2; }
 .menu-empty-reminder { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; margin-bottom: 14px; background: #fffaf0; border: 1px solid #fed7aa; border-radius: 14px; }
@@ -86,7 +86,7 @@
 .quick-card-name { font-size: 15px; font-weight: 700; color: #1f2733; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 108px; }
 .quick-card-reason { font-size: 11px; color: #687386; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 108px; }
 .quick-card-tag { margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--primary); }
-.wish-card { padding: 14px 16px; margin-bottom: 12px; background: linear-gradient(135deg, #fff7e6, #fff); border: 1px solid #fde68a; border-radius: 16px; }
+.wish-card { padding: 14px 16px; margin-bottom: 12px; background: #fffaf0; border: 1px solid #ffe7bd; border-radius: 16px; }
 .wish-card-head { display: flex; align-items: center; justify-content: space-between; }
 .wish-card-title { font-size: 15px; font-weight: 700; color: #92400e; }
 .wish-card-count { font-size: 13px; font-weight: 800; color: #b45309; }
