@@ -1175,7 +1175,7 @@ test('菜单页：常吃快捷区接口失败时静默降级，不影响主流�
   assert.equal(page.data.ready, true);
   assert.deepEqual(page.data.dishes.map(item => item.key), ['PRESET:99']);
 });
-test('菜单页：快捷卡和普通菜品行明确都是今天想吃的轻量标记', async () => {
+test('菜单页：快捷卡和普通菜品行明确都是个人收藏，不会提交确认单', async () => {
   const page = loadPage('menu', 'CHILD');
   api.get = async endpoint => {
     if (endpoint === '/child/frequent-dish') {
@@ -1199,26 +1199,26 @@ test('菜单页：快捷卡和普通菜品行明确都是今天想吃的轻量�
 
   await page.read();
 
-  assert.equal(page.data.recommend[0].actionLabel, '记入今天想吃');
-  assert.equal(page.data.recommend[0].actionHint, '轻量标记，不会提交确认单');
-  assert.equal(page.data.frequent[0].actionLabel, '记入今天想吃');
-  assert.equal(page.data.dishes[0].favoriteAriaLabel, '标记今天想吃');
+  assert.equal(page.data.recommend[0].actionLabel, '收藏这道');
+  assert.equal(page.data.recommend[0].actionHint, '只记录你的偏好，不会提交确认单');
+  assert.equal(page.data.frequent[0].actionLabel, '收藏这道');
+  assert.equal(page.data.dishes[0].favoriteAriaLabel, '收藏这道菜');
 
   page.allDishes = [{ ...dish, isFavorite: true, canSelect: true }];
   page.quantities = {};
   page.setData({ menu: { menuId: '20', canSubmit: true, menuDate: shanghaiDate(), mealType: 'LUNCH' } });
   page.render();
-  assert.equal(page.data.dishes[0].favoriteAriaLabel, '取消今天想吃');
-  assert.equal(page.data.recommend[0].actionLabel, '取消今天想吃');
-  assert.equal(page.data.frequent[0].actionLabel, '取消今天想吃');
-  assert.equal(page.data.frequent[0].actionHint, '轻量标记，不会提交确认单');
+  assert.equal(page.data.dishes[0].favoriteAriaLabel, '取消收藏');
+  assert.equal(page.data.recommend[0].actionLabel, '取消收藏');
+  assert.equal(page.data.frequent[0].actionLabel, '取消收藏');
+  assert.equal(page.data.frequent[0].actionHint, '只记录你的偏好，不会提交确认单');
 
   page.allDishes = [];
   page.render();
   for (const item of [...page.data.recommend, ...page.data.frequent]) {
     assert.equal(item.available, false);
     assert.equal(item.actionLabel, '今日餐单暂无');
-    assert.equal(item.actionHint, '当前日期没有可标记的菜品');
+    assert.equal(item.actionHint, '当前日期没有可收藏的菜品');
   }
 });
 test('学校餐单：前置边界提示，仍可标记但不产生家庭确认单', async () => {

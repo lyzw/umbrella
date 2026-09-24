@@ -152,7 +152,7 @@
           <view class="quick-card-emoji" aria-hidden="true">🍽️</view>
           <view class="quick-card-name">{{item.name}}</view>
           <view class="quick-card-reason">{{item.reasonText}}</view>
-          <view class="quick-card-tag">点一下加入想吃</view>
+          <view class="quick-card-tag">点一下收藏</view>
         </view>
       </scroll-view>
 
@@ -162,7 +162,7 @@
           <view class="quick-card-emoji" aria-hidden="true">⭐</view>
           <view class="quick-card-name">{{item.name}}</view>
           <view class="quick-card-reason">{{item.countText}}</view>
-          <view class="quick-card-tag">点一下加入想吃</view>
+          <view class="quick-card-tag">点一下收藏</view>
         </view>
       </scroll-view>
       <view wx:if="{{!recommend.length && !frequent.length}}" class="empty">还没有推荐菜，去点餐页看看今天的餐单吧</view>

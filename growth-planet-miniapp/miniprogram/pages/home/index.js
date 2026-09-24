@@ -248,7 +248,7 @@ ui.page({
       streak: calendar ? (calendar.currentStreak || 0) : 0
     });
   },
-  // 点餐首页快捷卡：点击直接加入「想吃」，复用菜单页同口径校验（必须在今日家庭餐单内）。
+  // 点餐首页快捷卡：点击直接收藏，复用菜单页同口径校验（必须在今日家庭餐单内）。
   quickFavorite(e) {
     const key = e.currentTarget.dataset.key;
     const item = [...this.data.recommend, ...this.data.frequent].find(row => row.key === key);
@@ -266,7 +266,7 @@ ui.page({
         menuDate: shanghaiDate(),
         mealType: 'LUNCH'
       });
-      wx.showToast({ title: dish.isFavorite ? '已取消想吃' : '已加入想吃', icon: 'none' });
+      wx.showToast({ title: dish.isFavorite ? '已取消收藏' : '已收藏', icon: 'none' });
       await this.loadMealHome(this.data.childId);
     });
   },

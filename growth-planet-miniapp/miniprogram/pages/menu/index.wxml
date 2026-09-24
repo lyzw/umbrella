@@ -24,7 +24,7 @@
   </view>
   <view wx:if="{{schoolBoundaryText}}" class="notice school-boundary-notice">{{schoolBoundaryText}}</view>
   <view wx:if="{{role === 'CHILD' && recommend.length}}" class="quick-section recommend-section">
-    <view class="quick-head"><text class="quick-title">今天吃什么？</text><text class="small">轻点记入今天想吃，不会提交确认单</text></view>
+    <view class="quick-head"><text class="quick-title">今天吃什么？</text><text class="small">点一下收藏，只记录你的偏好</text></view>
     <scroll-view class="quick-scroll" scroll-x="true" enable-flex="true">
       <view wx:for="{{recommend}}" wx:key="key" class="quick-card {{item.available ? '' : 'quick-card-disabled'}} {{item.isFavorite ? 'quick-card-active' : ''}}" bindtap="quickFavorite" data-key="{{item.key}}">
         <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="quick-image" />
@@ -37,7 +37,7 @@
     </scroll-view>
   </view>
   <view wx:if="{{role === 'CHILD' && frequent.length}}" class="quick-section">
-    <view class="quick-head"><text class="quick-title">孩子常吃</text><text class="small">轻点记入今天想吃，不会提交确认单</text></view>
+    <view class="quick-head"><text class="quick-title">孩子常吃</text><text class="small">点一下收藏，只记录你的偏好</text></view>
     <scroll-view class="quick-scroll" scroll-x="true" enable-flex="true">
       <view wx:for="{{frequent}}" wx:key="key" class="quick-card {{item.available ? '' : 'quick-card-disabled'}} {{item.isFavorite ? 'quick-card-active' : ''}}" bindtap="quickFavorite" data-key="{{item.key}}">
         <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="quick-image" />
@@ -151,7 +151,7 @@
         <view class="section-title">{{item.name}}</view>
         <view wx:if="{{role === 'CHILD'}}" class="favorite-control">
           <button class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.favoriteAriaLabel}}">{{item.isFavorite ? '♥' : '♡'}}</button>
-          <text class="favorite-caption">{{item.isFavorite ? '今天想吃' : '记入今天想吃'}}</text>
+          <text class="favorite-caption">{{item.isFavorite ? '已收藏' : '收藏这道菜'}}</text>
         </view>
         <label wx:if="{{role === 'PARENT'}}" class="menu-select-control {{item.selected ? 'selected' : ''}} {{!item.available ? 'disabled' : ''}}" catchtap="toggleDish" data-key="{{item.key}}">
           <checkbox checked="{{item.selected}}" disabled="{{busy || !item.available}}" />

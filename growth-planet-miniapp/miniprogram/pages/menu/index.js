@@ -190,8 +190,8 @@ ui.page({
       const available = Boolean(match && match.selectable);
       const isFavorite = Boolean(match && match.isFavorite);
       return { ...item, available, isFavorite,
-        actionLabel: available ? (isFavorite ? '取消今天想吃' : '记入今天想吃') : '今日餐单暂无',
-        actionHint: available ? '轻量标记，不会提交确认单' : '当前日期没有可标记的菜品' };
+        actionLabel: available ? (isFavorite ? '取消收藏' : '收藏这道') : '今日餐单暂无',
+        actionHint: available ? '只记录你的偏好，不会提交确认单' : '当前日期没有可收藏的菜品' };
     });
   },
   buildCategories(dishes) {
@@ -209,8 +209,8 @@ ui.page({
       const available = Boolean(match && match.selectable);
       const isFavorite = Boolean(match && match.isFavorite);
       return { ...item, available, isFavorite,
-        actionLabel: available ? (isFavorite ? '取消今天想吃' : '记入今天想吃') : '今日餐单暂无',
-        actionHint: available ? '轻量标记，不会提交确认单' : '当前日期没有可标记的菜品' };
+        actionLabel: available ? (isFavorite ? '取消收藏' : '收藏这道') : '今日餐单暂无',
+        actionHint: available ? '只记录你的偏好，不会提交确认单' : '当前日期没有可收藏的菜品' };
     });
   },
   async readParent() {
@@ -282,7 +282,7 @@ ui.page({
       categoryName: dish.categoryName || '',
       safetyLabel: safetyLabel(dish),
       spiceLabel: SPICE[dish.spiceLevel],
-      favoriteAriaLabel: dish.isFavorite ? '取消今天想吃' : '标记今天想吃'
+      favoriteAriaLabel: dish.isFavorite ? '取消收藏' : '收藏这道菜'
     }));
     const categories = this.buildCategories(all);
     const categoryId = categories.some(item => item.id === this.data.categoryId) ? this.data.categoryId : '';
