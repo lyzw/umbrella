@@ -145,6 +145,17 @@
         </view>
       </view>
 
+      <view wx:if="{{!familyCount}}" class="menu-empty-reminder">
+        <view class="menu-empty-reminder-copy">
+          <text class="menu-empty-reminder-title">今天还没有家庭餐单</text>
+          <text class="menu-empty-reminder-description">提醒爸妈发布今天的餐单吧</text>
+        </view>
+        <button class="secondary" bindtap="remindParent"
+          disabled="{{busy || reminderStatus === 'CREATED' || reminderStatus === 'ALREADY_EXISTS'}}">
+          {{reminderStatus === 'CREATED' || reminderStatus === 'ALREADY_EXISTS' ? '今天已提醒' : '提醒爸妈发布'}}
+        </button>
+      </view>
+
       <view wx:if="{{recommend.length}}" class="section-title">今天吃什么？</view>
       <scroll-view wx:if="{{recommend.length}}" scroll-x class="quick-scroll">
         <view wx:for="{{recommend}}" wx:key="key" class="quick-card" bindtap="quickFavorite" data-key="{{item.key}}" hover-class="quick-card-active">

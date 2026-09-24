@@ -30,7 +30,7 @@ ui.page({
       wantEat: { status: 'idle', value: 0, error: '' }
     },
     // 点餐（孩子首页）增强区块
-    familyCount: 0, schoolCount: 0, familyMenuId: '', mealMenuDishes: [],
+    familyCount: 0, schoolCount: 0, familyMenuId: '', mealMenuDishes: [], reminderStatus: '',
     recommend: [], frequent: [], wish: null,
     confirmStatus: null, confirmId: null,
     // 成长增强区块（只读）
@@ -242,6 +242,17 @@ ui.page({
       } : null,
       confirmStatus: confirm ? confirm.status : null,
       confirmId: confirm ? confirm.confirmId : null
+    });
+  },
+  remindParent() {
+    if (this.data.role !== 'CHILD' || this.data.familyCount !== 0) return;
+    return ui.run(this, async () => {
+      const result = await api.post('/child/menu-reminder', {});
+      const status = result && result.status ? result.status : 'SENT';
+      this.setData({ reminderStatus: status });
+      const message = status === 'CREATED' ? '已提醒爸妈'
+        : status === 'ALREADY_EXISTS' ? '今天已经提醒过爸妈啦' : '提醒已发送';
+      wx.showToast({ title: message, icon: 'none' });
     });
   },
   async loadGrowth(childId) {

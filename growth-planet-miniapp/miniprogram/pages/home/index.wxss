@@ -69,6 +69,16 @@
 .meal-summary-num { font-size: 26px; font-weight: 800; color: #1f2733; line-height: 1.1; }
 .meal-summary-label { max-width: 100%; margin-top: 2px; color: #687386; font-size: 12px; line-height: 18px; white-space: nowrap; }
 .meal-summary-divider { width: 1px; height: 36px; background: #e6ebf2; }
+.menu-empty-reminder { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; margin-bottom: 14px; background: #fffaf0; border: 1px solid #fed7aa; border-radius: 14px; }
+.menu-empty-reminder-copy { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.menu-empty-reminder-title { color: #7c2d12; font-size: 14px; line-height: 20px; font-weight: 800; }
+.menu-empty-reminder-description { color: #9a3412; font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
+.menu-empty-reminder button.secondary { flex: 0 0 auto; min-height: 40px; padding: 8px 12px; background: #fff; border: 1px solid #fb923c; color: #c2410c; font-size: 13px; line-height: 20px; }
+.menu-empty-reminder button.secondary:active { background: #ffedd5; }
+@media (max-width: 340px) {
+  .menu-empty-reminder { align-items: stretch; flex-direction: column; }
+  .menu-empty-reminder button.secondary { width: 100%; }
+}
 .quick-scroll { white-space: nowrap; margin-bottom: 6px; }
 .quick-card { display: inline-flex; flex-direction: column; width: 132px; margin-right: 10px; padding: 14px 12px; background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; box-shadow: var(--shadow-soft); vertical-align: top; }
 .quick-card-active { transform: scale(.97); background: #f7f9fc; }

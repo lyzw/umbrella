@@ -106,6 +106,28 @@
 
 详见[通知与隐私接口及边界](sprint4-sidecar-handoff.md)。通知 IN_APP 查询和未读数不依赖订阅授权；逐事件授权仅是本人声明，不等价微信平台授权证明。真实发送适配器未实现、默认禁发。
 
+儿童发现今日没有家庭餐单时，可调用 `POST /api/mini/child/menu-reminder` 提醒当前家庭创建家长。请求体为空对象：
+
+```json
+{}
+```
+
+仅允许当前登录的 `CHILD` 角色，服务端从会话解析儿童和家庭，不接受客户端传入的家庭 ID、家长 ID 或日期；儿童必须在该家庭中处于有效 `BOUND` 关系。事件按儿童和 Asia/Shanghai 业务日期幂等，同一儿童当天重复请求不会新增通知。
+
+首次创建返回：
+
+```json
+{"code":0,"data":{"status":"CREATED"},"message":"success","requestId":"example-reminder"}
+```
+
+当天已有提醒时返回：
+
+```json
+{"code":0,"data":{"status":"ALREADY_EXISTS"},"message":"success","requestId":"example-reminder-repeat"}
+```
+
+服务端为家庭创建家长写入一条 `IN_APP` 站内通知，并同步建立 `SUBSCRIBE` 记录。`SUBSCRIBE` 初始状态为 `UNAUTHORIZED`，仅表示通知事件已登记，不代表已获得微信授权或已完成平台送达；真实微信订阅授权、发送和真机端到端联调仍需单独验收。该接口不新增字段、索引或迁移。
+
 隐私请求幂等键为 `[A-Za-z0-9_-]{1,128}` 且必填；DELETE 须新微信 code 重新验证账号身份，不能据此声称完成监护关系核验。管理员须 ADMIN 加 `privacy.operator-ids` 显式配置。工单流转是人工办理记录，COMPLETED 不会触发自动数据删除；READY 仅开放有限范围的24小时鉴权下载，过期410/E-410。撤回同意不会自动剥夺权利申请入口。
 
 ## 升级注意

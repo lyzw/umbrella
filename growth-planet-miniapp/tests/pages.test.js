@@ -79,6 +79,22 @@ test('首页餐单统计分别进入家庭和学校午餐，拦截无效来源�
   parent.openMealSource(event({ source: 'SCHOOL' }));
   assert.deepEqual(navigation, []);
 });
+test('孩子首页家庭餐单为空时可以提醒爸妈，重复结果给出明确反馈', async () => {
+  const page = loadPage('home', 'CHILD');
+  const calls = [];
+  api.post = async (endpoint, body) => {
+    calls.push({ endpoint, body });
+    return { status: calls.length === 1 ? 'CREATED' : 'ALREADY_EXISTS' };
+  };
+
+  await page.remindParent();
+  assert.deepEqual(calls, [{ endpoint: '/child/menu-reminder', body: {} }]);
+  assert.equal(page.data.reminderStatus, 'CREATED');
+
+  page.setData({ reminderStatus: '' });
+  await page.remindParent();
+  assert.equal(page.data.reminderStatus, 'ALREADY_EXISTS');
+});
 test('首页餐单来源在首次加载消费，学校仍不可提交，返回时不覆盖用户切换', async () => {
   const page = loadPage('menu', 'CHILD');
   page.onLoad({ sourceType: 'SCHOOL' });
