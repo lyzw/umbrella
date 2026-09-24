@@ -68,7 +68,7 @@
       </view>
       <view class="progress"><i style="width: {{item.percent}}%"></i></view>
       <view class="muted">今日 {{item.targetText}}</view>
-      <button class="primary item-action" data-id="{{item.itemId}}" bindtap="checkIn" disabled="{{item.reached}}">{{item.actionLabel}}</button>
+      <button class="primary item-action" data-id="{{item.itemId}}" bindtap="checkIn" disabled="{{item.reached || item.pending || busy}}">{{item.pending ? '提交中' : item.actionLabel}}</button>
     </view>
     <view wx:if="{{checkItems.length === 0}}" class="empty">家里还没有打卡项，请家长到「健康打卡」添加</view>
 

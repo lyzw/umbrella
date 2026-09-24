@@ -44,6 +44,16 @@ function loadPage(name, role = 'PARENT') {
   return page;
 }
 const event = (dataset = {}, value) => ({ currentTarget: { dataset }, detail: { value } });
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
+}
+function monthBefore(month) {
+  const [year, index] = month.split('-').map(Number);
+  return new Date(Date.UTC(year, index - 2, 1)).toISOString().slice(0, 7);
+}
 const child = { childId: '9007199254740993', bindStatus: 'BOUND', applyId: '12' };
 const dish = { dishId: '99', name: '合成餐食', virtualPrice: '10.01', spiceLevel: 0, sourceType: 'PRESET',
   canSelect: true, status: 'ON_SALE', allergenStatus: 'DECLARED', allergyConflict: false };
@@ -827,6 +837,29 @@ test('儿童任务页刷新健康打卡使用上海月份参数', async () => {
   assert.equal(page.data.streak, 2);
   assert.equal(page.data.checkItems[0].percent, 33);
 });
+test('儿童任务页健康打卡按完成状态拦截重复写入并释放失败锁', async () => {
+  const page = loadPage('chore', 'CHILD');
+  page.setData({ checkItems: [
+    { key: '1', itemId: '1', name: '喝水', count: 1, dailyTarget: 1, reached: false }
+  ] });
+  let postCount = 0;
+  api.post = async () => {
+    postCount += 1;
+    if (postCount === 1) throw new Error('任务页网络暂不可用');
+    return {};
+  };
+  page.readChild = async () => {
+    page.setData({ checkItems: [{ key: '1', itemId: '1', name: '喝水', reached: true }] });
+  };
+
+  await page.checkIn(event({ id: '1' }));
+  assert.match(page.data.error, /任务页网络暂不可用/);
+  assert.equal(page.data.checkInPending['1'], undefined);
+
+  await page.checkIn(event({ id: '1' }));
+  assert.equal(postCount, 2);
+  assert.equal(page.data.checkItems[0].reached, true);
+});
 test('健康打卡：日历格子按周日起排，且不能翻到未来月份', async () => {
   const page = loadPage('health', 'CHILD');
   const months = [];
@@ -860,6 +893,125 @@ test('健康打卡：日历格子按周日起排，且不能翻到未来月份',
   assert.equal(page.data.cells.filter(cell => cell.pad).length, 0);
   assert.equal(page.data.cells.length, 28);
   assert.equal(page.data.cells.filter(cell => cell.future).length, 0);
+});
+test('健康打卡：重复点击同一项只发送一次，未知 itemId 不请求', async () => {
+  const page = loadPage('health', 'CHILD');
+  page.setData({ ready: true, today: shanghaiDate(), month: shanghaiDate().slice(0, 7), checkItems: [
+    { key: '11', itemId: '11', name: '喝水', reached: false }
+  ] });
+  let postCount = 0;
+  api.post = async endpoint => {
+    postCount += 1;
+    assert.equal(endpoint, '/child/check-in?itemId=11');
+    return { itemName: '喝水' };
+  };
+  api.get = async endpoint => {
+    if (endpoint === '/child/check-in/items') return [{ itemId: '11', name: '喝水', dailyTarget: 1 }];
+    if (endpoint === '/child/check-in/today') return [{ itemId: '11', count: 1, dailyTarget: 1, reached: true }];
+    return { currentStreak: 1, checkedDates: [shanghaiDate()] };
+  };
+
+  const first = page.checkIn(event({ id: '11' }));
+  const second = page.checkIn(event({ id: '11' }));
+  await Promise.all([first, second]);
+  await page.checkIn(event({ id: 'missing' }));
+
+  assert.equal(postCount, 1);
+  assert.equal(page.data.checkItems[0].reached, true);
+});
+test('健康打卡：打卡失败释放操作锁，下一次可以重试', async () => {
+  const page = loadPage('health', 'CHILD');
+  page.setData({ ready: true, today: shanghaiDate(), month: shanghaiDate().slice(0, 7),
+    checkItems: [{ key: '11', itemId: '11', name: '喝水', reached: false }] });
+  let postCount = 0;
+  api.post = async () => {
+    postCount += 1;
+    if (postCount === 1) throw new Error('网络暂不可用');
+    return { itemName: '喝水' };
+  };
+  api.get = async endpoint => {
+    if (endpoint === '/child/check-in/items') return [{ itemId: '11', name: '喝水', dailyTarget: 1 }];
+    if (endpoint === '/child/check-in/today') return [{ itemId: '11', count: 1, dailyTarget: 1, reached: true }];
+    return { currentStreak: 1, checkedDates: [shanghaiDate()] };
+  };
+
+  await page.checkIn(event({ id: '11' }));
+  assert.match(page.data.error, /网络暂不可用/);
+  assert.equal(page.data.checkInPending['11'], undefined);
+  await page.checkIn(event({ id: '11' }));
+
+  assert.equal(postCount, 2);
+  assert.equal(page.data.checkItems[0].reached, true);
+});
+test('健康打卡：月份切换后迟到响应不能覆盖当前月份', async () => {
+  const page = loadPage('health', 'CHILD');
+  const today = shanghaiDate();
+  page.setData({ today, month: today.slice(0, 7) });
+  const oldCalendar = deferred();
+  const newCalendar = deferred();
+  api.get = async (endpoint, query) => {
+    if (endpoint === '/child/check-in/items' || endpoint === '/child/check-in/today') return [];
+    if (query.month === today.slice(0, 7)) return oldCalendar.promise;
+    return newCalendar.promise;
+  };
+
+  const oldRead = page.readChild();
+  const previousMonth = monthBefore(today.slice(0, 7));
+  page.setData({ month: previousMonth });
+  const newRead = page.readChild();
+  newCalendar.resolve({ currentStreak: 1, checkedDates: [previousMonth + '-01'] });
+  await newRead;
+  oldCalendar.resolve({ currentStreak: 9, checkedDates: [today.slice(0, 7) + '-02'] });
+  await oldRead;
+
+  assert.equal(page.data.month, previousMonth);
+  assert.equal(page.data.streak, 1);
+  assert.equal(page.data.cells.find(cell => cell.checked).key, previousMonth + '-01');
+});
+test('健康打卡：页面隐藏后迟到响应不回填健康数据', async () => {
+  const page = loadPage('health', 'CHILD');
+  const waitCalendar = deferred();
+  page.setData({ today: shanghaiDate(), month: shanghaiDate().slice(0, 7) });
+  api.get = async (endpoint) => {
+    if (endpoint === '/child/check-in/items' || endpoint === '/child/check-in/today') return [];
+    return waitCalendar.promise;
+  };
+
+  const reading = page.readChild();
+  page.onHide();
+  waitCalendar.resolve({ currentStreak: 4, checkedDates: [shanghaiDate()] });
+  await reading;
+
+  assert.equal(page.data.ready, false);
+  assert.deepEqual(page.data.checkItems, []);
+  assert.deepEqual(page.data.cells, []);
+  assert.equal(page.data.streak, 0);
+});
+test('健康打卡：家长保存失败保留编辑表单，版本冲突可见错误', async () => {
+  const page = loadPage('health');
+  api.get = async () => [{ itemId: '11', name: '喝水', icon: '💧', unit: '杯', dailyTarget: 6, sortOrder: 1, version: 3 }];
+  await page.read();
+  page.edit(event({ id: '11' }));
+  api.put = async () => { throw Object.assign(new Error('数据已被其他操作更新，请刷新后重试'), { status: 409 }); };
+
+  await page.save();
+
+  assert.equal(page.data.showForm, true);
+  assert.equal(page.data.isEdit, true);
+  assert.equal(page.data.formName, '喝水');
+  assert.match(page.data.error, /其他操作更新/);
+  assert.equal(page.data.managed[0].name, '喝水');
+});
+test('健康打卡：家长表单拒绝空白名称和非法排序', async () => {
+  const page = loadPage('health');
+  page.toggleForm();
+  page.setData({ formName: '   ', formOrder: '1' });
+  await page.save();
+  assert.match(page.data.error, /1-32/);
+
+  page.setData({ formName: '喝水', formOrder: '1.5' });
+  await page.save();
+  assert.match(page.data.error, /排序需为/);
 });
 test('菜单页：分类 chips 按 categoryId 聚合，可切换过滤', async () => {
   const page = loadPage('menu', 'CHILD');

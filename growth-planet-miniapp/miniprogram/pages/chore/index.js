@@ -1,6 +1,8 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
 const { loadChildren } = require('../../services/children');
+const lifecycle = require('../../services/lifecycle');
+const session = require('../../services/session');
 const { cents, money, shanghaiDate } = require('../../utils/domain');
 
 const STATUS = {
@@ -10,6 +12,11 @@ const STATUS = {
   REJECTED:  { label: '已驳回', cls: 'err' }
 };
 const CYCLE = { ONCE: '一次性', DAILY: '每日', WEEKLY: '每周' };
+const text = value => String(value === null || value === undefined ? '' : value).trim();
+const itemId = value => {
+  const id = text(value);
+  return /^[1-9]\d*$/.test(id) ? id : '';
+};
 
 ui.page({
   data: {
@@ -19,13 +26,15 @@ ui.page({
     showForm: false, title: '', reward: '', cycleIndex: 0,
     cycles: ['ONCE', 'DAILY', 'WEEKLY'], cycleLabels: ['一次性', '每日', '每周'],
     // 健康打卡（仅孩子端，并入「任务」tab）
-    checkItems: [], doneCount: 0, totalCount: 0, streak: 0
+    checkItems: [], doneCount: 0, totalCount: 0, streak: 0, checkInPending: {}
   },
   onLoad(query) {
     this.requestedChildId = query && query.childId ? query.childId : '';
   },
   go: ui.go,
   onShow() {
+    this.viewToken = (this.viewToken || 0) + 1;
+    this.readToken = (this.readToken || 0) + 1;
     if (!ui.guard(this)) return;
     return ui.run(this, async () => {
       const children = await loadChildren();
@@ -115,21 +124,29 @@ ui.page({
   },
   // 健康打卡今日视图（与 health 页同口径，并入「任务」tab，日历等深度功能仍走 health 页）。
   async readChild() {
+    const readToken = (this.readToken || 0) + 1;
+    const viewToken = this.viewToken;
+    const revision = lifecycle.current();
+    const generation = session.generation();
+    this.readToken = readToken;
     const [items, todayRows, calendar] = await Promise.all([
       api.get('/child/check-in/items'),
       api.get('/child/check-in/today'),
       api.get('/child/check-in/calendar', { month: shanghaiDate().slice(0, 7) })
     ]);
+    if (!this.isCurrentView(viewToken, revision, generation)
+      || readToken !== this.readToken || this.data.role !== 'CHILD') return;
     const rows = new Map((todayRows || []).map(row => [String(row.itemId), row]));
     const checkItems = (items || []).map(item => {
       const row = rows.get(String(item.itemId)) || {};
       const dailyTarget = row.dailyTarget === undefined ? Number(item.dailyTarget || 0) : Number(row.dailyTarget);
       const count = Number(row.count || 0);
-      const reached = row.reached === true;
+      const reached = row.reached === true || (dailyTarget > 0 && count >= dailyTarget);
       const unit = item.unit || '次';
       const percent = dailyTarget > 0 ? Math.min(100, Math.round(count / dailyTarget * 100)) : 0;
       return Object.assign({}, item, {
         key: String(item.itemId), count, dailyTarget, reached, percent,
+        pending: this.data.checkInPending[String(item.itemId)] === true,
         targetText: dailyTarget > 0 ? count + ' / ' + dailyTarget + unit : '已打卡 ' + count + ' 次',
         limitText: dailyTarget > 0 ? '每日上限 ' + dailyTarget + unit : '不限次数',
         actionLabel: reached ? '今日已完成' : '打卡'
@@ -138,15 +155,51 @@ ui.page({
     const doneCount = checkItems.filter(item => item.dailyTarget > 0 ? item.reached : item.count > 0).length;
     this.setData({ checkItems, totalCount: checkItems.length, doneCount, streak: (calendar && calendar.currentStreak) || 0 });
   },
+  isCurrentView(viewToken, revision, generation) {
+    return viewToken === this.viewToken
+      && revision === lifecycle.current()
+      && generation === session.generation();
+  },
+  setCheckInPending(id, pending) {
+    const key = itemId(id);
+    if (!key) return;
+    const next = Object.assign({}, this.data.checkInPending);
+    if (pending) next[key] = true;
+    else delete next[key];
+    const checkItems = (this.data.checkItems || []).map(item => item.key === key
+      ? Object.assign({}, item, { pending })
+      : item);
+    this.setData({ checkInPending: next, checkItems });
+  },
   checkIn(e) {
-    const itemId = e.currentTarget.dataset.id;
+    const id = itemId(e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.id);
+    if (!id || !(this.data.checkItems || []).some(item => item.key === id)) return;
     return ui.run(this, async () => {
       if (this.data.role !== 'CHILD') return;
-      await api.post('/child/check-in?itemId=' + itemId, {});
-      await this.readChild();
-      const item = this.data.checkItems.find(entry => entry.key === String(itemId));
-      const name = (item && item.name) || '打卡项';
-      this.setData({ receipt: '「' + name + '」打卡成功，已连续打卡 ' + this.data.streak + ' 天，继续保持 💪' });
+      const selected = this.data.checkItems.find(item => item.key === id);
+      if (!selected || selected.reached || this.data.checkInPending[id]) return;
+      const viewToken = this.viewToken;
+      const revision = lifecycle.current();
+      const generation = session.generation();
+      this.setCheckInPending(id, true);
+      try {
+        await api.post('/child/check-in?itemId=' + id, {});
+        try {
+          await this.readChild();
+        } catch (error) {
+          if (error.cancelled) throw error;
+          if (this.isCurrentView(viewToken, revision, generation)) {
+            this.setData({ receipt: '本次打卡已记录，但刷新失败，请重新进入页面查看' });
+          }
+          return;
+        }
+        if (!this.isCurrentView(viewToken, revision, generation)) return;
+        const item = this.data.checkItems.find(entry => entry.key === id);
+        const name = (item && item.name) || '打卡项';
+        this.setData({ receipt: '「' + name + '」打卡成功，已连续打卡 ' + this.data.streak + ' 天，继续保持 💪' });
+      } finally {
+        if (this.isCurrentView(viewToken, revision, generation)) this.setCheckInPending(id, false);
+      }
     });
   },
   changeTab(e) {
@@ -156,5 +209,12 @@ ui.page({
       return wx.reLaunch({ url: '/pages/home/index?tab=' + key });
     }
   },
-  onHide() { this.setData({ tasks: [], instances: [], receipt: '', error: '' }); }
+  onHide() {
+    this.viewToken = (this.viewToken || 0) + 1;
+    this.readToken = (this.readToken || 0) + 1;
+    this.setData({
+      tasks: [], instances: [], checkItems: [], checkInPending: {},
+      doneCount: 0, totalCount: 0, streak: 0, receipt: '', error: ''
+    });
+  }
 });

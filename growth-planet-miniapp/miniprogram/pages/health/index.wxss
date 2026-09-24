@@ -11,8 +11,9 @@
   box-shadow: var(--shadow-soft);
 }
 .form-panel > input { margin-bottom: 12px; }
-.form-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, .7fr); gap: 12px; margin-bottom: 12px; }
+.form-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .7fr); gap: 12px; margin-bottom: 12px; }
 .form-row picker { min-width: 0; }
+.form-row input { min-width: 0; }
 .form-actions { display: flex; gap: 12px; margin-top: 16px; }
 .form-actions button { flex: 1; min-width: 0; }
 .list-title { margin-top: 24px; }
@@ -89,4 +90,8 @@
   .compact-action { width: 100%; }
   .form-row { grid-template-columns: 1fr; }
   .form-actions { flex-direction: column; }
+}
+
+@media (max-width: 360px) {
+  .form-panel { padding: 14px; }
 }
