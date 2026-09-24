@@ -1,6 +1,6 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
-const { loadChildren } = require('../../services/children');
+const { loadChildren, displayChildren } = require('../../services/children');
 const { shanghaiDate } = require('../../utils/domain');
 
 const CATEGORIES = ['HOMEWORK', 'CLASS', 'MEDICINE', 'OTHER'];
@@ -59,7 +59,7 @@ ui.page({
     if (!ui.guard(this, 'PARENT')) return;
     return ui.run(this, async () => {
       const today = shanghaiDate();
-      const children = await loadChildren();
+      const children = displayChildren(await loadChildren());
       this.setData({ today, date: today, from: today, children, childIndex: 0, childId: children[0].childId });
       this.refreshWeekdayOptions();
       await this.read();

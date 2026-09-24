@@ -1,5 +1,20 @@
 const api = require('./api');
 const session = require('./session');
+
+function childDisplayName(child) {
+  const item = child || {};
+  const childId = String(item.childId == null ? '' : item.childId).trim();
+  const relationLabel = String(item.relationLabel == null ? '' : item.relationLabel).trim();
+  const nickname = String(item.nickname == null ? '' : item.nickname).trim();
+  const label = relationLabel || nickname || '孩子';
+  return childId ? label + ' · ' + childId : label;
+}
+
+function displayChildren(children) {
+  if (!Array.isArray(children)) return [];
+  return children.map(item => Object.assign({}, item, { displayName: childDisplayName(item) }));
+}
+
 async function loadChildren() {
   if (session.get().role === 'CHILD') {
     const binding = await api.get('/family/binding');
@@ -20,4 +35,4 @@ async function loadChildren() {
   if (!items.length) throw new Error('尚无已绑定的儿童，请先前往家庭与绑定');
   return items;
 }
-module.exports = { loadChildren };
+module.exports = { loadChildren, childDisplayName, displayChildren };

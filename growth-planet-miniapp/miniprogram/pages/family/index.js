@@ -2,6 +2,7 @@ const api = require('../../services/api');
 const session = require('../../services/session');
 const ui = require('../../utils/page');
 const { statusLabels } = require('../../utils/domain');
+const { childDisplayName } = require('../../services/children');
 
 function bindingProgress(selected, consent) {
   if (!selected) return { currentBindingStep: 0, bindingSteps: [] };
@@ -40,7 +41,7 @@ ui.page({
             hasFamily: true,
             children: result.items.map(item => ({
               ...item,
-              displayName: item.nickname || '儿童 ' + item.childId,
+              displayName: childDisplayName(item),
               bindStatusLabel: item.bindStatus === 'BOUND' ? '已绑定' : item.bindStatus === 'PENDING' ? '待确认' : '已拒绝'
             })),
             total: result.total
@@ -105,7 +106,7 @@ ui.page({
       this.setData({
         children: result.items.map(item => ({
           ...item,
-          displayName: item.nickname || '儿童 ' + item.childId,
+          displayName: childDisplayName(item),
           bindStatusLabel: item.bindStatus === 'BOUND' ? '已绑定' : item.bindStatus === 'PENDING' ? '待确认' : '已拒绝'
         })),
         total: result.total

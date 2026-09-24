@@ -1,6 +1,6 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
-const { loadChildren } = require('../../services/children');
+const { loadChildren, displayChildren } = require('../../services/children');
 const { list } = require('../../utils/domain');
 const config = require('../../config');
 ui.page({
@@ -12,7 +12,7 @@ ui.page({
   onShow() { if (ui.guard(this)) this.load(); },
   load() {
     return ui.run(this, async () => {
-      const children = await loadChildren();
+      const children = displayChildren(await loadChildren());
       const index = Math.max(0, children.findIndex(c => c.childId === (this.requestedChild || this.data.childId)));
       this.setData({ children, childIndex: index, childId: children[index].childId });
       await this.read();

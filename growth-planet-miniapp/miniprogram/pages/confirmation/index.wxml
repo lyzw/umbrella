@@ -58,8 +58,8 @@
     <view class="filters">
       <view wx:if="{{role === 'PARENT' && children.length}}" class="filter-field">
         <text class="filter-label">当前儿童</text>
-        <picker range="{{children}}" range-key="childId" value="{{childIndex}}" bindchange="child" disabled="{{busy}}">
-          <view class="picker picker-control"><text>儿童 {{childId}}</text><text class="picker-chevron">⌄</text></view>
+        <picker range="{{children}}" range-key="displayName" value="{{childIndex}}" bindchange="child" disabled="{{busy}}">
+          <view class="picker picker-control"><text>当前儿童 · {{children[childIndex].displayName}}</text><text class="picker-chevron">⌄</text></view>
         </picker>
       </view>
       <view class="filter-field">

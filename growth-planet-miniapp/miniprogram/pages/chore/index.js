@@ -1,6 +1,6 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
-const { loadChildren } = require('../../services/children');
+const { loadChildren, displayChildren } = require('../../services/children');
 const lifecycle = require('../../services/lifecycle');
 const session = require('../../services/session');
 const { cents, money, shanghaiDate } = require('../../utils/domain');
@@ -37,7 +37,7 @@ ui.page({
     this.readToken = (this.readToken || 0) + 1;
     if (!ui.guard(this)) return;
     return ui.run(this, async () => {
-      const children = await loadChildren();
+      const children = displayChildren(await loadChildren());
       const requestedChildId = this.requestedChildId || this.data.childId;
       const childIndex = Math.max(0, children.findIndex(item => item.childId === requestedChildId));
       this.requestedChildId = '';

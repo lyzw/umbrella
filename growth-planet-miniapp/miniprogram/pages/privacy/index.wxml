@@ -1,6 +1,6 @@
 <view class="page parent">
   <view class="header"><view class="title">同意与数据权利</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
-  <picker wx:if="{{children.length}}" range="{{children}}" range-key="childId" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">儿童 {{childId}}</view></picker>
+  <picker wx:if="{{children.length}}" range="{{children}}" range-key="displayName" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">当前儿童 · {{children[childIndex].displayName}}</view></picker>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:if="{{consent}}" class="section">
     <view class="section-title">档案处理同意</view><view class="badge">{{consent.currentStatus}}</view>

@@ -10,8 +10,8 @@
 
   <block wx:if="{{role === 'PARENT'}}">
     <view wx:if="{{children.length}}" class="toolbar">
-      <picker mode="selector" range="{{children}}" range-key="nickname" bindchange="child">
-        <view class="picker compact-picker">{{children[childIndex].nickname || '儿童 ' + children[childIndex].childId}}</view>
+      <picker mode="selector" range="{{children}}" range-key="displayName" bindchange="child">
+        <view class="picker compact-picker">{{children[childIndex].displayName}}</view>
       </picker>
       <button class="primary compact-action" bindtap="toggleForm">{{showForm ? '收起' : '添加任务'}}</button>
     </view>

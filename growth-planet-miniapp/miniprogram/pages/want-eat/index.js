@@ -1,7 +1,7 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
 const { shanghaiDate } = require('../../utils/domain');
-const { loadChildren } = require('../../services/children');
+const { loadChildren, displayChildren } = require('../../services/children');
 const recipes = require('../../services/recipes');
 
 // 看板一次展示 7 天；与后端 31 天上限相比留有充足余量。
@@ -37,10 +37,6 @@ function statusClass(status) {
   return status === 'ADOPTED' ? 'info' : 'normal';
 }
 // 家庭儿童接口只返回关系标签（如「儿子」），用关系 + ID 保证多孩可区分。
-function childLabel(child) {
-  return (child.relationLabel || '孩子') + ' · ' + child.childId;
-}
-
 ui.page({
   data: {
     role: '', busy: false, error: '', receipt: '', ready: false,
@@ -60,13 +56,13 @@ ui.page({
     const rangeDays = this.singleDay ? 1 : RANGE_DAYS;
     this.setData({ today, from: today, to: shiftDate(today, rangeDays - 1), rangeDays, receipt: '' });
     return ui.run(this, async () => {
-      const children = await loadChildren();
+      const children = displayChildren(await loadChildren());
       const requestedChildId = this.requestedChildId || this.data.childId;
       const childIndex = Math.max(0, children.findIndex(item => item.childId === requestedChildId));
       this.requestedChildId = '';
       this.setData({
         children,
-        childLabels: children.map(childLabel),
+        childLabels: children.map(item => item.displayName),
         childIndex,
         childId: children[childIndex].childId
       });

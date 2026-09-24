@@ -1,6 +1,6 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
-const { loadChildren } = require('../../services/children');
+const { loadChildren, displayChildren } = require('../../services/children');
 const { operations } = require('../../services/operations');
 const { cents, money, shanghaiDate } = require('../../utils/domain');
 const uCharts = require('../../libs/ucharts/u-charts');
@@ -23,9 +23,6 @@ const decorate = list => (list || []).map(item => {
 const emptyStats = () => ({
   spendTrend: [], spendCategories: [], grantCategories: [], totalSpend: '0.00', totalGrant: '0.00'
 });
-const displayChildren = children => children.map(item =>
-  Object.assign({}, item, { displayName: item.nickname || '儿童 ' + item.childId }));
-
 ui.page({
   data: { role: '', busy: false, error: '', receipt: '', children: [], childIndex: 0, childId: '',
     overview: null, board: null, rule: null,

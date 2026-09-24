@@ -2,7 +2,7 @@ const api = require('../../services/api');
 const session = require('../../services/session');
 const ui = require('../../utils/page');
 const lifecycle = require('../../services/lifecycle');
-const { loadChildren } = require('../../services/children');
+const { loadChildren, displayChildren } = require('../../services/children');
 const { shanghaiDate, dishKey, selectable } = require('../../utils/domain');
 
 const CHILD_HOME_TABS = ['meal', 'task', 'growth', 'me'];
@@ -79,7 +79,7 @@ ui.page({
   async loadParentHome(revision, generation) {
     let children;
     try {
-      children = await loadChildren();
+      children = displayChildren(await loadChildren());
     } catch (error) {
       if (this.isFatalLoadError(error)) throw error;
       if (!this.isCurrentLoad(revision, generation)) return;
@@ -107,7 +107,7 @@ ui.page({
     this.requestedChildId = '';
     this.setData({
       children,
-      childLabels: children.map(item => (item.relationLabel || '孩子') + ' · ' + item.childId),
+      childLabels: children.map(item => item.displayName),
       childIndex: index,
       childId,
       parentSummaryUnavailable: false,
@@ -188,7 +188,7 @@ ui.page({
   // 孩子端各 tab 的增强数据：失败一律静默降级，绝不阻断首页骨架。
   async loadChildTab(active) {
     let children;
-    try { children = await loadChildren(); } catch (error) { return; }
+    try { children = displayChildren(await loadChildren()); } catch (error) { return; }
     const childId = children[0] ? children[0].childId : '';
     if (!childId) return;
     this.setData({ childId });

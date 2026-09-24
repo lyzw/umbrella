@@ -1,7 +1,7 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
 const config = require('../../config');
-const { loadChildren } = require('../../services/children');
+const { loadChildren, displayChildren } = require('../../services/children');
 const { operations } = require('../../services/operations');
 const { id, statusLabels } = require('../../utils/domain');
 ui.page({
@@ -11,7 +11,7 @@ ui.page({
   onShow() {
     if (!ui.guard(this, 'PARENT')) return;
     return ui.run(this, async () => {
-      const children = await loadChildren();
+      const children = displayChildren(await loadChildren());
       const index = Math.max(0, children.findIndex(c => c.childId === this.data.childId));
       this.setData({ children, childIndex: index, childId: children[index].childId });
       await this.readConsent();

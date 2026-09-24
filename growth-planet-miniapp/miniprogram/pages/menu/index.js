@@ -1,7 +1,7 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
 const context = require('../../services/context');
-const { loadChildren } = require('../../services/children');
+const { loadChildren, displayChildren } = require('../../services/children');
 const { cents, money, shanghaiDate, selectable, safetyLabel, filterDishes, dishRef, dishKey } = require('../../utils/domain');
 
 const SPICE = ['无辣', '微辣', '中辣', '重辣'];
@@ -17,10 +17,6 @@ function shiftDate(date, delta) {
 const WISH_STATUS_LABELS = { NONE: '未创建', SUBMITTED: '已提交', WITHDRAWN: '已撤回' };
 // 心愿菜单可编辑窗口：今天起 7 天，与后端 WINDOW_DAYS 保持一致。
 const WISH_WINDOW_DAYS = 6;
-// 家庭儿童接口只返回关系标签（如「儿子」），用关系 + ID 保证多孩可区分。
-function childLabel(child) {
-  return (child.relationLabel || '孩子') + ' · ' + child.childId;
-}
 function weekdayLabel(date, today) {
   if (date === today) return '今天';
   const [year, month, day] = date.split('-').map(Number);
@@ -55,7 +51,7 @@ ui.page({
         await this.loadParent();
         return;
       }
-      const children = await loadChildren();
+      const children = displayChildren(await loadChildren());
       this.setData({ children, childId: children[0].childId, childIndex: 0, today: shanghaiDate() });
       if (this.previousConfirmId && this.data.role === 'CHILD') {
         const previous = await api.get('/menu/confirm/' + this.previousConfirmId);
@@ -76,10 +72,10 @@ ui.page({
     // 孩子列表：菜单维护本身是家庭级、与具体孩子无关，但「孩子的心愿菜单」卡需要 childId，
     // 多孩家庭还要能切换。取不到（尚未绑定儿童）不阻断菜单维护主流程。
     try {
-      const children = await loadChildren();
+      const children = displayChildren(await loadChildren());
       // 通知中心点入时带 childId，落到该孩子的心愿菜单；不在已绑定列表里（如同意已撤回）则退回第一个。
       const index = Math.max(0, children.findIndex(item => item.childId === this.initialChildId));
-      this.setData({ children, childLabels: children.map(childLabel), childIndex: index,
+      this.setData({ children, childLabels: children.map(item => item.displayName), childIndex: index,
         childId: children[index].childId });
     } catch (error) {
       // 与 loadFrequent/loadRecommend/loadWish 同口径：增强区块的失败一律静默降级。

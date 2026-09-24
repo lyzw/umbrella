@@ -1,6 +1,6 @@
 const api = require('../../services/api');
 const ui = require('../../utils/page');
-const { loadChildren } = require('../../services/children');
+const { loadChildren, displayChildren } = require('../../services/children');
 const { operations } = require('../../services/operations');
 const context = require('../../services/context');
 const { statusLabels, safeDish, dishRef, dishKey, id } = require('../../utils/domain');
@@ -24,7 +24,7 @@ ui.page({
     if (!ui.guard(this)) return;
     this.visible = true;
     return ui.run(this, async () => {
-      const children = await loadChildren();
+      const children = displayChildren(await loadChildren());
       const draft = context.takeCart();
       const requested = children.find(item => item.childId === (this.query && this.query.childId));
       const existing = children.find(item => item.childId === this.data.childId);

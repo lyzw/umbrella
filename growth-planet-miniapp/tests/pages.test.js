@@ -7,6 +7,7 @@ const session = require('../miniprogram/services/session');
 const lifecycle = require('../miniprogram/services/lifecycle');
 const { operations } = require('../miniprogram/services/operations');
 const context = require('../miniprogram/services/context');
+const { childDisplayName, displayChildren } = require('../miniprogram/services/children');
 const ui = require('../miniprogram/utils/page');
 const { shanghaiDate } = require('../miniprogram/utils/domain');
 const methods = { get: api.get, post: api.post, put: api.put, del: api.del, getDocument: api.getDocument };
@@ -59,6 +60,18 @@ const dish = { dishId: '99', name: '合成餐食', virtualPrice: '10.01', spiceL
   canSelect: true, status: 'ON_SALE', allergenStatus: 'DECLARED', allergyConflict: false };
 const familyDish = { dishId: '7', categoryId: '3', name: '家庭番茄炒蛋', virtualPrice: '8.00', spiceLevel: 1,
   sourceType: 'FAMILY', canSelect: true, status: 'ON_SALE', allergenStatus: 'DECLARED', allergyConflict: false };
+
+test('多孩选择器使用关系或昵称拼接 childId，且不改写原儿童对象', () => {
+  assert.equal(childDisplayName({ childId: '1', relationLabel: '女儿', nickname: '小星' }), '女儿 · 1');
+  assert.equal(childDisplayName({ childId: '2', nickname: '小月' }), '小月 · 2');
+  assert.equal(childDisplayName({ childId: '3' }), '孩子 · 3');
+  const source = { childId: '4', relationLabel: '儿子' };
+  const mapped = displayChildren([source]);
+  assert.notEqual(mapped[0], source);
+  assert.equal(mapped[0].displayName, '儿子 · 4');
+  assert.equal(source.displayName, undefined);
+});
+
 // 心愿菜单（P3）固定件。emptyWish = 当天未创建：功能可选，后端不产生占位记录（status=NONE）。
 const wishDish = { dishId: '99', type: 'PRESET', name: '合成餐食', categoryId: '3', categoryName: '主食',
   spiceLevel: 0, status: 'ON_SALE', allergenStatus: 'DECLARED', safetyStatus: 'DECLARED',
@@ -466,7 +479,7 @@ test('钱包儿童选择优先显示昵称，家长一级导航不重复压栈',
     throw new Error('未预期接口 ' + endpoint);
   };
   await page.onShow();
-  assert.equal(page.data.children[0].displayName, '小星');
+  assert.equal(page.data.children[0].displayName, '小星 · ' + child.childId);
   page.changeTab({ detail: { key: 'me' } });
   page.changeTab({ detail: { key: 'approvals' } });
   assert.deepEqual(navigation, ['/pages/home/index?tab=me', '/pages/confirmation/index']);

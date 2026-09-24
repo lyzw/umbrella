@@ -2,7 +2,7 @@
   <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
   <view class="title">{{role === 'PARENT' ? '儿童档案' : '我的口味偏好'}}</view>
   <view class="subtitle">过敏信息仅由家长维护，偏好不会替代过敏防护。</view>
-  <picker wx:if="{{role === 'PARENT' && children.length}}" range="{{children}}" range-key="childId" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">儿童 {{childId}}</view></picker>
+  <picker wx:if="{{role === 'PARENT' && children.length}}" range="{{children}}" range-key="displayName" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">当前儿童 · {{children[childIndex].displayName}}</view></picker>
   <view wx:if="{{ready}}" class="section">
     <view wx:if="{{role === 'PARENT'}}">
       <view class="field"><text class="label">昵称</text><input value="{{nickname}}" data-field="nickname" bindinput="input" maxlength="64" /></view>
