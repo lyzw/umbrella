@@ -26,7 +26,7 @@
   text-align: center;
   box-shadow: var(--shadow-soft);
 }
-.medal.on { border-color: var(--primary-border); box-shadow: 0 8px 22px rgba(40, 120, 255, .12); }
+.medal.on { border-color: var(--primary-border); box-shadow: 0 8px 22px var(--primary-shadow); }
 .medal.off { background: var(--surface-2); }
 .icon { font-size: 32px; line-height: 1; }
 .medal.off .icon { filter: grayscale(1); }

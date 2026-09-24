@@ -98,13 +98,14 @@ ui.page({
       if (!item || !item.node) return;
       const canvas = item.node;
       const ratio = (wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync()).pixelRatio || 1;
+      const chartColor = this.data.role === 'PARENT' ? '#15966a' : '#2878ff';
       // uCharts 以画布物理像素为绘制坐标系（pixelRatio 用于触摸坐标换算），故此处传物理尺寸。
       canvas.width = item.width * ratio;
       canvas.height = item.height * ratio;
       this.chart = new uCharts({
         type: 'column', context: canvas.getContext('2d'), canvas2d: true, pixelRatio: ratio,
         width: item.width * ratio, height: item.height * ratio,
-        categories, series: [{ name: '支出', data: values }], color: ['#2878ff'],
+        categories, series: [{ name: '支出', data: values }], color: [chartColor],
         animation: true, dataLabel: true, legend: { show: false }, padding: [16, 16, 14, 8],
         xAxis: { disableGrid: true, fontColor: '#667085' },
         yAxis: { gridType: 'dash', gridColor: '#eef2f7', data: [{ min: 0 }] }

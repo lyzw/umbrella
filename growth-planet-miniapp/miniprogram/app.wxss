@@ -16,14 +16,19 @@ view, button, input, textarea { box-sizing: border-box; }
   --primary-soft: #edf5ff;
   --primary-border: #c9ddff;
   --primary-ink: #154a9e;
+  --primary-shadow: rgba(40, 120, 255, .2);
   --accent: #ff7657;
   --accent-soft: #fff0eb;
   --positive: #22a06b;
   --positive-soft: #e9f8f1;
+  --positive-ink: #08764e;
   --warning: #e89016;
   --warning-soft: #fff7df;
+  --warning-ink: #8a4b00;
   --danger: #e5484d;
   --danger-soft: #fff1f0;
+  --danger-ink: #9d241b;
+  --neutral-ink: #475467;
   --surface: #fff;
   --surface-2: #f1f5fb;
   --line: #e4e9f1;
@@ -65,6 +70,7 @@ view, button, input, textarea { box-sizing: border-box; }
   --primary-soft: #ebf9f3;
   --primary-border: #bce9d6;
   --primary-ink: #0b6848;
+  --primary-shadow: rgba(21, 150, 106, .18);
 }
 .with-nav { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; gap: 14px; }
@@ -95,10 +101,9 @@ button {
   transition: transform .12s ease, opacity .12s ease, background-color .12s ease;
 }
 button::after { border: 0; }
-button.primary { background: var(--primary); color: #fff; box-shadow: 0 8px 18px rgba(40, 120, 255, .2); }
-.parent button.primary { box-shadow: 0 8px 18px rgba(21, 150, 106, .18); }
+button.primary { background: var(--primary); color: #fff; box-shadow: 0 8px 18px var(--primary-shadow); }
 button.primary:active { background: var(--primary-dark); transform: scale(.98); }
-button.danger { background: #fff0f0; color: #b42318; }
+button.danger { background: var(--danger-soft); color: var(--danger-ink); }
 button[disabled] { background: #e9edf2; color: #98a2b3; box-shadow: none; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .actions button { flex: 1; min-width: 110px; }
@@ -120,11 +125,11 @@ input { height: 48px; }
 textarea { height: 100px; }
 .error {
   background: #fff1f0;
-  color: #9d241b;
+  color: var(--danger-ink);
   padding: 14px 16px;
   margin: 16px 0;
   border: 1px solid #ffc9c5;
-  border-left: 4px solid #e5484d;
+  border-left: 4px solid var(--danger);
   border-radius: 10px;
   font-size: 14px;
   line-height: 1.65;
@@ -162,8 +167,8 @@ textarea { height: 100px; }
   font-weight: 700;
   margin: 4px 6px 4px 0;
 }
-.warning { color: #a45a00; background: var(--warning-soft); }
-.safe { color: #08764e; background: var(--positive-soft); }
+.warning { color: var(--warning-ink); background: var(--warning-soft); }
+.safe { color: var(--positive-ink); background: var(--positive-soft); }
 .check { display: flex; align-items: center; min-height: 48px; gap: 8px; font-size: 14px; }
 .check .wx-checkbox-input { width: 36rpx; height: 36rpx; }
 .tabs { display: flex; gap: 4px; margin: 16px 0; padding: 4px; background: #e9eef5; border-radius: 10px; }
@@ -201,8 +206,8 @@ input:focus, textarea:focus, .picker:focus, button:focus-visible, .link-row:focu
 .header .title { flex: 1; min-width: 0; }
 .header button { flex: 0 0 auto; }
 /* 状态徽标语义化 */
-.badge.positive { color: #08764e; background: var(--positive-soft); }
-.badge.danger { color: #9d241b; background: var(--danger-soft); }
+.badge.positive { color: var(--positive-ink); background: var(--positive-soft); }
+.badge.danger { color: var(--danger-ink); background: var(--danger-soft); }
 /* V0.0.2 分类徽章：与流水 scene 一一对应（点餐/家务奖励/购物/兑换/发放/勋章） */
 .badge.b-c { color: #b03a1c; background: var(--c-meal-soft); }
 .badge.b-ac { color: #08764e; background: var(--c-chore-soft); }

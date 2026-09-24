@@ -80,6 +80,28 @@ test('首页餐单统计分别进入家庭和学校午餐，拦截无效来源�
   parent.openMealSource(event({ source: 'SCHOOL' }));
   assert.deepEqual(navigation, []);
 });
+test('主题和状态样式使用语义 token，不把儿童蓝色写死到家长通用控件', () => {
+  const appStyles = fs.readFileSync(path.join(root, 'app.wxss'), 'utf8');
+  const navStyles = fs.readFileSync(path.join(root, 'components/app-nav/index.wxss'), 'utf8');
+  const medalStyles = fs.readFileSync(path.join(root, 'pages/medal/index.wxss'), 'utf8');
+  assert.match(appStyles, /--primary-shadow:/);
+  assert.match(appStyles, /--danger-ink:/);
+  assert.match(navStyles, /\.active\s*\{[^}]*var\(--primary\)/s);
+  assert.doesNotMatch(navStyles, /\.active\s*\{[^}]*#2878ff/s);
+  assert.doesNotMatch(medalStyles, /rgba\(40,\s*120,\s*255/);
+});
+test('关键小按钮保留可触控尺寸并允许长文本换行', () => {
+  const pageBack = fs.readFileSync(path.join(root, 'components/page-back/index.wxss'), 'utf8');
+  const profile = fs.readFileSync(path.join(root, 'pages/profile/index.wxss'), 'utf8');
+  const dishManage = fs.readFileSync(path.join(root, 'pages/dish-manage/index.wxss'), 'utf8');
+  const home = fs.readFileSync(path.join(root, 'pages/home/index.wxss'), 'utf8');
+  const login = fs.readFileSync(path.join(root, 'pages/login/index.wxss'), 'utf8');
+  assert.match(pageBack, /\.page-back-button\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(profile, /button\.preference-remove\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(dishManage, /button\.row-action\s*\{[^}]*min-height:\s*44px/s);
+  assert.match(home, /\.home-list-title\s*\{[^}]*overflow-wrap:\s*anywhere/s);
+  assert.match(login, /\.role-desc\s*\{[^}]*font-size:\s*13px/s);
+});
 test('孩子首页家庭餐单为空时可以提醒爸妈，重复结果给出明确反馈', async () => {
   const page = loadPage('home', 'CHILD');
   const calls = [];

@@ -27,15 +27,15 @@
 }
 .preference-chip-text { max-width: 220px; overflow-wrap: anywhere; font-size: 13px; font-weight: 700; }
 button.preference-remove {
-  width: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border-radius: 50%;
   background: transparent;
   color: var(--primary-ink);
   font-size: 20px;
-  line-height: 36px;
+  line-height: 44px;
   font-weight: 500;
 }
 .preference-entry { display: flex; align-items: center; gap: 8px; }

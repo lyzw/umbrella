@@ -20,4 +20,4 @@
 .role-option.child .role-icon { background: #2878ff; }
 .role-option.parent .role-icon { background: #15966a; }
 .role-title { font-size: 16px; font-weight: 800; }
-.role-desc { font-size: 12px; line-height: 1.5; color: #687386; }
+.role-desc { font-size: 13px; line-height: 1.5; color: #687386; overflow-wrap: anywhere; }
