@@ -1,4 +1,5 @@
 <view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
   <view class="header"><view class="title">通知中心</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
   <label class="row"><text>仅看未读</text><switch checked="{{unreadOnly}}" bindchange="filter" disabled="{{busy}}" /></label>
   <view wx:if="{{error}}" class="error">{{error}}</view>

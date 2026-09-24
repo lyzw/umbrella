@@ -1,1 +1,4 @@
-{"navigationBarTitleText":"今日餐单"}
+{
+  "navigationBarTitleText": "今日餐单",
+  "usingComponents": { "page-back": "/components/page-back/index" }
+}

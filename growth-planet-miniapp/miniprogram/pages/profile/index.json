@@ -1,1 +1,4 @@
-{"navigationBarTitleText":"档案与偏好"}
+{
+  "navigationBarTitleText": "档案与偏好",
+  "usingComponents": { "page-back": "/components/page-back/index" }
+}

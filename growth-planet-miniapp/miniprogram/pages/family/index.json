@@ -1,1 +1,4 @@
-{"navigationBarTitleText":"家庭与绑定"}
+{
+  "navigationBarTitleText": "家庭与绑定",
+  "usingComponents": { "page-back": "/components/page-back/index" }
+}

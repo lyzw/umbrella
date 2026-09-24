@@ -1,4 +1,7 @@
 {
   "navigationBarTitleText": "家务小当家",
-  "usingComponents": { "app-nav": "/components/app-nav/index" }
+  "usingComponents": {
+    "app-nav": "/components/app-nav/index",
+    "page-back": "/components/page-back/index"
+  }
 }

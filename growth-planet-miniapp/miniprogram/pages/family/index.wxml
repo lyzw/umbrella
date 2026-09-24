@@ -1,4 +1,5 @@
 <view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
   <view class="header"><view class="title">家庭与绑定</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
   <view wx:if="{{role === 'CHILD'}}">
     <view class="notice">{{binding ? binding.label : '正在查询绑定状态'}}</view>

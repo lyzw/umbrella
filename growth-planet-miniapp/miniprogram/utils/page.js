@@ -63,6 +63,25 @@ function input(event) {
   this.setData({ [event.currentTarget.dataset.field]: event.detail.value });
 }
 function go(event) { wx.navigateTo({ url: '/pages/' + event.currentTarget.dataset.page + '/index' }); }
+const CHILD_HOME_TABS = new Set(['meal', 'task', 'growth', 'me']);
+const PARENT_HOME_TABS = new Set(['home', 'me']);
+function back(page, fallbackTab) {
+  let pages = [];
+  if (typeof getCurrentPages === 'function') {
+    try { pages = getCurrentPages() || []; } catch (error) { pages = []; }
+  }
+  if (pages.length > 1 && typeof wx.navigateBack === 'function') {
+    return wx.navigateBack({ delta: 1 });
+  }
+  const role = page && page.data && page.data.role;
+  const isChild = role === 'CHILD';
+  const tabs = isChild ? CHILD_HOME_TABS : PARENT_HOME_TABS;
+  const tab = tabs.has(fallbackTab) ? fallbackTab : (isChild ? 'meal' : 'home');
+  const url = '/pages/home/index?tab=' + tab;
+  if (typeof wx.reLaunch === 'function') return wx.reLaunch({ url });
+  if (typeof wx.navigateTo === 'function') return wx.navigateTo({ url });
+  return null;
+}
 function confirm(content, title = '请确认') {
   const revision = lifecycle.current();
   return new Promise(resolve => wx.showModal({ title, content, confirmText: '确认', cancelText: '取消',
@@ -76,4 +95,4 @@ function loginCode() {
   },
     fail: () => reject(new Error('微信登录失败，请重试')) }));
 }
-module.exports = { page, guard, run, input, go, confirm, loginCode };
+module.exports = { page, guard, run, input, go, back, confirm, loginCode };

@@ -1,4 +1,5 @@
 <view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <page-back role="{{role}}" fallback-tab="{{role === 'CHILD' ? 'task' : 'home'}}" disabled="{{busy}}" />
   <view class="page-heading">
     <text class="title">健康打卡</text>
     <text class="subtitle">{{role === 'PARENT' ? '配置喝水、睡眠、运动等打卡项，陪孩子养成好习惯' : '一键打卡，攒连续天数，解锁健康勋章'}}</text>

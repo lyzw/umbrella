@@ -1,0 +1,6 @@
+<view class="page-back">
+  <button class="page-back-button" bindtap="back" disabled="{{disabled}}" aria-label="返回">
+    <text class="page-back-icon" aria-hidden="true">‹</text>
+    <text>返回</text>
+  </button>
+</view>

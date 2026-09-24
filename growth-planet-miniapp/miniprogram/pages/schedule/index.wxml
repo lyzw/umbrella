@@ -1,4 +1,5 @@
 <view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <page-back role="{{role}}" fallback-tab="home" disabled="{{busy}}" />
   <view class="page-heading">
     <text class="title">日程提醒</text>
     <text class="subtitle">作业 · 兴趣班 · 服药，到点提醒不忘记</text>

@@ -1,4 +1,5 @@
 <view class="page parent">
+  <page-back role="{{role}}" fallback-tab="home" disabled="{{busy}}" />
   <view class="page-heading">
     <text class="title">孩子想吃</text>
     <text class="subtitle">按日期与餐次查看孩子标记的想吃清单，据此采购、烹饪，并标记处理进度</text>

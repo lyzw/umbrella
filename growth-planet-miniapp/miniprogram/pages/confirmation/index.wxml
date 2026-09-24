@@ -1,4 +1,5 @@
 <view class="page confirmation-page {{role === 'PARENT' ? 'parent' : ''}} {{role === 'PARENT' && detail && detail.status === 'PENDING' ? 'has-decision-bar' : ''}}">
+  <page-back role="{{role}}" fallback-tab="{{role === 'CHILD' ? 'meal' : 'home'}}" disabled="{{busy}}" />
   <view class="header"><view class="title">{{role === 'PARENT' ? '餐单审批' : '我的确认单'}}</view><button bindtap="refresh" disabled="{{busy || draft}}">刷新</button></view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:if="{{pendingSubmit}}" class="notice"><view>上次提交结果尚未确认，请先查阅记录，或原样重试。</view><button bindtap="retrySubmit" disabled="{{busy}}">重试上次提报</button></view>

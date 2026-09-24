@@ -1,4 +1,5 @@
 <view class="page parent">
+  <page-back role="{{role}}" fallback-tab="home" disabled="{{busy}}" />
   <view class="page-heading">
     <text class="title">整周发布</text>
     <text class="subtitle">先点选要铺的餐次，再挑好菜品，一次发完一周；单条失败不影响其余，失败项会保留勾选方便重试</text>

@@ -67,6 +67,33 @@ const emptyWish = { childId: '9007199254740993', menuDate: shanghaiDate(), statu
   maxDishes: 5, dishCount: 0, submittedCount: 0, canEdit: true, canSubmit: false, locked: false,
   version: 0, submitTime: null, items: [] };
 
+test('二级页返回优先退出页面栈，无页面栈时回到角色对应首页', () => {
+  const previousWx = global.wx;
+  const previousGetCurrentPages = global.getCurrentPages;
+  const calls = [];
+  global.wx = {
+    navigateBack(options) { calls.push({ type: 'back', options }); },
+    reLaunch(options) { calls.push({ type: 'reLaunch', options }); }
+  };
+  try {
+    global.getCurrentPages = () => [{ route: 'pages/home/index' }, { route: 'pages/menu/index' }];
+    ui.back({ data: { role: 'CHILD' } }, 'task');
+    assert.deepEqual(calls, [{ type: 'back', options: { delta: 1 } }]);
+
+    global.getCurrentPages = () => [{ route: 'pages/menu/index' }];
+    ui.back({ data: { role: 'CHILD' } }, 'invalid');
+    ui.back({ data: { role: 'PARENT' } }, 'me');
+    assert.deepEqual(calls.slice(1), [
+      { type: 'reLaunch', options: { url: '/pages/home/index?tab=meal' } },
+      { type: 'reLaunch', options: { url: '/pages/home/index?tab=me' } }
+    ]);
+  } finally {
+    global.wx = previousWx;
+    if (previousGetCurrentPages === undefined) delete global.getCurrentPages;
+    else global.getCurrentPages = previousGetCurrentPages;
+  }
+});
+
 test('新家长无家庭的403展示建家庭入口，但保留权限提醒', async () => {
   const page = loadPage('family');
   api.get = async () => { throw Object.assign(new Error('无权限'), { status: 403, code: 'E-009' }); };

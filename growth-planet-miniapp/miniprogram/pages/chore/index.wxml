@@ -1,4 +1,5 @@
 <view class="page {{role === 'PARENT' ? 'parent' : 'with-nav'}}">
+  <page-back wx:if="{{role === 'PARENT'}}" role="{{role}}" fallback-tab="home" disabled="{{busy}}" />
   <view class="page-heading">
     <text class="title">家务小当家</text>
     <text class="subtitle">认领任务 · 完成赚取虚拟单位 · 解锁勋章</text>

@@ -1,4 +1,5 @@
 <view class="page parent dish-manage-page {{showForm ? 'has-form-actions' : ''}}">
+  <page-back role="{{role}}" fallback-tab="home" disabled="{{busy}}" />
   <view class="header">
     <view>
       <view class="eyebrow">仅当前家庭可见</view>

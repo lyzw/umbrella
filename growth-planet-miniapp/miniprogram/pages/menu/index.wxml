@@ -1,4 +1,5 @@
 <view class="page menu-page {{role === 'PARENT' ? 'parent' : ''}}">
+  <page-back role="{{role}}" fallback-tab="{{role === 'CHILD' ? 'meal' : 'home'}}" disabled="{{busy}}" />
   <view class="header menu-header">
     <view><view class="eyebrow">{{role === 'PARENT' ? '仅当前家庭有效' : '小当家 · 点餐'}}</view><view class="title">{{role === 'PARENT' ? '家庭菜单维护' : '今日餐单'}}</view></view>
     <picker mode="date" value="{{menuDate}}" bindchange="date" disabled="{{busy}}"><view class="picker date-picker">{{menuDate}}</view></picker>

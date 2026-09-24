@@ -1,4 +1,5 @@
 <view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
   <view class="title">{{role === 'PARENT' ? '儿童档案' : '我的口味偏好'}}</view>
   <view class="subtitle">过敏信息仅由家长维护，偏好不会替代过敏防护。</view>
   <picker wx:if="{{role === 'PARENT' && children.length}}" range="{{children}}" range-key="childId" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">儿童 {{childId}}</view></picker>

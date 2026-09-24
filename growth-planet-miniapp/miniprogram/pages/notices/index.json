@@ -1,1 +1,4 @@
-{ "navigationBarTitleText": "通知中心" }
+{
+  "navigationBarTitleText": "通知中心",
+  "usingComponents": { "page-back": "/components/page-back/index" }
+}
