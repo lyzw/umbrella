@@ -4,9 +4,9 @@
       <view class="planet-ring"></view>
       <text class="planet-mark">🌱</text>
     </view>
-    <view class="eyebrow">小当家 · 点餐</view>
+    <view class="eyebrow">家长审菜单、发零花钱；孩子点餐、攒奖励</view>
     <view class="title">成长星球</view>
-    <view class="subtitle">今天的选择，一起商量。</view>
+    <view class="subtitle">今天的选择，一起商量</view>
   </view>
   <view class="notice" wx:if="{{synthetic}}">合成数据开发环境，请勿输入真实儿童资料。</view>
   <view wx:if="{{!selecting}}" class="login-panel">
@@ -27,12 +27,12 @@
       <button class="role-option child" bindtap="choose" data-role="CHILD" disabled="{{busy}}" aria-label="我是孩子">
         <view class="role-icon">童</view>
         <view class="role-title">我是孩子</view>
-        <view class="role-desc">挑选今天的餐食，请爸妈确认</view>
+        <view class="role-desc">点餐、领星币、做任务、集勋章</view>
       </button>
       <button class="role-option parent" bindtap="choose" data-role="PARENT" disabled="{{busy}}" aria-label="我是家长">
         <view class="role-icon">长</view>
         <view class="role-title">我是家长</view>
-        <view class="role-desc">管理餐单、额度与同意</view>
+        <view class="role-desc">审菜单、批点餐、发零花钱</view>
       </button>
     </view>
   </view>

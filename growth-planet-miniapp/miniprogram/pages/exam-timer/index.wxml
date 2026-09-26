@@ -1,0 +1,41 @@
+<view class="page timer-page">
+  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
+  <view class="page-heading center">
+    <text class="title">考试计时器</text>
+    <text class="subtitle">模拟考场节奏，倒计时不打扰答题</text>
+  </view>
+
+  <!-- 科目切换 -->
+  <view class="subject-tabs">
+    <view wx:for="{{subjects}}" wx:key="name"
+      class="subject-tab {{index === subjectIndex ? 'on' : ''}}"
+      bindtap="pickSubject" data-index="{{index}}">{{item.name}}</view>
+  </view>
+
+  <!-- 倒计时环 -->
+  <view class="timer-ring-wrap">
+    <svg class="timer-ring" width="220" height="220" viewBox="0 0 220 220">
+      <circle cx="110" cy="110" r="92" fill="none" stroke="#eef0f4" stroke-width="12"/>
+      <circle cx="110" cy="110" r="92" fill="none" stroke="{{ringColor}}" stroke-width="12" stroke-linecap="round"
+        stroke-dasharray="578" stroke-dashoffset="{{ringOffset}}" transform="rotate(-90 110 110)"/>
+    </svg>
+    <view class="timer-center">
+      <text class="timer-time">{{remainingText}}</text>
+      <text class="timer-sub">已用 {{usedText}} / {{durationText}}</text>
+    </view>
+  </view>
+
+  <!-- 时长快捷操作 -->
+  <view class="timer-chips">
+    <text class="timer-chip" bindtap="resetDuration">考试 {{durationMinutes}} 分钟</text>
+    <text class="timer-chip" bindtap="addTime">加时 5 分钟</text>
+  </view>
+
+  <!-- 控制 -->
+  <view class="timer-controls">
+    <view class="timer-btn end" bindtap="endExam">结束</view>
+    <view class="timer-btn main" bindtap="toggleRun">{{running ? '暂停' : '开始'}}</view>
+  </view>
+  <view class="footnote">时间到会震动提醒，不打扰答题</view>
+  <view wx:if="{{busy}}" class="loading">正在处理</view>
+</view>

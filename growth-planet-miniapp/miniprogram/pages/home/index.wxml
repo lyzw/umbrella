@@ -1,8 +1,8 @@
 <view class="page with-nav {{role === 'PARENT' ? 'parent' : ''}}">
   <view class="home-topbar">
     <view>
-      <view class="eyebrow">{{role === 'PARENT' ? '家长空间' : '小当家 · 点餐'}}</view>
-      <view class="title">{{active === 'me' ? '我的' : active === 'growth' ? '成长' : active === 'task' ? '任务' : '成长星球'}}</view>
+      <view class="eyebrow">{{role === 'PARENT' ? '家长空间' : '早上好'}}</view>
+      <view class="title">{{active === 'me' ? '我的' : active === 'growth' ? '成长' : active === 'task' ? '任务' : (role === 'PARENT' ? '成长星球' : '今天想吃点什么')}}</view>
     </view>
     <button class="notification-button" bindtap="go" data-page="notices" aria-label="通知中心">
       <text class="notification-icon" aria-hidden="true">铃</text>
@@ -128,9 +128,19 @@
 
     <!-- 孩子端：首页只答「今天吃什么 / 我想吃」，移除了所有成人功能入口 -->
     <block wx:else>
-      <view wx:if="{{medalTotal || streak}}" class="child-progress">
-        <text wx:if="{{medalTotal}}" class="child-progress-chip">🏅 已点亮 {{medalEarned}} / {{medalTotal}} 枚</text>
-        <text wx:if="{{streak}}" class="child-progress-chip">🔥 连续 {{streak}} 天</text>
+      <view wx:if="{{medalTotal || streak}}" class="growth-card">
+        <view class="growth-card-row">
+          <view class="growth-card-item">
+            <text class="growth-card-num">{{medalEarned}}<text wx:if="{{medalTotal}}" class="growth-card-num-total">/{{medalTotal}}</text></text>
+            <text class="growth-card-label">已点亮勋章</text>
+          </view>
+          <view class="growth-card-divider"></view>
+          <view class="growth-card-item">
+            <text class="growth-card-num">{{streak}}</text>
+            <text class="growth-card-label">连续打卡 天</text>
+          </view>
+        </view>
+        <view wx:if="{{medalTotal}}" class="growth-card-bar"><view class="growth-card-bar-inner" style="width: {{medalTotal ? (medalEarned / medalTotal * 100) : 0}}%"></view></view>
       </view>
 
       <view class="meal-summary">
@@ -248,6 +258,9 @@
       <view class="home-list">
         <view class="home-list-row" bindtap="go" data-page="profile" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon profile-icon">档</text><view class="home-list-copy"><text class="home-list-title">我的口味偏好</text><text class="home-list-subtitle">忌口、过敏（家长维护）和口味</text></view><text class="home-list-arrow">›</text></view></view>
         <view class="home-list-row" bindtap="go" data-page="notices" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon notice-icon">铃</text><view class="home-list-copy"><text class="home-list-title">通知中心</text><text class="home-list-subtitle">{{unread > 0 ? unread + ' 条消息待查看' : '暂无未读消息'}}</text></view><text wx:if="{{unread > 0}}" class="row-badge">{{unread}}</text><text wx:else class="home-list-arrow">›</text></view></view>
+        <view class="home-list-row" bindtap="go" data-page="timetable" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon schedule-icon">课</text><view class="home-list-copy"><text class="home-list-title">本周课表</text><text class="home-list-subtitle">一屏看清每天上什么课</text></view><text class="home-list-arrow">›</text></view></view>
+        <view class="home-list-row" bindtap="go" data-page="homework" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon schedule-icon">业</text><view class="home-list-copy"><text class="home-list-title">家庭作业</text><text class="home-list-subtitle">待办、截止提醒，做完即打卡</text></view><text class="home-list-arrow">›</text></view></view>
+        <view class="home-list-row" bindtap="go" data-page="tools" aria-role="button" hover-class="home-list-row-active"><view class="home-list-row-content"><text class="home-list-icon schedule-icon">具</text><view class="home-list-copy"><text class="home-list-title">学习工具箱</text><text class="home-list-subtitle">考试计时器，更多工具陆续补充</text></view><text class="home-list-arrow">›</text></view></view>
       </view>
     </block>
 

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "考试计时器",
+  "usingComponents": {
+    "page-back": "/components/page-back/index"
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "家庭作业",
+  "usingComponents": {
+    "page-back": "/components/page-back/index"
+  }
+}
