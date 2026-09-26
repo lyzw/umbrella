@@ -1,23 +1,80 @@
-.page-heading.center { text-align: center; margin-bottom: 18px; }
-.subject-tabs { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; }
-.subject-tab {
-  padding: 6px 16px;
-  border-radius: 99px;
-  background: var(--surface-2);
-  font-size: 13px;
-  color: var(--muted);
+.page-heading.center { text-align: center; margin-bottom: 16px; }
+.group-label { margin: 2px 2px 8px; font-size: 12px; color: var(--muted); }
+
+/* 阶段列表 */
+.stage-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.stage-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--primary);
+  border-radius: var(--radius-md);
 }
-.subject-tab.on {
-  background: var(--primary);
-  color: #fff;
-  font-weight: 800;
+.stage-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stage-name { font-size: 14px; font-weight: 800; color: #172033; overflow-wrap: anywhere; }
+.stage-time { font-size: 12px; color: var(--muted); }
+.stage-ops { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.stage-stepper { display: flex; align-items: center; gap: 6px; }
+.step-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: #344054;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.stage-del {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
+/* 添加面板 */
+.add-panel { padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.add-row { display: flex; align-items: center; gap: 8px; }
+.add-name {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+.add-minutes {
+  width: 64px;
+  height: 40px;
+  padding: 0 10px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  text-align: center;
+}
+.add-btn { flex: 0 0 auto; }
+
+.start-btn { margin-top: 16px; }
+
+/* 倒计时环 */
 .timer-ring-wrap {
   position: relative;
   width: 220px;
   height: 220px;
-  margin: 10px auto 6px;
+  margin: 6px auto 12px;
 }
 .timer-ring { display: block; }
 .timer-center {
@@ -29,17 +86,13 @@
   justify-content: center;
   gap: 4px;
 }
-.timer-time { font-size: 48px; font-weight: 800; line-height: 1; color: #172033; font-variant-numeric: tabular-nums; }
+.timer-time { font-size: 46px; font-weight: 800; line-height: 1; color: #172033; font-variant-numeric: tabular-nums; }
 .timer-sub { font-size: 12px; color: var(--muted); }
 
-.timer-chips { display: flex; gap: 8px; justify-content: center; margin-bottom: 22px; }
-.timer-chip {
-  padding: 6px 14px;
-  border-radius: 99px;
-  background: var(--surface-2);
-  font-size: 12px;
-  color: var(--muted);
-}
+.total-progress { margin: 0 auto 20px; max-width: 260px; }
+.total-progress-bar { height: 6px; border-radius: 99px; background: #e6ebf2; overflow: hidden; }
+.total-progress-inner { height: 100%; border-radius: 99px; background: #2f6bff; }
+.total-progress-text { display: block; margin-top: 6px; text-align: center; font-size: 12px; color: var(--muted); }
 
 .timer-controls { display: flex; gap: 14px; justify-content: center; align-items: center; }
 .timer-btn {
@@ -64,4 +117,12 @@
   font-size: 15px;
   box-shadow: 0 10px 20px -8px rgba(47, 107, 255, .45);
 }
-.footnote { margin-top: 18px; text-align: center; font-size: 11px; color: var(--muted); }
+.timer-chips { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+.timer-chip {
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--muted);
+}
+.footnote { margin-top: 14px; text-align: center; font-size: 11px; color: var(--muted); }
