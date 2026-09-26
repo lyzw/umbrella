@@ -1,6 +1,66 @@
 .page-heading.center { text-align: center; margin-bottom: 16px; }
 .group-label { margin: 2px 2px 8px; font-size: 12px; color: var(--muted); }
 
+/* 科目栏 */
+.subject-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.subject-scroll { flex: 1 1 0; min-width: 0; white-space: nowrap; }
+.subject-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 16px;
+  margin-right: 8px;
+  border-radius: 99px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+}
+.subject-tab.on {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 800;
+}
+.subject-add {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.subject-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 14px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.subject-add-input {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
 /* 阶段列表 */
 .stage-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
 .stage-card {
