@@ -16,7 +16,7 @@
 .notice-icon { color: #6d28d9; background: #ede9fe; }
 .privacy-icon { color: #475569; background: #f1f5f9; }
 .dish-icon { color: #b03a1c; background: #fff1e9; }
-.schedule-icon { color: #2563eb; background: #dbeafe; }
+.schedule-icon { color: #1d4ed8; background: #dbeafe; }
 .medal-icon { color: #8a6400; background: var(--c-medal-soft); }
 .health-icon { color: #b03a68; background: var(--c-health-soft); }
 .parent-summary { margin-bottom: 14px; padding: 16px 0; }
