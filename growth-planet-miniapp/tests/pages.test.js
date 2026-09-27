@@ -1551,7 +1551,7 @@ test('菜单页：推荐卡渲染、点击复用今日餐单校验', async () =>
   assert.equal(calls.length, 1);
   assert.deepEqual(toasts, ['今日餐单暂无可标记的菜品']);
 });
-test('菜单页：推荐与周条接口失败时静默降级', async () => {
+test('菜单页：推荐与周条接口失败时静默降级，周条仍完整展示未发布', async () => {
   const page = loadPage('menu', 'CHILD');
   api.get = async endpoint => {
     if (endpoint === '/menu/daily') {
@@ -1563,7 +1563,10 @@ test('菜单页：推荐与周条接口失败时静默降级', async () => {
   await page.read();
   assert.deepEqual(page.data.recommend, []);
   assert.deepEqual(page.data.frequent, []);
-  assert.deepEqual(page.data.week, []);
+  // 周条请求失败也直接展示完整时间线，全部按未发布
+  assert.equal(page.data.week.length, 47);
+  assert.equal(page.data.week.some(item => item.hasMenu), false);
+  assert.equal(page.data.week[31].isToday, true);
   assert.equal(page.data.ready, true);
   assert.deepEqual(page.data.dishes.map(item => item.dishId), ['99']);
 });
@@ -1578,9 +1581,9 @@ test('菜单页：周条标注已发布天数，点选可切到该天', async ()
     if (endpoint === '/child/frequent-dish') return { dishes: [] };
     if (endpoint === '/child/recommend') return { dishes: [] };
     if (endpoint === '/child/menu-week') {
-      assert.equal(query.from, day(-30));
+      assert.equal(query.from, day(-31));
       assert.equal(query.to, day(15));
-      return { from: day(-30), to: day(15), today, days: [
+      return { from: day(-31), to: day(15), today, days: [
         { menuDate: today, meals: [{ mealType: 'LUNCH', ...meals, wantEatCount: 1 }, { mealType: 'DINNER' }] },
         { menuDate: tomorrow, meals: [{ mealType: 'LUNCH' }] }
       ] };
@@ -1589,17 +1592,17 @@ test('菜单页：周条标注已发布天数，点选可切到该天', async ()
       canSubmit: true, dishes: [{ ...dish, canSelect: true }] };
   };
   await page.read();
-  // 周条为前 30 天后 15 天完整时间线，前端补齐缺失日期
-  assert.equal(page.data.week.length, 46);
-  assert.deepEqual(page.data.week[30], { date: today, label: '今天', dayText: today.slice(5).replace('-', '/'),
+  // 周条为前 31 天后 15 天完整时间线（47 天），前端补齐缺失日期
+  assert.equal(page.data.week.length, 47);
+  assert.deepEqual(page.data.week[31], { date: today, label: '今天', dayText: today.slice(5).replace('-', '/'),
     publishedCount: 1, hasMenu: true, wantEatCount: 1, isToday: true, active: true });
-  assert.equal(page.data.week[31].date, tomorrow);
-  assert.equal(page.data.week[31].hasMenu, false);
+  assert.equal(page.data.week[32].date, tomorrow);
+  assert.equal(page.data.week[32].hasMenu, false);
 
   await page.weekDay(event({ date: tomorrow }));
   assert.equal(page.data.menuDate, tomorrow);
-  assert.equal(page.data.week[31].active, true);
-  assert.equal(page.data.week[30].active, false);
+  assert.equal(page.data.week[32].active, true);
+  assert.equal(page.data.week[31].active, false);
 });
 test('整周发布：格子点选、模板铺菜与批量发布部分成功', async () => {
   const page = loadPage('menu-week', 'PARENT');

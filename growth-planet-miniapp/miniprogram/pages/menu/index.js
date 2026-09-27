@@ -175,7 +175,7 @@ ui.page({
   buildWeekItems(result, from, to, today) {
     const byDate = new Map((result && result.days || []).map(day => [day.menuDate, day]));
     const items = [];
-    for (let offset = 0; offset <= 45; offset++) {
+    for (let offset = 0; offset <= 46; offset++) {
       const date = shiftDate(from, offset);
       if (date > to) break;
       const day = byDate.get(date) || { menuDate: date, meals: [] };
@@ -205,28 +205,19 @@ ui.page({
   },
   async loadWeek() {
     const today = shanghaiDate();
-    const build = async (from, to) => {
-      const result = this.data.role === 'PARENT'
+    const from = shiftDate(today, -31);
+    const to = shiftDate(today, 15);
+    let result = null;
+    try {
+      result = this.data.role === 'PARENT'
         ? await api.get('/parent/menu-week', { from, to })
         : await api.get('/child/menu-week', { from, to, childId: this.data.childId });
-      return this.buildWeekItems(result, from, to, today);
-    };
-    let week;
-    let todayOffset = 30;
-    try {
-      // 主请求：前 1 个月 + 后半个月
-      week = await build(shiftDate(today, -30), shiftDate(today, 15));
     } catch (error) {
-      // 部分后端不支持超长范围：降级为 7 天窗口，保证周条不消失
-      try {
-        week = await build(today, shiftDate(today, 6));
-        todayOffset = 0;
-      } catch (ignored) {
-        this.setData({ week: [] }); // 周条失败不影响单日菜单主流程
-        return;
-      }
+      // 请求失败也直接展示完整时间线，全部按未发布标签处理
+      result = null;
     }
-    this.setData({ week, weekScrollLeft: this.centerWeekScroll(todayOffset) });
+    const week = this.buildWeekItems(result, from, to, today);
+    this.setData({ week, weekScrollLeft: this.centerWeekScroll(31) });
   },
   decorateRecommend(dishes) {
     return (this.recommendDishes || []).map(item => {

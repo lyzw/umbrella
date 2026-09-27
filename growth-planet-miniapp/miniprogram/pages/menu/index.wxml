@@ -6,7 +6,7 @@
     <view wx:for="{{week}}" wx:key="date" class="week-day {{item.active ? 'active' : ''}} {{item.isToday ? 'today' : ''}}" bindtap="weekDay" data-date="{{item.date}}">
       <text class="week-day-label">{{item.label}}</text>
       <text class="week-day-date">{{item.dayText}}</text>
-      <text class="week-day-hint">{{item.hasMenu ? item.publishedCount + ' 餐已发' : '未发布'}}</text>
+      <text class="week-day-hint {{item.hasMenu ? 'pub' : ''}}">{{item.hasMenu ? '已发布' : '未发布'}}</text>
       <text wx:if="{{item.wantEatCount}}" class="week-day-want">想吃 {{item.wantEatCount}}</text>
     </view>
   </scroll-view>
