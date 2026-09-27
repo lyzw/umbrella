@@ -11,6 +11,15 @@
     </picker>
   </view>
 
+  <view wx:if="{{ringSvg}}" class="checkin-card">
+    <image class="checkin-ring" src="{{ringSvg}}" mode="aspectFit" aria-label="连续打卡天数" />
+    <view class="checkin-copy">
+      <view class="checkin-title">连续打卡 {{streak}} 天</view>
+      <view class="checkin-subtitle">{{streak >= 30 ? '已达成 30 天小目标，继续加油' : '再坚持 ' + (30 - streak % 30) + ' 天，集满 30 天小目标'}}</view>
+      <view class="checkin-hint">每天完成一件事，星星不会断</view>
+    </view>
+  </view>
+
   <view wx:if="{{medalTotal}}" class="medal-overview">
     <text class="medal-overview-label">成长进度</text>
     <text class="medal-overview-value">已点亮 {{medalEarned}} / 共 {{medalTotal}} 枚</text>

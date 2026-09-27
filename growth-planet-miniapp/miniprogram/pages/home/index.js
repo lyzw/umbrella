@@ -29,6 +29,8 @@ ui.page({
       chores: { status: 'idle', value: 0, error: '' },
       wantEat: { status: 'idle', value: 0, error: '' }
     },
+    // 家长看板待办卡（设计稿：待你处理）
+    pendingCards: [],
     // 点餐（孩子首页）增强区块
     familyCount: 0, schoolCount: 0, familyMenuId: '', mealMenuDishes: [], reminderStatus: '',
     recommend: [], frequent: [], wish: null,
@@ -128,6 +130,20 @@ ui.page({
     });
     await this.loadParentMetrics(revision, generation, childId);
   },
+  syncPendingCards() {
+    const s = this.data.parentSummary;
+    const cards = [];
+    if (s.approvals.status === 'ready' && s.approvals.value > 0) {
+      cards.push({ page: 'confirmation', icon: '审', title: '待审批餐单', subtitle: '孩子提交了餐单，等你确认', count: s.approvals.value });
+    }
+    if (s.chores.status === 'ready' && s.chores.value > 0) {
+      cards.push({ page: 'chore', icon: '务', title: '待确认家务', subtitle: '孩子完成的家务，等你确认', count: s.chores.value });
+    }
+    if (s.wantEat.status === 'ready' && s.wantEat.value > 0) {
+      cards.push({ page: 'want-eat', icon: '想', title: '今日想吃清单', subtitle: '孩子今天想吃这些菜', count: s.wantEat.value });
+    }
+    this.setData({ pendingCards: cards });
+  },
   async loadParentMetrics(revision, generation, childId) {
     const today = shanghaiDate();
     const metrics = [
@@ -150,6 +166,7 @@ ui.page({
         this.setData({ ['parentSummary.' + name]: this.summaryState('error', 0, error.message || '暂时无法加载') });
       }
     }));
+    if (this.isCurrentLoad(revision, generation) && this.data.childId === childId) this.syncPendingCards();
   },
   selectParentChild(e) {
     const index = Number(e.detail.value);

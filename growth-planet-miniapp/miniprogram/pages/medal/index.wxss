@@ -40,3 +40,18 @@
   .grid { grid-template-columns: 1fr; }
   .medal-description { min-height: 0; }
 }
+
+/* ===== 连续打卡环（设计稿：金色大圆环） ===== */
+.checkin-card {
+  margin-bottom: 14px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--line, #e3e6eb);
+  border-radius: var(--radius-lg, 16px);
+  display: flex; align-items: center; gap: 14px;
+}
+.checkin-ring { width: 92px; height: 92px; flex-shrink: 0; }
+.checkin-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.checkin-title { font-size: 16px; font-weight: 800; color: var(--kid-gold, #b47c0a); }
+.checkin-subtitle { font-size: 13px; color: #344054; }
+.checkin-hint { font-size: 12px; color: #9aa1ac; }
