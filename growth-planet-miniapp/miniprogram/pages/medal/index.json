@@ -1,4 +1,3 @@
 {
-  "navigationBarTitleText": "勋章墙",
-  "usingComponents": { "page-back": "/components/page-back/index" }
+  "navigationBarTitleText": "勋章墙"
 }

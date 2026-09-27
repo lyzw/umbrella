@@ -1,6 +1,3 @@
 {
-  "navigationBarTitleText": "本周课表",
-  "usingComponents": {
-    "page-back": "/components/page-back/index"
-  }
+  "navigationBarTitleText": "本周课表"
 }

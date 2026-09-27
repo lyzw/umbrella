@@ -1,5 +1,4 @@
 <view class="page timer-page">
-  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
 
   <!-- 科目栏（配置与运行视图共用） -->
   <view class="subject-bar">

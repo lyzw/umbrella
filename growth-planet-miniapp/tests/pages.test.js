@@ -233,9 +233,14 @@ test('二级页返回优先退出页面栈，无页面栈时回到角色对应�
     else global.getCurrentPages = previousGetCurrentPages;
   }
 });
-test('隐私页属于家长我的模块并提供统一返回入口', () => {
-  const template = fs.readFileSync(path.join(root, 'pages/privacy/index.wxml'), 'utf8');
-  assert.match(template, /<page-back[^>]+fallback-tab="me"/);
+test('所有页面不再使用页内返回按钮，统一走系统返回', () => {
+  const templates = fs.readdirSync(path.join(root, 'pages'), { withFileTypes: true })
+    .filter(entry => entry.isDirectory())
+    .map(entry => fs.readFileSync(path.join(root, 'pages', entry.name, 'index.wxml'), 'utf8'));
+  assert.ok(templates.length > 0);
+  for (const template of templates) {
+    assert.doesNotMatch(template, /<page-back/);
+  }
 
   const previousWx = global.wx;
   const previousGetCurrentPages = global.getCurrentPages;

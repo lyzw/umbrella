@@ -1,5 +1,4 @@
 <view class="page">
-  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
 
   <!-- 列表视图 -->
   <block wx:if="{{!detail}}">

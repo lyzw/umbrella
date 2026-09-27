@@ -1,4 +1,3 @@
 {
-  "navigationBarTitleText": "确认单",
-  "usingComponents": { "page-back": "/components/page-back/index" }
+  "navigationBarTitleText": "确认单"
 }

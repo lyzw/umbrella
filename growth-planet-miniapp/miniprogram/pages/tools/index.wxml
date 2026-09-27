@@ -1,5 +1,4 @@
 <view class="page">
-  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
   <view class="page-heading">
     <text class="title">学习工具</text>
     <text class="subtitle">按学习节奏，一个一个加上来</text>

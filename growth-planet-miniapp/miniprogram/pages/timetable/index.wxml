@@ -1,5 +1,4 @@
 <view class="page">
-  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
   <view class="page-heading">
     <text class="title">本周课表</text>
     <text class="subtitle">一屏看清今天上什么课（示例课表，按日点选查看）</text>

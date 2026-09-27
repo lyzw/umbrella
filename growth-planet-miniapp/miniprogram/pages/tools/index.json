@@ -1,6 +1,3 @@
 {
-  "navigationBarTitleText": "工具箱",
-  "usingComponents": {
-    "page-back": "/components/page-back/index"
-  }
+  "navigationBarTitleText": "工具箱"
 }
