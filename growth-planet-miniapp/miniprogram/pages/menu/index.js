@@ -27,7 +27,7 @@ function weekdayLabel(date, today) {
 ui.page({
   data: { role: '', busy: false, error: '', children: [], childLabels: [], childIndex: 0, childId: '', sourceType: 'FAMILY',
     menuDate: shanghaiDate(), today: shanghaiDate(), mealType: 'LUNCH', meals: ['早餐', '午餐', '晚餐'], mealIndex: 1,
-    weekAnchor: '',
+    weekScrollLeft: 0,
     menu: null, dishes: [], mildOnly: false, favoritesOnly: false, keyword: '', total: '0.00', count: 0,
     sourceTab: 'FAMILY', schoolBoundaryText: '', missingCount: 0, missingDishIds: [], invalidSelectedCount: 0, ready: false,
     categories: [], categoryId: '', frequent: [], recommend: [], week: [],
@@ -172,32 +172,61 @@ ui.page({
     }
   },
   // 周条：今天起 7 天，标注哪几天已发菜单（家长用于整周发布，孩子用于提前挑选）。
+  buildWeekItems(result, from, to, today) {
+    const byDate = new Map((result && result.days || []).map(day => [day.menuDate, day]));
+    const items = [];
+    for (let offset = 0; offset <= 45; offset++) {
+      const date = shiftDate(from, offset);
+      if (date > to) break;
+      const day = byDate.get(date) || { menuDate: date, meals: [] };
+      const meals = day.meals || [];
+      const published = meals.filter(meal => meal.menuId);
+      items.push({
+        date,
+        label: weekdayLabel(date, today),
+        dayText: date.slice(5).replace('-', '/'),
+        publishedCount: published.length,
+        hasMenu: published.length > 0,
+        wantEatCount: meals.reduce((sum, meal) => sum + (meal.wantEatCount || 0), 0),
+        isToday: date === today,
+        active: date === this.data.menuDate
+      });
+    }
+    return items;
+  },
+  centerWeekScroll(todayOffset) {
+    try {
+      const info = wx.getSystemInfoSync();
+      const itemWidth = 92; // min-width 62 + padding 20 + border 2 + gap 8
+      return Math.max(0, todayOffset * itemWidth - Math.floor((info.windowWidth || 375) / 2) + Math.floor(itemWidth / 2));
+    } catch (error) {
+      return 0;
+    }
+  },
   async loadWeek() {
     const today = shanghaiDate();
-    const from = shiftDate(today, -30);
-    const to = shiftDate(today, 15);
-    try {
+    const build = async (from, to) => {
       const result = this.data.role === 'PARENT'
         ? await api.get('/parent/menu-week', { from, to })
         : await api.get('/child/menu-week', { from, to, childId: this.data.childId });
-      const week = (result.days || []).map(day => {
-        const meals = day.meals || [];
-        const published = meals.filter(meal => meal.menuId);
-        return {
-          date: day.menuDate,
-          label: weekdayLabel(day.menuDate, today),
-          dayText: day.menuDate.slice(5).replace('-', '/'),
-          publishedCount: published.length,
-          hasMenu: published.length > 0,
-          wantEatCount: meals.reduce((sum, meal) => sum + (meal.wantEatCount || 0), 0),
-          isToday: day.menuDate === today,
-          active: day.menuDate === this.data.menuDate
-        };
-      });
-      this.setData({ week, weekAnchor: 'week-' + today });
+      return this.buildWeekItems(result, from, to, today);
+    };
+    let week;
+    let todayOffset = 30;
+    try {
+      // 主请求：前 1 个月 + 后半个月
+      week = await build(shiftDate(today, -30), shiftDate(today, 15));
     } catch (error) {
-      this.setData({ week: [] }); // 周条失败不影响单日菜单主流程
+      // 部分后端不支持超长范围：降级为 7 天窗口，保证周条不消失
+      try {
+        week = await build(today, shiftDate(today, 6));
+        todayOffset = 0;
+      } catch (ignored) {
+        this.setData({ week: [] }); // 周条失败不影响单日菜单主流程
+        return;
+      }
     }
+    this.setData({ week, weekScrollLeft: this.centerWeekScroll(todayOffset) });
   },
   decorateRecommend(dishes) {
     return (this.recommendDishes || []).map(item => {

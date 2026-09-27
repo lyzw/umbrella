@@ -2,8 +2,8 @@
   <view class="header menu-header">
     <view><view class="eyebrow">{{role === 'PARENT' ? '仅当前家庭有效' : '小当家 · 点餐'}}</view><view class="title">{{role === 'PARENT' ? '家庭菜单维护' : '今日餐单'}}</view></view>
   </view>
-  <scroll-view wx:if="{{week.length}}" class="week-strip" scroll-x="true" enable-flex="true" scroll-into-view="{{weekAnchor}}" scroll-with-animation="{{false}}">
-    <view wx:for="{{week}}" wx:key="date" id="{{'week-' + item.date}}" class="week-day {{item.active ? 'active' : ''}} {{item.isToday ? 'today' : ''}}" bindtap="weekDay" data-date="{{item.date}}">
+  <scroll-view wx:if="{{week.length}}" class="week-strip" scroll-x="true" enable-flex="true" scroll-left="{{weekScrollLeft}}" scroll-with-animation="true">
+    <view wx:for="{{week}}" wx:key="date" class="week-day {{item.active ? 'active' : ''}} {{item.isToday ? 'today' : ''}}" bindtap="weekDay" data-date="{{item.date}}">
       <text class="week-day-label">{{item.label}}</text>
       <text class="week-day-date">{{item.dayText}}</text>
       <text class="week-day-hint">{{item.hasMenu ? item.publishedCount + ' 餐已发' : '未发布'}}</text>

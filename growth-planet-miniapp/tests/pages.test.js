@@ -1589,15 +1589,17 @@ test('菜单页：周条标注已发布天数，点选可切到该天', async ()
       canSubmit: true, dishes: [{ ...dish, canSelect: true }] };
   };
   await page.read();
-  assert.equal(page.data.week.length, 2);
-  assert.deepEqual(page.data.week[0], { date: today, label: '今天', dayText: today.slice(5).replace('-', '/'),
+  // 周条为前 30 天后 15 天完整时间线，前端补齐缺失日期
+  assert.equal(page.data.week.length, 46);
+  assert.deepEqual(page.data.week[30], { date: today, label: '今天', dayText: today.slice(5).replace('-', '/'),
     publishedCount: 1, hasMenu: true, wantEatCount: 1, isToday: true, active: true });
-  assert.equal(page.data.week[1].hasMenu, false);
+  assert.equal(page.data.week[31].date, tomorrow);
+  assert.equal(page.data.week[31].hasMenu, false);
 
   await page.weekDay(event({ date: tomorrow }));
   assert.equal(page.data.menuDate, tomorrow);
-  assert.equal(page.data.week[1].active, true);
-  assert.equal(page.data.week[0].active, false);
+  assert.equal(page.data.week[31].active, true);
+  assert.equal(page.data.week[30].active, false);
 });
 test('整周发布：格子点选、模板铺菜与批量发布部分成功', async () => {
   const page = loadPage('menu-week', 'PARENT');
