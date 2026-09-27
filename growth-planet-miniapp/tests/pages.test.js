@@ -866,6 +866,46 @@ test('首页成长区展示勋章已点亮与总数，阈值为1也显示进度�
   assert.equal(page.data.medals[0].stateText, '进度 0/1');
   assert.equal(page.data.medals[1].stateText, '已点亮');
 });
+test('登录页启动即静默登录：无会话自动登录，新账号进角色选择、老账号直达首页', async () => {
+  const page = loadPage('login');
+  const calls = [];
+  api.post = async (endpoint, body) => {
+    calls.push({ endpoint, body });
+    return { token: 't1', role: 'UNSELECTED', expiresIn: 1800 };
+  };
+  session.clear();
+  await page.onShow();
+  assert.deepEqual(calls, [{ endpoint: '/auth/wx-login', body: { code: 'parent_demo' } }]);
+  assert.equal(page.data.phase, 'role');
+
+  // 老账号（已有角色）静默登录后直达首页
+  const page2 = loadPage('login');
+  api.post = async () => ({ token: 't2', role: 'PARENT', expiresIn: 1800 });
+  session.clear();
+  await page2.onShow();
+  assert.deepEqual(navigation, ['/pages/home/index']);
+});
+test('静默登录失败进入失败态，可重试并切换演示账号；选角色前须确认提示', async () => {
+  const page = loadPage('login');
+  api.post = async () => { throw new Error('服务不可用'); };
+  session.clear();
+  await page.onShow();
+  assert.equal(page.data.phase, 'error');
+
+  page.goManual();
+  assert.equal(page.data.phase, 'manual');
+
+  // 未勾选提示时角色选择被拦截
+  page.setData({ phase: 'role', accepted: false });
+  const calls = [];
+  api.post = async (endpoint, body) => {
+    calls.push({ endpoint, body });
+    return { token: 't3', role: 'CHILD', nextStep: 'join-family' };
+  };
+  await page.choose(event({ role: 'CHILD' }));
+  assert.deepEqual(calls, []);
+  assert.equal(page.data.phase, 'role');
+});
 test('请求期间会话到期仍回到登录页，而不是保留受保护页面', async () => {
   const page = loadPage('profile');
   Object.assign(api, methods);
