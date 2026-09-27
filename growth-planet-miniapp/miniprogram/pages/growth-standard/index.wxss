@@ -1,0 +1,16 @@
+.filter-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+.filter-tab { flex: 1; text-align: center; font-size: 14px; padding: 9px 0; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+.filter-tab.on { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); font-weight: 800; }
+
+.standard-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 10px 12px 8px; }
+.table-scroll { overflow-x: auto; }
+.std-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
+.std-table th { color: var(--muted); font-weight: 600; padding: 9px 2px; border-bottom: 1px solid #eef1ef; }
+.std-table td { padding: 9px 2px; color: var(--par-ink); border-bottom: 1px solid #f3f5f4; }
+.std-table td.age-col { color: var(--muted); text-align: left; white-space: nowrap; }
+.std-table td.p50 { background: var(--primary-soft); color: var(--primary); font-weight: 800; border-radius: 6px; }
+.unit-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+.note-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px; margin-top: 12px; display: flex; flex-direction: column; }
+.note-title { font-size: 14px; font-weight: 800; color: var(--par-ink); margin-bottom: 6px; }
+.note-text { font-size: 12px; color: var(--muted); line-height: 1.7; }

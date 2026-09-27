@@ -1,0 +1,44 @@
+<view class="page parent">
+  <view class="page-heading">
+    <text class="eyebrow">成长记录</text>
+    <text class="title">WHO 生长标准</text>
+  </view>
+
+  <view class="filter-tabs">
+    <text class="filter-tab {{ageBand === 'WHO 2006' ? 'on' : ''}}" bindtap="pickBand" data-band="WHO 2006">0–5 岁</text>
+    <text class="filter-tab {{ageBand === 'WHO 2007' ? 'on' : ''}}" bindtap="pickBand" data-band="WHO 2007">5–19 岁</text>
+  </view>
+  <view class="filter-tabs">
+    <text class="filter-tab {{gender === 'BOY' ? 'on' : ''}}" bindtap="pickGender" data-gender="BOY">男孩</text>
+    <text class="filter-tab {{gender === 'GIRL' ? 'on' : ''}}" bindtap="pickGender" data-gender="GIRL">女孩</text>
+  </view>
+  <view class="filter-tabs metric">
+    <text class="filter-tab {{metric === 'HEIGHT' ? 'on' : ''}}" bindtap="pickMetric" data-metric="HEIGHT">身高</text>
+    <text class="filter-tab {{metric === 'WEIGHT' ? 'on' : ''}}" bindtap="pickMetric" data-metric="WEIGHT">体重</text>
+    <text class="filter-tab {{metric === 'BMI' ? 'on' : ''}}" bindtap="pickMetric" data-metric="BMI">BMI</text>
+  </view>
+
+  <view class="standard-card">
+    <view class="table-scroll">
+      <table class="std-table">
+        <tr>
+          <th>年龄</th><th>P3</th><th>P15</th><th>P50</th><th>P85</th><th>P97</th>
+        </tr>
+        <tr wx:for="{{rows}}" wx:key="ageYears">
+          <td class="age-col">{{item.ageYears}} 岁</td>
+          <td>{{item.p3}}</td><td>{{item.p15}}</td><td class="p50">{{item.p50}}</td><td>{{item.p85}}</td><td>{{item.p97}}</td>
+        </tr>
+      </table>
+    </view>
+    <view class="unit-note">单位：{{unit}}</view>
+  </view>
+
+  <view class="note-card">
+    <text class="note-title">参考依据</text>
+    <text class="note-text">WHO 儿童生长标准：2006 年发布 0–5 岁，2007 年扩展至 5–19 岁（身高 / 体重 / BMI 按年龄与性别的百分位与 Z 值）。</text>
+  </view>
+  <view class="note-card">
+    <text class="note-title">使用提醒</text>
+    <text class="note-text">当前数值为开发期示意数据，正式版以 WHO 官方 LMS 数据为准。生长记录仅供日常参考，明显偏离或家长有疑虑时建议到儿童保健科做专业评估。</text>
+  </view>
+</view>

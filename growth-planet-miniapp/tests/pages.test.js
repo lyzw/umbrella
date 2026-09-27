@@ -2282,3 +2282,60 @@ test('家长想吃看板：换孩子与换区间清空配方缓存，避免串�
   page.onHide();
   assert.deepEqual(page.data.recipeStates, {});
 });
+
+test('成长记录总览：拉取记录与 WHO 标准并渲染指标卡', async () => {
+  const page = loadPage('growth-record');
+  const calls = [];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    if (endpoint === '/growth/records') return { items: [
+      { id: 2, recordDate: '2026-09-20', gender: 'BOY', heightCm: '128.50', weightKg: '26.20', bmi: '15.9', ageYears: 7, note: '体检后', heightBand: 'P50–P85', weightBand: 'P50–P85', bmiCategory: '正常' },
+      { id: 1, recordDate: '2026-09-01', gender: 'BOY', heightCm: '127.00', weightKg: '25.40', bmi: '15.7', ageYears: 7, note: null, heightBand: 'P50–P85', weightBand: 'P15–P50', bmiCategory: '正常' }
+    ] };
+    return { rows: [{ ageYears: 7, p3: 114, p15: 118.6, p50: 121.8, p85: 125.2, p97: 131 }], unit: 'cm' };
+  };
+  page.onLoad({ childId: '123' });
+  await page.onShow();
+  assert.equal(page.data.latest.heightCm, '128.50');
+  assert.equal(page.data.records.length, 2);
+  assert.equal(page.data.gender, 'BOY');
+  assert.equal(calls.filter(c => c.endpoint === '/growth/standard')[0].query.metric, 'HEIGHT');
+
+  page.switchMetric(event({ metric: 'WEIGHT' }));
+  await page.refresh();
+  assert.equal(page.data.metricTab, 'WEIGHT');
+  assert.equal(calls.filter(c => c.endpoint === '/growth/standard').pop().query.metric, 'WEIGHT');
+});
+
+test('WHO 标准页：默认加载并可切换维度', async () => {
+  const page = loadPage('growth-standard');
+  const calls = [];
+  api.get = async (endpoint, query) => { calls.push(query); return { rows: [{ ageYears: 7, p3: 114, p15: 118.6, p50: 121.8, p85: 125.2, p97: 131 }], unit: 'cm' }; };
+  await page.onShow();
+  assert.equal(page.data.rows.length, 1);
+  assert.equal(calls[0].ageBand, 'WHO 2007');
+  assert.equal(calls[0].gender, 'BOY');
+  await page.pickMetric(event({ metric: 'WEIGHT' }));
+  assert.equal(page.data.metric, 'WEIGHT');
+  assert.equal(calls[1].metric, 'WEIGHT');
+});
+
+test('记录新数据：参考区间加载、校验与保存请求体', async () => {
+  const page = loadPage('growth-record-edit');
+  page.onLoad({ childId: '123' });
+  api.get = async (endpoint, query) => ({ rows: [{ ageYears: 7, p3: 114, p15: 118.6, p50: 121.8, p85: 125.2, p97: 131 }], unit: 'cm' });
+  page.setData({ ageYears: '7' });
+  await page.loadRef();
+  assert.ok(page.data.ref.height && page.data.ref.height.p50 === 121.8);
+
+  page.setData({ gender: 'BOY', heightCm: '128.5', weightKg: '26.2', note: '体检后' });
+  const calls = [];
+  api.post = async (endpoint, body) => { calls.push({ endpoint, body }); return { id: 9 }; };
+  await page.submit();
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].body, { childId: '123', gender: 'BOY', heightCm: '128.5', weightKg: '26.2', note: '体检后', ageYears: 7 });
+
+  page.setData({ heightCm: '300', note: '' });
+  await page.submit();
+  assert.match(page.data.error, /身高/);
+});

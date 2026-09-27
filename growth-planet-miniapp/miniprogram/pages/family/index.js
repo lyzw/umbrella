@@ -118,6 +118,11 @@ ui.page({
     if (!childId) return;
     return ui.openPage(this, '/pages/profile/index?childId=' + encodeURIComponent(childId));
   },
+  openGrowth() {
+    const childId = this.data.selected && this.data.selected.childId;
+    if (!childId) return;
+    return ui.openPage(this, '/pages/growth-record/index?childId=' + encodeURIComponent(childId));
+  },
   home() { wx.reLaunch({ url: '/pages/home/index' }); },
   next(e) { this.setData({ page: this.data.page + Number(e.currentTarget.dataset.delta) }); this.refresh(); },
   onHide() { this.setData({ consent: null, selected: null, age: '', agreed: false, familyName: '', inviteCode: '',

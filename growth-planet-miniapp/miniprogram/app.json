@@ -21,7 +21,10 @@
     "pages/timetable/index",
     "pages/homework/index",
     "pages/tools/index",
-    "pages/exam-timer/index"
+    "pages/exam-timer/index",
+    "pages/growth-record/index",
+    "pages/growth-record-edit/index",
+    "pages/growth-standard/index"
   ],
   "window": {
     "navigationBarTitleText": "成长星球",

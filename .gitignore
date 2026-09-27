@@ -3,3 +3,4 @@
 
 # 日志
 *.log
+/growth-planet/config.env

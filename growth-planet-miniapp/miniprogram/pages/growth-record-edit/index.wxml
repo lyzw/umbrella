@@ -1,0 +1,44 @@
+<view class="page parent">
+  <view class="page-heading">
+    <text class="eyebrow">成长记录</text>
+    <text class="title">记录新数据</text>
+  </view>
+
+  <view class="muted">身高体重保存后自动计算 BMI，并对照 WHO 生长标准给出分位评估。</view>
+
+  <view class="field">
+    <text class="label">性别</text>
+    <view class="gender-tabs">
+      <text class="gender-tab {{gender === 'BOY' ? 'on' : ''}}" bindtap="pickGender" data-gender="BOY">男孩</text>
+      <text class="gender-tab {{gender === 'GIRL' ? 'on' : ''}}" bindtap="pickGender" data-gender="GIRL">女孩</text>
+    </view>
+  </view>
+
+  <view class="field">
+    <text class="label">年龄（岁，用于分位对照）</text>
+    <input class="input" type="number" value="{{ageYears}}" bindinput="input" data-field="ageYears" bindblur="loadRef" maxlength="2" placeholder="例：7" />
+  </view>
+
+  <view class="field">
+    <text class="label">身高（cm）</text>
+    <input class="input" type="digit" value="{{heightCm}}" bindinput="input" data-field="heightCm" maxlength="6" placeholder="例：128.5" />
+    <text class="ref-line" wx:if="{{ref.height}}">7岁男孩 P50 ≈ {{ref.height.p50}} · 参考区间 {{ref.height.p3}}–{{ref.height.p97}}</text>
+  </view>
+
+  <view class="field">
+    <text class="label">体重（kg）</text>
+    <input class="input" type="digit" value="{{weightKg}}" bindinput="input" data-field="weightKg" maxlength="6" placeholder="例：26.2" />
+    <text class="ref-line" wx:if="{{ref.weight}}">P50 ≈ {{ref.weight.p50}} · 参考区间 {{ref.weight.p3}}–{{ref.weight.p97}}</text>
+  </view>
+
+  <view class="field">
+    <text class="label">备注（可选）</text>
+    <input class="input" value="{{note}}" bindinput="input" data-field="note" maxlength="200" placeholder="例：体检后 / 生病恢复期" />
+  </view>
+
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view class="actions">
+    <button bindtap="back">取消</button>
+    <button class="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">保存记录</button>
+  </view>
+</view>

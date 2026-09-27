@@ -68,8 +68,8 @@
 
         <view wx:else class="current-task complete-task">
           <view class="section-title">家庭绑定已完成</view>
-          <view class="muted">接下来可以维护孩子的昵称、口味、忌口和过敏信息。</view>
-          <view class="actions"><button class="primary" bindtap="profile">维护儿童档案</button></view>
+          <view class="muted">接下来可以维护孩子的昵称、口味、忌口、过敏信息，以及身高体重成长记录。</view>
+          <view class="actions"><button class="primary" bindtap="profile">维护儿童档案</button><button bindtap="openGrowth">成长记录</button></view>
         </view>
       </view>
     </view>
