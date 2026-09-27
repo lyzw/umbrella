@@ -33,7 +33,9 @@ ui.page({
     // 心愿菜单（P3）：候选池跟随菜单日期；儿童勾选提交，家长查看并配置上限。
     wish: null, wishSelected: [], wishDishes: [], wishTab: 'FAMILY', wishKeyword: '',
     wishPage: 1, wishPageSize: 10, wishTotal: 0, wishSettings: null, wishMaxDraft: 5,
-    wishEnabledDraft: true, wishDishRange: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    wishEnabledDraft: true, wishDishRange: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    // 家长美团式点餐台：详情弹层与购物车合计
+    detail: null, parentTotal: '0.00' },
   onLoad(query) {
     const params = query || {};
     this.previousConfirmId = params.previousConfirmId || null;
@@ -53,6 +55,7 @@ ui.page({
     this.catalogDishes = [];
     this.selectedRefs = [];
     this.tabPinned = false;
+    this.parentSelection = new Map();
     this.frequentDishes = [];
     this.recommendDishes = [];
     this.wishRaw = null;
@@ -252,6 +255,7 @@ ui.page({
     await this.loadWish();
   },
   render() {
+    if (!this.parentSelection) this.parentSelection = new Map();
     if (this.data.role === 'PARENT') {
       const selectedKeys = new Set(this.selectedRefs.map(item => dishKey(item)));
       const catalogKeys = new Set(this.catalogDishes.map(item => dishKey(item)));
@@ -263,7 +267,8 @@ ui.page({
         sourceLabel: dish.sourceType === 'FAMILY' ? '家庭' : '预置',
         safetyLabel: dish.status !== 'ON_SALE' ? '已下架，发布前需移除'
           : dish.allergenStatus !== 'DECLARED' ? '过敏信息待确认' : '过敏信息已声明',
-        spiceLabel: SPICE[dish.spiceLevel]
+        spiceLabel: SPICE[dish.spiceLevel],
+        hasSpice: (dish.spiceLevel || 0) > 0
       })).sort((left, right) => Number(right.selected) - Number(left.selected));
       // 家长未手动切过 Tab 时，默认落在有菜品的来源；家庭还没录入菜品就直接展示预置菜品。
       const sourceTab = this.tabPinned ? this.data.sourceTab
@@ -276,14 +281,34 @@ ui.page({
       const inCategory = categoryId
         ? visible.filter(dish => (dish.categoryId == null ? '' : String(dish.categoryId)) === categoryId)
         : visible;
+      const withSel = visible.map(dish => {
+        const sel = this.parentSelection.get(dish.key);
+        const base = Number(dish.virtualPrice) || 0;
+        if (!sel) {
+          return Object.assign({}, dish, { inCart: false, quantity: 0, selPrice: base, spice: 0, note: '' });
+        }
+        return Object.assign({}, dish, {
+          inCart: true,
+          quantity: sel.quantity,
+          selPrice: sel.price,
+          spice: sel.spice,
+          note: sel.note
+        });
+      });
+      const inCategorySel = categoryId
+        ? withSel.filter(dish => (dish.categoryId == null ? '' : String(dish.categoryId)) === categoryId)
+        : withSel;
+      let parentTotal = 0;
+      this.parentSelection.forEach(sel => { parentTotal += sel.price * sel.quantity; });
       this.setData({
         sourceTab,
         categories,
         categoryId,
         frequent: [],
         recommend: [],
-        dishes: filterDishes(inCategory, { mildOnly: this.data.mildOnly, keyword: this.data.keyword }),
+        dishes: filterDishes(inCategorySel, { mildOnly: this.data.mildOnly, keyword: this.data.keyword }),
         count: this.selectedRefs.length,
+        parentTotal: money(parentTotal),
         invalidSelectedCount
       });
       return;
@@ -344,6 +369,130 @@ ui.page({
   },
   filters(e) { this.setData({ mildOnly: e.detail.value.includes('mild'), favoritesOnly: e.detail.value.includes('favorite') }); this.render(); },
   search(e) { this.setData({ keyword: e.detail.value }); this.render(); },
+  // ---- 家长美团式点餐台：辣度 / 改价 / 备注 / 份数（本次编排配置，发布沿用目录价格记账）----
+  buildDetail(dish, sel) {
+    return {
+      key: dishKey(dish),
+      name: dish.name,
+      price: sel.price,
+      spice: sel.spice,
+      note: sel.note,
+      quantity: sel.quantity,
+      spiceLabel: SPICE[dish.spiceLevel],
+      categoryName: dish.categoryName || '',
+      hasSpice: (dish.spiceLevel || 0) > 0
+    };
+  },
+  openDishDetail(e) {
+    if (this.data.role !== 'PARENT' || this.data.busy) return;
+    const key = e.currentTarget.dataset.key;
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish || dish.status !== 'ON_SALE') return;
+    const sel = this.parentSelection.get(key) || {
+      quantity: 1,
+      spice: Math.min(dish.spiceLevel || 0, 2),
+      price: Number(dish.virtualPrice) || 0,
+      note: ''
+    };
+    const detail = this.buildDetail(dish, sel);
+    detail.inCart = this.parentSelection.has(key);
+    this.setData({ detail });
+  },
+  closeDetail() {
+    this.setData({ detail: null });
+  },
+  noop() {},
+  patchDetail(patch) {
+    this.setData({ detail: Object.assign({}, this.data.detail, patch) });
+  },
+  detailQuantity(e) {
+    const delta = Number(e.currentTarget.dataset.delta);
+    const d = this.data.detail;
+    if (!d) return;
+    this.patchDetail({ quantity: Math.max(0, Math.min(99, d.quantity + delta)) });
+  },
+  detailSpice(e) {
+    const d = this.data.detail;
+    if (!d) return;
+    this.patchDetail({ spice: Number(e.currentTarget.dataset.index) });
+  },
+  detailPrice(e) {
+    const d = this.data.detail;
+    if (!d) return;
+    const delta = Number(e.currentTarget.dataset.delta);
+    this.patchDetail({ price: Math.max(0, Math.round((d.price + delta) * 100) / 100) });
+  },
+  detailNote(e) {
+    const d = this.data.detail;
+    if (!d) return;
+    this.patchDetail({ note: e.detail.value });
+  },
+  quickNote(e) {
+    const d = this.data.detail;
+    if (!d) return;
+    this.patchDetail({ note: e.currentTarget.dataset.tag });
+  },
+  detailConfirm() {
+    const d = this.data.detail;
+    if (!d) return;
+    const dish = this.allDishes.find(item => dishKey(item) === d.key);
+    if (d.quantity > 0) {
+      if (!this.selectedRefs.some(ref => dishKey(ref) === d.key)) {
+        if (this.selectedRefs.length >= 50) {
+          this.setData({ error: '每个餐次最多选择50种餐食' });
+          return;
+        }
+        if (dish) this.selectedRefs = [...this.selectedRefs, dishRef(dish)];
+      }
+      this.parentSelection.set(d.key, { quantity: d.quantity, spice: d.spice, price: d.price, note: d.note });
+    } else {
+      this.parentSelection.delete(d.key);
+      this.selectedRefs = this.selectedRefs.filter(ref => dishKey(ref) !== d.key);
+    }
+    this.setData({ detail: null, error: '' });
+    this.render();
+  },
+  parentAdd(e) {
+    if (this.data.role !== 'PARENT' || this.data.busy) return;
+    const key = e.currentTarget.dataset.key;
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish || dish.status !== 'ON_SALE') return;
+    const sel = this.parentSelection.get(key);
+    if (!sel) {
+      if (this.selectedRefs.length >= 50) {
+        this.setData({ error: '每个餐次最多选择50种餐食' });
+        return;
+      }
+      this.selectedRefs = [...this.selectedRefs, dishRef(dish)];
+      this.parentSelection.set(key, {
+        quantity: 1,
+        spice: Math.min(dish.spiceLevel || 0, 2),
+        price: Number(dish.virtualPrice) || 0,
+        note: ''
+      });
+    } else {
+      sel.quantity = Math.min(99, sel.quantity + 1);
+    }
+    this.setData({ error: '' });
+    this.render();
+  },
+  parentSpice(e) {
+    if (this.data.role !== 'PARENT' || this.data.busy) return;
+    const key = e.currentTarget.dataset.key;
+    const index = Number(e.currentTarget.dataset.index);
+    const sel = this.parentSelection.get(key);
+    if (!sel) return;
+    sel.spice = index;
+    this.render();
+  },
+  mealSegment(e) {
+    if (this.data.busy) return;
+    const mealType = e.currentTarget.dataset.meal;
+    const index = MEALS.indexOf(mealType);
+    if (index < 0 || index === this.data.mealIndex) return;
+    this.setData({ mealIndex: index, mealType });
+    ui.run(this, () => this.read());
+  },
   toggleDish(e) {
     if (this.data.role !== 'PARENT' || this.data.busy) return;
     const key = e.currentTarget.dataset.key;
@@ -711,6 +860,7 @@ ui.page({
     this.catalogDishes = [];
     this.selectedRefs = [];
     this.tabPinned = false;
+    this.parentSelection = new Map();
     this.frequentDishes = [];
     this.recommendDishes = [];
     this.wishRaw = null;

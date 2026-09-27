@@ -126,3 +126,251 @@
 .wish-setting { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--primary-border); }
 .wish-setting .filter-chip { min-height: 44px; }
 .wish-setting .filter-chip switch { transform: scale(.8); }
+
+/* ===== 新版：儿童餐次分段器 / 价格 chip ===== */
+.meal-segments {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 10px;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+.meal-segment {
+  flex: 1 1 0;
+  padding: 8px 0;
+  text-align: center;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.meal-segment.on {
+  background: #fff;
+  color: var(--primary);
+  font-weight: 800;
+}
+.price-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 800;
+}
+.price-chip-unit { font-size: 11px; font-weight: 600; }
+
+/* ===== 新版：家长双栏点餐台 ===== */
+.dual-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 6px;
+}
+.side-nav {
+  flex: 0 0 86px;
+  min-width: 86px;
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.side-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 9px 4px 7px;
+  border-radius: var(--radius-md);
+  background: #fff;
+  border: 1px solid var(--line);
+}
+.side-nav-item.on {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+.side-nav-name { font-size: 12px; font-weight: 700; color: #344054; overflow-wrap: anywhere; text-align: center; }
+.side-nav-item.on .side-nav-name { color: var(--primary); }
+.side-nav-count { font-size: 10px; color: var(--muted); }
+
+.dish-flow { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.dish-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.dish-row.in-cart { border-color: var(--primary); }
+.dish-row.row-disabled { opacity: .6; }
+.row-img {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 10px;
+}
+.row-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-2);
+  font-size: 18px;
+}
+.row-main { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.row-title { font-size: 13px; font-weight: 800; color: #172033; overflow-wrap: anywhere; }
+.row-meta { font-size: 10px; color: var(--muted); }
+.row-spice { display: flex; gap: 5px; margin-top: 2px; }
+.spice-opt {
+  padding: 2px 9px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  font-size: 10px;
+  color: var(--muted);
+}
+.spice-opt.on {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 800;
+}
+.row-note {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-size: 10px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-side { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.row-price { font-size: 12px; font-weight: 700; color: #172033; }
+.row-price-num { font-size: 16px; font-weight: 800; }
+.row-price-unit { font-size: 10px; color: var(--muted); font-weight: 500; }
+.row-qty { font-size: 11px; color: var(--primary); font-weight: 700; }
+.row-off { font-size: 10px; color: var(--muted); }
+.row-add {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.empty-inline { padding: 18px 0; text-align: center; font-size: 12px; color: var(--muted); }
+
+/* ===== 新版：家长购物车条 ===== */
+.cartbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--primary);
+}
+.cartbar-tools-note { color: var(--muted); margin-left: auto; }
+.cartbar {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 18px -8px rgba(20, 30, 60, .18);
+}
+.cartbar-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.cartbar-count { font-size: 11px; color: var(--muted); }
+.cartbar-total { font-size: 12px; color: #172033; font-weight: 700; }
+.cartbar-total-num { font-size: 20px; font-weight: 800; }
+.cartbar-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.cartbar-mini {
+  padding: 7px 12px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  color: #344054;
+  font-size: 12px;
+  font-weight: 700;
+}
+.cartbar-mini.off { opacity: .4; }
+.cartbar-publish { min-width: 96px; }
+
+/* ===== 新版：家长菜品详情弹层 ===== */
+.detail-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(23, 32, 51, .45);
+}
+.detail-sheet {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 18px 18px calc(18px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+}
+.detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.detail-title { font-size: 17px; font-weight: 800; color: #172033; overflow-wrap: anywhere; }
+.detail-meta { margin-top: 2px; font-size: 12px; color: var(--muted); }
+.detail-close {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.detail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.detail-label { flex: 0 0 auto; font-size: 13px; font-weight: 700; color: #344054; }
+.detail-stepper { margin-top: 0; }
+.spice-pick { display: flex; gap: 6px; }
+.price-pick { display: flex; align-items: center; gap: 10px; }
+.price-num { min-width: 64px; text-align: center; font-size: 16px; font-weight: 800; color: #172033; font-variant-numeric: tabular-nums; }
+.note-row { flex-direction: column; align-items: stretch; gap: 8px; }
+.note-input {
+  height: 38px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.quick-tags { display: flex; gap: 8px; }
+.quick-tag {
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  font-size: 12px;
+  color: #344054;
+}
+.detail-confirm { margin-top: 16px; }
