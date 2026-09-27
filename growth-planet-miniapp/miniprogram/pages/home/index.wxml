@@ -4,25 +4,18 @@
       <view class="eyebrow">{{role === 'PARENT' ? '家长空间' : '早上好'}}</view>
       <view class="title">{{active === 'me' ? '我的' : active === 'growth' ? '成长' : active === 'task' ? '任务' : (role === 'PARENT' ? '成长星球' : '今天想吃点什么')}}</view>
     </view>
-    <button class="notification-button" bindtap="go" data-page="notices" aria-label="通知中心">
-      <text class="notification-icon" aria-hidden="true">铃</text>
-      <text wx:if="{{unread > 0}}" class="notification-badge">{{unread > 99 ? '99+' : unread}}</text>
-    </button>
+    <view class="topbar-actions">
+      <view wx:if="{{role === 'CHILD'}}" class="home-avatar" aria-hidden="true">我</view>
+      <button class="notification-button" bindtap="go" data-page="notices" aria-label="通知中心">
+        <text class="notification-icon" aria-hidden="true">🔔</text>
+        <text wx:if="{{unread > 0}}" class="notification-badge">{{unread > 99 ? '99+' : unread}}</text>
+      </button>
+    </view>
   </view>
   <view wx:if="{{synthetic}}" class="environment-chip">合成数据开发环境</view>
 
   <!-- 点餐（孩子首页） / 家长首页（功能看板） -->
   <view wx:if="{{active === 'meal' || active === 'home'}}">
-    <view class="hero-panel">
-      <view class="hero-copy">
-        <view class="hero-kicker">{{role === 'PARENT' ? '家庭看板摘要' : '今日餐单'}}</view>
-        <view class="hero-title">{{role === 'PARENT' ? '今天，一起照顾好每个选择' : '今天想吃什么？'}}</view>
-        <view class="hero-description">{{role === 'PARENT' ? '查看餐单、审批记录和虚拟零花钱额度。' : '看看今天的家庭和学校餐单，选好后再告诉爸妈。'}}</view>
-      </view>
-      <view class="hero-visual" aria-hidden="true">{{role === 'PARENT' ? '🛡️' : '🍱'}}</view>
-      <button wx:if="{{role === 'PARENT'}}" class="primary hero-action" bindtap="go" data-page="menu">查看家庭菜单</button>
-    </view>
-
     <!-- 家长端：先展示明确对应当前儿童的可执行摘要，再进入完整功能页 -->
     <block wx:if="{{role === 'PARENT'}}">
       <view class="parent-summary">
@@ -77,6 +70,18 @@
           <text class="pending-card-go">去处理 ›</text>
         </view>
       </view>
+      <view class="week-overview">
+        <view class="week-overview-card">
+          <text class="week-overview-label">零花钱余额</text>
+          <view class="week-overview-line"><text class="week-overview-value">{{parentOverview.balance !== '' ? parentOverview.balance : '—'}}</text><text class="week-overview-unit">虚拟单位</text></view>
+        </view>
+        <view class="week-overview-card">
+          <text class="week-overview-label">连续打卡</text>
+          <view class="week-overview-line"><text class="week-overview-value accent">{{parentOverview.streak}}</text><text class="week-overview-unit">天</text></view>
+        </view>
+      </view>
+      <button class="primary week-menu-entry" bindtap="go" data-page="menu">查看家庭菜单</button>
+
       <view class="home-list">
         <view class="home-list-row" bindtap="openParentSummary" data-page="confirmation" aria-role="button" hover-class="home-list-row-active">
           <view class="home-list-row-content">

@@ -24,6 +24,7 @@ ui.page({
     role: '', active: 'meal', busy: false, error: '', unread: 0, synthetic: require('../../config').syntheticLogin,
     childId: '', children: [], childLabels: [], childIndex: 0,
     parentSummaryUnavailable: false, parentSummaryMessage: '',
+    parentOverview: { balance: '', streak: 0 },
     parentSummary: {
       approvals: { status: 'idle', value: 0, error: '' },
       chores: { status: 'idle', value: 0, error: '' },
@@ -122,6 +123,7 @@ ui.page({
       childId,
       parentSummaryUnavailable: false,
       parentSummaryMessage: '',
+      parentOverview: { balance: '', streak: 0 },
       parentSummary: {
         approvals: this.summaryState('loading'),
         chores: this.summaryState('loading'),
@@ -166,6 +168,22 @@ ui.page({
         this.setData({ ['parentSummary.' + name]: this.summaryState('error', 0, error.message || '暂时无法加载') });
       }
     }));
+    try {
+      const [overview, calendar] = await Promise.all([
+        api.get('/wallet/overview', { childId }).catch(() => null),
+        api.get('/child/check-in/calendar', { month: shanghaiDate().slice(0, 7), childId }).catch(() => null)
+      ]);
+      if (this.isCurrentLoad(revision, generation) && this.data.childId === childId) {
+        this.setData({
+          parentOverview: {
+            balance: overview && overview.balance != null ? overview.balance : '',
+            streak: calendar && calendar.currentStreak ? calendar.currentStreak : 0
+          }
+        });
+      }
+    } catch (error) {
+      if (this.isFatalLoadError(error)) throw error;
+    }
     if (this.isCurrentLoad(revision, generation) && this.data.childId === childId) this.syncPendingCards();
   },
   selectParentChild(e) {
@@ -177,6 +195,7 @@ ui.page({
     this.setData({
       childIndex: index, childId: child.childId,
       parentSummaryUnavailable: false, parentSummaryMessage: '',
+      parentOverview: { balance: '', streak: 0 },
       parentSummary: {
         approvals: this.summaryState('loading'),
         chores: this.summaryState('loading'),
