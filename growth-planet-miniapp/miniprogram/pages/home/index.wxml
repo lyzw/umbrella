@@ -154,6 +154,13 @@
           <text class="meal-summary-label">学校午餐</text>
         </view>
       </view>
+      <view wx:if="{{mealPreview}}" class="meal-preview" bindtap="openMealSource" data-source="FAMILY" hover-class="meal-summary-col-active" aria-role="button">
+        <view class="meal-preview-head">
+          <text class="meal-preview-title">今日午餐预告</text>
+          <text wx:if="{{mealPreview.mild}}" class="badge safe">不辣</text>
+        </view>
+        <text class="meal-preview-names">{{mealPreview.namesText}}</text>
+      </view>
 
       <view wx:if="{{!familyCount}}" class="menu-empty-reminder">
         <view class="menu-empty-reminder-copy">
@@ -195,6 +202,17 @@
         <text class="wish-card-sub">{{wish.noticeText}}</text>
       </view>
 
+      <view class="task-preview" bindtap="go" data-page="chore" hover-class="home-list-row-active" aria-role="button">
+        <view class="task-preview-head">
+          <text class="task-preview-title">今日任务 · 完成 +12 星值</text>
+          <text class="task-preview-arrow">去完成 ›</text>
+        </view>
+        <view wx:for="{{dailyTasks}}" wx:key="name" class="task-preview-row">
+          <text class="task-preview-check">✓</text>
+          <text class="task-preview-name">{{item.name}}</text>
+          <text class="task-preview-points">+{{item.points}}</text>
+        </view>
+      </view>
       <view wx:if="{{confirmStatus}}" class="confirm-bar {{confirmStatus === 'COMPLETED' ? 'ok' : confirmStatus === 'REJECTED' ? 'err' : 'warn'}}" bindtap="go" data-page="confirmation" hover-class="home-list-row-active">
         <text class="confirm-bar-text">{{confirmStatus === 'PENDING' ? '已提交，爸妈在看 👀' : confirmStatus === 'COMPLETED' ? '今天就能吃到 🎉' : confirmStatus === 'REJECTED' ? '爸妈说要调整一下，去点餐看看' : '已撤回，可以重新点餐'}}</text>
         <text class="home-list-arrow">›</text>
@@ -240,6 +258,11 @@
       <view class="profile-avatar">{{role === 'PARENT' ? '家' : '我'}}</view>
       <view><view class="profile-title">{{role === 'PARENT' ? '家长账号' : '儿童账号'}}</view><view class="small">独立账号 · 家庭数据受保护</view></view>
       <text class="profile-badge">已登录</text>
+    </view>
+    <view wx:if="{{role === 'CHILD' && level > 0}}" class="growth-level">
+      <text class="growth-level-name">成长星 Lv.{{level}}</text>
+      <text class="growth-level-divider">·</text>
+      <text class="growth-level-streak">连续 {{streak}} 天</text>
     </view>
 
     <block wx:if="{{role === 'PARENT'}}">

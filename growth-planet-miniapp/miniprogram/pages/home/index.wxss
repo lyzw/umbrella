@@ -125,3 +125,55 @@
   .hero-copy { padding-right: 0; }
   .hero-visual { position: static; margin-top: 14px; }
 }
+
+/* ===== 今日餐预告 / 今日任务 ===== */
+.meal-preview {
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--primary);
+  border-radius: var(--radius-lg);
+}
+.meal-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+.meal-preview-title { font-size: 12px; font-weight: 800; color: #172033; }
+.meal-preview-names { display: block; font-size: 13px; font-weight: 700; color: #344054; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.task-preview {
+  margin-bottom: 12px;
+  padding: 12px 16px 6px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--kid-gold, #e8a013);
+  border-radius: var(--radius-lg);
+}
+.task-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.task-preview-title { font-size: 12px; font-weight: 800; color: #172033; }
+.task-preview-arrow { font-size: 11px; color: var(--primary); font-weight: 700; }
+.task-preview-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+.task-preview-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  background: var(--positive-soft, #e6f7f0);
+  color: var(--positive, #22a06b);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.task-preview-name { flex: 1; min-width: 0; font-size: 13px; color: #344054; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-preview-points { font-size: 12px; font-weight: 800; color: var(--kid-gold, #e8a013); }
+
+/* ===== 我的 · 成长星等级行 ===== */
+.growth-level {
+  margin-bottom: 12px;
+  padding: 9px 14px;
+  background: var(--kid-gold-soft, #fdf3dd);
+  border: 1px solid var(--kid-gold-border, #f2dd9c);
+  border-radius: var(--radius-lg, 16px);
+  display: flex; align-items: center; gap: 8px;
+}
+.growth-level-name { font-size: 13px; font-weight: 800; color: var(--kid-gold, #b47c0a); }
+.growth-level-divider { font-size: 12px; color: #c9a45c; }
+.growth-level-streak { font-size: 12px; color: #8a6a1e; }

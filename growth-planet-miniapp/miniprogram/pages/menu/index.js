@@ -35,7 +35,8 @@ ui.page({
     wishPage: 1, wishPageSize: 10, wishTotal: 0, wishSettings: null, wishMaxDraft: 5,
     wishEnabledDraft: true, wishDishRange: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     // 家长美团式点餐台：详情弹层与购物车合计
-    detail: null, parentTotal: '0.00' },
+    detail: null, parentTotal: '0.00',
+    kidDetail: null },
   onLoad(query) {
     const params = query || {};
     this.previousConfirmId = params.previousConfirmId || null;
@@ -390,7 +391,7 @@ ui.page({
     if (!dish || dish.status !== 'ON_SALE') return;
     const sel = this.parentSelection.get(key) || {
       quantity: 1,
-      spice: Math.min(dish.spiceLevel || 0, 2),
+      spice: Math.min(dish.spiceLevel || 0, 3),
       price: Number(dish.virtualPrice) || 0,
       note: ''
     };
@@ -466,7 +467,7 @@ ui.page({
       this.selectedRefs = [...this.selectedRefs, dishRef(dish)];
       this.parentSelection.set(key, {
         quantity: 1,
-        spice: Math.min(dish.spiceLevel || 0, 2),
+        spice: Math.min(dish.spiceLevel || 0, 3),
         price: Number(dish.virtualPrice) || 0,
         note: ''
       });
@@ -484,6 +485,61 @@ ui.page({
     if (!sel) return;
     sel.spice = index;
     this.render();
+  },
+  // ---- 儿童端菜品详情 Bottom Sheet（对齐设计稿：描述 / 份数 / 加入套餐）----
+  buildKidDetail(dish) {
+    return {
+      key: dishKey(dish),
+      name: dish.name,
+      price: dish.virtualPrice,
+      spiceLabel: dish.spiceLabel,
+      safetyLabel: dish.safetyLabel,
+      categoryName: dish.categoryName || '',
+      calories: dish.calories,
+      imageUrl: dish.imageUrl,
+      isDisliked: dish.isDisliked,
+      quantity: this.quantities[dishKey(dish)] || 0,
+      selectable: selectable(dish),
+      canSubmit: !!(this.data.menu && this.data.menu.canSubmit && this.data.sourceType === 'FAMILY')
+    };
+  },
+  openKidDetail(e) {
+    if (this.data.role !== 'CHILD' || this.data.busy) return;
+    const key = e.currentTarget.dataset.key;
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish) return;
+    this.setData({ kidDetail: this.buildKidDetail(dish) });
+  },
+  closeKidDetail() {
+    this.setData({ kidDetail: null });
+  },
+  kidQuantity(e) {
+    const key = this.data.kidDetail ? this.data.kidDetail.key : '';
+    const delta = Number(e.currentTarget.dataset.delta);
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish || !selectable(dish) || this.data.role !== 'CHILD' || !this.data.menu.canSubmit || this.data.sourceType !== 'FAMILY' || this.data.busy) return;
+    const quantity = (this.quantities[key] || 0) + delta;
+    if (quantity < 0 || quantity > 9) return;
+    if (delta > 0 && !this.quantities[key] && this.data.count >= 20) {
+      this.setData({ error: '每次最多选择20种餐食' });
+      return;
+    }
+    this.quantities[key] = quantity;
+    this.render();
+    this.setData({ kidDetail: this.buildKidDetail(dish) });
+  },
+  kidAddOne() {
+    if (!this.data.kidDetail) return;
+    const key = this.data.kidDetail.key;
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish || !selectable(dish) || this.data.role !== 'CHILD' || !this.data.menu.canSubmit || this.data.sourceType !== 'FAMILY' || this.data.busy) return;
+    if (!this.quantities[key] && this.data.count >= 20) {
+      this.setData({ error: '每次最多选择20种餐食' });
+      return;
+    }
+    this.quantities[key] = Math.min(9, (this.quantities[key] || 0) + 1);
+    this.render();
+    this.setData({ kidDetail: null, error: '' });
   },
   mealSegment(e) {
     if (this.data.busy) return;

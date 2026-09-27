@@ -166,6 +166,7 @@
             <text class="spice-opt {{item.spice === 0 ? 'on' : ''}}" catchtap="parentSpice" data-key="{{item.key}}" data-index="0">不辣</text>
             <text class="spice-opt {{item.spice === 1 ? 'on' : ''}}" catchtap="parentSpice" data-key="{{item.key}}" data-index="1">微辣</text>
             <text class="spice-opt {{item.spice === 2 ? 'on' : ''}}" catchtap="parentSpice" data-key="{{item.key}}" data-index="2">中辣</text>
+            <text class="spice-opt {{item.spice === 3 ? 'on' : ''}}" catchtap="parentSpice" data-key="{{item.key}}" data-index="3">重辣</text>
           </view>
           <view wx:if="{{item.note}}" class="row-note">备注：{{item.note}}</view>
         </view>
@@ -180,14 +181,14 @@
     </view>
   </view>
   <view wx:if="{{role === 'CHILD'}}" class="child-list">
-    <view wx:for="{{dishes}}" wx:key="key" class="item dish {{item.quantity > 0 ? 'selected-dish' : ''}} {{!item.selectable ? 'disabled-dish' : ''}}">
+    <view wx:for="{{dishes}}" wx:key="key" class="item dish {{item.quantity > 0 ? 'selected-dish' : ''}} {{!item.selectable ? 'disabled-dish' : ''}}" bindtap="openKidDetail" data-key="{{item.key}}">
       <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="dish-image" binderror="imageError" data-key="{{item.key}}" />
       <view wx:else class="dish-image fallback"><text class="fallback-icon">🍲</text><text>暂无图片</text></view>
       <view class="dish-content">
         <view class="dish-title-row">
           <view class="section-title">{{item.name}}</view>
           <view class="favorite-control">
-            <button class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.favoriteAriaLabel}}">{{item.isFavorite ? '♥' : '♡'}}</button>
+            <button class="favorite-button {{item.isFavorite ? 'active' : ''}}" catchtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.favoriteAriaLabel}}">{{item.isFavorite ? '♥' : '♡'}}</button>
             <text class="favorite-caption">{{item.isFavorite ? '已收藏' : '收藏这道菜'}}</text>
           </view>
         </view>
@@ -196,9 +197,9 @@
         <view wx:if="{{item.isDisliked}}" class="small">包含不喜欢的食物</view>
         <view class="price-chip">{{item.virtualPrice}} <text class="price-chip-unit">币</text></view>
         <view class="stepper" wx:if="{{sourceType === 'FAMILY'}}">
-          <button class="icon-button" bindtap="quantity" data-key="{{item.key}}" data-delta="-1" disabled="{{busy || item.quantity === 0}}" aria-label="减少一份">−</button>
+          <button class="icon-button" catchtap="quantity" data-key="{{item.key}}" data-delta="-1" disabled="{{busy || item.quantity === 0}}" aria-label="减少一份">−</button>
           <text class="quantity">{{item.quantity}}</text>
-          <button class="icon-button" bindtap="quantity" data-key="{{item.key}}" data-delta="1" disabled="{{busy || !item.selectable || !menu.canSubmit || item.quantity === 9}}" aria-label="增加一份">+</button>
+          <button class="icon-button" catchtap="quantity" data-key="{{item.key}}" data-delta="1" disabled="{{busy || !item.selectable || !menu.canSubmit || item.quantity === 9}}" aria-label="增加一份">+</button>
         </view>
       </view>
     </view>
@@ -224,6 +225,34 @@
   </view>
   <view wx:if="{{busy && ready}}" class="loading-float">正在处理</view>
 
+  <!-- 儿童 · 菜品详情 Bottom Sheet -->
+  <view wx:if="{{kidDetail}}" class="detail-mask" catchtap="closeKidDetail">
+    <view class="detail-sheet" catchtap="noop">
+      <view class="kid-detail-head">
+        <image wx:if="{{kidDetail.imageUrl}}" src="{{kidDetail.imageUrl}}" mode="aspectFill" class="kid-detail-img" binderror="imageError" data-key="{{kidDetail.key}}" />
+        <view wx:else class="kid-detail-img kid-detail-fallback">🍲</view>
+        <view class="kid-detail-info">
+          <view class="detail-title">{{kidDetail.name}}</view>
+          <view class="kid-detail-chips">
+            <text class="badge {{kidDetail.selectable ? 'safe' : 'warning'}}">{{kidDetail.spiceLabel}}</text>
+            <text class="badge gold">{{kidDetail.price}} 币 / 份</text>
+          </view>
+          <view class="kid-detail-meta">{{kidDetail.categoryName}} · {{kidDetail.calories === null ? '热量暂无数据' : kidDetail.calories + ' kcal'}}</view>
+        </view>
+      </view>
+      <view wx:if="{{kidDetail.isDisliked}}" class="kid-detail-tip">包含你不喜欢的食物，试试别的好吃的</view>
+      <view class="detail-row">
+        <text class="detail-label">份数</text>
+        <view class="stepper detail-stepper">
+          <button class="icon-button" bindtap="kidQuantity" data-delta="-1" disabled="{{busy || kidDetail.quantity === 0}}" aria-label="减少一份">−</button>
+          <text class="quantity">{{kidDetail.quantity}}</text>
+          <button class="icon-button" bindtap="kidQuantity" data-delta="1" disabled="{{busy || !kidDetail.selectable || !kidDetail.canSubmit || kidDetail.quantity === 9}}" aria-label="增加一份">+</button>
+        </view>
+      </view>
+      <button class="primary detail-confirm" bindtap="kidAddOne" disabled="{{busy || !kidDetail.selectable || !kidDetail.canSubmit}}">{{kidDetail.canSubmit ? '加入我的套餐' : (kidDetail.selectable ? '学校餐单仅可查看' : '这道菜今天不可选')}}</button>
+    </view>
+  </view>
+
   <!-- 家长 · 菜品详情弹层 -->
   <view wx:if="{{detail}}" class="detail-mask" catchtap="closeDetail">
     <view class="detail-sheet" catchtap="noop">
@@ -248,6 +277,7 @@
           <text class="spice-opt {{detail.spice === 0 ? 'on' : ''}}" bindtap="detailSpice" data-index="0">不辣</text>
           <text class="spice-opt {{detail.spice === 1 ? 'on' : ''}}" bindtap="detailSpice" data-index="1">微辣</text>
           <text class="spice-opt {{detail.spice === 2 ? 'on' : ''}}" bindtap="detailSpice" data-index="2">中辣</text>
+          <text class="spice-opt {{detail.spice === 3 ? 'on' : ''}}" bindtap="detailSpice" data-index="3">重辣</text>
         </view>
       </view>
       <view class="detail-row">

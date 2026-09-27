@@ -43,3 +43,15 @@
   .range-chips .chip { margin-left: 0; margin-right: 8px; }
   .date-grid { grid-template-columns: 1fr; gap: 0; }
 }
+
+/* ===== 发放 · 快捷金额 ===== */
+.quick-amounts { display: flex; gap: 8px; margin-bottom: 10px; }
+.quick-chip {
+  padding: 7px 16px;
+  background: var(--surface-2, #eef0f4);
+  color: #344054;
+  border-radius: 10px;
+  font-size: 13px; font-weight: 700;
+}
+.quick-chip.on { background: var(--primary-soft, #e8f0ff); color: var(--primary); }
+.quick-chip[disabled] { opacity: 0.6; }

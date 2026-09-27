@@ -17,6 +17,7 @@ ui.page({
     pendingTotal: 0, listHeading: '待我处理', listDescription: '正在加载待处理餐单',
     status: 'PENDING', statuses: approvalFilters.map(item => item.label), statusIndex: 0,
     detail: null, draft: null, remark: '', reason: '', preview: null, suggestions: [], editing: false,
+    steps: [], safety: null,
     showAdjustment: false, pendingSubmit: false, pendingApprove: false, pendingDecision: false },
   input: ui.input,
   onLoad(query) { this.query = query; },
@@ -65,10 +66,36 @@ ui.page({
       listDescription
     });
   },
+  // 儿童端审批进度三节点：已提交 → 家长确认 → 开饭
+  buildSteps(status) {
+    const st = status || 'PENDING';
+    const steps = [
+      { label: '已提交', sub: '等爸妈看到' },
+      { label: '家长确认', sub: st === 'PENDING' ? '爸妈正在看' : '已处理' },
+      { label: '开饭', sub: st === 'COMPLETED' ? '今天就能吃到' : '等待确认' }
+    ];
+    let states = ['done', 'active', 'pending'];
+    if (st === 'COMPLETED') states = ['done', 'done', 'done'];
+    else if (st === 'REJECTED' || st === 'CANCELLED') states = ['done', 'fail', 'pending'];
+    return steps.map((step, i) => ({ ...step, state: states[i] }));
+  },
+  // 家长端安全结论条：聚合辣度（有字段时）与余额
+  buildSafety(detail) {
+    const items = detail.items || [];
+    const hasSpiceField = items.some(item => item.spiceLevel !== undefined);
+    const spicy = hasSpiceField && items.some(item => (item.spiceLevel || 0) > 0);
+    const parts = [];
+    if (hasSpiceField) parts.push(spicy ? '含辣' : '本单无辣');
+    if (detail.balance !== null && detail.balance !== undefined) parts.push('完成后余额 ' + detail.balance);
+    return { text: parts.join(' · '), safe: !spicy };
+  },
   async readDetail(confirmId) {
     const detail = await api.get('/menu/confirm/' + confirmId);
     const items = (detail.items || []).map(item => ({ ...item, key: dishKey(item) }));
-    this.setData({ detail: { ...detail, items, label: statusLabels[detail.status] }, draft: null, preview: null,
+    this.setData({ detail: { ...detail, items, label: statusLabels[detail.status] },
+      steps: this.data.role === 'CHILD' ? this.buildSteps(detail.status) : [],
+      safety: this.data.role === 'PARENT' ? this.buildSafety(detail) : null,
+      draft: null, preview: null,
       editing: false, showAdjustment: false,
       pendingApprove: !!operations.pending('approve:' + confirmId), pendingDecision: !!operations.pending('decision:' + confirmId) });
     this.poll();

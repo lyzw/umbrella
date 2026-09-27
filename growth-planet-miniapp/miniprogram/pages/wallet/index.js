@@ -32,6 +32,12 @@ ui.page({
     singleLimit: '', dailyLimit: '', weeklyLimit: '', amount: '', reason: '', pendingGrant: false,
     records: [], page: 1, total: 0, startDate: '', endDate: '' },
   input: ui.input,
+  // 快捷金额：点击填入发放金额
+  quickAmount(e) {
+    if (this.data.busy || this.data.pendingGrant) return;
+    const value = String(e.currentTarget.dataset.value);
+    this.setData({ amount: value });
+  },
   onShow() {
     if (!ui.guard(this)) return;
     return ui.run(this, async () => {

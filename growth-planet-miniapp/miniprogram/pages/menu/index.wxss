@@ -374,3 +374,24 @@
   color: #344054;
 }
 .detail-confirm { margin-top: 16px; }
+
+/* ===== 儿童 · 菜品详情 Bottom Sheet ===== */
+.kid-detail-head { display: flex; gap: 12px; }
+.kid-detail-img { width: 84px; height: 84px; border-radius: 14px; flex-shrink: 0; }
+.kid-detail-fallback { background: var(--surface-2, #eef0f4); display: flex; align-items: center; justify-content: center; font-size: 34px; }
+.kid-detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.kid-detail-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.badge.gold { background: var(--kid-gold-soft, #fdf3dd); color: var(--kid-gold, #e8a013); }
+.kid-detail-meta { font-size: 12px; color: #6b7480; }
+.kid-detail-tip {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: var(--danger-soft, #fdeeee);
+  color: var(--danger, #e5484d);
+  border-radius: 10px;
+  font-size: 12px;
+}
+.detail-row { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+.detail-label { font-size: 13px; font-weight: 700; color: #344054; }
+.detail-stepper .icon-button { width: 34px; height: 34px; }
+.detail-confirm { margin-top: 16px; }
