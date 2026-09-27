@@ -16,6 +16,7 @@
     "pages/health/index",
     "pages/notices/index",
     "pages/privacy/index",
+    "pages/settings/index",
     "pages/dev-child-login/index",
     "pages/timetable/index",
     "pages/homework/index",

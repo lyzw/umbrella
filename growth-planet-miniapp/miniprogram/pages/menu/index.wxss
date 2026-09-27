@@ -123,9 +123,6 @@
 .wish-dish .compact-action { flex: 0 0 auto; margin-top: 0; white-space: nowrap; }
 .wish-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
 .wish-pager button { flex: 0 0 auto; min-height: 40px; }
-.wish-setting { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--primary-border); }
-.wish-setting .filter-chip { min-height: 44px; }
-.wish-setting .filter-chip switch { transform: scale(.8); }
 
 /* ===== 新版：儿童餐次分段器 / 价格 chip ===== */
 .meal-segments {

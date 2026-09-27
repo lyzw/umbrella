@@ -49,7 +49,7 @@
     </scroll-view>
   </view>
   <!-- 心愿菜单（P3）：位于「每日想吃」相关区块下方。儿童勾选候选池并提交，家长查看并配置上限。 -->
-  <view wx:if="{{role === 'CHILD' && wish}}" class="wish-section">
+  <view wx:if="{{role === 'CHILD' && wish && wish.enabled}}" class="wish-section">
     <view class="quick-head">
       <text class="quick-title">{{wish.titleText}}</text>
       <text class="small">已选 {{wish.countText}} 道 · {{wish.stateLabel}}</text>
@@ -104,12 +104,6 @@
       </view>
     </view>
     <view wx:else class="small">{{wish.status === 'NONE' ? '孩子还没有创建当天的心愿菜单。' : '这次提交里没有可展示的菜品（可能已全部下架）。'}}</view>
-    <view class="wish-setting">
-      <view class="small">心愿菜单设置：上限 {{wishMaxDraft}} 道（当前 {{wish.maxDishes}} 道）</view>
-      <picker range="{{wishDishRange}}" value="{{wishMaxDraft - 1}}" bindchange="wishMax" disabled="{{busy}}"><view class="picker">最多 {{wishMaxDraft}} 道⌄</view></picker>
-      <label class="filter-chip {{wishEnabledDraft ? 'selected' : ''}}"><switch checked="{{wishEnabledDraft}}" bindchange="wishEnabled" disabled="{{busy}}" />启用心愿菜单</label>
-      <button bindtap="wishSettingSave" disabled="{{busy || !wishSettings}}">保存设置</button>
-    </view>
   </view>
   <view wx:if="{{role === 'CHILD'}}" class="meal-segments">
     <view class="meal-segment {{mealType === 'BREAKFAST' ? 'on' : ''}}" bindtap="mealSegment" data-meal="BREAKFAST" aria-role="button">早餐</view>

@@ -32,8 +32,7 @@ ui.page({
     categories: [], categoryId: '', frequent: [], recommend: [], week: [],
     // 心愿菜单（P3）：候选池跟随菜单日期；儿童勾选提交，家长查看并配置上限。
     wish: null, wishSelected: [], wishDishes: [], wishTab: 'FAMILY', wishKeyword: '',
-    wishPage: 1, wishPageSize: 10, wishTotal: 0, wishSettings: null, wishMaxDraft: 5,
-    wishEnabledDraft: true, wishDishRange: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    wishPage: 1, wishPageSize: 10, wishTotal: 0,
     // 家长美团式点餐台：详情弹层与购物车合计
     detail: null, parentTotal: '0.00',
     kidDetail: null },
@@ -680,11 +679,7 @@ ui.page({
         : await api.get('/child/wish-menu', { menuDate });
       this.wishRaw = wish;
       this.renderWish();
-      if (role === 'PARENT') {
-        const setting = await api.get('/parent/wish-setting');
-        this.setData({ wishSettings: setting, wishMaxDraft: setting.maxDishes, wishEnabledDraft: setting.enabled });
-        return;
-      }
+      if (role === 'PARENT') return;
       await this.loadWishCatalog();
     } catch (error) {
       if (error.cancelled || error.status === 401 || error.code === 'E-010') throw error;
@@ -884,25 +879,6 @@ ui.page({
     this.setData({ wishPage: page });
     return ui.run(this, () => this.loadWishCatalog());
   },
-  wishMax(e) {
-    this.setData({ wishMaxDraft: this.data.wishDishRange[Number(e.detail.value)] });
-  },
-  wishEnabled(e) {
-    this.setData({ wishEnabledDraft: e.detail.value });
-  },
-  wishSettingSave() {
-    return ui.run(this, async () => {
-      const setting = this.data.wishSettings;
-      if (!setting) return;
-      await api.put('/parent/wish-setting', {
-        maxDishes: Number(this.data.wishMaxDraft),
-        enabled: this.data.wishEnabledDraft,
-        expectedVersion: setting.version
-      });
-      await this.loadWish();
-      wx.showToast({ title: '心愿菜单设置已保存', icon: 'success' });
-    });
-  },
   retry() { ui.run(this, () => this.data.role === 'PARENT' ? this.loadParent() : this.read()); },
   imageError(e) {
     const key = e.currentTarget.dataset.key;
@@ -923,7 +899,7 @@ ui.page({
     this.wishSelectionTouched = false;
     this.setData({ dishes: [], menu: null, missingCount: 0, missingDishIds: [], invalidSelectedCount: 0,
       total: '0.00', count: 0, ready: false, categories: [], categoryId: '', frequent: [], recommend: [],
-      week: [], schoolBoundaryText: '', wish: null, wishSelected: [], wishDishes: [], wishTotal: 0, wishSettings: null,
+      week: [], schoolBoundaryText: '', wish: null, wishSelected: [], wishDishes: [], wishTotal: 0,
       wishKeyword: '', wishPage: 1 });
   }
 });

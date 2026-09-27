@@ -1978,7 +1978,29 @@ test('心愿菜单：wish-mark兼容布尔和字符串标记，鉴权错误不�
   api.get = async () => { throw Object.assign(new Error('登录已失效'), { status: 401 }); };
   await assert.rejects(page.loadWish(), error => error.status === 401);
 });
-test('心愿菜单：家长只看到孩子已提交的菜，保存设置带乐观锁版本', async () => {
+test('心愿菜单：家长只在设置页配置开关与上限，保存带乐观锁版本', async () => {
+  const page = loadPage('settings', 'PARENT');
+  api.get = async endpoint => {
+    if (endpoint === '/parent/wish-setting') return { maxDishes: 2, enabled: true, version: 4 };
+    return { items: [], total: 0, days: [] };
+  };
+  await page.loadSetting();
+  assert.equal(page.data.wishEnabledDraft, true);
+  assert.equal(page.data.wishMaxDraft, 2);
+  assert.equal(page.data.wishVersion, 4);
+
+  let sent;
+  api.put = async (endpoint, body) => { sent = { endpoint, body }; };
+  page.wishMax(event({}, 2));
+  assert.equal(page.data.wishMaxDraft, 3);
+  page.wishEnabled({ detail: { value: false } });
+  assert.equal(page.data.wishEnabledDraft, false);
+  await page.saveWishSetting();
+  assert.deepEqual(sent, { endpoint: '/parent/wish-setting',
+    body: { maxDishes: 3, enabled: false, expectedVersion: 4 } });
+});
+
+test('心愿菜单：家长只在菜单页查看孩子已提交的菜，不再出现设置项', async () => {
   const page = loadPage('menu', 'PARENT');
   const submitted = wishPool({ submitted: true });
   const pending = wishPool({ dishId: '77', name: '只标记没提交' });
@@ -1986,22 +2008,13 @@ test('心愿菜单：家长只看到孩子已提交的菜，保存设置带乐�
     version: 4, submittedCount: 1, items: [submitted, pending] };
   api.get = async endpoint => {
     if (endpoint === '/parent/wish-menu') return wish;
-    if (endpoint === '/parent/wish-setting') return { maxDishes: 2, enabled: true, version: 4 };
     return { items: [], total: 0, days: [] };
   };
   page.setData({ childId: child.childId, children: [child], childLabels: ['孩子 · 1'] });
   await page.loadWish();
   assert.deepEqual(page.data.wish.items.map(item => item.name), ['合成餐食'], '候选池明细不进家长视图');
   assert.deepEqual(page.data.wishSelected, [], '家长端不参与勾选');
-  assert.equal(page.data.wishMaxDraft, 2);
-
-  let sent;
-  api.put = async (endpoint, body) => { sent = { endpoint, body }; };
-  page.wishMax(event({}, 2));
-  assert.equal(page.data.wishMaxDraft, 3);
-  await page.wishSettingSave();
-  assert.deepEqual(sent, { endpoint: '/parent/wish-setting',
-    body: { maxDishes: 3, enabled: true, expectedVersion: 4 } });
+  assert.equal(page.data.wishSettings, undefined, '菜单页不再持有心愿设置');
 });
 test('我的菜品：食材与做法整体提交，空行自动丢弃', async () => {
   const page = loadPage('dish-manage');

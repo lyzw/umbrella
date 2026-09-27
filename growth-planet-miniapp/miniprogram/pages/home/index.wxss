@@ -177,3 +177,6 @@
 .growth-level-name { font-size: 13px; font-weight: 800; color: var(--kid-gold, #b47c0a); }
 .growth-level-divider { font-size: 12px; color: #c9a45c; }
 .growth-level-streak { font-size: 12px; color: #8a6a1e; }
+
+/* ===== 设置入口 ===== */
+.settings-icon { background: var(--surface-2, #eef0f4); color: #344054; }
