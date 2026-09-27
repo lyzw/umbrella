@@ -281,6 +281,7 @@ ui.page({
       const inCategory = categoryId
         ? visible.filter(dish => (dish.categoryId == null ? '' : String(dish.categoryId)) === categoryId)
         : visible;
+      const globalFilter = !!(this.data.mildOnly || (this.data.keyword || '').trim());
       const withSel = visible.map(dish => {
         const sel = this.parentSelection.get(dish.key);
         const base = Number(dish.virtualPrice) || 0;
@@ -306,7 +307,7 @@ ui.page({
         categoryId,
         frequent: [],
         recommend: [],
-        dishes: filterDishes(inCategorySel, { mildOnly: this.data.mildOnly, keyword: this.data.keyword }),
+        dishes: filterDishes(globalFilter ? withSel : inCategorySel, { mildOnly: this.data.mildOnly, keyword: this.data.keyword }),
         count: this.selectedRefs.length,
         parentTotal: money(parentTotal),
         invalidSelectedCount
@@ -325,9 +326,10 @@ ui.page({
     const inCategory = categoryId
       ? all.filter(dish => (dish.categoryId == null ? '' : String(dish.categoryId)) === categoryId)
       : all;
+    const globalFilter = !!(this.data.mildOnly || this.data.favoritesOnly || (this.data.keyword || '').trim());
     const selected = all.filter(d => d.quantity > 0);
     const total = selected.reduce((sum, d) => sum + cents(d.virtualPrice) * d.quantity, 0);
-    this.setData({ dishes: filterDishes(inCategory, this.data), categories, categoryId,
+    this.setData({ dishes: filterDishes(globalFilter ? all : inCategory, this.data), categories, categoryId,
       frequent: this.decorateFrequent(all), recommend: this.decorateRecommend(all),
       total: money(total), count: selected.length });
   },
@@ -367,13 +369,14 @@ ui.page({
     this.wishSelectionTouched = false;
     ui.run(this, () => this.read());
   },
-  filters(e) { this.setData({ mildOnly: e.detail.value.includes('mild'), favoritesOnly: e.detail.value.includes('favorite') }); this.render(); },
-  search(e) { this.setData({ keyword: e.detail.value }); this.render(); },
+  filters(e) { this.setData({ mildOnly: e.detail.value.includes('mild'), favoritesOnly: e.detail.value.includes('favorite'), categoryId: '' }); this.render(); },
+  search(e) { this.setData({ keyword: e.detail.value, categoryId: '' }); this.render(); },
   // ---- 家长美团式点餐台：辣度 / 改价 / 备注 / 份数（本次编排配置，发布沿用目录价格记账）----
   buildDetail(dish, sel) {
     return {
       key: dishKey(dish),
       name: dish.name,
+      imageUrl: dish.imageUrl,
       price: sel.price,
       spice: sel.spice,
       note: sel.note,
@@ -420,7 +423,7 @@ ui.page({
     const d = this.data.detail;
     if (!d) return;
     const delta = Number(e.currentTarget.dataset.delta);
-    this.patchDetail({ price: Math.max(0, Math.round((d.price + delta) * 100) / 100) });
+    this.patchDetail({ price: Math.min(9999.99, Math.max(0, Math.round((d.price + delta) * 100) / 100)) });
   },
   detailNote(e) {
     const d = this.data.detail;
@@ -639,7 +642,7 @@ ui.page({
     return ui.openPage(this, '/pages/menu-week/index');
   },
   category(e) {
-    this.setData({ categoryId: e.currentTarget.dataset.id || '' });
+    this.setData({ categoryId: e.currentTarget.dataset.id || '', keyword: '', mildOnly: false, favoritesOnly: false });
     this.render();
   },
   quickFavorite(e) {
@@ -884,6 +887,8 @@ ui.page({
     const key = e.currentTarget.dataset.key;
     this.allDishes = this.allDishes.map(d => dishKey(d) === key ? { ...d, imageUrl: null } : d);
     this.catalogDishes = this.catalogDishes.map(d => dishKey(d) === key ? { ...d, imageUrl: null } : d);
+    if (this.data.detail && this.data.detail.key === key) this.patchDetail({ imageUrl: null });
+    if (this.data.kidDetail && this.data.kidDetail.key === key) this.setData({ kidDetail: Object.assign({}, this.data.kidDetail, { imageUrl: null }) });
     this.render();
   },
   onHide() {

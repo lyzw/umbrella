@@ -181,7 +181,7 @@
       <view class="dish-content">
         <view class="dish-title-row">
           <view class="section-title">{{item.name}}</view>
-          <view class="favorite-control">
+          <view class="favorite-control" catchtap="noop">
             <button class="favorite-button {{item.isFavorite ? 'active' : ''}}" catchtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.favoriteAriaLabel}}">{{item.isFavorite ? '♥' : '♡'}}</button>
             <text class="favorite-caption">{{item.isFavorite ? '已收藏' : '收藏这道菜'}}</text>
           </view>
@@ -251,9 +251,12 @@
   <view wx:if="{{detail}}" class="detail-mask" catchtap="closeDetail">
     <view class="detail-sheet" catchtap="noop">
       <view class="detail-head">
-        <view>
+        <image wx:if="{{detail.imageUrl}}" src="{{detail.imageUrl}}" mode="aspectFill" class="detail-img" binderror="imageError" data-key="{{detail.key}}" />
+        <view wx:else class="detail-img detail-img-fallback">🍲</view>
+        <view class="detail-head-info">
           <view class="detail-title">{{detail.name}}</view>
           <view class="detail-meta">{{detail.categoryName}} · {{detail.spiceLabel}}</view>
+          <text class="badge safe">在售</text>
         </view>
         <view class="detail-close" bindtap="closeDetail" aria-role="button">×</view>
       </view>
