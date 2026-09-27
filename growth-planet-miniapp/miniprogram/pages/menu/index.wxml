@@ -1,18 +1,16 @@
 <view class="page menu-page {{role === 'PARENT' ? 'parent' : ''}}">
-  <page-back role="{{role}}" fallback-tab="{{role === 'CHILD' ? 'meal' : 'home'}}" disabled="{{busy}}" />
   <view class="header menu-header">
     <view><view class="eyebrow">{{role === 'PARENT' ? '仅当前家庭有效' : '小当家 · 点餐'}}</view><view class="title">{{role === 'PARENT' ? '家庭菜单维护' : '今日餐单'}}</view></view>
-    <picker mode="date" value="{{menuDate}}" bindchange="date" disabled="{{busy}}"><view class="picker date-picker">{{menuDate}}</view></picker>
   </view>
-  <scroll-view wx:if="{{week.length}}" class="week-strip" scroll-x="true" enable-flex="true">
-    <view wx:for="{{week}}" wx:key="date" class="week-day {{item.active ? 'active' : ''}} {{item.isToday ? 'today' : ''}}" bindtap="weekDay" data-date="{{item.date}}">
+  <scroll-view wx:if="{{week.length}}" class="week-strip" scroll-x="true" enable-flex="true" scroll-into-view="{{weekAnchor}}" scroll-with-animation="{{false}}">
+    <view wx:for="{{week}}" wx:key="date" id="{{'week-' + item.date}}" class="week-day {{item.active ? 'active' : ''}} {{item.isToday ? 'today' : ''}}" bindtap="weekDay" data-date="{{item.date}}">
       <text class="week-day-label">{{item.label}}</text>
       <text class="week-day-date">{{item.dayText}}</text>
       <text class="week-day-hint">{{item.hasMenu ? item.publishedCount + ' 餐已发' : '未发布'}}</text>
       <text wx:if="{{item.wantEatCount}}" class="week-day-want">想吃 {{item.wantEatCount}}</text>
     </view>
   </scroll-view>
-  <view wx:if="{{role === 'PARENT'}}" class="notice">这里发布的菜单只属于当前家庭，不会影响其他家庭或学校餐单。</view>
+
   <view wx:if="{{role === 'PARENT'}}" class="tabs source-tabs">
     <button class="{{sourceTab === 'FAMILY' ? 'active' : ''}}" bindtap="sourceTab" data-tab="FAMILY" disabled="{{busy}}">家庭菜品</button>
     <button class="{{sourceTab === 'PRESET' ? 'active' : ''}}" bindtap="sourceTab" data-tab="PRESET" disabled="{{busy}}">预置菜品</button>

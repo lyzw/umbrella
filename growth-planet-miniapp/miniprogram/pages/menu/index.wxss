@@ -36,7 +36,7 @@
 .week-day.active { border-color: var(--primary-border); background: var(--primary-soft); }
 .week-day-label { font-size: 12px; font-weight: 700; color: #1f2733; }
 .week-day-date { font-size: 11px; color: #687386; }
-.week-day-hint { margin-top: 3px; font-size: 10px; color: #687386; }
+.week-day-hint { margin-top: 3px; padding: 1px 5px; border-radius: 6px; background: var(--surface-2, #eef0f4); font-size: 9px; color: #98a0ac; }
 .week-day.active .week-day-hint { color: var(--primary); }
 .week-day-want { margin-top: 1px; font-size: 10px; color: var(--primary); }
 .category-chips { display: flex; gap: 8px; margin: 8px 0 4px; white-space: nowrap; }

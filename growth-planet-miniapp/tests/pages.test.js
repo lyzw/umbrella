@@ -1578,9 +1578,9 @@ test('菜单页：周条标注已发布天数，点选可切到该天', async ()
     if (endpoint === '/child/frequent-dish') return { dishes: [] };
     if (endpoint === '/child/recommend') return { dishes: [] };
     if (endpoint === '/child/menu-week') {
-      assert.equal(query.from, today);
-      assert.equal(query.to, day(6));
-      return { from: today, to: day(6), today, days: [
+      assert.equal(query.from, day(-30));
+      assert.equal(query.to, day(15));
+      return { from: day(-30), to: day(15), today, days: [
         { menuDate: today, meals: [{ mealType: 'LUNCH', ...meals, wantEatCount: 1 }, { mealType: 'DINNER' }] },
         { menuDate: tomorrow, meals: [{ mealType: 'LUNCH' }] }
       ] };

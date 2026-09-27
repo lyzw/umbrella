@@ -27,6 +27,7 @@ function weekdayLabel(date, today) {
 ui.page({
   data: { role: '', busy: false, error: '', children: [], childLabels: [], childIndex: 0, childId: '', sourceType: 'FAMILY',
     menuDate: shanghaiDate(), today: shanghaiDate(), mealType: 'LUNCH', meals: ['早餐', '午餐', '晚餐'], mealIndex: 1,
+    weekAnchor: '',
     menu: null, dishes: [], mildOnly: false, favoritesOnly: false, keyword: '', total: '0.00', count: 0,
     sourceTab: 'FAMILY', schoolBoundaryText: '', missingCount: 0, missingDishIds: [], invalidSelectedCount: 0, ready: false,
     categories: [], categoryId: '', frequent: [], recommend: [], week: [],
@@ -173,8 +174,8 @@ ui.page({
   // 周条：今天起 7 天，标注哪几天已发菜单（家长用于整周发布，孩子用于提前挑选）。
   async loadWeek() {
     const today = shanghaiDate();
-    const from = today;
-    const to = shiftDate(today, WEEK_DAYS - 1);
+    const from = shiftDate(today, -30);
+    const to = shiftDate(today, 15);
     try {
       const result = this.data.role === 'PARENT'
         ? await api.get('/parent/menu-week', { from, to })
@@ -193,7 +194,7 @@ ui.page({
           active: day.menuDate === this.data.menuDate
         };
       });
-      this.setData({ week });
+      this.setData({ week, weekAnchor: 'week-' + today });
     } catch (error) {
       this.setData({ week: [] }); // 周条失败不影响单日菜单主流程
     }
