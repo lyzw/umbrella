@@ -2339,3 +2339,12 @@ test('记录新数据：参考区间加载、校验与保存请求体', async ()
   await page.submit();
   assert.match(page.data.error, /身高/);
 });
+
+test('登录页隐藏测试区：连续三次点击进入测试登录，两次不触发', () => {
+  const page = loadPage('login');
+  page.tapTestZone();
+  page.tapTestZone();
+  assert.ok(!navigation.some(u => u.includes('dev-child-login')));
+  page.tapTestZone();
+  assert.ok(navigation.some(u => u.includes('dev-child-login')));
+});

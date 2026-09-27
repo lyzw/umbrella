@@ -67,7 +67,17 @@ ui.page({
       wx.reLaunch({ url: '/pages/family/index' });
     });
   },
-  goDev() {
-    wx.navigateTo({ url: '/pages/dev-child-login/index' });
+  // 右上角隐藏测试区：连续三次点击（间隔1.2s内）进入测试登录页
+  tapTestZone() {
+    const now = Date.now();
+    if (!this._testTaps) this._testTaps = { count: 0, last: 0 };
+    const taps = this._testTaps;
+    if (now - taps.last > 1200) taps.count = 0;
+    taps.count += 1;
+    taps.last = now;
+    if (taps.count >= 3) {
+      taps.count = 0;
+      wx.navigateTo({ url: '/pages/dev-child-login/index' });
+    }
   }
 });

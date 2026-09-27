@@ -1,4 +1,6 @@
 <view class="page login-page">
+  <!-- 右上角隐藏测试登录区：连续点击三次进入测试登录 -->
+  <view class="test-zone" catchtap="tapTestZone" aria-hidden="true"></view>
   <view class="brand-scene">
     <view class="planet">
       <view class="planet-ring"></view>
@@ -60,6 +62,4 @@
       </button>
     </view>
   </view>
-
-  <view wx:if="{{synthetic}}" class="dev-link" bindtap="goDev">测试入口：儿童快速登录</view>
 </view>
