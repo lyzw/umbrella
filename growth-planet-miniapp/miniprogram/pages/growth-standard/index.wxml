@@ -37,24 +37,22 @@
   <!-- 分位表 -->
   <view class="standard-card">
     <view class="table-scroll">
-      <table class="std-table">
-        <tr>
-          <th>年龄</th>
-          <th>P3<text class="th-sub">偏低</text></th>
-          <th>P15<text class="th-sub">中下</text></th>
-          <th>P50<text class="th-sub">中位</text></th>
-          <th>P85<text class="th-sub">中上</text></th>
-          <th>P97<text class="th-sub">偏高</text></th>
-        </tr>
-        <tr wx:for="{{rows}}" wx:key="ageYears" class="{{item.isTarget ? 'target' : ''}}">
-          <td class="age-col">{{item.label}}</td>
-          <td class="{{item.hl.p3 ? 'hl' : ''}}">{{item.p3}}</td>
-          <td class="{{item.hl.p15 ? 'hl' : ''}}">{{item.p15}}</td>
-          <td class="{{item.hl.p50 ? 'hl' : ''}}">{{item.p50}}</td>
-          <td class="{{item.hl.p85 ? 'hl' : ''}}">{{item.p85}}</td>
-          <td class="{{item.hl.p97 ? 'hl' : ''}}">{{item.p97}}</td>
-        </tr>
-      </table>
+      <view class="std-row head">
+        <view class="col age">年龄</view>
+        <view class="col">P3<text class="th-sub">偏低</text></view>
+        <view class="col">P15<text class="th-sub">中下</text></view>
+        <view class="col">P50<text class="th-sub">中位</text></view>
+        <view class="col">P85<text class="th-sub">中上</text></view>
+        <view class="col">P97<text class="th-sub">偏高</text></view>
+      </view>
+      <view wx:for="{{rows}}" wx:key="ageYears" class="std-row {{item.isTarget ? 'target' : ''}}">
+        <view class="col age">{{item.label}}</view>
+        <view class="col {{item.hl.p3 ? 'hl' : ''}}">{{item.p3}}</view>
+        <view class="col {{item.hl.p15 ? 'hl' : ''}}">{{item.p15}}</view>
+        <view class="col {{item.hl.p50 ? 'hl' : ''}}">{{item.p50}}</view>
+        <view class="col {{item.hl.p85 ? 'hl' : ''}}">{{item.p85}}</view>
+        <view class="col {{item.hl.p97 ? 'hl' : ''}}">{{item.p97}}</view>
+      </view>
     </view>
     <view class="unit-note">单位：{{unit}}</view>
   </view>

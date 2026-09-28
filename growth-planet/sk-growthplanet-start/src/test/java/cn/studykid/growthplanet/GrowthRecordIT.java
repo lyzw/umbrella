@@ -121,6 +121,13 @@ class GrowthRecordIT extends BaseIT {
         assertEquals("BOY", resp.getGender());
         assertEquals("cm", resp.getUnit());
         assertEquals(15, resp.getRows().size());
+        // 5 岁行必须来自 WHO 2007（5-19）表，与 6-19 岁连续，而非 WHO 2006 的 5 岁值
+        GrowthStandardResp.GrowthStandardRow five = resp.getRows().stream()
+                .filter(r -> r.getAgeYears() == 5).findFirst().orElseThrow();
+        assertEquals(102.0, five.getP3());
+        assertEquals(110.0, five.getP50());
+        assertEquals(118.0, five.getP97());
+        assertTrue(five.getP15() > five.getP3() && five.getP15() < five.getP50());
         GrowthStandardResp.GrowthStandardRow seven = resp.getRows().stream()
                 .filter(r -> r.getAgeYears() == 7).findFirst().orElseThrow();
         assertEquals(114.0, seven.getP3());

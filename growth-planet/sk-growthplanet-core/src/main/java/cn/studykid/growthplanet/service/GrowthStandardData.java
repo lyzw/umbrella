@@ -140,12 +140,27 @@ public final class GrowthStandardData {
         return new double[]{p3, p50, p97};
     }
 
-    /** 标准分位行（P3/P15/P50/P85/P97）；未覆盖的年龄/指标返回 null。 */
-    public static GrowthStandardResp.GrowthStandardRow row(String gender, int ageYears, String metric) {
-        double[] a = anchors(gender, ageYears, metric);
-        if (a == null) {
+    /** 标准分位行（P3/P15/P50/P85/P97）；按年龄段显式选表，未覆盖的年龄/指标返回 null。 */
+    public static GrowthStandardResp.GrowthStandardRow row(String gender, int ageYears, String metric, String ageBand) {
+        double[][] table = BAND_0_5.equals(ageBand)
+                ? (BOY.equals(gender) ? BOY_0_5 : GIRL_0_5)
+                : (BOY.equals(gender) ? BOY_5_19 : GIRL_5_19);
+        int base = switch (metric) {
+            case HEIGHT -> 1;
+            case WEIGHT -> 4;
+            case BMI -> 7;
+            default -> -1;
+        };
+        if (base < 0) {
             return null;
         }
+        double p3 = pick(table, ageYears, base);
+        if (Double.isNaN(p3)) {
+            return null;
+        }
+        double p50 = pick(table, ageYears, base + 1);
+        double p97 = pick(table, ageYears, base + 2);
+        double[] a = new double[]{p3, p50, p97};
         GrowthStandardResp.GrowthStandardRow r = new GrowthStandardResp.GrowthStandardRow();
         r.setAgeYears(ageYears);
         r.setP3(round1(a[0]));

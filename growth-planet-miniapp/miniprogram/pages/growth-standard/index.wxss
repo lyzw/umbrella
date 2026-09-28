@@ -19,13 +19,14 @@
 
 .standard-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 10px 12px 8px; }
 .table-scroll { overflow-x: auto; }
-.std-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
-.std-table th { color: var(--muted); font-weight: 600; padding: 8px 2px 6px; border-bottom: 1px solid #eef1ef; }
+.std-row { display: flex; align-items: stretch; font-size: 13px; }
+.std-row .col { flex: 1; min-width: 0; text-align: center; padding: 9px 2px; color: var(--par-ink); border-bottom: 1px solid #f3f5f4; }
+.std-row.head .col { color: var(--muted); font-weight: 600; padding: 8px 2px 6px; border-bottom: 1px solid #eef1ef; }
+.std-row .col.age { flex: none; width: 92px; text-align: left; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.std-row.head .col.age { color: var(--muted); }
 .th-sub { display: block; font-size: 10px; font-weight: 500; color: #b3bac4; margin-top: 2px; }
-.std-table td { padding: 8px 2px; color: var(--par-ink); border-bottom: 1px solid #f3f5f4; }
-.std-table tr.target td { background: #f2f8f5; }
-.std-table td.age-col { color: var(--muted); text-align: left; white-space: nowrap; font-weight: 700; }
-.std-table td.hl { background: var(--primary-soft); color: var(--primary); font-weight: 800; }
+.std-row.target .col { background: #f2f8f5; }
+.std-row .col.hl { background: var(--primary-soft); color: var(--primary); font-weight: 800; }
 .unit-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
 .note-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px; margin-top: 12px; display: flex; flex-direction: column; }

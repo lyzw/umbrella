@@ -110,7 +110,7 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
         }
         List<GrowthStandardResp.GrowthStandardRow> rows = new ArrayList<>();
         for (Integer ageYears : GrowthStandardData.ages(gender, ageBand)) {
-            GrowthStandardResp.GrowthStandardRow row = GrowthStandardData.row(gender, ageYears, metric);
+            GrowthStandardResp.GrowthStandardRow row = GrowthStandardData.row(gender, ageYears, metric, ageBand);
             if (row != null) {
                 rows.add(row);
             }
