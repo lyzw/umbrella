@@ -159,11 +159,14 @@ public class AuthServiceImpl implements AuthService {
             throw new BizException(ResultCode.E009_FORBIDDEN, "儿童尚未完成绑定");
         }
         var consent = authorization.requireConsent(member);
-        policy.validateProfile(req);
-        Long familyId = member.getFamilyId();
-
         ChildProfile existing = childProfileMapper.selectOne(new QueryWrapper<ChildProfile>()
                 .eq("user_id", req.getChildId()).last("FOR UPDATE"));
+        policy.validateProfile(req,
+                existing == null ? null : existing.getSchool(),
+                existing == null ? null : existing.getGrade(),
+                existing == null ? null : existing.getAllergies());
+        Long familyId = member.getFamilyId();
+
         ChildProfile profile = new ChildProfile();
         profile.setUserId(req.getChildId());
         profile.setFamilyId(familyId);
