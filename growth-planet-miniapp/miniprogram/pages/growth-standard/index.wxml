@@ -18,21 +18,51 @@
     <text class="filter-tab {{metric === 'BMI' ? 'on' : ''}}" bindtap="pickMetric" data-metric="BMI">BMI</text>
   </view>
 
+  <!-- 孩子定位条 -->
+  <view wx:if="{{loc}}" class="loc-bar">
+    <view class="loc-pin"></view>
+    <text class="loc-text">{{loc}}，下表已高亮对应区间</text>
+  </view>
+
+  <!-- 孩子所在分位带图 -->
+  <view wx:if="{{hasChild}}" class="band-card">
+    <canvas type="2d" id="std-band" class="band-canvas"></canvas>
+    <view class="band-legend">
+      <text class="legend-item"><text class="legend-dot band"></text>P3–P97 参考区间</text>
+      <text class="legend-item"><text class="legend-dot p50"></text>P50 中位数</text>
+      <text class="legend-item"><text class="legend-dot kid"></text>孩子当前位置</text>
+    </view>
+  </view>
+
+  <!-- 分位表 -->
   <view class="standard-card">
     <view class="table-scroll">
       <table class="std-table">
         <tr>
-          <th>年龄</th><th>P3</th><th>P15</th><th>P50</th><th>P85</th><th>P97</th>
+          <th>年龄</th>
+          <th>P3<text class="th-sub">偏低</text></th>
+          <th>P15<text class="th-sub">中下</text></th>
+          <th>P50<text class="th-sub">中位</text></th>
+          <th>P85<text class="th-sub">中上</text></th>
+          <th>P97<text class="th-sub">偏高</text></th>
         </tr>
-        <tr wx:for="{{rows}}" wx:key="ageYears">
-          <td class="age-col">{{item.ageYears}} 岁</td>
-          <td>{{item.p3}}</td><td>{{item.p15}}</td><td class="p50">{{item.p50}}</td><td>{{item.p85}}</td><td>{{item.p97}}</td>
+        <tr wx:for="{{rows}}" wx:key="ageYears" class="{{item.isTarget ? 'target' : ''}}">
+          <td class="age-col">{{item.label}}</td>
+          <td class="{{item.hl.p3 ? 'hl' : ''}}">{{item.p3}}</td>
+          <td class="{{item.hl.p15 ? 'hl' : ''}}">{{item.p15}}</td>
+          <td class="{{item.hl.p50 ? 'hl' : ''}}">{{item.p50}}</td>
+          <td class="{{item.hl.p85 ? 'hl' : ''}}">{{item.p85}}</td>
+          <td class="{{item.hl.p97 ? 'hl' : ''}}">{{item.p97}}</td>
         </tr>
       </table>
     </view>
     <view class="unit-note">单位：{{unit}}</view>
   </view>
 
+  <view class="note-card">
+    <text class="note-title">怎么看这张表</text>
+    <text class="note-text">百分位表示"同龄同性别孩子中，百分之多少低于这个值"。P50 是中位数，P3–P97 是常见参考区间，多数孩子落在这里；低于 P3 或高于 P97 建议找专业评估。</text>
+  </view>
   <view class="note-card">
     <text class="note-title">参考依据</text>
     <text class="note-text">WHO 儿童生长标准：2006 年发布 0–5 岁，2007 年扩展至 5–19 岁（身高 / 体重 / BMI 按年龄与性别的百分位与 Z 值）。</text>

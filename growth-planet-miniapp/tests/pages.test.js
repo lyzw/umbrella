@@ -2402,3 +2402,29 @@ test('成长记录儿童本人可读：guard 放行且可切换指标', async ()
   assert.equal(page.data.role, 'CHILD');
   assert.equal(page.data.latest.heightCm, '126.00');
 });
+
+test('WHO 标准页带孩子上下文：定位条、月粒度表与区间高亮', async () => {
+  const page = loadPage('growth-standard');
+  api.get = async (endpoint, query) => {
+    if (endpoint === '/growth/records/latest') {
+      return { recordDate: '2026-09-20', gender: 'BOY', heightCm: '126.00', weightKg: '25.00', bmi: '15.7', ageYears: 7 };
+    }
+    return { rows: [
+      { ageYears: 5, p3: 102, p15: 106.8, p50: 110, p85: 114.8, p97: 118 },
+      { ageYears: 6, p3: 108.5, p15: 113, p50: 116, p85: 121.1, p97: 124.5 },
+      { ageYears: 7, p3: 114, p15: 117.1, p50: 121.8, p85: 127.3, p97: 131 },
+      { ageYears: 8, p3: 119.5, p15: 124.2, p50: 127.3, p85: 133.1, p97: 137 }
+    ], unit: 'cm', ageBand: 'WHO 2007', gender: 'BOY' };
+  };
+  page.onLoad({ childId: child.childId });
+  await page.onShow();
+  assert.equal(page.data.hasChild, true);
+  assert.match(page.data.loc, /P50–P85/);
+  // 7 岁为中心，前后各一岁按 3 个月粒度 → 6岁4点 + 7岁4点 + 8岁1点
+  assert.equal(page.data.rows.length, 9);
+  assert.equal(page.data.rows[4].label, '7岁');
+  assert.equal(page.data.rows[4].isTarget, true);
+  assert.equal(page.data.rows[4].hl.p50, true);
+  assert.equal(page.data.rows[4].hl.p85, true);
+  assert.equal(page.data.rows[4].hl.p3, false);
+});

@@ -48,7 +48,8 @@ ui.page({
     this.refresh();
   },
   openStandard() {
-    ui.openPage(this, '/pages/growth-standard/index');
+    const childId = this.data.childId;
+    ui.openPage(this, '/pages/growth-standard/index' + (childId ? '?childId=' + encodeURIComponent(childId) : ''));
   },
   goEdit() {
     ui.openPage(this, '/pages/growth-record-edit/index?childId=' + encodeURIComponent(this.data.childId));
