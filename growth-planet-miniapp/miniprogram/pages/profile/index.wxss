@@ -73,3 +73,5 @@ button.preference-add {
 .link-name { display: block; font-size: 15px; font-weight: 800; color: #172033; }
 .link-desc { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
 .link-arrow { font-size: 16px; color: var(--muted); flex: none; }
+
+.picker.placeholder { color: #b3bac4; }

@@ -906,3 +906,10 @@ CREATE TABLE usr_child_growth_record (
   CONSTRAINT chk_growth_age     CHECK (age_years IS NULL OR age_years BETWEEN 1 AND 19),
   CONSTRAINT chk_growth_gender   CHECK (gender IN ('BOY','GIRL'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='儿童成长记录（身高体重BMI，家长录入）';
+
+-- ============ v013_child_birth：儿童档案出生年月 ============
+-- 独立迁移文件见 sql/v013_child_birth.sql，测试汇总脚本同步维护。
+-- 回滚：ALTER TABLE usr_child_profile DROP COLUMN birth_year, DROP COLUMN birth_month;
+ALTER TABLE usr_child_profile
+  ADD COLUMN birth_year  SMALLINT DEFAULT NULL COMMENT '出生年',
+  ADD COLUMN birth_month TINYINT  DEFAULT NULL COMMENT '出生月';

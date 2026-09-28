@@ -18,6 +18,12 @@ public class ChildProfileReq {
     private String grade;
     @NotBlank @Size(max = 128)
     private String school;
+    @Min(value = 1950, message = "出生年不早于1950")
+    @Max(value = 2100, message = "出生年非法")
+    private Integer birthYear;
+    @Min(value = 1, message = "出生月非法")
+    @Max(value = 12, message = "出生月非法")
+    private Integer birthMonth;
     @NotNull @Size(max = 20)
     private List<@NotBlank @Size(max = 64) String> allergies;
     @NotNull @Size(max = 20)

@@ -10,6 +10,7 @@
       <view class="profile-copy">
         <view class="profile-name">{{nickname || '未设置昵称'}}</view>
         <view class="profile-meta" wx:if="{{role === 'PARENT'}}">{{grade || '未设置年级'}}<text wx:if="{{school}}"> · {{school}}</text></view>
+        <view class="profile-birth" wx:if="{{role === 'PARENT'}}">出生年月：{{birthLabel || '未填写'}}<text wx:if="{{ageYears}}"> · {{ageYears}}岁</text></view>
       </view>
     </view>
 
@@ -42,6 +43,7 @@
       <view class="field"><text class="label">昵称</text><input value="{{nickname}}" data-field="nickname" bindinput="input" maxlength="64" /></view>
       <view class="field"><text class="label">年级</text><picker range="{{grades}}" bindchange="grade"><view class="picker">{{grade}}</view></picker></view>
       <view class="field"><text class="label">学校</text><picker range="{{schoolOptions}}" bindchange="school"><view class="picker">{{school}}</view></picker></view>
+      <view class="field"><text class="label">出生年月</text><picker mode="date" fields="month" start="2000-01" end="{{todayMonth}}" bindchange="birth"><view class="picker {{birthLabel ? '' : 'placeholder'}}">{{birthLabel || '请选择出生年月'}}</view></picker></view>
       <view class="field"><text class="label">过敏原编码（合成开发目录）</text><checkbox-group bindchange="allergies"><label wx:for="{{allergyOptions}}" wx:key="code" class="check"><checkbox value="{{item.code}}" checked="{{item.checked}}" />{{item.code}}</label></checkbox-group></view>
     </view>
     <view class="field">

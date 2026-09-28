@@ -29,6 +29,7 @@ import cn.studykid.growthplanet.service.AuditService;
 import cn.studykid.growthplanet.service.AuthService;
 import cn.studykid.growthplanet.service.WechatClient;
 import cn.studykid.growthplanet.util.JwtUtil;
+import java.time.YearMonth;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -169,6 +170,8 @@ public class AuthServiceImpl implements AuthService {
         profile.setNickname(req.getNickname());
         profile.setGrade(req.getGrade());
         profile.setSchool(req.getSchool());
+        profile.setBirthYear(req.getBirthYear());
+        profile.setBirthMonth(req.getBirthMonth());
         profile.setAllergies(req.getAllergies());
         profile.setDislikes(req.getDislikes());
         profile.setTastes(req.getTastes());
@@ -198,7 +201,10 @@ public class AuthServiceImpl implements AuthService {
         auditService.record("PROFILE_QUERY", UserContext.userId(), member.getFamilyId(), "CHILD", childId,
                 null, "consentId=" + consent.getId());
         return ChildProfileDetailResp.builder().childId(childId).nickname(profile.getNickname())
-                .grade(profile.getGrade()).school(profile.getSchool()).allergies(profile.getAllergies())
+                .grade(profile.getGrade()).school(profile.getSchool())
+                .birthYear(profile.getBirthYear()).birthMonth(profile.getBirthMonth())
+                .ageYears(ageOf(profile.getBirthYear(), profile.getBirthMonth()))
+                .allergies(profile.getAllergies())
                 .dislikes(profile.getDislikes()).tastes(profile.getTastes())
                 .profileStatus(profile.getProfileStatus()).build();
     }
@@ -235,6 +241,19 @@ public class AuthServiceImpl implements AuthService {
         auditService.record("PREFERENCES", ctx.getUserId(), member.getFamilyId(), "CHILD", ctx.getUserId(),
                 null, "consentId=" + consent.getId() + ";version=" + consent.getVersion());
         return preferencesResponse(profile);
+    }
+
+    /** 由出生年月计算当前周岁；未填写或日期非法返回 null。 */
+    private Integer ageOf(Integer birthYear, Integer birthMonth) {
+        if (birthYear == null || birthMonth == null) {
+            return null;
+        }
+        YearMonth now = YearMonth.now();
+        int age = now.getYear() - birthYear;
+        if (now.getMonthValue() < birthMonth) {
+            age--;
+        }
+        return age >= 0 ? age : null;
     }
 
     private ChildProfile findProfile(FamilyMember member) {

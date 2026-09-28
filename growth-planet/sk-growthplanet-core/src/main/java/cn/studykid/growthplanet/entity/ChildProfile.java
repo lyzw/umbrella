@@ -31,6 +31,12 @@ public class ChildProfile {
 
     private String school;
 
+    /** 出生年（可空，用于按年龄判断相关信息）。 */
+    private Integer birthYear;
+
+    /** 出生月 1-12（可空，与 birthYear 成对）。 */
+    private Integer birthMonth;
+
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> allergies;
 

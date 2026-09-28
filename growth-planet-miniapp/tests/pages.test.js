@@ -2428,3 +2428,44 @@ test('WHO 标准页带孩子上下文：定位条、月粒度表与区间高亮'
   assert.equal(page.data.rows[4].hl.p85, true);
   assert.equal(page.data.rows[4].hl.p3, false);
 });
+
+test('档案页出生年月：显示模式展示与年龄，编辑选择后保存携带', async () => {
+  const page = loadPage('profile');
+  page.setData({ childId: child.childId });
+  api.get = async endpoint => endpoint.includes('consent') ? { currentStatus: 'GRANTED' }
+    : { nickname: '小明', school: '阳光小学', grade: '三年级', birthYear: 2019, birthMonth: 5, ageYears: 7,
+        allergies: [], dislikes: [], tastes: [] };
+  await page.read();
+  assert.equal(page.data.birthLabel, '2019年5月');
+  assert.equal(page.data.ageYears, 7);
+
+  page.edit();
+  page.birth(event({}, '2018-03'));
+  assert.equal(page.data.birthYear, 2018);
+  assert.equal(page.data.birthMonth, 3);
+  assert.equal(page.data.birthLabel, '2018年3月');
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return {}; };
+  page.setData({ nickname: '小明', grade: '三年级', school: '阳光小学' });
+  await page.save();
+  assert.equal(sent.endpoint, '/child/profile');
+  assert.equal(sent.body.birthYear, 2018);
+  assert.equal(sent.body.birthMonth, 3);
+});
+
+test('档案页出生年月：未填写时不展示年龄，保存传 null', async () => {
+  const page = loadPage('profile');
+  page.setData({ childId: child.childId });
+  api.get = async endpoint => endpoint.includes('consent') ? { currentStatus: 'GRANTED' }
+    : { nickname: '小明', school: '阳光小学', grade: '三年级', allergies: [], dislikes: [], tastes: [] };
+  await page.read();
+  assert.equal(page.data.birthLabel, '');
+  assert.equal(page.data.ageYears, '');
+  page.edit();
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return {}; };
+  page.setData({ nickname: '小明', grade: '三年级', school: '阳光小学' });
+  await page.save();
+  assert.equal(sent.body.birthYear, null);
+  assert.equal(sent.body.birthMonth, null);
+});
