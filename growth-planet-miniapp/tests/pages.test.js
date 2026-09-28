@@ -906,6 +906,19 @@ test('静默登录失败进入失败态，可重试并切换演示账号；选�
   assert.deepEqual(calls, []);
   assert.equal(page.data.phase, 'role');
 });
+test('主动退出登录后落地登录页不自动静默登录，停在手动登录界面', async () => {
+  global.getApp = () => ({ globalData: { postLogout: true } });
+  const page = loadPage('login');
+  const calls = [];
+  api.post = async endpoint => { calls.push(endpoint); return { token: 't9', role: 'PARENT', expiresIn: 1800 }; };
+  session.clear();
+  await page.onShow();
+  // 关键回归点：不应触发静默登录，也不应直接跳转首页，必须停在手动登录界面。
+  assert.deepEqual(calls, []);
+  assert.deepEqual(navigation, []);
+  assert.equal(page.data.phase, 'manual');
+  global.getApp = () => ({ globalData: { postLogout: false } });
+});
 test('请求期间会话到期仍回到登录页，而不是保留受保护页面', async () => {
   const page = loadPage('profile');
   Object.assign(api, methods);
@@ -2347,4 +2360,45 @@ test('登录页隐藏测试区：连续三次点击进入测试登录，两次�
   assert.ok(!navigation.some(u => u.includes('dev-child-login')));
   page.tapTestZone();
   assert.ok(navigation.some(u => u.includes('dev-child-login')));
+});
+
+test('儿童档案默认显示模式：只读信息+聚合入口，编辑需显式进入', async () => {
+  const page = loadPage('profile');
+  page.setData({ childId: child.childId });
+  api.get = async endpoint => endpoint.includes('consent') ? { currentStatus: 'GRANTED' }
+    : { nickname: '小明', school: '阳光小学', grade: '三年级', allergies: ['PEANUT'], dislikes: ['洋葱'], tastes: ['清淡'] };
+  await page.read();
+  assert.equal(page.data.viewMode, 'view');
+  assert.equal(page.data.nicknameChar, '小');
+  page.edit();
+  assert.equal(page.data.viewMode, 'edit');
+  await page.cancelEdit();
+  assert.equal(page.data.viewMode, 'view');
+  assert.equal(page.data.nickname, '小明');
+  page.openGrowth();
+  assert.ok(navigation.some(u => u.includes('/pages/growth-record/index?childId=' + child.childId)));
+  page.openHealth();
+  assert.ok(navigation.some(u => u.includes('/pages/health/index')));
+});
+
+test('儿童端档案显示模式与成长记录只读入口', async () => {
+  const page = loadPage('profile', 'CHILD');
+  page.setData({ childId: child.childId });
+  api.get = async () => ({ dislikes: ['芹菜'], tastes: ['清淡'] });
+  await page.read();
+  assert.equal(page.data.viewMode, 'view');
+  assert.equal(page.data.nicknameChar, '我');
+  page.openGrowth();
+  assert.ok(navigation.some(u => u.includes('/pages/growth-record/index?childId=' + child.childId)));
+});
+
+test('成长记录儿童本人可读：guard 放行且可切换指标', async () => {
+  const page = loadPage('growth-record', 'CHILD');
+  api.get = async (endpoint, query) => endpoint === '/growth/records'
+    ? { items: [{ id: 1, recordDate: '2026-09-20', gender: 'BOY', heightCm: '126.00', weightKg: '25.00', bmi: '15.7', ageYears: 7, heightBand: 'P50–P85', weightBand: 'P50–P85', bmiCategory: '正常' }] }
+    : { rows: [{ ageYears: 7, p3: 114, p15: 118.6, p50: 121.8, p85: 125.2, p97: 131 }], unit: 'cm' };
+  page.onLoad({ childId: child.childId });
+  await page.onShow();
+  assert.equal(page.data.role, 'CHILD');
+  assert.equal(page.data.latest.heightCm, '126.00');
 });

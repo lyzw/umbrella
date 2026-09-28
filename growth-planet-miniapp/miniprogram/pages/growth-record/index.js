@@ -18,7 +18,7 @@ ui.page({
     this.setData({ childId: decodeURIComponent(options.childId || '') });
   },
   onShow() {
-    if (!ui.guard(this, 'PARENT')) return;
+    if (!ui.guard(this, ['PARENT', 'CHILD'])) return;
     return this.refresh();
   },
   refresh() {

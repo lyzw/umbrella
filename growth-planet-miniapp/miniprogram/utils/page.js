@@ -31,7 +31,8 @@ function guard(page, role) {
     wx.redirectTo({ url: '/pages/login/index' });
     return false;
   }
-  if (role && auth.role !== role) {
+  const allowed = Array.isArray(role) ? role : role ? [role] : null;
+  if (allowed && !allowed.includes(auth.role)) {
     wx.redirectTo({ url: '/pages/home/index' });
     return false;
   }

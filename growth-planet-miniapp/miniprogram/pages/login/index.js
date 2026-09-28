@@ -13,6 +13,12 @@ ui.page({
   },
   input: ui.input,
   onShow() {
+    const app = typeof getApp === 'function' ? getApp() : null;
+    if (app && app.globalData && app.globalData.postLogout) {
+      app.globalData.postLogout = false;
+      this.setData({ phase: 'manual', error: '' });
+      return;
+    }
     const auth = session.get();
     if (auth) {
       if (auth.role === 'UNSELECTED') return this.setData({ phase: 'role', error: '' });

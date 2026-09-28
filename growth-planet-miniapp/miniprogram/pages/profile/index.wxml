@@ -1,8 +1,43 @@
 <view class="page {{role === 'PARENT' ? 'parent' : ''}}">
-  <view class="title">{{role === 'PARENT' ? '儿童档案' : '我的口味偏好'}}</view>
-  <view class="subtitle">过敏信息仅由家长维护，偏好不会替代过敏防护。</view>
+  <view class="title">{{role === 'PARENT' ? '儿童档案' : '我的信息'}}</view>
+  <view class="subtitle">{{role === 'PARENT' ? '档案信息与儿童相关的功能，都在这里集中管理' : '自己的档案只读展示，想改先点下方按钮'}}</view>
   <picker wx:if="{{role === 'PARENT' && children.length}}" range="{{children}}" range-key="displayName" value="{{childIndex}}" bindchange="child" disabled="{{busy}}"><view class="picker">当前儿童 · {{children[childIndex].displayName}}</view></picker>
-  <view wx:if="{{ready}}" class="section">
+
+  <!-- 显示模式：档案信息 + 相关功能入口 -->
+  <view wx:if="{{ready && viewMode === 'view'}}" class="section profile-view">
+    <view class="profile-head">
+      <view class="avatar">{{nicknameChar}}</view>
+      <view class="profile-copy">
+        <view class="profile-name">{{nickname || '未设置昵称'}}</view>
+        <view class="profile-meta" wx:if="{{role === 'PARENT'}}">{{grade || '未设置年级'}}<text wx:if="{{school}}"> · {{school}}</text></view>
+      </view>
+    </view>
+
+    <view class="tag-group" wx:if="{{allergies.length}}">
+      <text class="tag-label">过敏原</text>
+      <view class="tag-row">
+        <text wx:for="{{allergies}}" wx:key="*this" class="tag allergen">{{item}}</text>
+      </view>
+    </view>
+    <view class="tag-group" wx:if="{{dislikes.length}}">
+      <text class="tag-label">不喜欢的食物</text>
+      <view class="tag-row">
+        <text wx:for="{{dislikes}}" wx:key="*this" class="tag">{{item}}</text>
+      </view>
+    </view>
+    <view class="tag-group" wx:if="{{tastes.length}}">
+      <text class="tag-label">口味偏好</text>
+      <view class="tag-row">
+        <text wx:for="{{tastes}}" wx:key="*this" class="tag">{{item}}</text>
+      </view>
+    </view>
+    <view class="empty" wx:if="{{!allergies.length && !dislikes.length && !tastes.length}}">还没有填写档案信息，点击下方按钮补充。</view>
+
+    <button class="primary" bindtap="edit">{{role === 'PARENT' ? '编辑档案' : '编辑口味偏好'}}</button>
+  </view>
+
+  <!-- 编辑模式：保持原有表单 -->
+  <view wx:if="{{ready && viewMode === 'edit'}}" class="section">
     <view wx:if="{{role === 'PARENT'}}">
       <view class="field"><text class="label">昵称</text><input value="{{nickname}}" data-field="nickname" bindinput="input" maxlength="64" /></view>
       <view class="field"><text class="label">年级</text><picker range="{{grades}}" bindchange="grade"><view class="picker">{{grade}}</view></picker></view>
@@ -35,8 +70,25 @@
         <button class="preference-add" bindtap="addPreference" data-field="tastesText" disabled="{{busy}}">添加</button>
       </view>
     </view>
-    <button class="primary" bindtap="save" disabled="{{busy}}" loading="{{busy}}">保存</button>
+    <view class="actions">
+      <button bindtap="cancelEdit">取消</button>
+      <button class="primary" bindtap="save" disabled="{{busy}}" loading="{{busy}}">保存</button>
+    </view>
   </view>
+
+  <!-- 儿童相关信息聚合入口 -->
+  <view wx:if="{{ready && viewMode === 'view'}}" class="section links">
+    <view class="section-title">儿童相关信息</view>
+    <view class="link-row" bindtap="openGrowth">
+      <view class="link-copy"><text class="link-name">成长记录</text><text class="link-desc">身高体重、生长曲线与 WHO 标准</text></view>
+      <text class="link-arrow">›</text>
+    </view>
+    <view class="link-row" bindtap="openHealth">
+      <view class="link-copy"><text class="link-name">健康打卡</text><text class="link-desc">喝水、睡眠、运动等习惯打卡</text></view>
+      <text class="link-arrow">›</text>
+    </view>
+  </view>
+
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <button wx:if="{{!ready}}" bindtap="load" disabled="{{busy}}">重新检查授权</button>
 </view>

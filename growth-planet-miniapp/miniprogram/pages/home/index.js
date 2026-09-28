@@ -364,6 +364,8 @@ ui.page({
       if (!await ui.confirm('退出会清除本机登录状态及未保存内容。')) return;
       await api.post('/auth/logout', {});
       session.clear();
+      const app = typeof getApp === 'function' ? getApp() : null;
+      if (app && app.globalData) app.globalData.postLogout = true;
       wx.reLaunch({ url: '/pages/login/index' });
     });
   }

@@ -14,8 +14,8 @@ function preferenceField(field) {
 }
 
 ui.page({
-  data: { role: '', busy: false, error: '', ready: false, children: [], childIndex: 0, childId: '',
-    nickname: '', school: '', grade: '', grades: config.grades, allergens: config.allergens, schools: config.schools,
+  data: { role: '', busy: false, error: '', ready: false, viewMode: 'view', children: [], childIndex: 0, childId: '',
+    nickname: '', nicknameChar: '', school: '', grade: '', grades: config.grades, allergens: config.allergens, schools: config.schools,
     schoolOptions: [], allergies: [], dislikes: [], tastes: [], dislikesText: '', tastesText: '', allergyOptions: [] },
   input: ui.input,
   onLoad(query) { this.requestedChild = query.childId; },
@@ -43,7 +43,8 @@ ui.page({
     const schoolOptions = Array.from(new Set([...config.schools, ...(profile.school ? [profile.school] : [])]));
     const dislikes = normalizePreferenceList(profile.dislikes);
     const tastes = normalizePreferenceList(profile.tastes);
-    this.setData({ ready: true, nickname: profile.nickname || '', school: profile.school || config.schools[0] || '',
+    this.setData({ ready: true, viewMode: 'view', nickname: profile.nickname || '', nicknameChar: this.nicknameChar(profile),
+      school: profile.school || config.schools[0] || '',
       schoolOptions, grade: profile.grade || '',
       allergies: profile.allergies || [], dislikes, tastes, dislikesText: '', tastesText: '',
       allergyOptions: Array.from(new Set([...config.allergens, ...(profile.allergies || [])]))
@@ -77,6 +78,25 @@ ui.page({
     const values = this.data[field].slice();
     values.splice(index, 1);
     this.setData({ [field]: values, error: '' });
+  },
+  nicknameChar(profile) {
+    const raw = String((profile && profile.nickname) || this.data.nickname || '').trim();
+    return raw ? raw.slice(0, 1) : this.data.role === 'PARENT' ? '娃' : '我';
+  },
+  edit() { this.setData({ viewMode: 'edit', error: '' }); },
+  cancelEdit() {
+    return ui.run(this, async () => {
+      this.setData({ viewMode: 'view' });
+      await this.read();
+    });
+  },
+  openGrowth() {
+    const childId = this.data.childId;
+    if (!childId) return;
+    return ui.openPage(this, '/pages/growth-record/index?childId=' + encodeURIComponent(childId));
+  },
+  openHealth() {
+    return ui.openPage(this, '/pages/health/index');
   },
   save() {
     return ui.run(this, async () => {

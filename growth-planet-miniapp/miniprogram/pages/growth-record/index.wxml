@@ -1,6 +1,6 @@
 <view class="page parent with-nav">
   <view class="page-heading">
-    <text class="eyebrow">儿童信息 · 成长</text>
+    <text class="eyebrow">{{role === 'PARENT' ? '儿童信息 · 成长' : '我的成长'}}</text>
     <text class="title">成长记录</text>
   </view>
 
@@ -56,5 +56,5 @@
   </view>
   <view class="empty" wx:else>还没有记录，先记一条身高体重吧</view>
 
-  <button class="primary record-action" bindtap="goEdit">＋ 记录新数据</button>
+  <button wx:if="{{role === 'PARENT'}}" class="primary record-action" bindtap="goEdit">＋ 记录新数据</button>
 </view>
