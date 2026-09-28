@@ -11,8 +11,8 @@ function metricValue(item, metric) {
 ui.page({
   data: {
     role: '', busy: false, error: '',
-    childId: '', childName: '', latest: null, records: [],
-    metricTab: 'HEIGHT', standardRows: [], gender: 'BOY'
+    childId: '', childName: '', childMeta: '', latest: null, records: [],
+    metricTab: 'HEIGHT', standardRows: [], gender: 'BOY', metricUnit: 'cm'
   },
   onLoad(options) {
     this.setData({ childId: decodeURIComponent(options.childId || '') });
@@ -28,18 +28,41 @@ ui.page({
         this.setData({ error: '缺少儿童信息，请从家庭页进入' });
         return;
       }
-      const recordsResp = await api.get('/growth/records', { childId, limit: 30 });
+      const isParent = this.data.role === 'PARENT';
+      const [recordsResp, profile] = await Promise.all([
+        api.get('/growth/records', { childId, limit: 30 }),
+        isParent ? api.get('/child/profile', { childId }).catch(() => null) : Promise.resolve(null)
+      ]);
       const latest = recordsResp.items[0] || null;
       const gender = (latest && latest.gender) || 'BOY';
+      const metric = this.data.metricTab;
       const standardResp = await api.get('/growth/standard', {
-        ageBand: 'WHO 2007', gender, metric: this.data.metricTab
+        ageBand: 'WHO 2007', gender, metric
       });
       this.setData({
-        records: recordsResp.items, latest, gender,
-        standardRows: standardResp.rows, error: ''
+        records: recordsResp.items.map(it => Object.assign({}, it, { displayDate: this.shortDate(it.recordDate) })),
+        latest, gender,
+        childName: isParent && profile && profile.nickname ? profile.nickname : '',
+        childMeta: this.buildMeta(profile, gender, !!(latest && latest.gender)),
+        standardRows: standardResp.rows, metricUnit: standardResp.unit || this.metricUnit(metric), error: ''
       });
       this.drawCurve();
     });
+  },
+  shortDate(date) {
+    const m = String(date || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m) return date || '';
+    return Number(m[2]) + '月' + Number(m[3]) + '日';
+  },
+  metricUnit(metric) {
+    return metric === 'WEIGHT' ? 'kg' : metric === 'BMI' ? 'kg/m²' : 'cm';
+  },
+  buildMeta(profile, gender, hasGender) {
+    const parts = [];
+    if (profile && profile.ageYears) parts.push(profile.ageYears + '岁');
+    if (profile && profile.grade) parts.push(profile.grade);
+    if (hasGender) parts.push(gender === 'BOY' ? '男孩' : '女孩');
+    return parts.join(' · ');
   },
   switchMetric(e) {
     const metric = e.currentTarget.dataset.metric;

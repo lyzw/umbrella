@@ -2314,7 +2314,7 @@ test('成长记录总览：拉取记录与 WHO 标准并渲染指标卡', async 
   assert.equal(page.data.gender, 'BOY');
   assert.equal(calls.filter(c => c.endpoint === '/growth/standard')[0].query.metric, 'HEIGHT');
 
-  page.switchMetric(event({ metric: 'WEIGHT' }));
+  page.setData({ metricTab: 'WEIGHT' });
   await page.refresh();
   assert.equal(page.data.metricTab, 'WEIGHT');
   assert.equal(calls.filter(c => c.endpoint === '/growth/standard').pop().query.metric, 'WEIGHT');
@@ -2468,4 +2468,20 @@ test('档案页出生年月：未填写时不展示年龄，保存传 null', asy
   await page.save();
   assert.equal(sent.body.birthYear, null);
   assert.equal(sent.body.birthMonth, null);
+});
+
+test('成长记录总览：家长头部展示孩子信息，记录日期短格式', async () => {
+  const page = loadPage('growth-record');
+  api.get = async (endpoint) => {
+    if (endpoint === '/growth/records') return { items: [
+      { id: 2, recordDate: '2026-09-28', gender: 'BOY', heightCm: '147.00', weightKg: '35.00', bmi: '16.2', ageYears: 11, note: '体检后', heightBand: 'P50–P85', weightBand: 'P15–P50', bmiCategory: '正常' }
+    ] };
+    if (endpoint === '/child/profile') return { nickname: '昊昊', grade: '六年级', ageYears: 11 };
+    return { rows: [{ ageYears: 11, p3: 134.9, p15: 140.6, p50: 143.8, p85: 150.5, p97: 155 }], unit: 'cm' };
+  };
+  page.onLoad({ childId: '123' });
+  await page.onShow();
+  assert.equal(page.data.childName, '昊昊');
+  assert.equal(page.data.childMeta, '11岁 · 六年级 · 男孩');
+  assert.equal(page.data.records[0].displayDate, '9月28日');
 });

@@ -6,6 +6,15 @@
 
   <view wx:if="{{error}}" class="error">{{error}}</view>
 
+  <view wx:if="{{role === 'PARENT' && (childName || childMeta)}}" class="grow-head">
+    <view class="grow-avatar">{{childName ? childName.slice(0, 1) : '娃'}}</view>
+    <view class="grow-copy">
+      <text class="grow-name">{{childName || '未设置昵称'}}</text>
+      <text class="grow-meta" wx:if="{{childMeta}}">{{childMeta}}</text>
+    </view>
+    <text class="chip-status">记录中</text>
+  </view>
+
   <block wx:if="{{latest}}">
     <view class="stats-row">
       <view class="stat-card">
@@ -21,7 +30,7 @@
       <view class="stat-card">
         <text class="stat-k">BMI</text>
         <text class="stat-v">{{latest.bmi}}</text>
-        <text class="stat-tag">{{latest.bmiCategory}}</text>
+        <text class="stat-tag {{latest.bmiCategory === '正常' ? 'ok' : 'warn'}}">{{latest.bmiCategory}}</text>
       </view>
     </view>
   </block>
@@ -33,6 +42,10 @@
   </view>
 
   <view class="curve-card">
+    <view class="curve-title">
+      <text>{{metricTab === 'HEIGHT' ? '身高' : metricTab === 'WEIGHT' ? '体重' : 'BMI'}}生长曲线</text>
+      <text class="unit">单位：{{metricUnit}}</text>
+    </view>
     <canvas type="2d" id="growth-curve" class="curve-canvas"></canvas>
     <view class="curve-legend">
       <text class="legend-item"><text class="legend-dot band"></text>P3–P97 参考区间</text>
@@ -49,7 +62,7 @@
   <view class="section-title record-heading">最近记录</view>
   <view class="record-list" wx:if="{{records.length}}">
     <view class="record-item" wx:for="{{records}}" wx:key="id">
-      <text class="record-date">{{item.recordDate}}</text>
+      <text class="record-date">{{item.displayDate}}</text>
       <text class="record-main">{{item.heightCm}}cm · {{item.weightKg}}kg</text>
       <text class="record-note" wx:if="{{item.note}}">{{item.note}}</text>
     </view>
