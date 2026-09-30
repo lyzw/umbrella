@@ -50,10 +50,29 @@ CREATE TABLE usr_family_member (
   delete_at     BIGINT      NOT NULL DEFAULT 0,
   effective_child_id BIGINT GENERATED ALWAYS AS
     (CASE WHEN role = 'CHILD' AND bind_status IN ('PENDING','BOUND') AND delete_at = 0 THEN user_id ELSE NULL END) STORED,
+  invite_id     BIGINT      DEFAULT NULL,
   UNIQUE KEY uk_family_user (family_id, user_id),
-  UNIQUE KEY uk_effective_child (effective_child_id),
   KEY idx_family (family_id),
   KEY idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============ usr_family_invite ============
+CREATE TABLE usr_family_invite (
+  id               BIGINT      PRIMARY KEY AUTO_INCREMENT,
+  family_id        BIGINT      NOT NULL,
+  code             VARCHAR(6)  NOT NULL,                 -- 6 位大写字母数字, 全局唯一
+  invite_type      VARCHAR(8)  NOT NULL,                 -- PARENT / CHILD (锁定加入角色)
+  creator_user_id  BIGINT      NOT NULL,                 -- 生成者(家长)
+  status           VARCHAR(8)  NOT NULL DEFAULT 'ACTIVE',-- ACTIVE / REVOKED
+  expire_at        BIGINT      NOT NULL,                 -- 毫秒时间戳
+  max_use          INT         NOT NULL DEFAULT 0,       -- 0=不限制使用次数
+  used_count       INT         NOT NULL DEFAULT 0,
+  create_time      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_time      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  delete_at        BIGINT      NOT NULL DEFAULT 0,
+  UNIQUE KEY uk_code (code),
+  KEY idx_family (family_id),
+  CONSTRAINT fk_invite_family FOREIGN KEY (family_id) REFERENCES usr_family (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============ usr_child_profile ============
