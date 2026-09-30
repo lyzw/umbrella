@@ -6,6 +6,7 @@ import tools.jackson.databind.ObjectMapper;
 import cn.studykid.growthplanet.common.context.LoginUser;
 import cn.studykid.growthplanet.common.enums.RoleEnum;
 import cn.studykid.growthplanet.dto.response.CreateFamilyResp;
+import cn.studykid.growthplanet.dto.response.FamilyInviteResp;
 import cn.studykid.growthplanet.dto.response.JoinFamilyResp;
 import cn.studykid.growthplanet.dto.response.SelectRoleResp;
 import cn.studykid.growthplanet.dto.response.WxLoginResp;
@@ -16,17 +17,22 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.List;
 import java.util.UUID;
 
@@ -41,30 +47,86 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
  * 本项目由 WebApplicationContext 手动构建 MockMvc，GenericContainer 承载 Redis。
  */
 @SpringBootTest
-@Testcontainers
+@ContextConfiguration(initializers = BaseIT.LocalDbResetInitializer.class)
 @ActiveProfiles("test")
 @org.springframework.test.annotation.DirtiesContext(classMode = org.springframework.test.annotation.DirtiesContext.ClassMode.AFTER_CLASS)
 public abstract class BaseIT {
 
-    @Container
-    static MySQLContainer<?> MYSQL = new MySQLContainer<>(DockerImageName.parse("mysql:8.0.36"))
-            .withUrlParam("useSSL", "false")
-            .withUrlParam("allowPublicKeyRetrieval", "true")
-            .withUrlParam("serverTimezone", "UTC");
+    /**
+     * 本地调试开关：设 USE_LOCAL_MYSQL=true 时复用本机已启动的 MySQL+Redis，
+     * 不再拉起 Testcontainers 容器（适用于 Docker 不可用 / 磁盘紧张场景）。
+     * 默认 false，仍走 Testcontainers，CI 行为不变。
+     */
+    static final boolean USE_LOCAL_MYSQL =
+            Boolean.parseBoolean(System.getenv("USE_LOCAL_MYSQL"));
 
-    @Container
-    static GenericContainer<?> REDIS = new GenericContainer<>(DockerImageName.parse("redis:7.2"))
-            .withExposedPorts(6379);
+    /** 本地集成测试库（独立库，隔离用户 growth_planet 业务库）。 */
+    private static final String LOCAL_MYSQL_URL =
+            "jdbc:mysql://localhost:3306/growth_planet_it?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
+
+    /**
+     * 本地调试用：在 Spring 上下文刷新前清空并重建独立测试库，保证
+     * spring.sql.init（建表脚本）始终在空库上幂等执行。
+     * Testcontainers 模式（USE_LOCAL_MYSQL=false）下不触碰本地库。
+     */
+    static class LocalDbResetInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+        @Override
+        public void initialize(ConfigurableApplicationContext ctx) {
+            if (!USE_LOCAL_MYSQL) {
+                return;
+            }
+            try (Connection conn = DriverManager.getConnection(
+                    "jdbc:mysql://localhost:3306/?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC",
+                    "root", "123456")) {
+                try (Statement st = conn.createStatement()) {
+                    st.execute("DROP DATABASE IF EXISTS growth_planet_it");
+                    st.execute("CREATE DATABASE growth_planet_it DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+                }
+            } catch (SQLException e) {
+                throw new IllegalStateException("本地测试库 growth_planet_it 重置失败", e);
+            }
+        }
+    }
+
+    static MySQLContainer<?> MYSQL;
+    static GenericContainer<?> REDIS;
+
+    static {
+        if (!USE_LOCAL_MYSQL) {
+            MYSQL = new MySQLContainer<>(DockerImageName.parse("mysql:8.0.36"))
+                    .withUrlParam("useSSL", "false")
+                    .withUrlParam("allowPublicKeyRetrieval", "true")
+                    .withUrlParam("serverTimezone", "UTC");
+            MYSQL.start();
+            REDIS = new GenericContainer<>(DockerImageName.parse("redis:7.2"))
+                    .withExposedPorts(6379);
+            REDIS.start();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try { if (REDIS != null) REDIS.stop(); } catch (Exception ignored) { }
+                try { if (MYSQL != null) MYSQL.stop(); } catch (Exception ignored) { }
+            }));
+        }
+    }
 
     @DynamicPropertySource
     static void containerProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
-        registry.add("spring.datasource.username", MYSQL::getUsername);
-        registry.add("spring.datasource.password", MYSQL::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "com.mysql.cj.jdbc.Driver");
-        registry.add("spring.data.redis.host", REDIS::getHost);
-        registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
-        registry.add("spring.data.redis.database", () -> "0");
+        if (USE_LOCAL_MYSQL) {
+            registry.add("spring.datasource.url", () -> LOCAL_MYSQL_URL);
+            registry.add("spring.datasource.username", () -> "root");
+            registry.add("spring.datasource.password", () -> "123456");
+            registry.add("spring.datasource.driver-class-name", () -> "com.mysql.cj.jdbc.Driver");
+            registry.add("spring.data.redis.host", () -> "localhost");
+            registry.add("spring.data.redis.port", () -> "6379");
+            registry.add("spring.data.redis.database", () -> "0");
+        } else {
+            registry.add("spring.datasource.url", MYSQL::getJdbcUrl);
+            registry.add("spring.datasource.username", MYSQL::getUsername);
+            registry.add("spring.datasource.password", MYSQL::getPassword);
+            registry.add("spring.datasource.driver-class-name", () -> "com.mysql.cj.jdbc.Driver");
+            registry.add("spring.data.redis.host", REDIS::getHost);
+            registry.add("spring.data.redis.port", () -> REDIS.getMappedPort(6379));
+            registry.add("spring.data.redis.database", () -> "0");
+        }
     }
 
     @Autowired
@@ -146,15 +208,24 @@ public abstract class BaseIT {
                 .andReturn();
         CreateFamilyResp cf = dataOf(create, CreateFamilyResp.class);
 
+        // 生成「学生邀请码」（CHILD 类型，需审批），供儿童以 CHILD 角色加入本家庭。
+        MvcResult childInv = mockMvc.perform(post("/api/mini/family/invite-code")
+                        .header("Authorization", "Bearer " + cf.getToken())
+                        .contentType(JSON)
+                        .content("{\"inviteType\":\"CHILD\"}"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+                .andReturn();
+        FamilyInviteResp childInvResp = dataOf(childInv, FamilyInviteResp.class);
+
         MvcResult join = mockMvc.perform(post("/api/mini/family/join")
                         .header("Authorization", "Bearer " + childToken)
                         .contentType(JSON)
-                        .content("{\"inviteCode\":\"" + cf.getInviteCode() + "\"}"))
+                        .content("{\"inviteCode\":\"" + childInvResp.getInviteCode() + "\"}"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
                 .andReturn();
         JoinFamilyResp jf = dataOf(join, JoinFamilyResp.class);
 
-        return new FamilyContext(cf.getToken(), childToken, cf.getFamilyId(), cf.getInviteCode(), jf.getApplyId());
+        return new FamilyContext(cf.getToken(), childToken, cf.getFamilyId(), childInvResp.getInviteCode(), jf.getApplyId());
     }
 
     protected Long childUserId(FamilyContext ctx) {
