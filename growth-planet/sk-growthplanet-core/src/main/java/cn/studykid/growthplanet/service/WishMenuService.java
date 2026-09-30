@@ -848,7 +848,7 @@ public class WishMenuService {
     }
 
     private Long currentFamilyId() {
-        Long familyId = UserContext.get() == null ? null : UserContext.get().firstFamilyId();
+        Long familyId = UserContext.get() == null ? null : UserContext.get().activeFamilyId();
         if (familyId == null || familyId <= 0) {
             throw new BizException(ResultCode.E009_FORBIDDEN);
         }

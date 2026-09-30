@@ -28,6 +28,8 @@ public class JwtInterceptor implements HandlerInterceptor {
 
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
+    /** 多家庭：客户端在请求头携带当前激活家庭 ID。 */
+    private static final String FAMILY_HEADER = "X-Family-Id";
     private final SessionService sessions;
 
     public JwtInterceptor(SessionService sessions) {
@@ -51,6 +53,9 @@ public class JwtInterceptor implements HandlerInterceptor {
         UserContext.set(loginUser);
         UserContext.setToken(token);
 
+        // 多家庭：解析 X-Family-Id 并校验其属于当前用户所属家庭，写入激活家庭。
+        resolveActiveFamily(request, loginUser);
+
         RequireRole requireRole = handlerMethod.getMethodAnnotation(RequireRole.class);
         if (requireRole != null) {
             boolean matched = false;
@@ -65,6 +70,27 @@ public class JwtInterceptor implements HandlerInterceptor {
             }
         }
         return true;
+    }
+
+    /**
+     * 解析并校验 {@code X-Family-Id}：必须 ∈ token 的 familyIds，跨家庭 100% 隔离。
+     * 未携带该头时回落首个家庭（兼容单家庭旧调用）。
+     */
+    private void resolveActiveFamily(HttpServletRequest request, LoginUser loginUser) {
+        String raw = request.getHeader(FAMILY_HEADER);
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        Long familyId;
+        try {
+            familyId = Long.parseLong(raw.trim());
+        } catch (NumberFormatException e) {
+            throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "X-Family-Id 格式非法");
+        }
+        if (loginUser.getFamilyIds() == null || !loginUser.getFamilyIds().contains(familyId)) {
+            throw new BizException(ResultCode.E009_FORBIDDEN, "X-Family-Id 不属于当前用户所属家庭");
+        }
+        loginUser.setActiveFamilyId(familyId);
     }
 
     @Override

@@ -43,7 +43,12 @@ public class SessionService {
         var familyIds = members.selectList(new QueryWrapper<FamilyMember>()
                         .eq("user_id", user.getId()).eq("bind_status", "BOUND").orderByAsc("id"))
                 .stream().map(FamilyMember::getFamilyId).toList();
-        return new LoginUser(user.getId(), user.getRole(), familyIds,
-                UUID.randomUUID().toString(), user.getTokenVersion());
+        return LoginUser.builder()
+                .userId(user.getId())
+                .role(user.getRole())
+                .familyIds(familyIds)
+                .jti(UUID.randomUUID().toString())
+                .tokenVersion(user.getTokenVersion())
+                .build();
     }
 }

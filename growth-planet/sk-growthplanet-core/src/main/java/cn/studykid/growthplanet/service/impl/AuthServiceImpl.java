@@ -154,7 +154,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public ChildProfileResp saveChildProfile(ChildProfileReq req) {
         LoginUser ctx = requireLogin();
-        FamilyMember member = authorization.lockChild(ctx.firstFamilyId(), req.getChildId());
+        FamilyMember member = authorization.lockChild(ctx.activeFamilyId(), req.getChildId());
         if (!"BOUND".equals(member.getBindStatus())) {
             throw new BizException(ResultCode.E009_FORBIDDEN, "儿童尚未完成绑定");
         }
@@ -194,7 +194,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public ChildProfileDetailResp getChildProfile(Long childId) {
-        authorization.requireParent(requireLogin().firstFamilyId());
+        authorization.requireParent(requireLogin().activeFamilyId());
         FamilyMember member = authorization.lockBoundChild(childId);
         var consent = authorization.requireConsent(member);
         ChildProfile profile = findProfile(member);

@@ -53,10 +53,15 @@ public final class UserContext {
         return u == null ? null : u.getFamilyIds();
     }
 
-    /** 当前家庭 ID（单家庭取第一个）。 */
+    /** 当前激活家庭 ID（多家庭：优先请求头指定，回落首个）。 */
     public static Long familyId() {
         LoginUser u = get();
-        return u == null ? null : u.firstFamilyId();
+        return u == null ? null : u.activeFamilyId();
+    }
+
+    /** 当前激活家庭 ID（与 {@link #familyId()} 等价，语义更明确，供多家庭改造调用）。 */
+    public static Long activeFamilyId() {
+        return familyId();
     }
 
     public static String jti() {
