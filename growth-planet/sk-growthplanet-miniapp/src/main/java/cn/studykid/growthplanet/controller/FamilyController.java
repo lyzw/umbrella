@@ -5,14 +5,21 @@ import cn.studykid.growthplanet.common.enums.RoleEnum;
 import cn.studykid.growthplanet.common.result.Result;
 import cn.studykid.growthplanet.dto.request.BindApproveReq;
 import cn.studykid.growthplanet.dto.request.CreateFamilyReq;
+import cn.studykid.growthplanet.dto.request.GenerateInviteCodeReq;
 import cn.studykid.growthplanet.dto.request.JoinFamilyReq;
+import cn.studykid.growthplanet.dto.request.RemoveMemberReq;
+import cn.studykid.growthplanet.dto.request.RevokeInviteCodeReq;
+import cn.studykid.growthplanet.dto.request.TransferOwnerReq;
 import cn.studykid.growthplanet.dto.response.BindApproveResp;
 import cn.studykid.growthplanet.dto.response.CreateFamilyResp;
+import cn.studykid.growthplanet.dto.response.FamilyChildResp;
+import cn.studykid.growthplanet.dto.response.FamilyInviteResp;
 import cn.studykid.growthplanet.dto.response.InviteCodeResp;
 import cn.studykid.growthplanet.dto.response.JoinFamilyResp;
-import cn.studykid.growthplanet.dto.response.FamilyChildResp;
+import cn.studykid.growthplanet.dto.response.MyFamilyResp;
 import cn.studykid.growthplanet.dto.response.PageResp;
 import cn.studykid.growthplanet.service.FamilyService;
+import java.util.List;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,12 +49,31 @@ public class FamilyController {
 
     @GetMapping("/family/invite-code")
     @RequireRole(RoleEnum.PARENT)
+    @Deprecated
     public Result<InviteCodeResp> getInviteCode() {
         return Result.ok(familyService.getInviteCode());
     }
 
+    @PostMapping("/family/invite-code")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<FamilyInviteResp> generateInviteCode(@RequestBody @Valid GenerateInviteCodeReq req) {
+        return Result.ok(familyService.generateInviteCode(req));
+    }
+
+    @GetMapping("/family/invite-codes")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<List<FamilyInviteResp>> listInviteCodes() {
+        return Result.ok(familyService.listInviteCodes());
+    }
+
+    @PostMapping("/family/invite-code/revoke")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<Void> revokeInviteCode(@RequestBody @Valid RevokeInviteCodeReq req) {
+        familyService.revokeInviteCode(req);
+        return Result.ok();
+    }
+
     @PostMapping("/family/join")
-    @RequireRole(RoleEnum.CHILD)
     public Result<JoinFamilyResp> joinFamily(@RequestBody @Valid JoinFamilyReq req) {
         return Result.ok(familyService.joinFamily(req));
     }
@@ -71,5 +97,30 @@ public class FamilyController {
     @RequireRole(RoleEnum.CHILD)
     public Result<FamilyChildResp> getBinding() {
         return Result.ok(familyService.getBinding());
+    }
+
+    @GetMapping("/family/my")
+    public Result<List<MyFamilyResp>> myFamilies() {
+        return Result.ok(familyService.myFamilies());
+    }
+
+    @PostMapping("/family/leave")
+    public Result<Void> leaveFamily() {
+        familyService.leaveFamily();
+        return Result.ok();
+    }
+
+    @PostMapping("/family/remove-member")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<Void> removeMember(@RequestBody @Valid RemoveMemberReq req) {
+        familyService.removeMember(req);
+        return Result.ok();
+    }
+
+    @PostMapping("/family/transfer-owner")
+    @RequireRole(RoleEnum.PARENT)
+    public Result<Void> transferOwner(@RequestBody @Valid TransferOwnerReq req) {
+        familyService.transferOwner(req);
+        return Result.ok();
     }
 }

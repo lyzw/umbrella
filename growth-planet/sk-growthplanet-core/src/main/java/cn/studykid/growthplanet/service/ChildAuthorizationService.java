@@ -85,8 +85,9 @@ public class ChildAuthorizationService {
     public void requireParent(Long familyId) {
         var ctx = UserContext.get();
         if (ctx == null || !"PARENT".equals(ctx.getRole()) || familyId == null
+                // 多家长：家庭内存在 >=1 个当前用户作为 BOUND PARENT 的成员即视为家长，不再限定唯一。
                 || members.selectCount(new QueryWrapper<FamilyMember>().eq("family_id", familyId)
-                .eq("user_id", ctx.getUserId()).eq("role", "PARENT").eq("bind_status", "BOUND")) != 1) {
+                .eq("user_id", ctx.getUserId()).eq("role", "PARENT").eq("bind_status", "BOUND")) < 1) {
             throw new BizException(ResultCode.E009_FORBIDDEN);
         }
     }
@@ -98,11 +99,13 @@ public class ChildAuthorizationService {
         }
         FamilyMember member;
         if ("PARENT".equals(ctx.getRole())) {
-            member = lockChild(ctx.firstFamilyId(), childId);
+            member = lockChild(ctx.activeFamilyId(), childId);
         } else if ("CHILD".equals(ctx.getRole()) && childId.equals(ctx.getUserId())) {
-            // 仅用预查询定位锁范围；授权状态必须在取得家庭/儿童锁后重新读取。
+            // 多家庭：限定在当前激活家庭下定位；授权状态必须在取得家庭/儿童锁后重新读取。
+            Long active = ctx.activeFamilyId();
             member = members.selectOne(new QueryWrapper<FamilyMember>()
-                    .eq("user_id", childId).eq("role", "CHILD").eq("bind_status", "BOUND"));
+                    .eq("user_id", childId).eq("role", "CHILD")
+                    .eq(active != null, "family_id", active).eq("bind_status", "BOUND"));
             if (member == null) {
                 throw new BizException(ResultCode.E009_FORBIDDEN);
             }
@@ -129,10 +132,13 @@ public class ChildAuthorizationService {
         }
         FamilyMember member;
         if ("PARENT".equals(ctx.getRole())) {
-            member = readChild(ctx.firstFamilyId(), childId);
+            member = readChild(ctx.activeFamilyId(), childId);
         } else if ("CHILD".equals(ctx.getRole()) && childId.equals(ctx.getUserId())) {
+            // 多家庭：限定在当前激活家庭下定位。
+            Long active = ctx.activeFamilyId();
             member = members.selectOne(new QueryWrapper<FamilyMember>()
-                    .eq("user_id", childId).eq("role", "CHILD").eq("bind_status", "BOUND"));
+                    .eq("user_id", childId).eq("role", "CHILD")
+                    .eq(active != null, "family_id", active).eq("bind_status", "BOUND"));
         } else {
             throw new BizException(ResultCode.E009_FORBIDDEN);
         }
@@ -166,23 +172,32 @@ public class ChildAuthorizationService {
 
     private ConsentLog requireConsent(FamilyMember member, boolean lock) {
         policy.requireCollection();
-        Long grantorId = UserContext.userId();
-        if ("CHILD".equals(UserContext.get().getRole())) {
-            if (!grantorId.equals(member.getUserId()) || !"BOUND".equals(member.getBindStatus())) {
+        boolean childGrantee = "CHILD".equals(UserContext.get().getRole());
+        Long callerId = UserContext.userId();
+        if (childGrantee) {
+            if (!callerId.equals(member.getUserId()) || !"BOUND".equals(member.getBindStatus())) {
                 throw new BizException(ResultCode.E009_FORBIDDEN);
             }
-            // Sprint 1 仅家庭创建家长可授予同意；儿童不被视为同意人。
-            Family family = families.selectById(member.getFamilyId());
-            User guardian = family == null ? null : users.selectById(family.getOwnerUserId());
-            if (guardian == null || !"PARENT".equals(guardian.getRole()) || !"NORMAL".equals(guardian.getStatus())
-                    || members.selectCount(new QueryWrapper<FamilyMember>().eq("family_id", member.getFamilyId())
-                    .eq("user_id", guardian.getId()).eq("role", "PARENT").eq("bind_status", "BOUND")) != 1) {
-                throw new BizException(ResultCode.E009_FORBIDDEN);
-            }
-            grantorId = guardian.getId();
         }
-        ConsentLog latest = latest(member, "PROFILE", grantorId, lock);
-        if (latest == null || !"GRANT".equals(latest.getAction())
+        // 多家长：同意可由家庭内任意 BOUND PARENT 授予，不再限定 owner / 单一家长；
+        // 因此查询同意记录时不限定授予人，覆盖家庭内任一家长的授权。
+        if (members.selectCount(new QueryWrapper<FamilyMember>().eq("family_id", member.getFamilyId())
+                .eq("role", "PARENT").eq("bind_status", "BOUND")) < 1) {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        ConsentLog latest = latestAnyGrantor(member, "PROFILE", lock);
+        if (latest == null) {
+            throw new BizException(ResultCode.E010_CONSENT_REVOKED);
+        }
+        // 多家长：授予同意的家长须仍为活跃（NORMAL）的本家庭已绑定 PARENT；
+        // 否则视为监护人失效，同意随之作废。对应原单家长模型「监护人须为 NORMAL 的 owner」约束的泛化。
+        User grantor = users.selectById(latest.getUserId());
+        if (grantor == null || !"NORMAL".equals(grantor.getStatus())
+                || members.selectCount(new QueryWrapper<FamilyMember>().eq("family_id", member.getFamilyId())
+                .eq("user_id", latest.getUserId()).eq("role", "PARENT").eq("bind_status", "BOUND")) < 1) {
+            throw new BizException(ResultCode.E009_FORBIDDEN);
+        }
+        if (!"GRANT".equals(latest.getAction())
                 || !policy.getAgreementVersion().equals(latest.getVersion())
                 || latest.getExpireAt() == null || latest.getExpireAt() <= System.currentTimeMillis()
                 || !("VERIFIED".equals(latest.getGuardianStatus())
@@ -190,5 +205,15 @@ public class ChildAuthorizationService {
             throw new BizException(ResultCode.E010_CONSENT_REVOKED);
         }
         return latest;
+    }
+
+    /** 仅按家庭 / 儿童 / 申请维度查询最新同意记录，不限定授予人（多家长模型下任一家长授权均有效）。 */
+    private ConsentLog latestAnyGrantor(FamilyMember member, String type, boolean lock) {
+        QueryWrapper<ConsentLog> query = new QueryWrapper<ConsentLog>()
+                .eq("family_id", member.getFamilyId()).eq("child_id", member.getUserId())
+                .eq("apply_id", member.getId())
+                .eq("application_version", member.getApplicationVersion()).eq("consent_type", type)
+                .orderByDesc("id");
+        return consents.selectOne(lock ? query.last("LIMIT 1 FOR UPDATE") : query.last("LIMIT 1"));
     }
 }

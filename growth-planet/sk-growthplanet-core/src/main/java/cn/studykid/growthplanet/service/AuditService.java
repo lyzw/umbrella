@@ -14,6 +14,9 @@ public interface AuditService {
     String ACTION_GRANT = "GRANT";
     String ACTION_REVOKE = "REVOKE";
     String ACTION_EXPORT = "EXPORT";
+    String ACTION_LEAVE = "LEAVE";
+    String ACTION_REMOVE_MEMBER = "REMOVE_MEMBER";
+    String ACTION_TRANSFER_OWNER = "TRANSFER_OWNER";
 
     /**
      * 记录一条审计日志。
