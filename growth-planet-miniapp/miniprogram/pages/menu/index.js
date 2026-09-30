@@ -2,7 +2,7 @@ const api = require('../../services/api');
 const ui = require('../../utils/page');
 const context = require('../../services/context');
 const { loadChildren, displayChildren } = require('../../services/children');
-const { cents, money, shanghaiDate, selectable, safetyLabel, filterDishes, dishRef, dishKey } = require('../../utils/domain');
+const { cents, money, shanghaiDate, selectable, safetyLabel, filterDishes, dishRef, dishKey, thumbImage } = require('../../utils/domain');
 
 const SPICE = ['无辣', '微辣', '中辣', '重辣'];
 const MEALS = ['BREAKFAST', 'LUNCH', 'DINNER'];
@@ -151,7 +151,7 @@ ui.page({
     try {
       const result = await api.get('/child/frequent-dish', { childId: this.data.childId, limit: 6 });
       this.frequentDishes = (result.dishes || []).map(item => ({
-        ...item, key: dishKey(item), countText: '近30天 ' + item.count + ' 次'
+        ...item, key: dishKey(item), imageUrl: thumbImage(item.imageUrl, 240), countText: '近30天 ' + item.count + ' 次'
       }));
     } catch (error) {
       this.frequentDishes = []; // 快捷区为增强体验，失败时静默降级不影响主流程。
@@ -165,7 +165,7 @@ ui.page({
         menuId: this.data.menu.menuId, childId: this.data.childId, limit: 3
       });
       this.recommendDishes = (result.dishes || []).map(item => ({
-        ...item, key: dishKey(item), reasonText: (item.reasons || []).join(' · ')
+        ...item, key: dishKey(item), imageUrl: thumbImage(item.imageUrl, 240), reasonText: (item.reasons || []).join(' · ')
       }));
     } catch (error) {
       this.recommendDishes = []; // 推荐卡同为增强体验，失败时不影响菜单主流程。
@@ -282,6 +282,7 @@ ui.page({
       const catalogKeys = new Set(this.catalogDishes.map(item => dishKey(item)));
       const all = this.allDishes.map(dish => ({
         ...dish,
+        imageUrl: thumbImage(dish.imageUrl, 240),
         key: dishKey(dish),
         selected: selectedKeys.has(dishKey(dish)),
         available: dish.status === 'ON_SALE',
@@ -336,7 +337,7 @@ ui.page({
       return;
     }
     const all = this.allDishes.map(dish => ({
-      ...dish, key: dishKey(dish), quantity: this.quantities[dishKey(dish)] || 0, selectable: selectable(dish),
+      ...dish, imageUrl: thumbImage(dish.imageUrl, 240), key: dishKey(dish), quantity: this.quantities[dishKey(dish)] || 0, selectable: selectable(dish),
       categoryName: dish.categoryName || '',
       safetyLabel: safetyLabel(dish),
       spiceLabel: SPICE[dish.spiceLevel],
@@ -397,7 +398,7 @@ ui.page({
     return {
       key: dishKey(dish),
       name: dish.name,
-      imageUrl: dish.imageUrl,
+      imageUrl: thumbImage(dish.imageUrl, 480),
       price: sel.price,
       spice: sel.spice,
       note: sel.note,
@@ -519,7 +520,7 @@ ui.page({
       safetyLabel: dish.safetyLabel,
       categoryName: dish.categoryName || '',
       calories: dish.calories,
-      imageUrl: dish.imageUrl,
+      imageUrl: thumbImage(dish.imageUrl, 480),
       isDisliked: dish.isDisliked,
       quantity: this.quantities[dishKey(dish)] || 0,
       selectable: selectable(dish),

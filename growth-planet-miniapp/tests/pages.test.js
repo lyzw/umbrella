@@ -1,5 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+// 页面级测试固定运行在「开发合成配置」上（config.js 的生产默认值仅供运行时；
+// 必须在 require 任何 miniprogram 代码之前设置，config 是 frozen 单例）。
+process.env.GP_CONFIG_JSON = JSON.stringify({
+  apiBase: 'http://localhost:8080',
+  environment: 'development',
+  syntheticLogin: true,
+  realDataApproved: false
+});
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '../miniprogram');

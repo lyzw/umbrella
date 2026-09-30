@@ -149,7 +149,7 @@
     </view>
     <view class="dish-flow">
       <view wx:for="{{dishes}}" wx:key="key" class="dish-row {{item.inCart ? 'in-cart' : ''}} {{!item.available ? 'row-disabled' : ''}}" bindtap="openDishDetail" data-key="{{item.key}}">
-        <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="row-img" catchtap="imageError" data-key="{{item.key}}" />
+        <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="row-img" binderror="imageError" data-key="{{item.key}}" />
         <view wx:else class="row-img row-fallback">🍲</view>
         <view class="row-main">
           <view class="row-title">{{item.name}}</view>
