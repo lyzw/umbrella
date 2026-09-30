@@ -5,7 +5,7 @@ spring:
   application:
     name: growth-planet
   profiles:
-    active: dev
+    active: prod
   jackson:
     deserialization:
       accept-float-as-int: false

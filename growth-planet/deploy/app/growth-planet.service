@@ -1,0 +1,47 @@
+# 成长星球 · systemd 单元（可选，比 nohup 更稳：崩溃自动重启 + cgroup 内存硬限制）
+# 用法：
+#   1) 把 growth-planet.jar、start.sh 不用、.env、本文件放到 /opt/growth-planet/
+#   2) 建专用用户：useradd -r -s /sbin/nologin appuser
+#   3) 安装：cp growth-planet.service /etc/systemd/system/
+#      systemctl daemon-reload
+#      systemctl enable --now growth-planet
+#   4) 日志：journalctl -u growth-planet -f
+#
+# 说明：MemoryMax=512M 由内核 cgroup 硬性限制进程（含 JVM + 直接内存）总占用，
+#       比仅靠 JVM 参数更可靠；若同机还跑 Redis，请相应调小或分开机器。
+
+[Unit]
+Description=Growth Planet Backend (Spring Boot)
+After=network.target mysqld.service redis.service
+Requires=mysqld.service
+
+[Service]
+Type=simple
+User=appuser
+WorkingDirectory=/opt/growth-planet
+EnvironmentFile=/opt/growth-planet/.env
+ExecStart=/usr/lib/jvm/java-21-openjdk/bin/java \
+  -server \
+  -Xms320m -Xmx320m \
+  -XX:MaxMetaspaceSize=96m \
+  -XX:CompressedClassSpaceSize=64m \
+  -Xss256k \
+  -XX:MaxDirectMemorySize=64m \
+  -XX:+UseG1GC \
+  -XX:MaxGCPauseMillis=200 \
+  -XX:+UseStringDeduplication \
+  -XX:TieredStopAtLevel=1 \
+  -Djava.security.egd=file:/dev/./urandom \
+  -XX:+HeapDumpOnOutOfMemoryError \
+  -XX:HeapDumpPath=/opt/growth-planet/logs/oom.hprof \
+  -Dspring.profiles.active=dev \
+  -Dserver.port=19100 \
+  -jar /opt/growth-planet/growth-planet.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=5
+MemoryMax=512M
+MemoryHigh=480M
+
+[Install]
+WantedBy=multi-user.target

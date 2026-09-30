@@ -1,0 +1,59 @@
+# 成长星球 · 自建数据库与缓存基础设施（MySQL 8.4 LTS + Redis 7）
+# 适用：发布环境的「数据库自建」一键起库。
+#
+# 用法：
+#   cd deploy/db
+#   docker compose up -d
+#
+# 首次启动（空数据卷）会自动按文件名顺序执行 ./sql/*.sql，完成建表与种子数据。
+# 之后重启 / 升级版本不会重复执行（Docker 仅在 datadir 为空时跑 initdb.d）。
+#
+# 注意：
+#   - 本 compose 只提供「数据库 + 缓存」基础设施；应用服务需另行部署，
+#     并通过 3306 / 6379 连接此处实例（账号见 .env，默认 root/root，生产务必改强密码）。
+#   - 应用侧 application.yml 当前把 MySQL 账号硬编码为 root/root，生产建议外部化数据源配置。
+#   - 数据与缓存均落在具名卷中，删除容器不丢数据；如需彻底重置：docker compose down -v
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: growth-planet-mysql
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-growth_planet}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d:ro
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: growth-planet-redis
+    restart: unless-stopped
+    # 当前应用未配置 Redis 密码，故此处亦不启用 requirepass；
+    # 若生产需鉴权，请在此追加 "--requirepass", "${REDIS_PASSWORD}" 并同步应用配置。
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+volumes:
+  mysql_data:
+  redis_data:
