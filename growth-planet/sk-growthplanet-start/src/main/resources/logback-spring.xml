@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  成长星球日志配置（logback-spring.xml）
+
+  分离策略：
+    logs/growth-planet.log       业务日志（INFO 及以上，含 WARN）
+    logs/growth-planet-error.log 仅 ERROR，便于告警与故障定位
+    logs/access.log              访问日志（AccessLogFilter，独立 logger，不混入业务日志）
+    控制台                        业务日志；dev 环境额外输出访问日志，便于本地联调
+
+  目录覆盖：默认应用工作目录下的 logs/，可用 -DLOG_DIR=/var/log/growth-planet 或环境变量 LOG_DIR 覆盖。
+  级别覆盖：logging.level.cn.studykid.growthplanet.access=OFF 可单独关闭访问日志（不影响业务日志）。
+
+  注意：文件名必须是 logback-spring.xml（带 -spring），否则 Spring Boot 4 的 springProfile 扩展不生效。
+-->
+<configuration>
+
+    <property name="LOG_DIR" value="${LOG_DIR:-logs}"/>
+    <property name="APP_NAME" value="growth-planet"/>
+    <property name="BUSINESS_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] [%X{requestId:-}] %logger{50} - %msg%n"/>
+    <!-- 访问日志自身已带 traceId/spanId，无需再输出 MDC -->
+    <property name="ACCESS_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %msg%n"/>
+
+    <!-- 控制台 -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${BUSINESS_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 业务日志：按天 + 按大小滚动（50MB/个），保留 30 天、总量上限 2GB -->
+    <appender name="APP_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${APP_NAME}.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${BUSINESS_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 错误日志：只收 ERROR，与业务日志分离 -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${APP_NAME}-error.log</file>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/${APP_NAME}-error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>1GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${BUSINESS_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 访问日志：独立文件，保留 14 天（量大）。additivity=false 由下方 logger 控制 -->
+    <appender name="ACCESS_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/access.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/access.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>14</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${ACCESS_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 访问日志 logger：独立输出，不向 root 传递（避免混入业务日志与控制台） -->
+    <logger name="cn.studykid.growthplanet.access" level="INFO" additivity="false">
+        <appender-ref ref="ACCESS_FILE"/>
+    </logger>
+
+    <!-- 测试环境：只打控制台，不落盘（避免集成测试污染工作区） -->
+    <springProfile name="test">
+        <logger name="cn.studykid.growthplanet.access" level="INFO" additivity="false"/>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- 非测试环境：控制台 + 业务文件 + 错误文件 -->
+    <springProfile name="!test">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="APP_FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
+        </root>
+    </springProfile>
+
+    <!-- 本地开发：访问日志同时打到控制台，方便边联调边看请求 -->
+    <springProfile name="dev">
+        <logger name="cn.studykid.growthplanet.access" level="INFO" additivity="false">
+            <appender-ref ref="ACCESS_FILE"/>
+            <appender-ref ref="CONSOLE"/>
+        </logger>
+    </springProfile>
+
+</configuration>

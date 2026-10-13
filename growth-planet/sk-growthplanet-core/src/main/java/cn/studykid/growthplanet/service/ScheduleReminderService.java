@@ -5,8 +5,7 @@ import cn.studykid.growthplanet.mapper.ScheduleMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -21,9 +20,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  * 幂等与补发：{@code last_remind_date} 标记同一发生日只投递一次；错过的历史时刻不补发，
  * 避免弹出已过期的提醒。
  */
+@Slf4j
 @Service
 public class ScheduleReminderService {
-    private static final Logger log = LoggerFactory.getLogger(ScheduleReminderService.class);
 
     private final ScheduleMapper schedules;
     private final NoticeService notices;

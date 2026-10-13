@@ -8,16 +8,15 @@ import cn.studykid.growthplanet.mapper.NoticeMapper;
 import cn.studykid.growthplanet.mapper.NoticeSubscriptionMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+@Slf4j
 @Service
 public class NoticeDeliveryService {
-    private static final Logger log = LoggerFactory.getLogger(NoticeDeliveryService.class);
     private static final long[] RETRY_DELAYS = {60_000L, 300_000L, 1_800_000L};
     private final NoticeMapper notices;
     private final NoticeSubscriptionMapper subscriptions;
