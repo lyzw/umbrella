@@ -18,6 +18,7 @@
     "pages/privacy/index",
     "pages/settings/index",
     "pages/dev-child-login/index",
+    "pages/dev-env/index",
     "pages/timetable/index",
     "pages/homework/index",
     "pages/tools/index",

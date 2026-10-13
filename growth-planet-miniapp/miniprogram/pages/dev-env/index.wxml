@@ -1,0 +1,48 @@
+<view class="page">
+  <view class="header"><view class="title">后端环境</view></view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+
+  <view wx:if="{{isRelease}}" class="error">正式版固定使用生产环境，不可切换。</view>
+
+  <view class="section">
+    <view class="section-title">当前生效</view>
+    <view class="settings-card">
+      <view class="setting-row">
+        <view class="setting-copy">
+          <text class="setting-name">{{effective}}</text>
+          <text class="setting-desc">{{effectiveApi}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{pending}}" class="section">
+    <view class="section-title">待重启生效</view>
+    <view class="settings-card">
+      <view class="setting-row">
+        <view class="setting-copy">
+          <text class="setting-name">{{pending}}</text>
+          <text class="setting-desc">已保存，关闭并重新打开小程序后生效</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{!isRelease}}" class="section">
+    <view class="section-title">选择环境</view>
+    <view class="settings-card">
+      <view wx:for="{{options}}" wx:key="name" class="setting-row" data-env="{{item.name}}" bindtap="pickEnv">
+        <view class="setting-copy">
+          <text class="setting-name">{{item.label}}</text>
+          <text class="setting-desc">{{item.apiBase}}</text>
+        </view>
+        <text wx:if="{{item.current}}" class="tag">生效中</text>
+      </view>
+    </view>
+    <button class="ghost reset-button" bindtap="resetEnv">恢复默认环境</button>
+  </view>
+
+  <view class="section settings-note">
+    <text class="small">切换环境会清除登录状态。真机联调需把手机与电脑放在同一局域网，并在 config.js 的 lan 环境里填写电脑的局域网 IP。</text>
+  </view>
+</view>

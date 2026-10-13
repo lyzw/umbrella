@@ -1203,7 +1203,8 @@ test('健康打卡：日历格子按周日起排，且不能翻到未来月份',
     if (endpoint === '/child/check-in/items') return [];
     if (endpoint === '/child/check-in/today') return [];
     months.push(query.month);
-    return { childId: child.childId, currentStreak: 0, checkedDates: [query.month + '-15'] };
+    // 固定用当月 1 号：月初（1~14 号）跑测试时，晚于今天的日期会被当作未来日期而不计入已打卡。
+    return { childId: child.childId, currentStreak: 0, checkedDates: [query.month + '-01'] };
   };
   await page.onShow();
   const today = shanghaiDate();
@@ -1213,7 +1214,7 @@ test('健康打卡：日历格子按周日起排，且不能翻到未来月份',
   assert.equal(page.data.canNextMonth, false);
   assert.equal(page.data.checkItems.length, 0);
   assert.equal(page.data.monthChecked, 1);
-  assert.equal(page.data.cells.find(cell => cell.checked).key, today.slice(0, 7) + '-15');
+  assert.equal(page.data.cells.find(cell => cell.checked).key, today.slice(0, 7) + '-01');
 
   await page.shiftMonth(event({ delta: 1 }));
   assert.deepEqual(months, [today.slice(0, 7)]);
@@ -1222,7 +1223,7 @@ test('健康打卡：日历格子按周日起排，且不能翻到未来月份',
   assert.deepEqual(months, [today.slice(0, 7), prevMonth]);
   assert.equal(page.data.canNextMonth, true);
   assert.equal(page.data.monthLabel, prevMonth.slice(0, 4) + ' 年 ' + Number(prevMonth.slice(5)) + ' 月');
-  assert.equal(page.data.cells.find(cell => cell.checked).key, prevMonth + '-15');
+  assert.equal(page.data.cells.find(cell => cell.checked).key, prevMonth + '-01');
 
   page.setData({ month: '2026-02' });
   await page.readChild();
@@ -1393,9 +1394,15 @@ test('菜单页：常吃快捷区只允许标记今日餐单已有的菜品', as
       canSubmit: true, dishes: [{ ...dish, canSelect: true, categoryName: '主食' }] };
   };
   await page.read();
+  // 周视图后端单区间上限 14 天，47 天时间线按 14 天切成 4 段请求
   assert.deepEqual(calls.map(call => call.endpoint),
-    ['/menu/daily', '/child/frequent-dish', '/child/recommend', '/child/menu-week', '/child/wish-menu',
-      '/child/wish-catalog']);
+    ['/menu/daily', '/child/frequent-dish', '/child/recommend',
+      '/child/menu-week', '/child/menu-week', '/child/menu-week', '/child/menu-week',
+      '/child/wish-menu', '/child/wish-catalog']);
+  calls.filter(call => call.endpoint === '/child/menu-week').forEach(call => {
+    const span = (new Date(call.query.to) - new Date(call.query.from)) / 86400000 + 1;
+    assert.ok(span <= 14, '周视图切片不得超过 14 天，实际 ' + span);
+  });
   assert.equal(page.data.wish.statusLabel, '未创建');
   assert.equal(page.data.wish.canEdit, true);
   assert.deepEqual(page.data.wishDishes, []);
@@ -1645,12 +1652,15 @@ test('菜单页：周条标注已发布天数，点选可切到该天', async ()
     if (endpoint === '/child/frequent-dish') return { dishes: [] };
     if (endpoint === '/child/recommend') return { dishes: [] };
     if (endpoint === '/child/menu-week') {
-      assert.equal(query.from, day(-31));
-      assert.equal(query.to, day(15));
-      return { from: day(-31), to: day(15), today, days: [
+      // 后端周视图单区间上限 14 天（超出 E-400），47 天时间线按 14 天切片请求后合并
+      const span = (new Date(query.to) - new Date(query.from)) / 86400000 + 1;
+      assert.ok(span <= 14, '周视图切片不得超过 14 天，实际 ' + span);
+      assert.ok(query.from >= day(-31) && query.to <= day(15));
+      const coversToday = query.from <= today && query.to >= today;
+      return { from: query.from, to: query.to, today, days: coversToday ? [
         { menuDate: today, meals: [{ mealType: 'LUNCH', ...meals, wantEatCount: 1 }, { mealType: 'DINNER' }] },
         { menuDate: tomorrow, meals: [{ mealType: 'LUNCH' }] }
-      ] };
+      ] : [] };
     }
     return { menuId: '20', sourceType: 'FAMILY', menuDate: query.menuDate, mealType: 'LUNCH',
       canSubmit: true, dishes: [{ ...dish, canSelect: true }] };

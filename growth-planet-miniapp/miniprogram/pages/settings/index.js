@@ -1,18 +1,25 @@
 const api = require('../../services/api');
+const config = require('../../config');
 const ui = require('../../utils/page');
 const { shanghaiDate } = require('../../utils/domain');
 
 ui.page({
   data: {
     role: '', busy: false, error: '',
+    // 后端环境入口：正式版恒隐藏（正式版固定走生产环境）。
+    showDevEnv: false, envLabel: '', envApiBase: '',
     // 心愿菜单（基础配置，家长可编辑）
     wishDishRange: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     wishEnabledDraft: true, wishMaxDraft: 5, wishVersion: 0,
     wishLoaded: false, wishEnabled: false, wishMaxDishes: 0
   },
   onShow() {
+    this.setData({ showDevEnv: !config.isRelease, envLabel: config.envLabel, envApiBase: config.apiBase });
     if (!ui.guard(this)) return;
     return this.loadSetting();
+  },
+  openDevEnv() {
+    wx.navigateTo({ url: '/pages/dev-env/index' });
   },
   refresh() {
     return this.loadSetting();

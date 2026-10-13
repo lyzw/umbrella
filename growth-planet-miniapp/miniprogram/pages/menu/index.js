@@ -8,6 +8,9 @@ const SPICE = ['无辣', '微辣', '中辣', '重辣'];
 const MEALS = ['BREAKFAST', 'LUNCH', 'DINNER'];
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const WEEK_DAYS = 7;
+// 后端周视图单区间上限 WEEK_MAX_DAYS = 14 天，超出直接返回 E-400（契约由 WantEatP2IT 锁定）。
+// 47 天时间线不能一次请求，按 14 天切片分别请求后合并 days。
+const WEEK_CHUNK_DAYS = 14;
 const CHILD_MEAL_SOURCES = ['FAMILY', 'SCHOOL'];
 
 function shiftDate(date, delta) {
@@ -209,15 +212,32 @@ ui.page({
     const to = shiftDate(today, 15);
     let result = null;
     try {
-      result = this.data.role === 'PARENT'
-        ? await api.get('/parent/menu-week', { from, to })
-        : await api.get('/child/menu-week', { from, to, childId: this.data.childId });
+      result = await this.loadWeekRange(from, to);
     } catch (error) {
       // 请求失败也直接展示完整时间线，全部按未发布标签处理
       result = null;
     }
     const week = this.buildWeekItems(result, from, to, today);
     this.setData({ week, weekScrollLeft: this.centerWeekScroll(31) });
+  },
+  // 周条按 14 天切片请求：后端 WEEK_MAX_DAYS=14，一次性请求 47 天会被判 E-400，
+  // 导致周条恒定降级成「全部未发布」（发布成功后仍看不到已发布标记）。
+  async loadWeekRange(from, to) {
+    const endpoint = this.data.role === 'PARENT' ? '/parent/menu-week' : '/child/menu-week';
+    const extra = this.data.role === 'PARENT' ? {} : { childId: this.data.childId };
+    const days = [];
+    let today = null;
+    let start = from;
+    // ISO yyyy-MM-dd 可直接按字符串比较
+    while (start <= to) {
+      const full = shiftDate(start, WEEK_CHUNK_DAYS - 1);
+      const slice = full < to ? full : to;
+      const part = await api.get(endpoint, { from: start, to: slice, ...extra });
+      if (part && Array.isArray(part.days)) days.push(...part.days);
+      if (!today && part && part.today) today = part.today;
+      start = shiftDate(slice, 1);
+    }
+    return { from, to, today, days };
   },
   decorateRecommend(dishes) {
     return (this.recommendDishes || []).map(item => {
@@ -271,9 +291,14 @@ ui.page({
     this.setData({ menu, missingCount: menu ? (menu.missingDishIds || []).length : 0,
       missingDishIds: menu ? menu.missingDishIds || [] : [], ready: true });
     this.render();
-    await this.loadWeek();
+    // 周条/心愿是次要增强：不阻塞主流程与「发布」按钮（此前整条链同处一个 ui.run，
+    // 菜品已渲染但 busy 仍为真，点发布会被静默吞掉）。二者内部均有静默降级，
+    // 失败不影响菜单主流程；挂在 this.extras 上，便于调用方或测试显式等待。
     // 家长也要看孩子当天提交的心愿菜单（通知落地同页），与孩子侧共用同一份加载逻辑。
-    await this.loadWish();
+    this.extras = Promise.all([
+      this.loadWeek().catch(() => {}),
+      this.loadWish().catch(() => {})
+    ]);
   },
   render() {
     if (!this.parentSelection) this.parentSelection = new Map();
