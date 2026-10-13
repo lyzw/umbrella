@@ -24,6 +24,13 @@
             <artifactId>sk-growthplanet-admin</artifactId>
         </dependency>
 
+        <!-- Lombok（core 中 optional 不传递，本模块 @Slf4j 需显式声明） -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
         <!-- 测试：Spring 上下文 + Testcontainers（真实 MySQL + Redis） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -1,11 +1,23 @@
 server:
   port: 19100
 
+# 日志：输出分离由 logback-spring.xml 定义（业务日志 growth-planet.log / 错误 error / 访问日志 access.log）。
+# 这里只调级别；目录用 -DLOG_DIR 或环境变量 LOG_DIR 覆盖（默认应用工作目录下的 logs/）。
+logging:
+  level:
+    root: INFO
+    cn.studykid.growthplanet: INFO
+    # 单独关访问日志：改为 OFF 即可，不影响业务日志
+    cn.studykid.growthplanet.access: INFO
+
 spring:
   application:
     name: growth-planet
   profiles:
-    active: prod
+    # 本地默认走 dev（IDE 直接运行即生效）；生产部署由 deploy/app/start.sh 的
+    # APP_PROFILE=prod（或 -Dspring.profiles.active=prod）覆盖激活，切勿在此写死 prod，
+    # 否则本地无真实微信/目录凭证时会被 ProductionConfigGuard 拦启动。
+    active: dev
   jackson:
     deserialization:
       accept-float-as-int: false
@@ -70,6 +82,15 @@ console:
     username: ${CONSOLE_BOOTSTRAP_USERNAME:admin.zhou}
     password: ${CONSOLE_BOOTSTRAP_PASSWORD:admin123}
     name: ${CONSOLE_BOOTSTRAP_NAME:超级管理员}
+
+# 访问日志（AccessLogFilter）：全量记录 /api/mini/** 与 /api/admin/**，请求体先脱敏再记录，
+# 耗时超过 slow-threshold-ms 的请求以 WARN 输出。独立 logger 名 cn.studykid.growthplanet.access，
+# 可用 logging.level.cn.studykid.growthplanet.access=INFO 单独调节或关闭（OFF）。
+access-log:
+  enabled: true
+  slow-threshold-ms: 1000
+  include-request-body: true
+  # 其余（max-body-length / max-body-bytes / exclude-patterns / 脱敏键）见 AccessLogProperties 默认值。
 
 compliance:
   collection-enabled: false

@@ -9,8 +9,7 @@ import cn.studykid.growthplanet.mapper.RoleMapper;
 import cn.studykid.growthplanet.mapper.RolePermissionMapper;
 import cn.studykid.growthplanet.util.AdminPasswordEncoder;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
@@ -31,10 +30,10 @@ import java.util.Set;
  *       生产环境若沿用默认密码则打印 WARN 提醒立即修改）。</li>
  * </ol>
  */
+@Slf4j
 @Component
 public class AdminDataInitializer implements CommandLineRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(AdminDataInitializer.class);
     private static final String DEFAULT_PASSWORD = "admin123";
 
     private final RoleMapper roles;

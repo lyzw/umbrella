@@ -2,6 +2,9 @@
 target/
 *.class
 
+# 运行期日志（logback-spring.xml 默认输出目录，可用 -DLOG_DIR / 环境变量 LOG_DIR 覆盖）
+logs/
+
 # IDE / OS
 .DS_Store
 *.iml
