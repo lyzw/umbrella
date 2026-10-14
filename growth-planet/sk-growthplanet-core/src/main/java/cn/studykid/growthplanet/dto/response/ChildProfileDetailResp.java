@@ -18,6 +18,10 @@ public class ChildProfileDetailResp {
     private String nickname;
     private String grade;
     private String school;
+    private Integer birthYear;
+    private Integer birthMonth;
+    /** 当前周岁（由出生年月计算；未填写时为空）。 */
+    private Integer ageYears;
     private List<String> allergies;
     private List<String> dislikes;
     private List<String> tastes;

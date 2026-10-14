@@ -3,3 +3,8 @@
 
 # 日志
 *.log
+/growth-planet/config.env
+
+# OS / IDE 产生的临时文件（非交付物，不纳入版本控制）
+.DS_Store
+.idea/

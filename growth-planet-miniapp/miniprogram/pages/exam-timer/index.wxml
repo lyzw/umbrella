@@ -1,0 +1,93 @@
+<view class="page timer-page">
+
+  <!-- 科目栏（配置与运行视图共用） -->
+  <view class="subject-bar">
+    <scroll-view class="subject-scroll" scroll-x="true" enable-flex="true" show-scrollbar="false">
+      <view wx:for="{{subjects}}" wx:key="key"
+        class="subject-tab {{index === subjectIndex ? 'on' : ''}}"
+        bindtap="pickSubject" data-index="{{index}}">{{item.name}}</view>
+    </scroll-view>
+    <view class="subject-add" bindtap="toggleAddSubject" aria-role="button">
+      {{showAddSubject ? '收起' : '+'}}
+    </view>
+  </view>
+  <view wx:if="{{showAddSubject}}" class="subject-add-row">
+    <input class="subject-add-input" value="{{addSubject}}" bindinput="input" data-field="addSubject" placeholder="科目名称，如：科学" maxlength="8" />
+    <button class="compact-action" bindtap="addSubject" disabled="{{busy || !addSubject}}">添加</button>
+  </view>
+
+  <!-- 配置视图 -->
+  <block wx:if="{{!started}}">
+    <view class="page-heading">
+      <text class="title">{{subjects[subjectIndex].name}} · 考试计时器</text>
+      <text class="subtitle">按题型分批倒计时，自定义每个阶段的时长</text>
+    </view>
+
+    <view class="group-label">题型阶段（{{subjects[subjectIndex].stages.length}} 个 · 共 {{totalMinutes}} 分钟）</view>
+    <view class="stage-list">
+      <view wx:for="{{subjects[subjectIndex].stages}}" wx:key="key" class="stage-card">
+        <view class="stage-main">
+          <text class="stage-name">{{item.name}}</text>
+          <text class="stage-time">{{item.minutes}} 分钟</text>
+        </view>
+        <view class="stage-ops">
+          <view class="stage-stepper">
+            <view class="step-btn" data-key="{{item.key}}" data-delta="-1" bindtap="adjustStage" aria-role="button">−</view>
+            <view class="step-btn" data-key="{{item.key}}" data-delta="1" bindtap="adjustStage" aria-role="button">+</view>
+          </view>
+          <view class="stage-del" data-key="{{item.key}}" bindtap="removeStage" aria-role="button">×</view>
+        </view>
+      </view>
+      <view wx:if="{{subjects[subjectIndex].stages.length === 0}}" class="empty">这个科目还没有题型阶段，先在下面添加一个吧</view>
+    </view>
+
+    <view class="add-panel">
+      <view class="group-label">添加题型阶段</view>
+      <view class="add-row">
+        <input class="add-name" value="{{addName}}" bindinput="input" data-field="addName" placeholder="题型名称，如：选择题" maxlength="12" />
+        <input class="add-minutes" type="number" value="{{addMinutes}}" bindinput="input" data-field="addMinutes" placeholder="分钟" maxlength="3" />
+        <button class="compact-action add-btn" bindtap="addStage" disabled="{{busy || !addName || !addMinutes}}">添加</button>
+      </view>
+    </view>
+
+    <button class="primary start-btn" bindtap="startExam" disabled="{{busy || !subjects[subjectIndex].stages.length}}">开始考试</button>
+    <view class="footnote">时长按分钟自定义，倒完一个阶段自动进入下一个</view>
+  </block>
+
+  <!-- 倒计时视图 -->
+  <block wx:else>
+    <view class="page-heading center">
+      <text class="title">{{subjects[subjectIndex].name}} · {{subjects[subjectIndex].stages[stageIndex].name}}</text>
+      <text class="subtitle">第 {{stageIndex + 1}} / {{subjects[subjectIndex].stages.length}} 个阶段</text>
+    </view>
+
+    <view class="timer-ring-wrap">
+      <svg class="timer-ring" width="220" height="220" viewBox="0 0 220 220">
+        <circle cx="110" cy="110" r="92" fill="none" stroke="#eef0f4" stroke-width="12"/>
+        <circle cx="110" cy="110" r="92" fill="none" stroke="#2f6bff" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="578" stroke-dashoffset="{{ringOffset}}" transform="rotate(-90 110 110)"/>
+      </svg>
+      <view class="timer-center">
+        <text class="timer-time">{{remainingText}}</text>
+        <text class="timer-sub">本阶段 {{subjects[subjectIndex].stages[stageIndex].minutes}} 分钟</text>
+      </view>
+    </view>
+
+    <view class="total-progress">
+      <view class="total-progress-bar"><view class="total-progress-inner" style="width: {{totalProgress}}%"></view></view>
+      <text class="total-progress-text">总用时 {{usedText}} / {{totalMinutes}} 分钟</text>
+    </view>
+
+    <view class="timer-controls">
+      <view class="timer-btn end" bindtap="endExam">结束</view>
+      <view class="timer-btn main" bindtap="toggleRun">{{running ? '暂停' : '继续'}}</view>
+    </view>
+    <view class="timer-chips">
+      <text class="timer-chip" bindtap="addTime">本阶段加时 1 分钟</text>
+      <text wx:if="{{stageIndex < subjects[subjectIndex].stages.length - 1}}" class="timer-chip" bindtap="nextStage">跳到下一阶段</text>
+    </view>
+    <view class="footnote">时间到会震动提醒，自动进入下一阶段</view>
+  </block>
+
+  <view wx:if="{{busy}}" class="loading">正在处理</view>
+</view>

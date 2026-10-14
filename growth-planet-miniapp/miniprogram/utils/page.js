@@ -31,7 +31,8 @@ function guard(page, role) {
     wx.redirectTo({ url: '/pages/login/index' });
     return false;
   }
-  if (role && auth.role !== role) {
+  const allowed = Array.isArray(role) ? role : role ? [role] : null;
+  if (allowed && !allowed.includes(auth.role)) {
     wx.redirectTo({ url: '/pages/home/index' });
     return false;
   }
@@ -57,7 +58,10 @@ async function run(page, action) {
       require('../services/context').clear();
       wx.reLaunch({ url: '/pages/family/index' });
     }
-  } finally { if (revision === lifecycle.current()) page.setData({ busy: false }); }
+  // busy 必须无条件复位：请求在飞时若 lifecycle.invalidate()（onShow/onHide/onUnload 都会触发），
+  // 带 revision 守卫会让 busy 永久卡在 true，此后该页所有点击都被静默吞掉（根本发不出请求）。
+  // error 展示才需要 revision 守卫（见上方 catch），busy 作为页面级互斥标志必须释放。
+  } finally { page.setData({ busy: false }); }
 }
 function input(event) {
   this.setData({ [event.currentTarget.dataset.field]: event.detail.value });

@@ -1,0 +1,34 @@
+.filter-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+.filter-tab { flex: 1; text-align: center; font-size: 14px; padding: 9px 0; border-radius: var(--radius-md); background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+.filter-tab.on { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); font-weight: 800; }
+
+/* 孩子定位条 */
+.loc-bar { display: flex; align-items: center; gap: 8px; background: var(--primary-soft); border: 1px solid var(--primary-border); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 12px; }
+.loc-pin { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex: none; }
+.loc-text { flex: 1; font-size: 13px; color: var(--primary-ink); line-height: 1.55; }
+
+/* 分位带图 */
+.band-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 12px; margin-bottom: 12px; }
+.band-canvas { width: 100%; height: 280rpx; }
+.band-legend { display: flex; gap: 16px; font-size: 11px; color: var(--muted); margin-top: 10px; }
+.legend-item { display: inline-flex; align-items: center; }
+.legend-dot { width: 14px; height: 8px; border-radius: 3px; margin-right: 4px; }
+.legend-dot.band { background: rgba(11, 138, 102, .25); }
+.legend-dot.p50 { background: #8fb3a4; height: 3px; border-radius: 1px; }
+.legend-dot.kid { width: 8px; height: 8px; border-radius: 50%; background: #0b8a66; }
+
+.standard-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 10px 12px 8px; }
+.table-scroll { overflow-x: auto; }
+.std-row { display: flex; align-items: stretch; font-size: 13px; }
+.std-row .col { flex: 1; min-width: 0; text-align: center; padding: 9px 2px; color: var(--par-ink); border-bottom: 1px solid #f3f5f4; }
+.std-row.head .col { color: var(--muted); font-weight: 600; padding: 8px 2px 6px; border-bottom: 1px solid #eef1ef; }
+.std-row .col.age { flex: none; width: 92px; text-align: left; color: var(--muted); font-weight: 700; white-space: nowrap; }
+.std-row.head .col.age { color: var(--muted); }
+.th-sub { display: block; font-size: 10px; font-weight: 500; color: #b3bac4; margin-top: 2px; }
+.std-row.target .col { background: #f2f8f5; }
+.std-row .col.hl { background: var(--primary-soft); color: var(--primary); font-weight: 800; }
+.unit-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+
+.note-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px; margin-top: 12px; display: flex; flex-direction: column; }
+.note-title { font-size: 14px; font-weight: 800; color: var(--par-ink); margin-bottom: 6px; }
+.note-text { font-size: 12px; color: var(--muted); line-height: 1.7; }

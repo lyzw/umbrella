@@ -23,13 +23,34 @@ V0.0.1 首版客户端，原生 JavaScript / WXML / WXSS，无新增第三方依
 ## 导入运行
 
 1. 在微信开发者工具导入本目录：`/Users/zhouwei/my-workspace/umbrella/growth-planet-miniapp`。项目配置已指向 `miniprogram/`，默认游客 AppID，不需构建 npm。
-2. `miniprogram/config.js` 默认 `http://localhost:8080`、`syntheticLogin=true`、`realDataApproved=false`，与后端 `dev` 合成模式配套。修改 API 地址只改此配置；未实现 `config.local.js` 自动覆盖。
+2. `miniprogram/config.js` 内置四套环境（local/lan/test/prod），默认 `prod`（`https://api.studykid.cn`）。切换方式见下方「后端环境」，联调本机后端时切到 `local`。
 3. 后端需先按[迁移说明](../growth-planet/docs/sprint2-4-migration.md)准备独立的合成开发库，并运行[后端 README](../growth-planet/README.md)中的 `dev` 启动命令。MySQL/Redis/菜单初始数据不会由小程序自动创建，本次未连接或迁移业务库。
 4. 本地 HTTP 调试需要在开发者工具项目设置中，由开发者自行选择不校验合法域名。仓库默认 `urlCheck=true`，不自动放宽安全设置。手机上的 localhost 指手机本身，不能直接访问电脑后端。
 5. 使用 `parent_demo` 登录并选择家长、创建家庭；另用 `child_demo` 登录并选择儿童，输入邀请码申请。家长记录合成协议同意、批准绑定，再填写合成档案。两者必须独立账号，不允许切换同一账号角色。
 6. 家长发放虚拟零花钱并设置额度。由现有运营管理接口准备合成菜品后，家长在餐单页选择日期、餐次和最多50种在售菜品，发布仅对当前家庭有效的菜单；儿童随后可点餐并由家长审批。菜品图片来自后端 `imageUrl`，不以无关食物图片替代实际餐食。
 
 模拟器可先退出登录再登录另一演示账号；多端并行更接近真实审批流程。游客 AppID 不构成真实微信登录验证。
+
+## 后端环境
+
+`miniprogram/config.js` 内置四套环境，各带独立后端地址与登录模式：
+
+| 环境 | 后端地址 | 登录模式 |
+| --- | --- | --- |
+| `local` | `http://localhost:19100` | 合成登录 |
+| `lan` | `http://192.168.0.103:19100` | 合成登录（真机联调；IP 变动时改 `config.js`） |
+| `test` | `https://test-api.studykid.cn` | 真实微信登录 |
+| `prod` | `https://api.studykid.cn` | 真实微信登录 |
+
+指定环境有三种方式，优先级从高到低：
+
+1. **小程序内切换**：「设置 → 后端环境」，仅开发版/体验版出现入口。选择后写入本地缓存，切换会清除登录状态，**关闭并重新打开小程序后生效**。
+2. **本地文件覆盖**：`miniprogram/config.local.js`（已被 `.gitignore` 忽略）写 `module.exports = { env: 'local' }`。模板见 `config.local.example.js`。
+3. **代码默认值**：`config.js` 顶部的 `DEFAULT_ENV` 常量。
+
+正式版（`envVersion=release`）恒强制 `prod`，以上三种方式全部忽略——避免把测试地址带到线上。Node 测试另有 `GP_CONFIG_JSON` 钩子，优先级最高。
+
+环境在 `config.js` 被 require 时就固定了（`client.js` 以 `config.apiBase` 建请求客户端），所以方式 1 必须重启小程序。`local` / `lan` 走 HTTP，需在开发者工具里关闭域名校验（`urlCheck`）；真机联调时手机与电脑要在同一局域网。图片 CDN（`imageCdn`）四套环境统一走生产域名，本地也能看到线上已上传的菜品图片。
 
 ## 开发验证
 

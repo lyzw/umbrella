@@ -1,3 +1,7 @@
+const config = require('../config');
+// 七牛读取域名（见 config.imageCdn）。仅该域名下的图片才追加 imageView2 缩略参数。
+const CDN_HOST = (config.imageCdn || '').match(/^https?:\/\/([^/?#]+)/);
+const QINIU_HOST = CDN_HOST ? CDN_HOST[1] : '';
 function cents(value) {
   const text = String(value);
   if (!/^\d{1,8}(\.\d{1,2})?$/.test(text)) throw new Error('请输入最多两位小数的非负金额');
@@ -35,6 +39,19 @@ function filterDishes(dishes, options = {}) {
 // dishRef 只接受菜品对象；dishKey 同时兼容菜品对象和 {type,id} 引用，便于目录与已选项统一比对。
 function dishRef(dish) { return { type: dish.sourceType || 'PRESET', id: String(dish.dishId) }; }
 function dishKey(value) { return (value.type || value.sourceType || 'PRESET') + ':' + (value.id !== undefined ? value.id : value.dishId); }
+// 按七牛标准把图片处理成指定宽度的小图再返回：使用 imageView2 mode=2（限定宽度、高度等比自适应），
+// 降低小程序端图片流量与解码开销。仅当 URL 属于七牛读取域名时才追加处理参数；用户自填的其他 HTTPS 图片
+// 原样返回，避免误加指令导致加载失败。URL 已有查询串时用 & 拼接，否则用 ?。
+function isQiniuImage(url) {
+  if (!url || typeof url !== 'string' || !QINIU_HOST) return false;
+  const m = /^https?:\/\/([^/?#]+)/.exec(url);
+  return m ? m[1] === QINIU_HOST : false;
+}
+function thumbImage(url, width = 240) {
+  if (!isQiniuImage(url)) return url;
+  const op = 'imageView2/2/w/' + width;
+  return url.indexOf('?') >= 0 ? url + '&' + op : url + '?' + op;
+}
 function id(value) {
   if (typeof value !== 'string' || !/^[1-9]\d{0,18}$/.test(value)) throw new Error('无效的业务编号');
   return value;
@@ -46,4 +63,4 @@ function list(text) {
 }
 const statusLabels = { PENDING: '等待家长确认', COMPLETED: '已完成', REJECTED: '请调整后再提交', CANCELLED: '已撤回',
   NONE: '尚未申请', BOUND: '已绑定', RECEIVED: '已受理', PROCESSING: '办理中', READY: '可查看导出', FAILED: '办理失败', EXPIRED: '已过期' };
-module.exports = { cents, money, shanghaiDate, safeDish, selectable, safetyLabel, filterDishes, dishRef, dishKey, id, list, statusLabels };
+module.exports = { cents, money, shanghaiDate, safeDish, selectable, safetyLabel, filterDishes, dishRef, dishKey, id, list, statusLabels, isQiniuImage, thumbImage };

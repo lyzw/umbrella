@@ -88,8 +88,9 @@ class SecurityRegressionIT extends BaseIT {
         assertEquals(2, notices.selectCount(new QueryWrapper<Notice>().eq("child_id", childUserId(ctx))
                 .eq("event_type", "BIND_BOUND")));
         var other = setupFamily();
+        // 多家庭：儿童已绑定 ctx 家庭后，仍可通过另一家庭的邀请码加入（不再报冲突）。
         mockMvc.perform(post("/api/mini/family/join").header("Authorization", "Bearer " + ctx.childToken())
-                .contentType(JSON).content("{\"inviteCode\":\"" + other.inviteCode() + "\"}")).andExpect(status().isConflict());
+                .contentType(JSON).content("{\"inviteCode\":\"" + other.inviteCode() + "\"}")).andExpect(status().isOk());
     }
 
     @Test

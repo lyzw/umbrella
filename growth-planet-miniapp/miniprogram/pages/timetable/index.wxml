@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="page-heading">
+    <text class="title">本周课表</text>
+    <text class="subtitle">一屏看清今天上什么课（示例课表，按日点选查看）</text>
+  </view>
+
+  <!-- 周导航 -->
+  <view class="week-nav">
+    <view wx:for="{{weekDays}}" wx:key="label"
+      class="week-nav-day {{item.label === activeDay ? 'on' : ''}} {{item.isToday ? 'today' : ''}}"
+      bindtap="pickDay" data-day="{{item.label}}">
+      <text class="week-nav-label">{{item.label}}</text>
+      <text class="week-nav-dot"></text>
+    </view>
+  </view>
+
+  <view class="day-banner">
+    <text class="day-banner-name">星期{{activeDay}}</text>
+    <text class="day-banner-count">{{periods.length}} 节课</text>
+  </view>
+
+  <!-- 节次时间轴 -->
+  <view class="period-list">
+    <view wx:for="{{periods}}" wx:key="no" class="period-row">
+      <text class="period-no">{{item.no}}节</text>
+      <view class="period-card">
+        <view class="period-main">
+          <text class="period-name">{{item.name}}</text>
+          <text class="period-meta">{{item.time}} · {{item.place}}</text>
+        </view>
+        <view class="period-dot" style="background: {{item.color}}"></view>
+      </view>
+    </view>
+    <view wx:if="{{lunchBreak}}" class="lunch-break">— 午休 —</view>
+  </view>
+
+  <view wx:if="{{busy}}" class="loading">正在加载</view>
+  <button class="primary homework-entry" bindtap="go" data-page="homework" disabled="{{busy}}">去写家庭作业</button>
+  <view class="footnote">课表为本地示例数据，接入学校接口后自动替换。</view>
+</view>

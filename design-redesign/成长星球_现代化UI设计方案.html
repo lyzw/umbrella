@@ -175,6 +175,51 @@ h1 .grad{color:var(--kid-primary)}
 .spicegroup .opt.on{background:#ffe3d6;color:#e05a2b;font-weight:800;border:1px solid #ffb99a}
 .remarkinput{background:#f5f7f6;border-radius:12px;padding:10px 12px;font-size:12px;color:var(--muted);margin-top:6px}
 .quicktag{display:inline-block;font-size:10px;background:#fff;border:1px solid #e2e6e3;border-radius:99px;padding:3px 9px;margin:6px 6px 0 0;color:#5a6572}
+
+/* ===== 儿童成长记录（家长端） ===== */
+.growhead{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.growhead .gname{flex:1}
+.growhead .gname b{font-size:15px;display:block;color:var(--par-ink)}
+.growhead .gname span{font-size:11px;color:var(--muted)}
+.growtab{display:flex;background:#e9edeb;border-radius:10px;padding:3px;margin:0 0 10px}
+.growtab span{flex:1;text-align:center;font-size:11px;padding:6px 0;border-radius:8px;color:#5a6572}
+.growtab span.on{background:#fff;color:var(--par-primary);font-weight:800;box-shadow:0 1px 3px rgba(20,40,40,.1)}
+.stats{display:flex;gap:8px;margin-bottom:12px}
+.stat{flex:1;background:#fff;border-radius:14px;padding:11px 10px;box-shadow:0 1px 2px rgba(20,40,80,.05)}
+.stat .k{font-size:10px;color:var(--muted)}
+.stat .v{font-size:17px;font-weight:900;color:var(--par-ink);line-height:1.25}
+.stat .v small{font-size:10px;font-weight:600;color:var(--muted)}
+.stat .s{display:inline-block;margin-top:4px;font-size:9px;font-weight:800;padding:2px 7px;border-radius:99px;background:#e3f6ef;color:#0b7d5e}
+.stat .s.warn{background:#fff1e0;color:#c47b1d}
+.legend{display:flex;gap:12px;font-size:9px;color:var(--muted);margin-top:8px;align-items:center}
+.legend i{display:inline-block;width:14px;height:8px;border-radius:3px;margin-right:3px;vertical-align:middle}
+.recordrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #eef1ef}
+.recordrow:last-child{border:0}
+.recordrow .d{font-size:11px;color:var(--muted);width:52px;flex:none}
+.recordrow .m{flex:1;font-size:12px;color:var(--par-ink)}
+.recordrow .n{font-size:10px;color:var(--muted)}
+.growbtn{display:flex;align-items:center;justify-content:center;gap:6px;height:46px;border-radius:14px;background:var(--par-primary);color:#fff;font-size:13px;font-weight:800;margin-top:12px;box-shadow:0 8px 16px -8px rgba(11,138,102,.45)}
+.fieldrow{margin-bottom:13px}
+.fieldrow .lab{font-size:11px;color:var(--muted);margin-bottom:5px}
+.finput{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2e6e3;border-radius:12px;padding:10px 12px}
+.finput b{flex:1;font-size:15px;color:var(--par-ink)}
+.finput .unit{font-size:11px;color:var(--muted)}
+.refchip{display:inline-block;font-size:10px;background:#eef4f1;color:#5a6572;border-radius:8px;padding:3px 8px;margin-top:6px}
+.refchip b{color:var(--par-primary)}
+.seltab{display:flex;gap:8px;margin-bottom:14px}
+.seltab span{flex:1;text-align:center;font-size:11px;padding:7px 0;border-radius:10px;background:#fff;border:1px solid #e2e6e3;color:#5a6572}
+.seltab span.on{background:var(--par-primary);color:#fff;font-weight:800;border-color:var(--par-primary)}
+.stdtbl{width:100%;border-collapse:collapse;font-size:10px;text-align:center}
+.stdtbl th{color:var(--muted);font-weight:600;padding:8px 2px;border-bottom:1px solid #eef1ef}
+.stdtbl td{padding:8px 2px;color:var(--par-ink);border-bottom:1px solid #f3f5f4}
+.stdtbl td:first-child{color:var(--muted);text-align:left}
+.stdtbl .me{background:#e3f6ef;color:#0b7d5e;font-weight:800;border-radius:6px}
+.srcnote{font-size:10px;color:var(--muted);line-height:1.6}
+.bmicard{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e6e3;border-radius:12px;padding:11px 12px;margin-bottom:13px}
+.bmicard b{font-size:16px;font-weight:900;color:var(--par-primary)}
+.bmicard span{flex:1;font-size:11px;color:var(--par-ink)}
+.bmicard .tag{font-size:10px;font-weight:800;color:#0b7d5e;background:#e3f6ef;padding:3px 9px;border-radius:99px}
+
 </style>
 </head>
 <body>
@@ -725,6 +770,122 @@ h1 .grad{color:var(--kid-primary)}
           </div>
         </div></div>
         <div class="phonecap"><b>点菜品 → 详情弹层</b><span>辣度单选 / 改价 / 备注标签</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 儿童成长记录（家长端） ================= -->
+  <div class="section">
+    <h2><span class="role-tag par">家长端</span>儿童成长记录</h2>
+    <p class="sub">从「儿童信息」进入：身高、体重按年龄画进生长曲线，对照 P3–P97 参考区间即时给评估。界面数值为示意，正式版数据以 WHO 儿童生长标准与中国学龄儿童筛查标准（WS/T 612—2018）为准。</p>
+    <div class="phones">
+      <!-- 成长记录 · 总览 -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>成长记录</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div class="growhead">
+              <div class="avatar" style="background:var(--par-primary)">宇</div>
+              <div class="gname"><b>小宇</b><span>7 岁 · 二年级 · 男孩</span></div>
+              <span class="chip gold" style="font-size:10px;padding:3px 9px;background:#e3f6ef;color:#0b7d5e">记录中</span>
+            </div>
+            <div class="stats">
+              <div class="stat"><div class="k">身高</div><div class="v">128.5 <small>cm</small></div><span class="s">≈P80 中上</span></div>
+              <div class="stat"><div class="k">体重</div><div class="v">26.2 <small>kg</small></div><span class="s">≈P60 适中</span></div>
+              <div class="stat"><div class="k">BMI</div><div class="v">15.9</div><span class="s">正常</span></div>
+            </div>
+            <div class="growtab"><span class="on">身高</span><span>体重</span><span>BMI</span></div>
+            <div class="glass" style="padding:12px">
+              <svg viewBox="0 0 248 150" style="width:100%;height:150px;display:block">
+                <defs><linearGradient id="band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b8a66" stop-opacity=".10"/><stop offset="1" stop-color="#0b8a66" stop-opacity=".04"/></linearGradient></defs>
+                <line x1="0" y1="30" x2="248" y2="30" stroke="#eef1ef"/><line x1="0" y1="63" x2="248" y2="63" stroke="#eef1ef"/><line x1="0" y1="97" x2="248" y2="97" stroke="#eef1ef"/><line x1="0" y1="130" x2="248" y2="130" stroke="#eef1ef"/>
+                <polygon points="0,129 50,120 124,111 198,99 248,92 248,70 198,69 124,72 50,71 0,70" fill="url(#band)"/>
+                <polyline points="0,70 50,71 124,72 198,69 248,70" fill="none" stroke="#b7c9c0" stroke-width="1" stroke-dasharray="3 3"/>
+                <polyline points="0,129 50,120 124,111 198,99 248,92" fill="none" stroke="#b7c9c0" stroke-width="1" stroke-dasharray="3 3"/>
+                <polyline points="0,107 50,97 124,83 198,70 248,61" fill="none" stroke="#8fb3a4" stroke-width="1.5" stroke-dasharray="5 4"/>
+                <polyline points="50,103 124,83 198,68" fill="none" stroke="#0b8a66" stroke-width="2.5"/>
+                <circle cx="50" cy="103" r="3.5" fill="#fff" stroke="#0b8a66" stroke-width="2"/><circle cx="124" cy="83" r="3.5" fill="#fff" stroke="#0b8a66" stroke-width="2"/><circle cx="198" cy="68" r="4" fill="#0b8a66" stroke="#fff" stroke-width="2"/>
+                <text x="2" y="143" font-size="8" fill="#9aa3ad">6岁半</text><text x="116" y="143" font-size="8" fill="#9aa3ad">7岁</text><text x="202" y="143" font-size="8" fill="#9aa3ad">7岁半</text>
+                <text x="4" y="34" font-size="8" fill="#9aa3ad">140</text><text x="4" y="67" font-size="8" fill="#9aa3ad">130</text><text x="4" y="101" font-size="8" fill="#9aa3ad">120</text><text x="4" y="134" font-size="8" fill="#9aa3ad">110</text>
+              </svg>
+              <div class="legend"><span><i style="background:#cfe3d9"></i>P3–P97 参考区间</span><span><i style="background:#8fb3a4;border-radius:1px"></i>P50 中位数</span><span><i style="background:#0b8a66;border-radius:50%"></i>小宇</span></div>
+            </div>
+            <div class="glass" style="padding:4px 14px 2px;margin-top:10px">
+              <div class="recordrow"><span class="d">9月24日</span><span class="m">128.5cm · 26.2kg</span><span class="n">体检后</span></div>
+              <div class="recordrow"><span class="d">9月1日</span><span class="m">127.0cm · 25.4kg</span></div>
+              <div class="recordrow"><span class="d">8月3日</span><span class="m">125.8cm · 24.6kg</span><span class="n">暑假</span></div>
+            </div>
+            <div class="glass" style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;margin-top:10px">
+              <div style="font-size:12px;color:var(--par-ink)">WHO 生长标准</div>
+              <span style="font-size:12px;color:var(--par-primary);font-weight:700">查看 ›</span>
+            </div>
+            <div class="growbtn">＋ 记录新数据</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · 成长记录</b><span>生长曲线 + 最新评估 + 记录流</span></div>
+      </div>
+
+      <!-- 记录新数据 -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>记录新数据</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div class="growhead">
+              <div class="avatar" style="background:var(--par-primary)">宇</div>
+              <div class="gname"><b>小宇</b><span>7 岁 · 男孩</span></div>
+              <span class="chip" style="font-size:10px;padding:3px 9px;background:#fff;border:1px solid #e2e6e3;color:#5a6572">9月24日 · 今天</span>
+            </div>
+            <div class="fieldrow">
+              <div class="lab">身高（cm）</div>
+              <div class="finput"><b>128.5</b><span class="unit">厘米</span></div>
+              <div class="refchip">7岁男孩 P50 ≈ <b>124.0</b> · 参考区间 <b>115.7–133.5</b></div>
+            </div>
+            <div class="fieldrow">
+              <div class="lab">体重（kg）</div>
+              <div class="finput"><b>26.2</b><span class="unit">千克</span></div>
+              <div class="refchip">P50 ≈ <b>24.8</b> · 参考区间 <b>19.8–30.8</b></div>
+            </div>
+            <div class="bmicard">
+              <b>BMI 15.9</b><span>由身高体重自动计算，不单独填写</span><span class="tag">匀称</span>
+            </div>
+            <div class="fieldrow">
+              <div class="lab">备注（可选）</div>
+              <div class="remarkinput" style="background:#fff">例：体检后 / 生病恢复期 / 假期在家…</div>
+            </div>
+            <div class="growbtn">保存记录</div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · 记录新数据</b><span>录入即对照参考区间，自动算 BMI</span></div>
+      </div>
+
+      <!-- WHO 生长标准（独立页面，成长记录内点击进入） -->
+      <div class="phone par">
+        <div class="frame"><div class="screen par">
+          <div class="statusbar"><span>9:41</span><span>WHO 生长标准</span><span>100%</span></div>
+          <div class="sbody" style="padding-top:6px">
+            <div class="growtab"><span>0–5 岁 · WHO 2006</span><span class="on">5–19 岁 · WHO 2007</span></div>
+            <div class="seltab" style="margin-bottom:10px"><span class="on">男孩</span><span>女孩</span></div>
+            <div class="growtab"><span class="on">身高 cm</span><span>体重 kg</span><span>BMI</span></div>
+            <div class="glass" style="padding:4px 12px 6px">
+              <table class="stdtbl">
+                <tr><th>年龄</th><th>P3</th><th>P15</th><th>P50</th><th>P85</th><th>P97</th></tr>
+                <tr><td>7岁0月</td><td>115.7</td><td>120.2</td><td>124.0</td><td>128.2</td><td>133.5</td></tr>
+                <tr><td>7岁3月</td><td>116.6</td><td>121.1</td><td>125.0</td><td>129.3</td><td>134.8</td></tr>
+                <tr><td>7岁6月</td><td>117.5</td><td>122.0</td><td>126.0</td><td class="me">130.4</td><td>136.0</td></tr>
+                <tr><td>7岁9月</td><td>118.4</td><td>123.0</td><td>127.0</td><td>131.5</td><td>137.2</td></tr>
+                <tr><td>8岁0月</td><td>119.3</td><td>123.9</td><td>128.0</td><td>132.6</td><td>138.5</td></tr>
+              </table>
+              <div class="srcnote" style="margin-top:8px">小宇 7岁半 身高 128.5cm，落在 P50–P85 之间、贴近 <b style="color:var(--par-primary)">P85</b>；表中高亮为示意定位。切换体重 / BMI 可看对应分位。</div>
+            </div>
+            <div class="glass" style="padding:12px 14px;margin-top:10px">
+              <div class="srcnote"><b style="color:var(--par-ink)">参考依据</b><br>WHO 儿童生长标准：2006 年发布 0–5 岁，2007 年扩展至 5–19 岁（身高 / 体重 / BMI 按年龄与性别的百分位与 Z 值）。</div>
+            </div>
+            <div class="glass" style="padding:12px 14px;margin-top:10px">
+              <div class="srcnote"><b style="color:var(--par-ink)">使用提醒</b><br>表内数值为示意，正式版以 WHO 官方 LMS 数据为准。生长记录仅供日常参考，明显偏离或家长有疑虑时建议到儿童保健科做专业评估。</div>
+            </div>
+          </div>
+        </div></div>
+        <div class="phonecap"><b>家长 · WHO 生长标准</b><span>年龄段 / 性别 / 指标筛选 · 完整分位表（示意）</span></div>
       </div>
     </div>
   </div>

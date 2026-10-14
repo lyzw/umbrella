@@ -1,5 +1,4 @@
 <view class="page {{role === 'PARENT' ? 'parent' : ''}}">
-  <page-back role="{{role}}" fallback-tab="{{role === 'CHILD' ? 'growth' : 'home'}}" disabled="{{busy}}" />
   <view class="page-heading">
     <text class="title">勋章墙</text>
     <text class="subtitle">每一次努力，都被看见</text>
@@ -9,6 +8,15 @@
     <picker mode="selector" range="{{children}}" range-key="displayName" bindchange="child">
       <view class="picker compact-picker">{{children[childIndex].displayName}}</view>
     </picker>
+  </view>
+
+  <view wx:if="{{ringSvg}}" class="checkin-card">
+    <image class="checkin-ring" src="{{ringSvg}}" mode="aspectFit" aria-label="连续打卡天数" />
+    <view class="checkin-copy">
+      <view class="checkin-title">连续打卡 {{streak}} 天</view>
+      <view class="checkin-subtitle">{{streak >= 30 ? '已达成 30 天小目标，继续加油' : '再坚持 ' + (30 - streak % 30) + ' 天，集满 30 天小目标'}}</view>
+      <view class="checkin-hint">每天完成一件事，星星不会断</view>
+    </view>
   </view>
 
   <view wx:if="{{medalTotal}}" class="medal-overview">

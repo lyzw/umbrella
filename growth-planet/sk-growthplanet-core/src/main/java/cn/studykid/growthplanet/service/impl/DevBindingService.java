@@ -9,10 +9,10 @@ import cn.studykid.growthplanet.common.result.ResultCode;
 import cn.studykid.growthplanet.config.ComplianceProperties;
 import cn.studykid.growthplanet.dto.request.BindApproveReq;
 import cn.studykid.growthplanet.dto.request.CreateFamilyReq;
+import cn.studykid.growthplanet.dto.request.GenerateInviteCodeReq;
 import cn.studykid.growthplanet.dto.request.JoinFamilyReq;
 import cn.studykid.growthplanet.dto.request.QuickBindParentReq;
 import cn.studykid.growthplanet.dto.response.CreateFamilyResp;
-import cn.studykid.growthplanet.dto.response.InviteCodeResp;
 import cn.studykid.growthplanet.dto.response.JoinFamilyResp;
 import cn.studykid.growthplanet.dto.response.QuickBindParentResp;
 import cn.studykid.growthplanet.entity.ConsentLog;
@@ -75,10 +75,9 @@ public class DevBindingService {
             throw new BizException(ResultCode.E009_FORBIDDEN, "该账号不是家长角色");
         }
 
-        // 2. 确定家长家庭的邀请码（无家庭则创建）
+        // 2. 确定家长家庭（无家庭则创建）
         LoginUser parentLogin = sessions.current(parent);
         Long familyId;
-        String inviteCode;
         UserContext.set(parentLogin);
         try {
             FamilyMember owned = familyMemberMapper.selectOne(new QueryWrapper<FamilyMember>()
@@ -88,17 +87,26 @@ public class DevBindingService {
                 createReq.setFamilyName(req.getParentAccount() + " 的家庭");
                 CreateFamilyResp created = familyService.createFamily(createReq);
                 familyId = created.getFamilyId();
-                inviteCode = created.getInviteCode();
             } else {
                 familyId = owned.getFamilyId();
-                InviteCodeResp invite = familyService.getInviteCode();
-                inviteCode = invite.getInviteCode();
             }
         } finally {
             UserContext.clear();
         }
-        // 刷新家长上下文以携带（新建的）家庭 ID，供后续审批越权校验使用
+        // 刷新家长上下文以携带（新建的）家庭 ID，供后续生成儿童邀请码与审批越权校验使用
         parentLogin = sessions.current(users.selectById(parent.getId()));
+
+        // 多家长模型：角色由邀请码类型锁定。儿童须以 CHILD 邀请码加入（而非沿用家长默认 PARENT 码），
+        // 否则会被登记为家长角色，导致后续审批（lockChild 要求 CHILD 成员）失败。
+        UserContext.set(parentLogin);
+        String childInviteCode;
+        try {
+            GenerateInviteCodeReq childInviteReq = new GenerateInviteCodeReq();
+            childInviteReq.setInviteType("CHILD");
+            childInviteCode = familyService.generateInviteCode(childInviteReq).getInviteCode();
+        } finally {
+            UserContext.clear();
+        }
 
         // 3. 儿童 join 家庭
         LoginUser childLogin = sessions.current(users.selectById(child.getUserId()));
@@ -106,7 +114,7 @@ public class DevBindingService {
         Long applyId;
         try {
             JoinFamilyReq joinReq = new JoinFamilyReq();
-            joinReq.setInviteCode(inviteCode);
+            joinReq.setInviteCode(childInviteCode);
             JoinFamilyResp joined = familyService.joinFamily(joinReq);
             applyId = joined.getApplyId();
         } finally {

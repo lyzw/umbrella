@@ -1,15 +1,35 @@
 <view class="page login-page">
+  <!-- 右上角隐藏测试登录区：连续点击三次进入测试登录 -->
+  <view class="test-zone" catchtap="tapTestZone" aria-hidden="true"></view>
   <view class="brand-scene">
     <view class="planet">
       <view class="planet-ring"></view>
       <text class="planet-mark">🌱</text>
     </view>
-    <view class="eyebrow">小当家 · 点餐</view>
+    <view class="eyebrow">家长审菜单、发零花钱；孩子点餐、攒奖励</view>
     <view class="title">成长星球</view>
-    <view class="subtitle">今天的选择，一起商量。</view>
+    <view class="subtitle">今天的选择，一起商量</view>
   </view>
   <view class="notice" wx:if="{{synthetic}}">合成数据开发环境，请勿输入真实儿童资料。</view>
-  <view wx:if="{{!selecting}}" class="login-panel">
+
+  <!-- 静默登录中：无感自动完成，不弹授权 -->
+  <view wx:if="{{phase === 'auto'}}" class="login-panel silent-panel">
+    <view class="silent-spinner" aria-hidden="true">🌱</view>
+    <view class="silent-title">正在进入成长星球</view>
+    <view class="muted">无需点击，自动完成最小账号登录</view>
+  </view>
+
+  <!-- 静默登录失败：给出原因与重试，合成环境可换演示账号 -->
+  <view wx:elif="{{phase === 'error'}}" class="login-panel">
+    <view class="section-title">登录没有成功</view>
+    <view class="muted">{{error || '暂时无法登录，请稍后再试'}}</view>
+    <button class="primary" loading="{{busy}}" disabled="{{busy}}" bindtap="autoLogin">重试</button>
+    <button wx:if="{{synthetic}}" class="ghost" bindtap="goManual">使用其他演示账号</button>
+  </view>
+
+  <!-- 手动登录：合成环境切换演示账号 / 真实环境重新授权 -->
+  <view wx:elif="{{phase === 'manual'}}" class="login-panel">
+    <view class="section-title">{{synthetic ? '使用演示账号' : '手动登录'}}</view>
     <view class="field" wx:if="{{synthetic}}">
       <text class="label">演示账号</text>
       <input value="{{account}}" bindinput="input" data-field="account" maxlength="51" placeholder="parent_demo 或 child_demo" />
@@ -18,24 +38,28 @@
     <checkbox-group bindchange="accept">
       <label class="check"><checkbox value="yes" checked="{{accepted}}" />我已阅读账号处理提示</label>
     </checkbox-group>
-    <button class="primary" loading="{{busy}}" disabled="{{busy || !accepted}}" bindtap="login">{{synthetic ? '登录开发服务' : '微信登录'}}</button>
+    <button class="primary" loading="{{busy}}" disabled="{{busy || !accepted}}" bindtap="login">{{synthetic ? '登录' : '微信登录'}}</button>
+    <button class="ghost" bindtap="autoLogin">返回自动登录</button>
   </view>
-  <view wx:else class="login-panel">
+
+  <!-- 角色选择：新账号静默登录后出现，身份一次选定 -->
+  <view wx:elif="{{phase === 'role'}}" class="login-panel">
     <view class="section-title">选择你的角色</view>
     <view class="muted">每个账号只能选择一次。家长不能使用儿童身份代为提报。</view>
+    <checkbox-group bindchange="accept">
+      <label class="check"><checkbox value="yes" checked="{{accepted}}" />我已阅读账号处理提示</label>
+    </checkbox-group>
     <view class="role-grid">
-      <button class="role-option child" bindtap="choose" data-role="CHILD" disabled="{{busy}}" aria-label="我是孩子">
+      <button class="role-option child" bindtap="choose" data-role="CHILD" disabled="{{busy || !accepted}}" aria-label="我是孩子">
         <view class="role-icon">童</view>
         <view class="role-title">我是孩子</view>
-        <view class="role-desc">挑选今天的餐食，请爸妈确认</view>
+        <view class="role-desc">点餐、领星币、做任务、集勋章</view>
       </button>
-      <button class="role-option parent" bindtap="choose" data-role="PARENT" disabled="{{busy}}" aria-label="我是家长">
+      <button class="role-option parent" bindtap="choose" data-role="PARENT" disabled="{{busy || !accepted}}" aria-label="我是家长">
         <view class="role-icon">长</view>
         <view class="role-title">我是家长</view>
-        <view class="role-desc">管理餐单、额度与同意</view>
+        <view class="role-desc">审菜单、批点餐、发零花钱</view>
       </button>
     </view>
   </view>
-  <view wx:if="{{error}}" class="error">{{error}}</view>
-  <view wx:if="{{synthetic}}" class="dev-link" bindtap="goDev">测试入口：儿童快速登录</view>
 </view>

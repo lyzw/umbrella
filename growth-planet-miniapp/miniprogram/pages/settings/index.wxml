@@ -1,0 +1,57 @@
+<view class="page {{role === 'PARENT' ? 'parent' : ''}}">
+  <view class="header"><view class="title">设置</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+
+  <!-- 基础配置：心愿菜单（家长可编辑） -->
+  <view wx:if="{{role === 'PARENT'}}" class="section">
+    <view class="section-title">心愿菜单</view>
+    <view class="settings-card">
+      <view class="setting-row">
+        <view class="setting-copy">
+          <text class="setting-name">启用心愿菜单</text>
+          <text class="setting-desc">开启后，孩子可以在点餐页提交心愿清单，由你确认</text>
+        </view>
+        <switch checked="{{wishEnabledDraft}}" bindchange="wishEnabled" disabled="{{busy}}" />
+      </view>
+      <view class="setting-row">
+        <view class="setting-copy">
+          <text class="setting-name">心愿菜上限</text>
+          <text class="setting-desc">孩子每次最多提交几道菜</text>
+        </view>
+        <picker range="{{wishDishRange}}" value="{{wishMaxDraft - 1}}" bindchange="wishMax" disabled="{{busy}}"><view class="picker">{{wishMaxDraft}} 道⌄</view></picker>
+      </view>
+    </view>
+    <button class="primary save-button" bindtap="saveWishSetting" disabled="{{busy}}">保存设置</button>
+  </view>
+
+  <!-- 儿童端：只读状态 -->
+  <view wx:if="{{role === 'CHILD'}}" class="section">
+    <view class="section-title">心愿菜单</view>
+    <view class="settings-card">
+      <view class="setting-row">
+        <view class="setting-copy">
+          <text class="setting-name">{{wishLoaded ? (wishEnabled ? '已开启' : '未开启') : '加载中…'}}</text>
+          <text class="setting-desc">{{wishLoaded ? (wishEnabled ? '你可以在点餐页提交心愿清单，家长会看到' + (wishMaxDishes ? '（最多 ' + wishMaxDishes + ' 道）' : '') : '由家长在设置中管理，开启后即可使用') : ''}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 开发调试：后端环境切换（仅开发版/体验版显示） -->
+  <view wx:if="{{showDevEnv}}" class="section">
+    <view class="section-title">后端环境</view>
+    <view class="settings-card">
+      <view class="setting-row" bindtap="openDevEnv">
+        <view class="setting-copy">
+          <text class="setting-name">{{envLabel}}</text>
+          <text class="setting-desc">{{envApiBase}}（切换后需重启小程序）</text>
+        </view>
+        <view class="picker">切换 ›</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section settings-note">
+    <text class="small">心愿菜单是可选功能：开启后孩子可提交心愿清单，未开启时仍可使用「今天想吃」做轻量标记。</text>
+  </view>
+</view>

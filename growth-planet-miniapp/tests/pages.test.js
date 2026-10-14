@@ -1,5 +1,13 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+// 页面级测试固定运行在「开发合成配置」上（config.js 的生产默认值仅供运行时；
+// 必须在 require 任何 miniprogram 代码之前设置，config 是 frozen 单例）。
+process.env.GP_CONFIG_JSON = JSON.stringify({
+  apiBase: 'http://localhost:8080',
+  environment: 'development',
+  syntheticLogin: true,
+  realDataApproved: false
+});
 const fs = require('node:fs');
 const path = require('node:path');
 const root = path.resolve(__dirname, '../miniprogram');
@@ -91,12 +99,10 @@ test('主题和状态样式使用语义 token，不把儿童蓝色写死到家�
   assert.doesNotMatch(medalStyles, /rgba\(40,\s*120,\s*255/);
 });
 test('关键小按钮保留可触控尺寸并允许长文本换行', () => {
-  const pageBack = fs.readFileSync(path.join(root, 'components/page-back/index.wxss'), 'utf8');
   const profile = fs.readFileSync(path.join(root, 'pages/profile/index.wxss'), 'utf8');
   const dishManage = fs.readFileSync(path.join(root, 'pages/dish-manage/index.wxss'), 'utf8');
   const home = fs.readFileSync(path.join(root, 'pages/home/index.wxss'), 'utf8');
   const login = fs.readFileSync(path.join(root, 'pages/login/index.wxss'), 'utf8');
-  assert.match(pageBack, /\.page-back-button\s*\{[^}]*min-height:\s*44px/s);
   assert.match(profile, /button\.preference-remove\s*\{[^}]*min-height:\s*44px/s);
   assert.match(dishManage, /button\.row-action\s*\{[^}]*min-height:\s*44px/s);
   assert.match(home, /\.home-list-title\s*\{[^}]*overflow-wrap:\s*anywhere/s);
@@ -233,9 +239,14 @@ test('二级页返回优先退出页面栈，无页面栈时回到角色对应�
     else global.getCurrentPages = previousGetCurrentPages;
   }
 });
-test('隐私页属于家长我的模块并提供统一返回入口', () => {
-  const template = fs.readFileSync(path.join(root, 'pages/privacy/index.wxml'), 'utf8');
-  assert.match(template, /<page-back[^>]+fallback-tab="me"/);
+test('所有页面不再使用页内返回按钮，统一走系统返回', () => {
+  const templates = fs.readdirSync(path.join(root, 'pages'), { withFileTypes: true })
+    .filter(entry => entry.isDirectory())
+    .map(entry => fs.readFileSync(path.join(root, 'pages', entry.name, 'index.wxml'), 'utf8'));
+  assert.ok(templates.length > 0);
+  for (const template of templates) {
+    assert.doesNotMatch(template, /<page-back/);
+  }
 
   const previousWx = global.wx;
   const previousGetCurrentPages = global.getCurrentPages;
@@ -863,6 +874,59 @@ test('首页成长区展示勋章已点亮与总数，阈值为1也显示进度�
   assert.equal(page.data.medals[0].stateText, '进度 0/1');
   assert.equal(page.data.medals[1].stateText, '已点亮');
 });
+test('登录页启动即静默登录：无会话自动登录，新账号进角色选择、老账号直达首页', async () => {
+  const page = loadPage('login');
+  const calls = [];
+  api.post = async (endpoint, body) => {
+    calls.push({ endpoint, body });
+    return { token: 't1', role: 'UNSELECTED', expiresIn: 1800 };
+  };
+  session.clear();
+  await page.onShow();
+  assert.deepEqual(calls, [{ endpoint: '/auth/wx-login', body: { code: 'parent_demo' } }]);
+  assert.equal(page.data.phase, 'role');
+
+  // 老账号（已有角色）静默登录后直达首页
+  const page2 = loadPage('login');
+  api.post = async () => ({ token: 't2', role: 'PARENT', expiresIn: 1800 });
+  session.clear();
+  await page2.onShow();
+  assert.deepEqual(navigation, ['/pages/home/index']);
+});
+test('静默登录失败进入失败态，可重试并切换演示账号；选角色前须确认提示', async () => {
+  const page = loadPage('login');
+  api.post = async () => { throw new Error('服务不可用'); };
+  session.clear();
+  await page.onShow();
+  assert.equal(page.data.phase, 'error');
+
+  page.goManual();
+  assert.equal(page.data.phase, 'manual');
+
+  // 未勾选提示时角色选择被拦截
+  page.setData({ phase: 'role', accepted: false });
+  const calls = [];
+  api.post = async (endpoint, body) => {
+    calls.push({ endpoint, body });
+    return { token: 't3', role: 'CHILD', nextStep: 'join-family' };
+  };
+  await page.choose(event({ role: 'CHILD' }));
+  assert.deepEqual(calls, []);
+  assert.equal(page.data.phase, 'role');
+});
+test('主动退出登录后落地登录页不自动静默登录，停在手动登录界面', async () => {
+  global.getApp = () => ({ globalData: { postLogout: true } });
+  const page = loadPage('login');
+  const calls = [];
+  api.post = async endpoint => { calls.push(endpoint); return { token: 't9', role: 'PARENT', expiresIn: 1800 }; };
+  session.clear();
+  await page.onShow();
+  // 关键回归点：不应触发静默登录，也不应直接跳转首页，必须停在手动登录界面。
+  assert.deepEqual(calls, []);
+  assert.deepEqual(navigation, []);
+  assert.equal(page.data.phase, 'manual');
+  global.getApp = () => ({ globalData: { postLogout: false } });
+});
 test('请求期间会话到期仍回到登录页，而不是保留受保护页面', async () => {
   const page = loadPage('profile');
   Object.assign(api, methods);
@@ -1139,7 +1203,8 @@ test('健康打卡：日历格子按周日起排，且不能翻到未来月份',
     if (endpoint === '/child/check-in/items') return [];
     if (endpoint === '/child/check-in/today') return [];
     months.push(query.month);
-    return { childId: child.childId, currentStreak: 0, checkedDates: [query.month + '-15'] };
+    // 固定用当月 1 号：月初（1~14 号）跑测试时，晚于今天的日期会被当作未来日期而不计入已打卡。
+    return { childId: child.childId, currentStreak: 0, checkedDates: [query.month + '-01'] };
   };
   await page.onShow();
   const today = shanghaiDate();
@@ -1149,7 +1214,7 @@ test('健康打卡：日历格子按周日起排，且不能翻到未来月份',
   assert.equal(page.data.canNextMonth, false);
   assert.equal(page.data.checkItems.length, 0);
   assert.equal(page.data.monthChecked, 1);
-  assert.equal(page.data.cells.find(cell => cell.checked).key, today.slice(0, 7) + '-15');
+  assert.equal(page.data.cells.find(cell => cell.checked).key, today.slice(0, 7) + '-01');
 
   await page.shiftMonth(event({ delta: 1 }));
   assert.deepEqual(months, [today.slice(0, 7)]);
@@ -1158,7 +1223,7 @@ test('健康打卡：日历格子按周日起排，且不能翻到未来月份',
   assert.deepEqual(months, [today.slice(0, 7), prevMonth]);
   assert.equal(page.data.canNextMonth, true);
   assert.equal(page.data.monthLabel, prevMonth.slice(0, 4) + ' 年 ' + Number(prevMonth.slice(5)) + ' 月');
-  assert.equal(page.data.cells.find(cell => cell.checked).key, prevMonth + '-15');
+  assert.equal(page.data.cells.find(cell => cell.checked).key, prevMonth + '-01');
 
   page.setData({ month: '2026-02' });
   await page.readChild();
@@ -1329,9 +1394,15 @@ test('菜单页：常吃快捷区只允许标记今日餐单已有的菜品', as
       canSubmit: true, dishes: [{ ...dish, canSelect: true, categoryName: '主食' }] };
   };
   await page.read();
+  // 周视图后端单区间上限 14 天，47 天时间线按 14 天切成 4 段请求
   assert.deepEqual(calls.map(call => call.endpoint),
-    ['/menu/daily', '/child/frequent-dish', '/child/recommend', '/child/menu-week', '/child/wish-menu',
-      '/child/wish-catalog']);
+    ['/menu/daily', '/child/frequent-dish', '/child/recommend',
+      '/child/menu-week', '/child/menu-week', '/child/menu-week', '/child/menu-week',
+      '/child/wish-menu', '/child/wish-catalog']);
+  calls.filter(call => call.endpoint === '/child/menu-week').forEach(call => {
+    const span = (new Date(call.query.to) - new Date(call.query.from)) / 86400000 + 1;
+    assert.ok(span <= 14, '周视图切片不得超过 14 天，实际 ' + span);
+  });
   assert.equal(page.data.wish.statusLabel, '未创建');
   assert.equal(page.data.wish.canEdit, true);
   assert.deepEqual(page.data.wishDishes, []);
@@ -1551,7 +1622,7 @@ test('菜单页：推荐卡渲染、点击复用今日餐单校验', async () =>
   assert.equal(calls.length, 1);
   assert.deepEqual(toasts, ['今日餐单暂无可标记的菜品']);
 });
-test('菜单页：推荐与周条接口失败时静默降级', async () => {
+test('菜单页：推荐与周条接口失败时静默降级，周条仍完整展示未发布', async () => {
   const page = loadPage('menu', 'CHILD');
   api.get = async endpoint => {
     if (endpoint === '/menu/daily') {
@@ -1563,7 +1634,10 @@ test('菜单页：推荐与周条接口失败时静默降级', async () => {
   await page.read();
   assert.deepEqual(page.data.recommend, []);
   assert.deepEqual(page.data.frequent, []);
-  assert.deepEqual(page.data.week, []);
+  // 周条请求失败也直接展示完整时间线，全部按未发布
+  assert.equal(page.data.week.length, 47);
+  assert.equal(page.data.week.some(item => item.hasMenu), false);
+  assert.equal(page.data.week[31].isToday, true);
   assert.equal(page.data.ready, true);
   assert.deepEqual(page.data.dishes.map(item => item.dishId), ['99']);
 });
@@ -1578,26 +1652,31 @@ test('菜单页：周条标注已发布天数，点选可切到该天', async ()
     if (endpoint === '/child/frequent-dish') return { dishes: [] };
     if (endpoint === '/child/recommend') return { dishes: [] };
     if (endpoint === '/child/menu-week') {
-      assert.equal(query.from, today);
-      assert.equal(query.to, day(6));
-      return { from: today, to: day(6), today, days: [
+      // 后端周视图单区间上限 14 天（超出 E-400），47 天时间线按 14 天切片请求后合并
+      const span = (new Date(query.to) - new Date(query.from)) / 86400000 + 1;
+      assert.ok(span <= 14, '周视图切片不得超过 14 天，实际 ' + span);
+      assert.ok(query.from >= day(-31) && query.to <= day(15));
+      const coversToday = query.from <= today && query.to >= today;
+      return { from: query.from, to: query.to, today, days: coversToday ? [
         { menuDate: today, meals: [{ mealType: 'LUNCH', ...meals, wantEatCount: 1 }, { mealType: 'DINNER' }] },
         { menuDate: tomorrow, meals: [{ mealType: 'LUNCH' }] }
-      ] };
+      ] : [] };
     }
     return { menuId: '20', sourceType: 'FAMILY', menuDate: query.menuDate, mealType: 'LUNCH',
       canSubmit: true, dishes: [{ ...dish, canSelect: true }] };
   };
   await page.read();
-  assert.equal(page.data.week.length, 2);
-  assert.deepEqual(page.data.week[0], { date: today, label: '今天', dayText: today.slice(5).replace('-', '/'),
+  // 周条为前 31 天后 15 天完整时间线（47 天），前端补齐缺失日期
+  assert.equal(page.data.week.length, 47);
+  assert.deepEqual(page.data.week[31], { date: today, label: '今天', dayText: today.slice(5).replace('-', '/'),
     publishedCount: 1, hasMenu: true, wantEatCount: 1, isToday: true, active: true });
-  assert.equal(page.data.week[1].hasMenu, false);
+  assert.equal(page.data.week[32].date, tomorrow);
+  assert.equal(page.data.week[32].hasMenu, false);
 
   await page.weekDay(event({ date: tomorrow }));
   assert.equal(page.data.menuDate, tomorrow);
-  assert.equal(page.data.week[1].active, true);
-  assert.equal(page.data.week[0].active, false);
+  assert.equal(page.data.week[32].active, true);
+  assert.equal(page.data.week[31].active, false);
 });
 test('整周发布：格子点选、模板铺菜与批量发布部分成功', async () => {
   const page = loadPage('menu-week', 'PARENT');
@@ -1978,7 +2057,29 @@ test('心愿菜单：wish-mark兼容布尔和字符串标记，鉴权错误不�
   api.get = async () => { throw Object.assign(new Error('登录已失效'), { status: 401 }); };
   await assert.rejects(page.loadWish(), error => error.status === 401);
 });
-test('心愿菜单：家长只看到孩子已提交的菜，保存设置带乐观锁版本', async () => {
+test('心愿菜单：家长只在设置页配置开关与上限，保存带乐观锁版本', async () => {
+  const page = loadPage('settings', 'PARENT');
+  api.get = async endpoint => {
+    if (endpoint === '/parent/wish-setting') return { maxDishes: 2, enabled: true, version: 4 };
+    return { items: [], total: 0, days: [] };
+  };
+  await page.loadSetting();
+  assert.equal(page.data.wishEnabledDraft, true);
+  assert.equal(page.data.wishMaxDraft, 2);
+  assert.equal(page.data.wishVersion, 4);
+
+  let sent;
+  api.put = async (endpoint, body) => { sent = { endpoint, body }; };
+  page.wishMax(event({}, 2));
+  assert.equal(page.data.wishMaxDraft, 3);
+  page.wishEnabled({ detail: { value: false } });
+  assert.equal(page.data.wishEnabledDraft, false);
+  await page.saveWishSetting();
+  assert.deepEqual(sent, { endpoint: '/parent/wish-setting',
+    body: { maxDishes: 3, enabled: false, expectedVersion: 4 } });
+});
+
+test('心愿菜单：家长只在菜单页查看孩子已提交的菜，不再出现设置项', async () => {
   const page = loadPage('menu', 'PARENT');
   const submitted = wishPool({ submitted: true });
   const pending = wishPool({ dishId: '77', name: '只标记没提交' });
@@ -1986,22 +2087,13 @@ test('心愿菜单：家长只看到孩子已提交的菜，保存设置带乐�
     version: 4, submittedCount: 1, items: [submitted, pending] };
   api.get = async endpoint => {
     if (endpoint === '/parent/wish-menu') return wish;
-    if (endpoint === '/parent/wish-setting') return { maxDishes: 2, enabled: true, version: 4 };
     return { items: [], total: 0, days: [] };
   };
   page.setData({ childId: child.childId, children: [child], childLabels: ['孩子 · 1'] });
   await page.loadWish();
   assert.deepEqual(page.data.wish.items.map(item => item.name), ['合成餐食'], '候选池明细不进家长视图');
   assert.deepEqual(page.data.wishSelected, [], '家长端不参与勾选');
-  assert.equal(page.data.wishMaxDraft, 2);
-
-  let sent;
-  api.put = async (endpoint, body) => { sent = { endpoint, body }; };
-  page.wishMax(event({}, 2));
-  assert.equal(page.data.wishMaxDraft, 3);
-  await page.wishSettingSave();
-  assert.deepEqual(sent, { endpoint: '/parent/wish-setting',
-    body: { maxDishes: 3, enabled: true, expectedVersion: 4 } });
+  assert.equal(page.data.wishSettings, undefined, '菜单页不再持有心愿设置');
 });
 test('我的菜品：食材与做法整体提交，空行自动丢弃', async () => {
   const page = loadPage('dish-manage');
@@ -2220,4 +2312,194 @@ test('家长想吃看板：换孩子与换区间清空配方缓存，避免串�
   page.setData({ recipeStates: { 'PRESET:99': { status: 'ready' } }, recipeOpenKey: 'PRESET:99' });
   page.onHide();
   assert.deepEqual(page.data.recipeStates, {});
+});
+
+test('成长记录总览：拉取记录与 WHO 标准并渲染指标卡', async () => {
+  const page = loadPage('growth-record');
+  const calls = [];
+  api.get = async (endpoint, query) => {
+    calls.push({ endpoint, query });
+    if (endpoint === '/growth/records') return { items: [
+      { id: 2, recordDate: '2026-09-20', gender: 'BOY', heightCm: '128.50', weightKg: '26.20', bmi: '15.9', ageYears: 7, note: '体检后', heightBand: 'P50–P85', weightBand: 'P50–P85', bmiCategory: '正常' },
+      { id: 1, recordDate: '2026-09-01', gender: 'BOY', heightCm: '127.00', weightKg: '25.40', bmi: '15.7', ageYears: 7, note: null, heightBand: 'P50–P85', weightBand: 'P15–P50', bmiCategory: '正常' }
+    ] };
+    return { rows: [{ ageYears: 7, p3: 114, p15: 118.6, p50: 121.8, p85: 125.2, p97: 131 }], unit: 'cm' };
+  };
+  page.onLoad({ childId: '123' });
+  await page.onShow();
+  assert.equal(page.data.latest.heightCm, '128.50');
+  assert.equal(page.data.records.length, 2);
+  assert.equal(page.data.gender, 'BOY');
+  assert.equal(calls.filter(c => c.endpoint === '/growth/standard')[0].query.metric, 'HEIGHT');
+
+  page.setData({ metricTab: 'WEIGHT' });
+  await page.refresh();
+  assert.equal(page.data.metricTab, 'WEIGHT');
+  assert.equal(calls.filter(c => c.endpoint === '/growth/standard').pop().query.metric, 'WEIGHT');
+});
+
+test('WHO 标准页：默认加载并可切换维度', async () => {
+  const page = loadPage('growth-standard');
+  const calls = [];
+  api.get = async (endpoint, query) => { calls.push(query); return { rows: [{ ageYears: 7, p3: 114, p15: 118.6, p50: 121.8, p85: 125.2, p97: 131 }], unit: 'cm' }; };
+  await page.onShow();
+  assert.equal(page.data.rows.length, 1);
+  assert.equal(calls[0].ageBand, 'WHO 2007');
+  assert.equal(calls[0].gender, 'BOY');
+  await page.pickMetric(event({ metric: 'WEIGHT' }));
+  assert.equal(page.data.metric, 'WEIGHT');
+  assert.equal(calls[1].metric, 'WEIGHT');
+});
+
+test('记录新数据：参考区间加载、校验与保存请求体', async () => {
+  const page = loadPage('growth-record-edit');
+  page.onLoad({ childId: '123' });
+  api.get = async (endpoint, query) => ({ rows: [{ ageYears: 7, p3: 114, p15: 118.6, p50: 121.8, p85: 125.2, p97: 131 }], unit: 'cm' });
+  page.setData({ ageYears: '7' });
+  await page.loadRef();
+  assert.ok(page.data.ref.height && page.data.ref.height.p50 === 121.8);
+
+  page.setData({ gender: 'BOY', heightCm: '128.5', weightKg: '26.2', note: '体检后' });
+  const calls = [];
+  api.post = async (endpoint, body) => { calls.push({ endpoint, body }); return { id: 9 }; };
+  await page.submit();
+  assert.equal(calls.length, 1);
+  assert.deepEqual(calls[0].body, { childId: '123', gender: 'BOY', heightCm: '128.5', weightKg: '26.2', note: '体检后', ageYears: 7 });
+
+  page.setData({ heightCm: '300', note: '' });
+  await page.submit();
+  assert.match(page.data.error, /身高/);
+});
+
+test('登录页隐藏测试区：连续三次点击进入测试登录，两次不触发', () => {
+  const page = loadPage('login');
+  page.tapTestZone();
+  page.tapTestZone();
+  assert.ok(!navigation.some(u => u.includes('dev-child-login')));
+  page.tapTestZone();
+  assert.ok(navigation.some(u => u.includes('dev-child-login')));
+});
+
+test('儿童档案默认显示模式：只读信息+聚合入口，编辑需显式进入', async () => {
+  const page = loadPage('profile');
+  page.setData({ childId: child.childId });
+  api.get = async endpoint => endpoint.includes('consent') ? { currentStatus: 'GRANTED' }
+    : { nickname: '小明', school: '阳光小学', grade: '三年级', allergies: ['PEANUT'], dislikes: ['洋葱'], tastes: ['清淡'] };
+  await page.read();
+  assert.equal(page.data.viewMode, 'view');
+  assert.equal(page.data.nicknameChar, '小');
+  page.edit();
+  assert.equal(page.data.viewMode, 'edit');
+  await page.cancelEdit();
+  assert.equal(page.data.viewMode, 'view');
+  assert.equal(page.data.nickname, '小明');
+  page.openGrowth();
+  assert.ok(navigation.some(u => u.includes('/pages/growth-record/index?childId=' + child.childId)));
+  page.openHealth();
+  assert.ok(navigation.some(u => u.includes('/pages/health/index')));
+});
+
+test('儿童端档案显示模式与成长记录只读入口', async () => {
+  const page = loadPage('profile', 'CHILD');
+  page.setData({ childId: child.childId });
+  api.get = async () => ({ dislikes: ['芹菜'], tastes: ['清淡'] });
+  await page.read();
+  assert.equal(page.data.viewMode, 'view');
+  assert.equal(page.data.nicknameChar, '我');
+  page.openGrowth();
+  assert.ok(navigation.some(u => u.includes('/pages/growth-record/index?childId=' + child.childId)));
+});
+
+test('成长记录儿童本人可读：guard 放行且可切换指标', async () => {
+  const page = loadPage('growth-record', 'CHILD');
+  api.get = async (endpoint, query) => endpoint === '/growth/records'
+    ? { items: [{ id: 1, recordDate: '2026-09-20', gender: 'BOY', heightCm: '126.00', weightKg: '25.00', bmi: '15.7', ageYears: 7, heightBand: 'P50–P85', weightBand: 'P50–P85', bmiCategory: '正常' }] }
+    : { rows: [{ ageYears: 7, p3: 114, p15: 118.6, p50: 121.8, p85: 125.2, p97: 131 }], unit: 'cm' };
+  page.onLoad({ childId: child.childId });
+  await page.onShow();
+  assert.equal(page.data.role, 'CHILD');
+  assert.equal(page.data.latest.heightCm, '126.00');
+});
+
+test('WHO 标准页带孩子上下文：定位条、月粒度表与区间高亮', async () => {
+  const page = loadPage('growth-standard');
+  api.get = async (endpoint, query) => {
+    if (endpoint === '/growth/records/latest') {
+      return { recordDate: '2026-09-20', gender: 'BOY', heightCm: '126.00', weightKg: '25.00', bmi: '15.7', ageYears: 7 };
+    }
+    return { rows: [
+      { ageYears: 5, p3: 102, p15: 106.8, p50: 110, p85: 114.8, p97: 118 },
+      { ageYears: 6, p3: 108.5, p15: 113, p50: 116, p85: 121.1, p97: 124.5 },
+      { ageYears: 7, p3: 114, p15: 117.1, p50: 121.8, p85: 127.3, p97: 131 },
+      { ageYears: 8, p3: 119.5, p15: 124.2, p50: 127.3, p85: 133.1, p97: 137 }
+    ], unit: 'cm', ageBand: 'WHO 2007', gender: 'BOY' };
+  };
+  page.onLoad({ childId: child.childId });
+  await page.onShow();
+  assert.equal(page.data.hasChild, true);
+  assert.match(page.data.loc, /P50–P85/);
+  // 7 岁为中心，前后各一岁按 3 个月粒度 → 6岁4点 + 7岁4点 + 8岁1点
+  assert.equal(page.data.rows.length, 9);
+  assert.equal(page.data.rows[4].label, '7岁');
+  assert.equal(page.data.rows[4].isTarget, true);
+  assert.equal(page.data.rows[4].hl.p50, true);
+  assert.equal(page.data.rows[4].hl.p85, true);
+  assert.equal(page.data.rows[4].hl.p3, false);
+});
+
+test('档案页出生年月：显示模式展示与年龄，编辑选择后保存携带', async () => {
+  const page = loadPage('profile');
+  page.setData({ childId: child.childId });
+  api.get = async endpoint => endpoint.includes('consent') ? { currentStatus: 'GRANTED' }
+    : { nickname: '小明', school: '阳光小学', grade: '三年级', birthYear: 2019, birthMonth: 5, ageYears: 7,
+        allergies: [], dislikes: [], tastes: [] };
+  await page.read();
+  assert.equal(page.data.birthLabel, '2019年5月');
+  assert.equal(page.data.ageYears, 7);
+
+  page.edit();
+  page.birth(event({}, '2018-03'));
+  assert.equal(page.data.birthYear, 2018);
+  assert.equal(page.data.birthMonth, 3);
+  assert.equal(page.data.birthLabel, '2018年3月');
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return {}; };
+  page.setData({ nickname: '小明', grade: '三年级', school: '阳光小学' });
+  await page.save();
+  assert.equal(sent.endpoint, '/child/profile');
+  assert.equal(sent.body.birthYear, 2018);
+  assert.equal(sent.body.birthMonth, 3);
+});
+
+test('档案页出生年月：未填写时不展示年龄，保存传 null', async () => {
+  const page = loadPage('profile');
+  page.setData({ childId: child.childId });
+  api.get = async endpoint => endpoint.includes('consent') ? { currentStatus: 'GRANTED' }
+    : { nickname: '小明', school: '阳光小学', grade: '三年级', allergies: [], dislikes: [], tastes: [] };
+  await page.read();
+  assert.equal(page.data.birthLabel, '');
+  assert.equal(page.data.ageYears, '');
+  page.edit();
+  let sent;
+  api.post = async (endpoint, body) => { sent = { endpoint, body }; return {}; };
+  page.setData({ nickname: '小明', grade: '三年级', school: '阳光小学' });
+  await page.save();
+  assert.equal(sent.body.birthYear, null);
+  assert.equal(sent.body.birthMonth, null);
+});
+
+test('成长记录总览：家长头部展示孩子信息，记录日期短格式', async () => {
+  const page = loadPage('growth-record');
+  api.get = async (endpoint) => {
+    if (endpoint === '/growth/records') return { items: [
+      { id: 2, recordDate: '2026-09-28', gender: 'BOY', heightCm: '147.00', weightKg: '35.00', bmi: '16.2', ageYears: 11, note: '体检后', heightBand: 'P50–P85', weightBand: 'P15–P50', bmiCategory: '正常' }
+    ] };
+    if (endpoint === '/child/profile') return { nickname: '昊昊', grade: '六年级', ageYears: 11 };
+    return { rows: [{ ageYears: 11, p3: 134.9, p15: 140.6, p50: 143.8, p85: 150.5, p97: 155 }], unit: 'cm' };
+  };
+  page.onLoad({ childId: '123' });
+  await page.onShow();
+  assert.equal(page.data.childName, '昊昊');
+  assert.equal(page.data.childMeta, '11岁 · 六年级 · 男孩');
+  assert.equal(page.data.records[0].displayDate, '9月28日');
 });

@@ -16,13 +16,22 @@
     "pages/health/index",
     "pages/notices/index",
     "pages/privacy/index",
-    "pages/dev-child-login/index"
+    "pages/settings/index",
+    "pages/dev-child-login/index",
+    "pages/dev-env/index",
+    "pages/timetable/index",
+    "pages/homework/index",
+    "pages/tools/index",
+    "pages/exam-timer/index",
+    "pages/growth-record/index",
+    "pages/growth-record-edit/index",
+    "pages/growth-standard/index"
   ],
   "window": {
     "navigationBarTitleText": "成长星球",
-    "navigationBarBackgroundColor": "#f7f9fc",
+    "navigationBarBackgroundColor": "#f5f6f8",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f7f9fc",
+    "backgroundColor": "#f5f6f8",
     "backgroundTextStyle": "dark"
   },
   "style": "v2",

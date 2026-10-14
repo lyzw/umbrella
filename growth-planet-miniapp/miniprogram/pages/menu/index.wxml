@@ -1,18 +1,16 @@
 <view class="page menu-page {{role === 'PARENT' ? 'parent' : ''}}">
-  <page-back role="{{role}}" fallback-tab="{{role === 'CHILD' ? 'meal' : 'home'}}" disabled="{{busy}}" />
   <view class="header menu-header">
     <view><view class="eyebrow">{{role === 'PARENT' ? '仅当前家庭有效' : '小当家 · 点餐'}}</view><view class="title">{{role === 'PARENT' ? '家庭菜单维护' : '今日餐单'}}</view></view>
-    <picker mode="date" value="{{menuDate}}" bindchange="date" disabled="{{busy}}"><view class="picker date-picker">{{menuDate}}</view></picker>
   </view>
-  <scroll-view wx:if="{{week.length}}" class="week-strip" scroll-x="true" enable-flex="true">
+  <scroll-view wx:if="{{week.length}}" class="week-strip" scroll-x="true" enable-flex="true" scroll-left="{{weekScrollLeft}}" scroll-with-animation="true">
     <view wx:for="{{week}}" wx:key="date" class="week-day {{item.active ? 'active' : ''}} {{item.isToday ? 'today' : ''}}" bindtap="weekDay" data-date="{{item.date}}">
       <text class="week-day-label">{{item.label}}</text>
       <text class="week-day-date">{{item.dayText}}</text>
-      <text class="week-day-hint">{{item.hasMenu ? item.publishedCount + ' 餐已发' : '未发布'}}</text>
+      <text class="week-day-hint {{item.hasMenu ? 'pub' : ''}}">{{item.hasMenu ? '已发布' : '未发布'}}</text>
       <text wx:if="{{item.wantEatCount}}" class="week-day-want">想吃 {{item.wantEatCount}}</text>
     </view>
   </scroll-view>
-  <view wx:if="{{role === 'PARENT'}}" class="notice">这里发布的菜单只属于当前家庭，不会影响其他家庭或学校餐单。</view>
+
   <view wx:if="{{role === 'PARENT'}}" class="tabs source-tabs">
     <button class="{{sourceTab === 'FAMILY' ? 'active' : ''}}" bindtap="sourceTab" data-tab="FAMILY" disabled="{{busy}}">家庭菜品</button>
     <button class="{{sourceTab === 'PRESET' ? 'active' : ''}}" bindtap="sourceTab" data-tab="PRESET" disabled="{{busy}}">预置菜品</button>
@@ -49,7 +47,7 @@
     </scroll-view>
   </view>
   <!-- 心愿菜单（P3）：位于「每日想吃」相关区块下方。儿童勾选候选池并提交，家长查看并配置上限。 -->
-  <view wx:if="{{role === 'CHILD' && wish}}" class="wish-section">
+  <view wx:if="{{role === 'CHILD' && wish && wish.enabled}}" class="wish-section">
     <view class="quick-head">
       <text class="quick-title">{{wish.titleText}}</text>
       <text class="small">已选 {{wish.countText}} 道 · {{wish.stateLabel}}</text>
@@ -104,22 +102,21 @@
       </view>
     </view>
     <view wx:else class="small">{{wish.status === 'NONE' ? '孩子还没有创建当天的心愿菜单。' : '这次提交里没有可展示的菜品（可能已全部下架）。'}}</view>
-    <view class="wish-setting">
-      <view class="small">心愿菜单设置：上限 {{wishMaxDraft}} 道（当前 {{wish.maxDishes}} 道）</view>
-      <picker range="{{wishDishRange}}" value="{{wishMaxDraft - 1}}" bindchange="wishMax" disabled="{{busy}}"><view class="picker">最多 {{wishMaxDraft}} 道⌄</view></picker>
-      <label class="filter-chip {{wishEnabledDraft ? 'selected' : ''}}"><switch checked="{{wishEnabledDraft}}" bindchange="wishEnabled" disabled="{{busy}}" />启用心愿菜单</label>
-      <button bindtap="wishSettingSave" disabled="{{busy || !wishSettings}}">保存设置</button>
-    </view>
+  </view>
+  <view wx:if="{{role === 'CHILD'}}" class="meal-segments">
+    <view class="meal-segment {{mealType === 'BREAKFAST' ? 'on' : ''}}" bindtap="mealSegment" data-meal="BREAKFAST" aria-role="button">早餐</view>
+    <view class="meal-segment {{mealType === 'LUNCH' ? 'on' : ''}}" bindtap="mealSegment" data-meal="LUNCH" aria-role="button">午餐</view>
+    <view class="meal-segment {{mealType === 'DINNER' ? 'on' : ''}}" bindtap="mealSegment" data-meal="DINNER" aria-role="button">晚餐</view>
   </view>
   <view class="filter-row">
-    <picker range="{{meals}}" value="{{mealIndex}}" bindchange="meal" disabled="{{busy}}"><view class="picker meal-picker">{{meals[mealIndex]}}⌄</view></picker>
+    <picker wx:if="{{role === 'PARENT'}}" range="{{meals}}" value="{{mealIndex}}" bindchange="meal" disabled="{{busy}}"><view class="picker meal-picker">{{meals[mealIndex]}}⌄</view></picker>
     <view class="search-box"><text class="search-icon">⌕</text><input value="{{keyword}}" bindinput="search" placeholder="搜索餐食" maxlength="64" disabled="{{busy}}" /></view>
   </view>
   <checkbox-group bindchange="filters" class="filter-chips">
     <label class="filter-chip {{mildOnly ? 'selected' : ''}}"><checkbox value="mild" checked="{{mildOnly}}" disabled="{{busy}}" />无辣</label>
     <label wx:if="{{role === 'CHILD'}}" class="filter-chip {{favoritesOnly ? 'selected' : ''}}"><checkbox value="favorite" checked="{{favoritesOnly}}" disabled="{{busy}}" />今天想吃</label>
   </checkbox-group>
-  <scroll-view wx:if="{{categories.length > 2}}" class="category-chips" scroll-x="true" enable-flex="true">
+  <scroll-view wx:if="{{categories.length > 2 && role === 'CHILD'}}" class="category-chips" scroll-x="true" enable-flex="true">
     <view wx:for="{{categories}}" wx:key="id" class="category-chip {{categoryId === item.id ? 'selected' : ''}}" bindtap="category" data-id="{{item.id}}">{{item.name}}<text class="category-count">{{item.count}}</text></view>
   </scroll-view>
   <view wx:if="{{menu && menu.missingDishIds.length}}" class="notice">部分菜品已不可用，请以当前餐单为准。</view>
@@ -143,42 +140,75 @@
     <view class="muted">{{role === 'PARENT' ? '可在「我的菜品」录入家庭菜品，或切到预置菜品选择。' : '换个筛选条件再看看吧。'}}</view>
     <button wx:if="{{role === 'PARENT'}}" bindtap="goDishManage" disabled="{{busy}}">去录入我的菜品</button>
   </view>
-  <view wx:for="{{dishes}}" wx:key="key" class="item dish {{item.quantity > 0 || item.selected ? 'selected-dish' : ''}} {{role === 'CHILD' && !item.selectable || role === 'PARENT' && !item.available ? 'disabled-dish' : ''}}">
-    <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="dish-image" binderror="imageError" data-key="{{item.key}}" />
-    <view wx:else class="dish-image fallback"><text class="fallback-icon">🍲</text><text>暂无图片</text></view>
-    <view class="dish-content">
-      <view class="dish-title-row">
-        <view class="section-title">{{item.name}}</view>
-        <view wx:if="{{role === 'CHILD'}}" class="favorite-control">
-          <button class="favorite-button {{item.isFavorite ? 'active' : ''}}" bindtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.favoriteAriaLabel}}">{{item.isFavorite ? '♥' : '♡'}}</button>
-          <text class="favorite-caption">{{item.isFavorite ? '已收藏' : '收藏这道菜'}}</text>
-        </view>
-        <label wx:if="{{role === 'PARENT'}}" class="menu-select-control {{item.selected ? 'selected' : ''}} {{!item.available ? 'disabled' : ''}}" catchtap="toggleDish" data-key="{{item.key}}">
-          <checkbox checked="{{item.selected}}" disabled="{{busy || !item.available}}" />
-          <text>{{item.selected ? '已加入' : '加入菜单'}}</text>
-        </label>
+  <view wx:if="{{role === 'PARENT'}}" class="dual-layout">
+    <view class="side-nav">
+      <view wx:for="{{categories}}" wx:key="id" class="side-nav-item {{categoryId === item.id ? 'on' : ''}}" bindtap="category" data-id="{{item.id}}">
+        <text class="side-nav-name">{{item.name}}</text>
+        <text class="side-nav-count">{{item.count}}</text>
       </view>
-      <view><text wx:if="{{role === 'PARENT'}}" class="badge">{{item.sourceLabel}}</text><text wx:if="{{item.categoryName}}" class="badge">{{item.categoryName}}</text><text class="badge">{{item.spiceLabel}}</text><text class="badge {{item.available || item.selectable ? 'safe' : 'warning'}}">{{item.safetyLabel}}</text></view>
-      <view class="small">{{item.calories === null ? '热量暂无数据' : item.calories + ' kcal / 份'}}</view>
-      <view wx:if="{{item.isDisliked}}" class="small">包含不喜欢的食物</view>
-      <view class="price">{{item.virtualPrice}} <text class="small">虚拟单位 / 份</text></view>
-      <view class="stepper" wx:if="{{role === 'CHILD' && sourceType === 'FAMILY'}}">
-        <button class="icon-button" bindtap="quantity" data-key="{{item.key}}" data-delta="-1" disabled="{{busy || item.quantity === 0}}" aria-label="减少一份">−</button>
-        <text class="quantity">{{item.quantity}}</text>
-        <button class="icon-button" bindtap="quantity" data-key="{{item.key}}" data-delta="1" disabled="{{busy || !item.selectable || !menu.canSubmit || item.quantity === 9}}" aria-label="增加一份">+</button>
+    </view>
+    <view class="dish-flow">
+      <view wx:for="{{dishes}}" wx:key="key" class="dish-row {{item.inCart ? 'in-cart' : ''}} {{!item.available ? 'row-disabled' : ''}}" bindtap="openDishDetail" data-key="{{item.key}}">
+        <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="row-img" binderror="imageError" data-key="{{item.key}}" />
+        <view wx:else class="row-img row-fallback">🍲</view>
+        <view class="row-main">
+          <view class="row-title">{{item.name}}</view>
+          <view class="row-meta">{{item.categoryName || '未分类'}} · {{item.spiceLabel}}</view>
+          <view wx:if="{{item.hasSpice && item.inCart}}" class="row-spice">
+            <text class="spice-opt {{item.spice === 0 ? 'on' : ''}}" catchtap="parentSpice" data-key="{{item.key}}" data-index="0">不辣</text>
+            <text class="spice-opt {{item.spice === 1 ? 'on' : ''}}" catchtap="parentSpice" data-key="{{item.key}}" data-index="1">微辣</text>
+            <text class="spice-opt {{item.spice === 2 ? 'on' : ''}}" catchtap="parentSpice" data-key="{{item.key}}" data-index="2">中辣</text>
+            <text class="spice-opt {{item.spice === 3 ? 'on' : ''}}" catchtap="parentSpice" data-key="{{item.key}}" data-index="3">重辣</text>
+          </view>
+          <view wx:if="{{item.note}}" class="row-note">备注：{{item.note}}</view>
+        </view>
+        <view class="row-side">
+          <view class="row-price">¥<text class="row-price-num">{{item.selPrice}}</text><text class="row-price-unit">/份</text></view>
+          <view wx:if="{{item.inCart}}" class="row-qty">×{{item.quantity}}</view>
+          <view wx:if="{{!item.available}}" class="row-off">已下架</view>
+          <view wx:elif="{{!item.inCart}}" class="row-add" catchtap="parentAdd" data-key="{{item.key}}" aria-role="button">+</view>
+        </view>
+      </view>
+      <view wx:if="{{!dishes.length}}" class="empty-inline">{{categories.length ? '该分类暂无餐食' : '暂无可选餐食'}}</view>
+    </view>
+  </view>
+  <view wx:if="{{role === 'CHILD'}}" class="child-list">
+    <view wx:for="{{dishes}}" wx:key="key" class="item dish {{item.quantity > 0 ? 'selected-dish' : ''}} {{!item.selectable ? 'disabled-dish' : ''}}" bindtap="openKidDetail" data-key="{{item.key}}">
+      <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="dish-image" binderror="imageError" data-key="{{item.key}}" />
+      <view wx:else class="dish-image fallback"><text class="fallback-icon">🍲</text><text>暂无图片</text></view>
+      <view class="dish-content">
+        <view class="dish-title-row">
+          <view class="section-title">{{item.name}}</view>
+          <view class="favorite-control" catchtap="noop">
+            <button class="favorite-button {{item.isFavorite ? 'active' : ''}}" catchtap="favorite" data-key="{{item.key}}" disabled="{{busy}}" aria-label="{{item.favoriteAriaLabel}}">{{item.isFavorite ? '♥' : '♡'}}</button>
+            <text class="favorite-caption">{{item.isFavorite ? '已收藏' : '收藏这道菜'}}</text>
+          </view>
+        </view>
+        <view><text wx:if="{{item.categoryName}}" class="badge">{{item.categoryName}}</text><text class="badge">{{item.spiceLabel}}</text><text class="badge {{item.selectable ? 'safe' : 'warning'}}">{{item.safetyLabel}}</text></view>
+        <view class="small">{{item.calories === null ? '热量暂无数据' : item.calories + ' kcal / 份'}}</view>
+        <view wx:if="{{item.isDisliked}}" class="small">包含不喜欢的食物</view>
+        <view class="price-chip">{{item.virtualPrice}} <text class="price-chip-unit">币</text></view>
+        <view class="stepper" wx:if="{{sourceType === 'FAMILY'}}">
+          <button class="icon-button" catchtap="quantity" data-key="{{item.key}}" data-delta="-1" disabled="{{busy || item.quantity === 0}}" aria-label="减少一份">−</button>
+          <text class="quantity">{{item.quantity}}</text>
+          <button class="icon-button" catchtap="quantity" data-key="{{item.key}}" data-delta="1" disabled="{{busy || !item.selectable || !menu.canSubmit || item.quantity === 9}}" aria-label="增加一份">+</button>
+        </view>
       </view>
     </view>
   </view>
-  <view class="checkout-panel" wx:if="{{role === 'PARENT' && ready}}">
-    <view class="checkout-summary">
-      <view><view class="small">已选 {{count}} / 50 种</view><view class="checkout-note">{{menu ? '已发布，可继续调整' : '当前日期和餐次尚未发布'}}</view></view>
-      <view class="publish-status">{{meals[mealIndex]}}</view>
+  <view class="cartbar-tools" wx:if="{{role === 'PARENT' && ready}}">
+    <text bindtap="goDishManage" disabled="{{busy}}">我的菜品</text>
+    <text bindtap="goWeekPlan" disabled="{{busy}}">整周发布</text>
+    <text class="cartbar-tools-note">已选 {{count}} / 50 道{{menu ? ' · 已发布可调整' : ''}}</text>
+  </view>
+  <view class="cartbar" wx:if="{{role === 'PARENT' && ready}}">
+    <view class="cartbar-info">
+      <view class="cartbar-count">已选 {{count}} 道</view>
+      <view class="cartbar-total">合计 ¥<text class="cartbar-total-num">{{parentTotal}}</text></view>
     </view>
-    <view class="parent-actions">
-      <button bindtap="goDishManage" disabled="{{busy}}">我的菜品</button>
-      <button bindtap="goWeekPlan" disabled="{{busy}}">整周发布</button>
-      <button bindtap="saveDraft" disabled="{{busy || !count || invalidSelectedCount}}">存草稿</button>
-      <button class="primary" bindtap="saveMenu" disabled="{{busy || !count || invalidSelectedCount}}">发布家庭餐单</button>
+    <view class="cartbar-actions">
+      <view class="cartbar-mini {{busy || !count || invalidSelectedCount ? 'off' : ''}}" bindtap="saveDraft" aria-role="button">存草稿</view>
+      <button class="primary cartbar-publish" bindtap="saveMenu" disabled="{{busy || !count || invalidSelectedCount}}">发布</button>
     </view>
   </view>
   <view class="checkout-panel" wx:if="{{role === 'CHILD' && sourceType === 'FAMILY' && menu}}">
@@ -186,4 +216,83 @@
     <button class="primary" bindtap="checkout" disabled="{{busy || !count || !menu.canSubmit || menuDate !== today}}">请家长确认</button>
   </view>
   <view wx:if="{{busy && ready}}" class="loading-float">正在处理</view>
+
+  <!-- 儿童 · 菜品详情 Bottom Sheet -->
+  <view wx:if="{{kidDetail}}" class="detail-mask" catchtap="closeKidDetail">
+    <view class="detail-sheet" catchtap="noop">
+      <view class="kid-detail-head">
+        <image wx:if="{{kidDetail.imageUrl}}" src="{{kidDetail.imageUrl}}" mode="aspectFill" class="kid-detail-img" binderror="imageError" data-key="{{kidDetail.key}}" />
+        <view wx:else class="kid-detail-img kid-detail-fallback">🍲</view>
+        <view class="kid-detail-info">
+          <view class="detail-title">{{kidDetail.name}}</view>
+          <view class="kid-detail-chips">
+            <text class="badge {{kidDetail.selectable ? 'safe' : 'warning'}}">{{kidDetail.spiceLabel}}</text>
+            <text class="badge gold">{{kidDetail.price}} 币 / 份</text>
+          </view>
+          <view class="kid-detail-meta">{{kidDetail.categoryName}} · {{kidDetail.calories === null ? '热量暂无数据' : kidDetail.calories + ' kcal'}}</view>
+        </view>
+      </view>
+      <view wx:if="{{kidDetail.isDisliked}}" class="kid-detail-tip">包含你不喜欢的食物，试试别的好吃的</view>
+      <view class="detail-row">
+        <text class="detail-label">份数</text>
+        <view class="stepper detail-stepper">
+          <button class="icon-button" bindtap="kidQuantity" data-delta="-1" disabled="{{busy || kidDetail.quantity === 0}}" aria-label="减少一份">−</button>
+          <text class="quantity">{{kidDetail.quantity}}</text>
+          <button class="icon-button" bindtap="kidQuantity" data-delta="1" disabled="{{busy || !kidDetail.selectable || !kidDetail.canSubmit || kidDetail.quantity === 9}}" aria-label="增加一份">+</button>
+        </view>
+      </view>
+      <button class="primary detail-confirm" bindtap="kidAddOne" disabled="{{busy || !kidDetail.selectable || !kidDetail.canSubmit}}">{{kidDetail.canSubmit ? '加入我的套餐' : (kidDetail.selectable ? '学校餐单仅可查看' : '这道菜今天不可选')}}</button>
+    </view>
+  </view>
+
+  <!-- 家长 · 菜品详情弹层 -->
+  <view wx:if="{{detail}}" class="detail-mask" catchtap="closeDetail">
+    <view class="detail-sheet" catchtap="noop">
+      <view class="detail-head">
+        <image wx:if="{{detail.imageUrl}}" src="{{detail.imageUrl}}" mode="aspectFill" class="detail-img" binderror="imageError" data-key="{{detail.key}}" />
+        <view wx:else class="detail-img detail-img-fallback">🍲</view>
+        <view class="detail-head-info">
+          <view class="detail-title">{{detail.name}}</view>
+          <view class="detail-meta">{{detail.categoryName}} · {{detail.spiceLabel}}</view>
+          <text class="badge safe">在售</text>
+        </view>
+        <view class="detail-close" bindtap="closeDetail" aria-role="button">×</view>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">份数</text>
+        <view class="stepper detail-stepper">
+          <button class="icon-button" bindtap="detailQuantity" data-delta="-1" disabled="{{busy || detail.quantity === 0}}" aria-label="减少一份">−</button>
+          <text class="quantity">{{detail.quantity}}</text>
+          <button class="icon-button" bindtap="detailQuantity" data-delta="1" disabled="{{busy || detail.quantity === 99}}" aria-label="增加一份">+</button>
+        </view>
+      </view>
+      <view wx:if="{{detail.hasSpice}}" class="detail-row">
+        <text class="detail-label">辣度</text>
+        <view class="spice-pick">
+          <text class="spice-opt {{detail.spice === 0 ? 'on' : ''}}" bindtap="detailSpice" data-index="0">不辣</text>
+          <text class="spice-opt {{detail.spice === 1 ? 'on' : ''}}" bindtap="detailSpice" data-index="1">微辣</text>
+          <text class="spice-opt {{detail.spice === 2 ? 'on' : ''}}" bindtap="detailSpice" data-index="2">中辣</text>
+          <text class="spice-opt {{detail.spice === 3 ? 'on' : ''}}" bindtap="detailSpice" data-index="3">重辣</text>
+        </view>
+      </view>
+      <view class="detail-row">
+        <text class="detail-label">单价</text>
+        <view class="price-pick">
+          <view class="step-btn" bindtap="detailPrice" data-delta="-1" aria-role="button">−</view>
+          <text class="price-num">¥{{detail.price}}</text>
+          <view class="step-btn" bindtap="detailPrice" data-delta="1" aria-role="button">+</view>
+        </view>
+      </view>
+      <view class="detail-row note-row">
+        <text class="detail-label">备注</text>
+        <input class="note-input" value="{{detail.note}}" bindinput="detailNote" placeholder="口味、忌口等备注" maxlength="30" disabled="{{busy}}" />
+        <view class="quick-tags">
+          <text class="quick-tag" bindtap="quickNote" data-tag="少辣">少辣</text>
+          <text class="quick-tag" bindtap="quickNote" data-tag="不要花生">不要花生</text>
+          <text class="quick-tag" bindtap="quickNote" data-tag="少油">少油</text>
+        </view>
+      </view>
+      <button class="primary detail-confirm" bindtap="detailConfirm" disabled="{{busy}}">{{detail.quantity > 0 ? (detail.inCart ? '保存修改' : '加入今日菜单') : '移除这道菜'}}</button>
+    </view>
+  </view>
 </view>

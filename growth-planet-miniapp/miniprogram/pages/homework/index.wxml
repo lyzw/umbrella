@@ -1,0 +1,77 @@
+<view class="page">
+
+  <!-- 列表视图 -->
+  <block wx:if="{{!detail}}">
+    <view class="page-heading">
+      <text class="title">家庭作业</text>
+      <text class="subtitle">待办、截止提醒，做完即打卡（示例数据）</text>
+    </view>
+
+    <view class="segments">
+      <view class="segment {{segment === 'todo' ? 'on' : ''}}" bindtap="changeSegment" data-seg="todo">
+        <text>待完成</text><text class="segment-count">{{todoList.length}}</text>
+      </view>
+      <view class="segment {{segment === 'done' ? 'on' : ''}}" bindtap="changeSegment" data-seg="done">
+        <text>已完成</text><text class="segment-count">{{doneList.length}}</text>
+      </view>
+    </view>
+
+    <block wx:if="{{segment === 'todo'}}">
+      <view wx:for="{{todoList}}" wx:key="key" class="homework-card" bindtap="openDetail" data-key="{{item.key}}">
+        <view class="hw-head">
+          <text class="hw-name">{{item.name}}</text>
+          <text class="badge {{item.deadlineClass}}">{{item.deadlineLabel}}</text>
+        </view>
+        <view class="hw-note">{{item.note}}</view>
+        <view class="hw-foot">
+          <text class="hw-subject">{{item.subject}}</text>
+          <text class="hw-do">标记完成</text>
+        </view>
+      </view>
+      <view wx:if="{{todoList.length === 0}}" class="empty">作业都写完啦，去玩一会儿吧</view>
+    </block>
+
+    <block wx:else>
+      <view wx:for="{{doneList}}" wx:key="key" class="homework-card done">
+        <view class="hw-head">
+          <text class="hw-name">{{item.name}}</text>
+          <text class="badge safe">已完成</text>
+        </view>
+        <view class="hw-note">{{item.note}}</view>
+        <view class="hw-foot">
+          <text class="hw-subject">{{item.subject}}</text>
+          <text class="hw-done">家长已确认</text>
+        </view>
+      </view>
+      <view wx:if="{{doneList.length === 0}}" class="empty">还没有完成的作业</view>
+    </block>
+  </block>
+
+  <!-- 详情视图 -->
+  <block wx:else>
+    <view class="page-heading">
+      <text class="title">{{detail.name}}</text>
+      <text class="subtitle">{{detail.teacher}} · {{detail.deadlineText}}</text>
+    </view>
+    <view class="detail-accent" style="background: {{detail.color}}"></view>
+
+    <view class="detail-block">
+      <text class="detail-label">作业要求</text>
+      <text class="detail-text">{{detail.requirement}}</text>
+    </view>
+
+    <view class="detail-block">
+      <text class="detail-label">预计用时</text>
+      <view class="detail-tags">
+        <text class="detail-tag">{{detail.estimate}}</text>
+        <text class="detail-tag">需家长签字</text>
+      </view>
+    </view>
+
+    <button class="primary detail-done" bindtap="markDone" disabled="{{busy}}">我做完了</button>
+    <view class="footnote">标记后家长会看到，连续完成可领星币</view>
+    <button class="detail-back" bindtap="backList" disabled="{{busy}}">返回作业列表</button>
+  </block>
+
+  <view wx:if="{{busy}}" class="loading">正在处理</view>
+</view>

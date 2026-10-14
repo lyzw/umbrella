@@ -1,8 +1,7 @@
 package cn.studykid.growthplanet.config;
 
 import jakarta.annotation.PostConstruct;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -14,11 +13,10 @@ import org.springframework.context.annotation.Configuration;
  *   <li><b>部分配置</b>（三者提供了但不齐）：抛异常终止启动，避免线上凭证签发静默失效。</li>
  * </ul>
  */
+@Slf4j
 @Configuration
 @EnableConfigurationProperties(QiniuProperties.class)
 public class QiniuConfig {
-
-    private static final Logger log = LoggerFactory.getLogger(QiniuConfig.class);
 
     private final QiniuProperties properties;
 

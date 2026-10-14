@@ -1,6 +1,11 @@
 <view class="page {{role === 'PARENT' ? 'parent' : ''}}">
-  <page-back role="{{role}}" fallback-tab="me" disabled="{{busy}}" />
   <view class="header"><view class="title">家庭与绑定</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
+  <view wx:if="{{families.length > 1}}" class="section family-switch">
+    <view class="section-title">当前家庭：{{activeFamilyName || '未选择'}}</view>
+    <view class="family-options">
+      <button wx:for="{{families}}" wx:key="familyId" class="family-opt {{activeFamilyId === item.familyId ? 'selected' : ''}}" bindtap="switchFamily" data-id="{{item.familyId}}" disabled="{{busy || activeFamilyId === item.familyId}}">{{item.familyName}}</button>
+    </view>
+  </view>
   <view wx:if="{{role === 'CHILD'}}">
     <view class="notice">{{binding ? binding.label : '正在查询绑定状态'}}</view>
     <view wx:if="{{binding.bindStatus === 'NONE' || binding.bindStatus === 'REJECTED'}}" class="field">
@@ -69,7 +74,7 @@
 
         <view wx:else class="current-task complete-task">
           <view class="section-title">家庭绑定已完成</view>
-          <view class="muted">接下来可以维护孩子的昵称、口味、忌口和过敏信息。</view>
+          <view class="muted">接下来可以维护孩子的昵称、口味、忌口、过敏信息，以及身高体重成长记录。</view>
           <view class="actions"><button class="primary" bindtap="profile">维护儿童档案</button></view>
         </view>
       </view>

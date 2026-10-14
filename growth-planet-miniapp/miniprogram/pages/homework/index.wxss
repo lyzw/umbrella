@@ -1,0 +1,69 @@
+.segments {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 14px;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+.segment {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.segment.on {
+  background: #fff;
+  color: #172033;
+  font-weight: 800;
+}
+.segment-count {
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 11px;
+  text-align: center;
+}
+.segment.on .segment-count { background: var(--primary); color: #fff; }
+
+.homework-card {
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--primary);
+  border-radius: var(--radius-lg);
+}
+.homework-card.done { border-top-color: var(--positive); opacity: .9; }
+.hw-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.hw-name { font-size: 14px; font-weight: 800; color: #172033; overflow-wrap: anywhere; }
+.hw-note { margin-top: 5px; font-size: 12px; color: var(--muted); line-height: 1.6; }
+.hw-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+}
+.hw-subject { font-size: 11px; color: var(--muted); }
+.hw-do { font-size: 13px; font-weight: 800; color: var(--primary); }
+.hw-done { font-size: 12px; color: var(--positive-ink); }
+
+.detail-accent { height: 4px; border-radius: 99px; margin-bottom: 14px; }
+.detail-block { margin-bottom: 12px; padding: 14px 16px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-md); }
+.detail-label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--muted); }
+.detail-text { font-size: 13px; line-height: 1.7; color: #344054; }
+.detail-tags { display: flex; gap: 8px; }
+.detail-tag { padding: 5px 12px; border-radius: 99px; background: var(--surface-2); font-size: 12px; color: #344054; }
+.detail-done { margin-top: 16px; }
+.detail-back { margin-top: 10px; }
+.footnote { margin-top: 10px; text-align: center; font-size: 11px; color: var(--muted); }

@@ -1,15 +1,24 @@
 .login-page { min-height: 100vh; padding-top: 34px; }
-.dev-link { margin-top: 22px; text-align: center; font-size: 12px; color: #2878ff; text-decoration: underline; }
+.test-zone { position: fixed; top: calc(env(safe-area-inset-top) + 12px); right: 16px; width: 40px; height: 40px; z-index: 10; }
 .brand-scene { text-align: center; padding: 10px 0 24px; }
-.planet { position: relative; width: 104px; height: 104px; margin: 0 auto 22px; border-radius: 50%; background: linear-gradient(160deg, #dbeafe, #bfe3ff); box-shadow: 0 16px 34px rgba(29, 78, 216, .18); }
-.planet-ring { position: absolute; left: -18px; right: -18px; top: 42px; height: 20px; border: 4px solid #93c5fd; border-radius: 50%; transform: rotate(-12deg); }
+.planet { position: relative; width: 96px; height: 96px; margin: 0 auto 22px; border-radius: 24px; background: var(--primary-soft); box-shadow: none; }
+.planet-ring { position: absolute; left: -18px; right: -18px; top: 42px; height: 20px; border: 4px solid var(--primary-border); border-radius: 50%; transform: rotate(-12deg); }
 .planet-mark { position: relative; z-index: 1; display: block; font-size: 48px; line-height: 104px; }
 .brand-scene .eyebrow { margin-bottom: 6px; }
 .brand-scene .title { font-size: 30px; }
 .brand-scene .subtitle { margin-bottom: 0; }
-.login-panel { background: #fff; border: 1px solid #e6ebf2; border-radius: 16px; padding: 20px; box-shadow: 0 1px 3px rgba(20, 40, 80, .06), 0 8px 24px rgba(20, 40, 80, .07); }
+.login-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-soft), var(--shadow-strong); }
 .login-panel .primary { width: 100%; margin-top: 10px; }
+.login-panel .ghost { width: 100%; margin-top: 10px; }
 .login-panel .role-option { background: #fff; border: 1px solid #d7dee8; color: #28394d; }
+/* 静默登录中 / 失败态 */
+.silent-panel { padding: 26px 20px 24px; text-align: center; }
+.silent-spinner { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 16px; background: var(--primary-soft); display: flex; align-items: center; justify-content: center; font-size: 26px; animation: silentPulse 1.6s ease-in-out infinite; }
+.silent-title { font-size: 15px; font-weight: 800; color: #172033; margin-bottom: 6px; }
+@keyframes silentPulse {
+  from { opacity: .45; transform: scale(.96); }
+  to { opacity: 1; transform: scale(1.04); }
+}
 /* 等权重角色卡：图标 + 标题 + 说明，清晰对齐儿童 / 家长入口 */
 .role-grid { display: flex; gap: 12px; margin-top: 16px; }
 .role-option { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; min-height: 132px; padding: 18px 12px; border-radius: 16px; background: #fff; border: 1px solid #e2e8f0; transition: transform var(--motion-fast), border-color var(--motion-fast), box-shadow var(--motion-fast); }
@@ -17,7 +26,7 @@
 .role-option.child { border-color: #c9ddff; }
 .role-option.parent { border-color: #bce9d6; }
 .role-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; color: #fff; }
-.role-option.child .role-icon { background: #2878ff; }
-.role-option.parent .role-icon { background: #15966a; }
+.role-option.child .role-icon { background: #2f6bff; }
+.role-option.parent .role-icon { background: #0b8a66; }
 .role-title { font-size: 16px; font-weight: 800; }
 .role-desc { font-size: 13px; line-height: 1.5; color: #687386; overflow-wrap: anywhere; }

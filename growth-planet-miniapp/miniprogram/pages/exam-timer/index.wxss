@@ -1,0 +1,188 @@
+.page-heading.center { text-align: center; margin-bottom: 16px; }
+.group-label { margin: 2px 2px 8px; font-size: 12px; color: var(--muted); }
+
+/* 科目栏 */
+.subject-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.subject-scroll { flex: 1 1 0; min-width: 0; white-space: nowrap; }
+.subject-tab {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 16px;
+  margin-right: 8px;
+  border-radius: 99px;
+  background: #fff;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+}
+.subject-tab.on {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 800;
+}
+.subject-add {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.subject-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 14px;
+  padding: 10px 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+.subject-add-input {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+/* 阶段列表 */
+.stage-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.stage-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--primary);
+  border-radius: var(--radius-md);
+}
+.stage-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stage-name { font-size: 14px; font-weight: 800; color: #172033; overflow-wrap: anywhere; }
+.stage-time { font-size: 12px; color: var(--muted); }
+.stage-ops { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.stage-stepper { display: flex; align-items: center; gap: 6px; }
+.step-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: #344054;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.stage-del {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 添加面板 */
+.add-panel { padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); }
+.add-row { display: flex; align-items: center; gap: 8px; }
+.add-name {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+.add-minutes {
+  width: 64px;
+  height: 40px;
+  padding: 0 10px;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  text-align: center;
+}
+.add-btn { flex: 0 0 auto; }
+
+.start-btn { margin-top: 16px; }
+
+/* 倒计时环 */
+.timer-ring-wrap {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  margin: 6px auto 12px;
+}
+.timer-ring { display: block; }
+.timer-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.timer-time { font-size: 46px; font-weight: 800; line-height: 1; color: #172033; font-variant-numeric: tabular-nums; }
+.timer-sub { font-size: 12px; color: var(--muted); }
+
+.total-progress { margin: 0 auto 20px; max-width: 260px; }
+.total-progress-bar { height: 6px; border-radius: 99px; background: #e6ebf2; overflow: hidden; }
+.total-progress-inner { height: 100%; border-radius: 99px; background: #2f6bff; }
+.total-progress-text { display: block; margin-top: 6px; text-align: center; font-size: 12px; color: var(--muted); }
+
+.timer-controls { display: flex; gap: 14px; justify-content: center; align-items: center; }
+.timer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 800;
+  color: #fff;
+}
+.timer-btn.end {
+  width: 56px;
+  height: 56px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 13px;
+}
+.timer-btn.main {
+  width: 68px;
+  height: 68px;
+  background: var(--primary);
+  font-size: 15px;
+  box-shadow: 0 10px 20px -8px rgba(47, 107, 255, .45);
+}
+.timer-chips { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+.timer-chip {
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: var(--surface-2);
+  font-size: 12px;
+  color: var(--muted);
+}
+.footnote { margin-top: 14px; text-align: center; font-size: 11px; color: var(--muted); }

@@ -2,6 +2,7 @@ const api = require('../../services/api');
 const ui = require('../../utils/page');
 const config = require('../../config');
 const recipes = require('../../services/recipes');
+const { thumbImage } = require('../../utils/domain');
 
 const SPICE_LABELS = ['无辣', '微辣', '中辣', '重辣'];
 const STATUS_OPTIONS = [{ label: '在售', value: 'ON_SALE' }, { label: '已下架', value: 'OFF_SALE' }, { label: '全部', value: '' }];
@@ -114,6 +115,7 @@ ui.page({
     });
     const dishes = (result.items || []).map(item => ({
       ...item,
+      imageUrl: thumbImage(item.imageUrl, 200),
       statusLabel: item.status === 'ON_SALE' ? '在售' : '已下架',
       spiceLabel: SPICE_LABELS[item.spiceLevel] || '无辣',
       allergenLabel: item.allergens && item.allergens.length

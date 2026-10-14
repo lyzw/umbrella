@@ -60,7 +60,8 @@ public class JwtUtil {
      * 底层签发方法。jti 为 null 或空时自动生成 UUID；否则沿用传入值（用于测试与特定场景）。
      */
     public String generateToken(Long userId, String role, List<Long> familyIds, long ttlMillis, String jti) {
-        return issue(new LoginUser(userId, role, familyIds, jti), ttlMillis);
+        return issue(LoginUser.builder()
+                .userId(userId).role(role).familyIds(familyIds).jti(jti).build(), ttlMillis);
     }
 
     public long getExpiresIn() {

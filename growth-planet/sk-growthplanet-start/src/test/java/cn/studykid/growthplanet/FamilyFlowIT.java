@@ -3,7 +3,9 @@ package cn.studykid.growthplanet;
 import cn.studykid.growthplanet.common.enums.RoleEnum;
 import cn.studykid.growthplanet.dto.response.BindApproveResp;
 import cn.studykid.growthplanet.dto.response.CreateFamilyResp;
+import cn.studykid.growthplanet.dto.response.FamilyInviteResp;
 import cn.studykid.growthplanet.dto.response.InviteCodeResp;
+import cn.studykid.growthplanet.dto.response.JoinFamilyResp;
 import cn.studykid.growthplanet.util.InviteCodeUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MvcResult;
@@ -38,13 +40,13 @@ class FamilyFlowIT extends BaseIT {
     @Test
     void inviteCodeReuseAndJoinApproveFlow() throws Exception {
         FamilyContext ctx = setupFamily();
-        // 查询邀请码
+        // 查询邀请码（已废弃接口：返回本家庭一张 ACTIVE 的家长邀请码）
         MvcResult inv = mockMvc.perform(get("/api/mini/family/invite-code")
                         .header("Authorization", "Bearer " + ctx.parentToken()))
                 .andExpect(status().isOk())
                 .andReturn();
         InviteCodeResp invResp = dataOf(inv, InviteCodeResp.class);
-        assertEquals(ctx.inviteCode(), invResp.getInviteCode());
+        assertTrue(InviteCodeUtil.isValidFormat(invResp.getInviteCode()), "废弃接口返回的邀请码格式应合法");
 
         grant(ctx);
         // 审批通过
@@ -69,13 +71,27 @@ class FamilyFlowIT extends BaseIT {
     }
 
     @Test
-    void parentCannotJoinFamily_403() throws Exception {
-        String parentToken = loginAndSelectRole("fam_parent_join", RoleEnum.PARENT);
-        mockMvc.perform(post("/api/mini/family/join")
-                        .header("Authorization", "Bearer " + parentToken)
+    void parentCanJoinAnotherFamilyViaParentInvite() throws Exception {
+        // 家庭 A：家长 A 建家庭并生成「家长邀请码」
+        FamilyContext ctxA = setupFamily();
+        MvcResult inv = mockMvc.perform(post("/api/mini/family/invite-code")
+                        .header("Authorization", "Bearer " + ctxA.parentToken())
                         .contentType(JSON)
-                        .content("{\"inviteCode\":\"ABC123\"}"))
-                .andExpect(status().isForbidden());
+                        .content("{\"inviteType\":\"PARENT\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        FamilyInviteResp invResp = dataOf(inv, FamilyInviteResp.class);
+
+        // 家长 B 凭家长邀请码加入家庭 A，应成为 PARENT / BOUND（免审）
+        String parentB = loginAndSelectRole("fam_parent_join_b", RoleEnum.PARENT);
+        MvcResult join = mockMvc.perform(post("/api/mini/family/join")
+                        .header("Authorization", "Bearer " + parentB)
+                        .contentType(JSON)
+                        .content("{\"inviteCode\":\"" + invResp.getInviteCode() + "\"}"))
+                .andExpect(status().isOk())
+                .andReturn();
+        JoinFamilyResp jr = dataOf(join, JoinFamilyResp.class);
+        assertEquals("BOUND", jr.getStatus());
     }
 
     @Test

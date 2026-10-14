@@ -1,3 +1,5 @@
+const family = require('./family');
+
 function createClient(platform, getSession, clearSession, base, timeout = 12000, getRevision = () => 0) {
   const request = (method, path, data, key, document = false) => new Promise((resolve, reject) => {
     const auth = getSession();
@@ -21,6 +23,9 @@ function createClient(platform, getSession, clearSession, base, timeout = 12000,
     const header = { 'Content-Type': 'application/json' };
     if (auth) header.Authorization = 'Bearer ' + auth.token;
     if (key) header['Idempotency-Key'] = key;
+    // 多家庭：激活家庭通过 X-Family-Id 传给后端（services/family.js）；缺省不发送，后端回落首家庭。
+    const fid = family.get();
+    if (fid) header['X-Family-Id'] = fid;
     platform.request({
       url, method, header, timeout, data: queryInUrl ? undefined : data,
       success(response) {

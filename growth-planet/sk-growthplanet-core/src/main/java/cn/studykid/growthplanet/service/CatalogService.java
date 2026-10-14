@@ -262,7 +262,7 @@ public class CatalogService {
         if ("CHILD".equals(ctx.getRole())) {
             return authorization.boundChild(ctx.getUserId()).getFamilyId();
         }
-        Long familyId = ctx.firstFamilyId();
+        Long familyId = ctx.activeFamilyId();
         if (familyId == null) {
             throw new BizException(ResultCode.E009_FORBIDDEN);
         }
@@ -322,7 +322,7 @@ public class CatalogService {
         if (req.getSchool() != null) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
         }
-        Long familyId = ctx.firstFamilyId();
+        Long familyId = ctx.activeFamilyId();
         return upsertMenu(req, "FAMILY", familyId, null);
     }
 
@@ -376,7 +376,7 @@ public class CatalogService {
     public MenuMaintenanceResp getFamilyMenu(LocalDate menuDate, String mealType) {
         LoginUser ctx = requireCurrentFamilyParent();
         validateDateAndMeal(menuDate, mealType);
-        Long familyId = ctx.firstFamilyId();
+        Long familyId = ctx.activeFamilyId();
         // 展示路径：仅读，不加行锁（避免家长查看菜单时阻塞发布/点单等写事务）。
         MenuDaily menu = menus.selectOne(menuKey("FAMILY", familyId.toString(), menuDate, mealType));
         if (menu == null) {
@@ -868,7 +868,7 @@ public class CatalogService {
     public MenuWeekResp parentMenuWeek(LocalDate from, LocalDate to) {
         LoginUser ctx = requireRole("PARENT");
         validateWeekRange(from, to);
-        Long familyId = ctx.firstFamilyId();
+        Long familyId = ctx.activeFamilyId();
         if (familyId == null) {
             throw new BizException(ResultCode.E009_FORBIDDEN);
         }
@@ -929,7 +929,7 @@ public class CatalogService {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT);
         }
         // ① 鉴权只做一次（独立短事务，提交后立即释放家庭行锁），并拿到 familyId 供各条复用。
-        Long familyId = perItemTransactions.execute(status -> requireCurrentFamilyParent().firstFamilyId());
+        Long familyId = perItemTransactions.execute(status -> requireCurrentFamilyParent().activeFamilyId());
         // ② 逐条独立事务：此时无外层事务可挂起，子事务之间串行抢锁、各自提交，单条失败不影响其余。
         List<MenuBatchResp.Result> results = new ArrayList<>();
         int ok = 0;
@@ -1535,7 +1535,7 @@ public class CatalogService {
 
     private LoginUser requireCurrentFamilyParent() {
         LoginUser ctx = requireRole("PARENT");
-        Long familyId = ctx.firstFamilyId();
+        Long familyId = ctx.activeFamilyId();
         if (familyId == null || families.selectOne(new QueryWrapper<Family>()
                 .eq("id", familyId).last("FOR UPDATE")) == null) {
             throw new BizException(ResultCode.E009_FORBIDDEN);

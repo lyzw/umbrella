@@ -14,9 +14,13 @@ function preferenceField(field) {
 }
 
 ui.page({
-  data: { role: '', busy: false, error: '', ready: false, children: [], childIndex: 0, childId: '',
-    nickname: '', school: '', grade: '', grades: config.grades, allergens: config.allergens, schools: config.schools,
-    schoolOptions: [], allergies: [], dislikes: [], tastes: [], dislikesText: '', tastesText: '', allergyOptions: [] },
+  data: { role: '', busy: false, error: '', ready: false, viewMode: 'view', children: [], childIndex: 0, childId: '',
+    nickname: '', nicknameChar: '', school: '', grade: '', grades: config.grades, allergens: config.allergens, schools: config.schools,
+    schoolOptions: [], allergies: [], dislikes: [], tastes: [], dislikesText: '', tastesText: '', allergyOptions: [],
+    birthYear: '', birthMonth: '', birthLabel: '', todayMonth: (() => {
+      const n = new Date();
+      return n.getFullYear() + '-' + String(n.getMonth() + 1).padStart(2, '0');
+    })() },
   input: ui.input,
   onLoad(query) { this.requestedChild = query.childId; },
   onShow() { if (ui.guard(this)) this.load(); },
@@ -43,11 +47,25 @@ ui.page({
     const schoolOptions = Array.from(new Set([...config.schools, ...(profile.school ? [profile.school] : [])]));
     const dislikes = normalizePreferenceList(profile.dislikes);
     const tastes = normalizePreferenceList(profile.tastes);
-    this.setData({ ready: true, nickname: profile.nickname || '', school: profile.school || config.schools[0] || '',
+    this.setData({ ready: true, viewMode: 'view', nickname: profile.nickname || '', nicknameChar: this.nicknameChar(profile),
+      school: profile.school || config.schools[0] || '',
       schoolOptions, grade: profile.grade || '',
       allergies: profile.allergies || [], dislikes, tastes, dislikesText: '', tastesText: '',
+      birthYear: profile.birthYear || '', birthMonth: profile.birthMonth || '',
+      birthLabel: this.birthLabel(profile.birthYear, profile.birthMonth),
+      ageYears: profile.ageYears == null ? '' : profile.ageYears,
       allergyOptions: Array.from(new Set([...config.allergens, ...(profile.allergies || [])]))
         .map(code => ({ code, checked: (profile.allergies || []).includes(code) })) });
+  },
+  birthLabel(year, month) {
+    if (!year || !month) return '';
+    return year + '年' + Number(month) + '月';
+  },
+  birth(e) {
+    const value = String(e.detail.value || '');
+    const m = value.match(/^(\d{4})-(\d{2})$/);
+    if (!m) return;
+    this.setData({ birthYear: Number(m[1]), birthMonth: Number(m[2]), birthLabel: this.birthLabel(m[1], m[2]) });
   },
   child(e) {
     this.requestedChild = null;
@@ -78,6 +96,25 @@ ui.page({
     values.splice(index, 1);
     this.setData({ [field]: values, error: '' });
   },
+  nicknameChar(profile) {
+    const raw = String((profile && profile.nickname) || this.data.nickname || '').trim();
+    return raw ? raw.slice(0, 1) : this.data.role === 'PARENT' ? '娃' : '我';
+  },
+  edit() { this.setData({ viewMode: 'edit', error: '' }); },
+  cancelEdit() {
+    return ui.run(this, async () => {
+      this.setData({ viewMode: 'view' });
+      await this.read();
+    });
+  },
+  openGrowth() {
+    const childId = this.data.childId;
+    if (!childId) return;
+    return ui.openPage(this, '/pages/growth-record/index?childId=' + encodeURIComponent(childId));
+  },
+  openHealth() {
+    return ui.openPage(this, '/pages/health/index');
+  },
   save() {
     return ui.run(this, async () => {
       if (!this.data.ready) throw new Error('请先完成授权检查');
@@ -87,13 +124,15 @@ ui.page({
       if (this.data.role === 'PARENT') {
         const { childId, nickname, school, grade, allergies } = this.data;
         if (!nickname.trim() || !school) throw new Error('请填写昵称并选择学校');
-        await api.post('/child/profile', { childId, nickname: nickname.trim(), school: school.trim(), grade, allergies, dislikes, tastes });
+        const { birthYear, birthMonth } = this.data;
+        await api.post('/child/profile', { childId, nickname: nickname.trim(), school: school.trim(), grade,
+          birthYear: birthYear || null, birthMonth: birthMonth || null, allergies, dislikes, tastes });
       } else await api.put('/child/preferences', { dislikes, tastes });
       wx.showToast({ title: '已保存', icon: 'success' });
       await this.read();
     });
   },
-  clearForm() { this.setData({ ready: false, nickname: '', school: '', grade: '', allergies: [], dislikes: [], tastes: [], dislikesText: '', tastesText: '', allergyOptions: [], schoolOptions: [] }); },
+  clearForm() { this.setData({ ready: false, nickname: '', school: '', grade: '', allergies: [], dislikes: [], tastes: [], dislikesText: '', tastesText: '', allergyOptions: [], schoolOptions: [], birthYear: '', birthMonth: '', birthLabel: '', ageYears: '' }); },
   onHide() { this.clearForm(); },
   onUnload() { this.clearForm(); }
 });

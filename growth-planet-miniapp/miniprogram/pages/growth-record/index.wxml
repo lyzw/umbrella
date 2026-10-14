@@ -1,0 +1,73 @@
+<view class="page parent with-nav">
+  <view class="page-heading">
+    <text class="eyebrow">{{role === 'PARENT' ? '儿童信息 · 成长' : '我的成长'}}</text>
+    <text class="title">成长记录</text>
+  </view>
+
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+
+  <view wx:if="{{role === 'PARENT' && (childName || childMeta)}}" class="grow-head">
+    <view class="grow-avatar">{{childName ? childName.slice(0, 1) : '娃'}}</view>
+    <view class="grow-copy">
+      <text class="grow-name">{{childName || '未设置昵称'}}</text>
+      <text class="grow-meta" wx:if="{{childMeta}}">{{childMeta}}</text>
+    </view>
+    <text class="chip-status">记录中</text>
+  </view>
+
+  <block wx:if="{{latest}}">
+    <view class="stats-row">
+      <view class="stat-card">
+        <text class="stat-k">身高</text>
+        <text class="stat-v">{{latest.heightCm}}<text class="stat-u">cm</text></text>
+        <text class="stat-tag {{latest.heightBand && latest.heightBand.indexOf('P85') >= 0 ? 'warn' : ''}}">{{latest.heightBand || '待补年龄'}}</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-k">体重</text>
+        <text class="stat-v">{{latest.weightKg}}<text class="stat-u">kg</text></text>
+        <text class="stat-tag">{{latest.weightBand || '待补年龄'}}</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-k">BMI</text>
+        <text class="stat-v">{{latest.bmi}}</text>
+        <text class="stat-tag {{latest.bmiCategory === '正常' ? 'ok' : 'warn'}}">{{latest.bmiCategory}}</text>
+      </view>
+    </view>
+  </block>
+
+  <view class="metric-tabs">
+    <text class="metric-tab {{metricTab === 'HEIGHT' ? 'on' : ''}}" bindtap="switchMetric" data-metric="HEIGHT">身高</text>
+    <text class="metric-tab {{metricTab === 'WEIGHT' ? 'on' : ''}}" bindtap="switchMetric" data-metric="WEIGHT">体重</text>
+    <text class="metric-tab {{metricTab === 'BMI' ? 'on' : ''}}" bindtap="switchMetric" data-metric="BMI">BMI</text>
+  </view>
+
+  <view class="curve-card">
+    <view class="curve-title">
+      <text>{{metricTab === 'HEIGHT' ? '身高' : metricTab === 'WEIGHT' ? '体重' : 'BMI'}}生长曲线</text>
+      <text class="unit">单位：{{metricUnit}}</text>
+    </view>
+    <canvas type="2d" id="growth-curve" class="curve-canvas"></canvas>
+    <view class="curve-legend">
+      <text class="legend-item"><text class="legend-dot band"></text>P3–P97 参考区间</text>
+      <text class="legend-item"><text class="legend-dot p50"></text>P50 中位数</text>
+      <text class="legend-item"><text class="legend-dot kid"></text>{{childName || '孩子'}}</text>
+    </view>
+  </view>
+
+  <view class="entry-row" bindtap="openStandard">
+    <text class="entry-text">WHO 生长标准</text>
+    <text class="entry-arrow">查看 ›</text>
+  </view>
+
+  <view class="section-title record-heading">最近记录</view>
+  <view class="record-list" wx:if="{{records.length}}">
+    <view class="record-item" wx:for="{{records}}" wx:key="id">
+      <text class="record-date">{{item.displayDate}}</text>
+      <text class="record-main">{{item.heightCm}}cm · {{item.weightKg}}kg</text>
+      <text class="record-note" wx:if="{{item.note}}">{{item.note}}</text>
+    </view>
+  </view>
+  <view class="empty" wx:else>还没有记录，先记一条身高体重吧</view>
+
+  <button wx:if="{{role === 'PARENT'}}" class="primary record-action" bindtap="goEdit">＋ 记录新数据</button>
+</view>

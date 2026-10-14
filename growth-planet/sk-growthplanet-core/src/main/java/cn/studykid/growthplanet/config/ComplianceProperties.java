@@ -8,6 +8,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 @Data
@@ -69,12 +70,24 @@ public class ComplianceProperties {
         }
     }
 
-    public void validateProfile(ChildProfileReq req) {
+    /**
+     * 档案目录校验：新值必须来自发布目录；已存在于档案中的历史值放行（回显后保存不死锁）。
+     * existing 取自档案当前值；无档案（首填）时传 null，此时目录外值一律拒绝。
+     */
+    public void validateProfile(ChildProfileReq req, String existingSchool, String existingGrade,
+                                List<String> existingAllergies) {
         requireCollection();
         String school = req.getSchool() == null ? null : req.getSchool().trim();
-        if (catalogReference.isBlank() || !grades.contains(req.getGrade())
-                || !schools.contains(school)
-                || !allergens.containsAll(req.getAllergies())) {
+        String grade = req.getGrade() == null ? null : req.getGrade().trim();
+        boolean schoolOk = schools.contains(school)
+                || (existingSchool != null && school != null && school.equals(existingSchool.trim()));
+        boolean gradeOk = grades.contains(grade)
+                || (existingGrade != null && grade != null && grade.equals(existingGrade.trim()));
+        boolean allergensOk = allergens.containsAll(req.getAllergies())
+                || new HashSet<>(req.getAllergies()).stream()
+                        .allMatch(a -> allergens.contains(a)
+                                || (existingAllergies != null && existingAllergies.contains(a)));
+        if (catalogReference.isBlank() || !schoolOk || !gradeOk || !allergensOk) {
             throw new BizException(ResultCode.E400_INVALID_ARGUMENT, "年级、学校或过敏原不在发布目录");
         }
     }

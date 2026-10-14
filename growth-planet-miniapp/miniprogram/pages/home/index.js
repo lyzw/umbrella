@@ -24,17 +24,26 @@ ui.page({
     role: '', active: 'meal', busy: false, error: '', unread: 0, synthetic: require('../../config').syntheticLogin,
     childId: '', children: [], childLabels: [], childIndex: 0,
     parentSummaryUnavailable: false, parentSummaryMessage: '',
+    parentOverview: { balance: '', streak: 0 },
     parentSummary: {
       approvals: { status: 'idle', value: 0, error: '' },
       chores: { status: 'idle', value: 0, error: '' },
       wantEat: { status: 'idle', value: 0, error: '' }
     },
+    // 家长看板待办卡（设计稿：待你处理）
+    pendingCards: [],
     // 点餐（孩子首页）增强区块
     familyCount: 0, schoolCount: 0, familyMenuId: '', mealMenuDishes: [], reminderStatus: '',
     recommend: [], frequent: [], wish: null,
     confirmStatus: null, confirmId: null,
     // 成长增强区块（只读）
-    medals: [], medalEarned: 0, medalTotal: 0, balance: '', streak: 0
+    medals: [], medalEarned: 0, medalTotal: 0, balance: '', streak: 0, level: 0,
+    // 今日首页增强：餐预告 / 今日任务（任务为示例项，点击进入家务页）
+    mealPreview: null,
+    dailyTasks: [
+      { name: '收拾餐桌', points: 6 },
+      { name: '吃完盘中不挑食', points: 6 }
+    ]
   },
   go: ui.go,
   onLoad(query) {
@@ -114,6 +123,7 @@ ui.page({
       childId,
       parentSummaryUnavailable: false,
       parentSummaryMessage: '',
+      parentOverview: { balance: '', streak: 0 },
       parentSummary: {
         approvals: this.summaryState('loading'),
         chores: this.summaryState('loading'),
@@ -121,6 +131,20 @@ ui.page({
       }
     });
     await this.loadParentMetrics(revision, generation, childId);
+  },
+  syncPendingCards() {
+    const s = this.data.parentSummary;
+    const cards = [];
+    if (s.approvals.status === 'ready' && s.approvals.value > 0) {
+      cards.push({ page: 'confirmation', icon: '审', title: '待审批餐单', subtitle: '孩子提交了餐单，等你确认', count: s.approvals.value });
+    }
+    if (s.chores.status === 'ready' && s.chores.value > 0) {
+      cards.push({ page: 'chore', icon: '务', title: '待确认家务', subtitle: '孩子完成的家务，等你确认', count: s.chores.value });
+    }
+    if (s.wantEat.status === 'ready' && s.wantEat.value > 0) {
+      cards.push({ page: 'want-eat', icon: '想', title: '今日想吃清单', subtitle: '孩子今天想吃这些菜', count: s.wantEat.value });
+    }
+    this.setData({ pendingCards: cards });
   },
   async loadParentMetrics(revision, generation, childId) {
     const today = shanghaiDate();
@@ -144,6 +168,23 @@ ui.page({
         this.setData({ ['parentSummary.' + name]: this.summaryState('error', 0, error.message || '暂时无法加载') });
       }
     }));
+    try {
+      const [overview, calendar] = await Promise.all([
+        api.get('/wallet/overview', { childId }).catch(() => null),
+        api.get('/child/check-in/calendar', { month: shanghaiDate().slice(0, 7), childId }).catch(() => null)
+      ]);
+      if (this.isCurrentLoad(revision, generation) && this.data.childId === childId) {
+        this.setData({
+          parentOverview: {
+            balance: overview && overview.balance != null ? overview.balance : '',
+            streak: calendar && calendar.currentStreak ? calendar.currentStreak : 0
+          }
+        });
+      }
+    } catch (error) {
+      if (this.isFatalLoadError(error)) throw error;
+    }
+    if (this.isCurrentLoad(revision, generation) && this.data.childId === childId) this.syncPendingCards();
   },
   selectParentChild(e) {
     const index = Number(e.detail.value);
@@ -154,6 +195,7 @@ ui.page({
     this.setData({
       childIndex: index, childId: child.childId,
       parentSummaryUnavailable: false, parentSummaryMessage: '',
+      parentOverview: { balance: '', streak: 0 },
       parentSummary: {
         approvals: this.summaryState('loading'),
         chores: this.summaryState('loading'),
@@ -201,7 +243,7 @@ ui.page({
     if (!childId) return;
     this.setData({ childId });
     if (active === 'meal') await this.loadMealHome(childId);
-    else if (active === 'growth') await this.loadGrowth(childId);
+    else if (active === 'growth' || active === 'me') await this.loadGrowth(childId);
   },
   async loadMealHome(childId) {
     const today = shanghaiDate();
@@ -226,8 +268,14 @@ ui.page({
       const list = await api.get('/menu/confirms', { childId, page: 1, pageSize: 1, status: 'PENDING' });
       confirm = (list.items || [])[0] || null;
     } catch (error) { confirm = null; }
+    const familyDishes = familyMenu ? (familyMenu.dishes || []) : [];
+    const previewNames = familyDishes.slice(0, 3).map(d => d.name);
+    const previewMild = familyDishes.length > 0 && familyDishes.every(d => !(d.spiceLevel > 0));
     this.setData({
-      familyCount: familyMenu ? (familyMenu.dishes || []).length : 0,
+      mealPreview: familyDishes.length
+        ? { namesText: previewNames.join(' · ') + (familyDishes.length > 3 ? ' 等 ' + familyDishes.length + ' 道' : ''), mild: previewMild }
+        : null,
+      familyCount: familyDishes.length,
       schoolCount: schoolMenu ? (schoolMenu.dishes || []).length : 0,
       familyMenuId: menuId,
       mealMenuDishes: familyMenu ? (familyMenu.dishes || []) : [],
@@ -255,6 +303,9 @@ ui.page({
       wx.showToast({ title: message, icon: 'none' });
     });
   },
+  levelOf(streak) {
+    return Math.max(1, Math.min(6, 1 + Math.floor(streak / 5)));
+  },
   async loadGrowth(childId) {
     const [medals, overview, calendar] = await Promise.all([
       api.get('/medal/awards', { childId }).catch(() => []),
@@ -267,7 +318,8 @@ ui.page({
       medalEarned: medalSummary.medalEarned,
       medalTotal: medalSummary.medalTotal,
       balance: overview ? overview.balance : '',
-      streak: calendar ? (calendar.currentStreak || 0) : 0
+      streak: calendar ? (calendar.currentStreak || 0) : 0,
+      level: calendar ? this.levelOf(calendar.currentStreak || 0) : 0
     });
   },
   // 点餐首页快捷卡：点击直接收藏，复用菜单页同口径校验（必须在今日家庭餐单内）。
@@ -312,6 +364,8 @@ ui.page({
       if (!await ui.confirm('退出会清除本机登录状态及未保存内容。')) return;
       await api.post('/auth/logout', {});
       session.clear();
+      const app = typeof getApp === 'function' ? getApp() : null;
+      if (app && app.globalData) app.globalData.postLogout = true;
       wx.reLaunch({ url: '/pages/login/index' });
     });
   }

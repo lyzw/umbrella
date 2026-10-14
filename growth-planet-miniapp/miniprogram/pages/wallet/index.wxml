@@ -124,6 +124,9 @@
 
     <view wx:if="{{role === 'PARENT' && rule}}" class="section">
       <view class="section-title">发放零花钱</view>
+      <view class="quick-amounts">
+        <text wx:for="{{[20, 50, 100, 200]}}" wx:key="*this" class="quick-chip {{amount === item + '' ? 'on' : ''}}" bindtap="quickAmount" data-value="{{item}}" disabled="{{busy || pendingGrant}}">{{item}}</text>
+      </view>
       <view class="field"><text class="label">发放金额</text><input type="digit" value="{{amount}}" bindinput="input" data-field="amount" maxlength="7" disabled="{{busy || pendingGrant}}" placeholder="0.00" /></view>
       <view class="field"><text class="label">发放原因</text><input value="{{reason}}" bindinput="input" data-field="reason" maxlength="100" disabled="{{busy || pendingGrant}}" placeholder="例如：完成本周家务" /></view>
       <button class="primary" bindtap="grant" disabled="{{busy || pendingGrant}}">确认发放</button>

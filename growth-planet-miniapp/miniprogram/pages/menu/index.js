@@ -2,12 +2,15 @@ const api = require('../../services/api');
 const ui = require('../../utils/page');
 const context = require('../../services/context');
 const { loadChildren, displayChildren } = require('../../services/children');
-const { cents, money, shanghaiDate, selectable, safetyLabel, filterDishes, dishRef, dishKey } = require('../../utils/domain');
+const { cents, money, shanghaiDate, selectable, safetyLabel, filterDishes, dishRef, dishKey, thumbImage } = require('../../utils/domain');
 
 const SPICE = ['无辣', '微辣', '中辣', '重辣'];
 const MEALS = ['BREAKFAST', 'LUNCH', 'DINNER'];
 const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 const WEEK_DAYS = 7;
+// 后端周视图单区间上限 WEEK_MAX_DAYS = 14 天，超出直接返回 E-400（契约由 WantEatP2IT 锁定）。
+// 47 天时间线不能一次请求，按 14 天切片分别请求后合并 days。
+const WEEK_CHUNK_DAYS = 14;
 const CHILD_MEAL_SOURCES = ['FAMILY', 'SCHOOL'];
 
 function shiftDate(date, delta) {
@@ -27,13 +30,16 @@ function weekdayLabel(date, today) {
 ui.page({
   data: { role: '', busy: false, error: '', children: [], childLabels: [], childIndex: 0, childId: '', sourceType: 'FAMILY',
     menuDate: shanghaiDate(), today: shanghaiDate(), mealType: 'LUNCH', meals: ['早餐', '午餐', '晚餐'], mealIndex: 1,
+    weekScrollLeft: 0,
     menu: null, dishes: [], mildOnly: false, favoritesOnly: false, keyword: '', total: '0.00', count: 0,
     sourceTab: 'FAMILY', schoolBoundaryText: '', missingCount: 0, missingDishIds: [], invalidSelectedCount: 0, ready: false,
     categories: [], categoryId: '', frequent: [], recommend: [], week: [],
     // 心愿菜单（P3）：候选池跟随菜单日期；儿童勾选提交，家长查看并配置上限。
     wish: null, wishSelected: [], wishDishes: [], wishTab: 'FAMILY', wishKeyword: '',
-    wishPage: 1, wishPageSize: 10, wishTotal: 0, wishSettings: null, wishMaxDraft: 5,
-    wishEnabledDraft: true, wishDishRange: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+    wishPage: 1, wishPageSize: 10, wishTotal: 0,
+    // 家长美团式点餐台：详情弹层与购物车合计
+    detail: null, parentTotal: '0.00',
+    kidDetail: null },
   onLoad(query) {
     const params = query || {};
     this.previousConfirmId = params.previousConfirmId || null;
@@ -53,6 +59,7 @@ ui.page({
     this.catalogDishes = [];
     this.selectedRefs = [];
     this.tabPinned = false;
+    this.parentSelection = new Map();
     this.frequentDishes = [];
     this.recommendDishes = [];
     this.wishRaw = null;
@@ -147,7 +154,7 @@ ui.page({
     try {
       const result = await api.get('/child/frequent-dish', { childId: this.data.childId, limit: 6 });
       this.frequentDishes = (result.dishes || []).map(item => ({
-        ...item, key: dishKey(item), countText: '近30天 ' + item.count + ' 次'
+        ...item, key: dishKey(item), imageUrl: thumbImage(item.imageUrl, 240), countText: '近30天 ' + item.count + ' 次'
       }));
     } catch (error) {
       this.frequentDishes = []; // 快捷区为增强体验，失败时静默降级不影响主流程。
@@ -161,39 +168,76 @@ ui.page({
         menuId: this.data.menu.menuId, childId: this.data.childId, limit: 3
       });
       this.recommendDishes = (result.dishes || []).map(item => ({
-        ...item, key: dishKey(item), reasonText: (item.reasons || []).join(' · ')
+        ...item, key: dishKey(item), imageUrl: thumbImage(item.imageUrl, 240), reasonText: (item.reasons || []).join(' · ')
       }));
     } catch (error) {
       this.recommendDishes = []; // 推荐卡同为增强体验，失败时不影响菜单主流程。
     }
   },
   // 周条：今天起 7 天，标注哪几天已发菜单（家长用于整周发布，孩子用于提前挑选）。
+  buildWeekItems(result, from, to, today) {
+    const byDate = new Map((result && result.days || []).map(day => [day.menuDate, day]));
+    const items = [];
+    for (let offset = 0; offset <= 46; offset++) {
+      const date = shiftDate(from, offset);
+      if (date > to) break;
+      const day = byDate.get(date) || { menuDate: date, meals: [] };
+      const meals = day.meals || [];
+      const published = meals.filter(meal => meal.menuId);
+      items.push({
+        date,
+        label: weekdayLabel(date, today),
+        dayText: date.slice(5).replace('-', '/'),
+        publishedCount: published.length,
+        hasMenu: published.length > 0,
+        wantEatCount: meals.reduce((sum, meal) => sum + (meal.wantEatCount || 0), 0),
+        isToday: date === today,
+        active: date === this.data.menuDate
+      });
+    }
+    return items;
+  },
+  centerWeekScroll(todayOffset) {
+    try {
+      const info = wx.getSystemInfoSync();
+      const itemWidth = 92; // min-width 62 + padding 20 + border 2 + gap 8
+      return Math.max(0, todayOffset * itemWidth - Math.floor((info.windowWidth || 375) / 2) + Math.floor(itemWidth / 2));
+    } catch (error) {
+      return 0;
+    }
+  },
   async loadWeek() {
     const today = shanghaiDate();
-    const from = today;
-    const to = shiftDate(today, WEEK_DAYS - 1);
+    const from = shiftDate(today, -31);
+    const to = shiftDate(today, 15);
+    let result = null;
     try {
-      const result = this.data.role === 'PARENT'
-        ? await api.get('/parent/menu-week', { from, to })
-        : await api.get('/child/menu-week', { from, to, childId: this.data.childId });
-      const week = (result.days || []).map(day => {
-        const meals = day.meals || [];
-        const published = meals.filter(meal => meal.menuId);
-        return {
-          date: day.menuDate,
-          label: weekdayLabel(day.menuDate, today),
-          dayText: day.menuDate.slice(5).replace('-', '/'),
-          publishedCount: published.length,
-          hasMenu: published.length > 0,
-          wantEatCount: meals.reduce((sum, meal) => sum + (meal.wantEatCount || 0), 0),
-          isToday: day.menuDate === today,
-          active: day.menuDate === this.data.menuDate
-        };
-      });
-      this.setData({ week });
+      result = await this.loadWeekRange(from, to);
     } catch (error) {
-      this.setData({ week: [] }); // 周条失败不影响单日菜单主流程
+      // 请求失败也直接展示完整时间线，全部按未发布标签处理
+      result = null;
     }
+    const week = this.buildWeekItems(result, from, to, today);
+    this.setData({ week, weekScrollLeft: this.centerWeekScroll(31) });
+  },
+  // 周条按 14 天切片请求：后端 WEEK_MAX_DAYS=14，一次性请求 47 天会被判 E-400，
+  // 导致周条恒定降级成「全部未发布」（发布成功后仍看不到已发布标记）。
+  async loadWeekRange(from, to) {
+    const endpoint = this.data.role === 'PARENT' ? '/parent/menu-week' : '/child/menu-week';
+    const extra = this.data.role === 'PARENT' ? {} : { childId: this.data.childId };
+    const days = [];
+    let today = null;
+    let start = from;
+    // ISO yyyy-MM-dd 可直接按字符串比较
+    while (start <= to) {
+      const full = shiftDate(start, WEEK_CHUNK_DAYS - 1);
+      const slice = full < to ? full : to;
+      const part = await api.get(endpoint, { from: start, to: slice, ...extra });
+      if (part && Array.isArray(part.days)) days.push(...part.days);
+      if (!today && part && part.today) today = part.today;
+      start = shiftDate(slice, 1);
+    }
+    return { from, to, today, days };
   },
   decorateRecommend(dishes) {
     return (this.recommendDishes || []).map(item => {
@@ -247,23 +291,31 @@ ui.page({
     this.setData({ menu, missingCount: menu ? (menu.missingDishIds || []).length : 0,
       missingDishIds: menu ? menu.missingDishIds || [] : [], ready: true });
     this.render();
-    await this.loadWeek();
+    // 周条/心愿是次要增强：不阻塞主流程与「发布」按钮（此前整条链同处一个 ui.run，
+    // 菜品已渲染但 busy 仍为真，点发布会被静默吞掉）。二者内部均有静默降级，
+    // 失败不影响菜单主流程；挂在 this.extras 上，便于调用方或测试显式等待。
     // 家长也要看孩子当天提交的心愿菜单（通知落地同页），与孩子侧共用同一份加载逻辑。
-    await this.loadWish();
+    this.extras = Promise.all([
+      this.loadWeek().catch(() => {}),
+      this.loadWish().catch(() => {})
+    ]);
   },
   render() {
+    if (!this.parentSelection) this.parentSelection = new Map();
     if (this.data.role === 'PARENT') {
       const selectedKeys = new Set(this.selectedRefs.map(item => dishKey(item)));
       const catalogKeys = new Set(this.catalogDishes.map(item => dishKey(item)));
       const all = this.allDishes.map(dish => ({
         ...dish,
+        imageUrl: thumbImage(dish.imageUrl, 240),
         key: dishKey(dish),
         selected: selectedKeys.has(dishKey(dish)),
         available: dish.status === 'ON_SALE',
         sourceLabel: dish.sourceType === 'FAMILY' ? '家庭' : '预置',
         safetyLabel: dish.status !== 'ON_SALE' ? '已下架，发布前需移除'
           : dish.allergenStatus !== 'DECLARED' ? '过敏信息待确认' : '过敏信息已声明',
-        spiceLabel: SPICE[dish.spiceLevel]
+        spiceLabel: SPICE[dish.spiceLevel],
+        hasSpice: (dish.spiceLevel || 0) > 0
       })).sort((left, right) => Number(right.selected) - Number(left.selected));
       // 家长未手动切过 Tab 时，默认落在有菜品的来源；家庭还没录入菜品就直接展示预置菜品。
       const sourceTab = this.tabPinned ? this.data.sourceTab
@@ -276,20 +328,41 @@ ui.page({
       const inCategory = categoryId
         ? visible.filter(dish => (dish.categoryId == null ? '' : String(dish.categoryId)) === categoryId)
         : visible;
+      const globalFilter = !!(this.data.mildOnly || (this.data.keyword || '').trim());
+      const withSel = visible.map(dish => {
+        const sel = this.parentSelection.get(dish.key);
+        const base = Number(dish.virtualPrice) || 0;
+        if (!sel) {
+          return Object.assign({}, dish, { inCart: false, quantity: 0, selPrice: base, spice: 0, note: '' });
+        }
+        return Object.assign({}, dish, {
+          inCart: true,
+          quantity: sel.quantity,
+          selPrice: sel.price,
+          spice: sel.spice,
+          note: sel.note
+        });
+      });
+      const inCategorySel = categoryId
+        ? withSel.filter(dish => (dish.categoryId == null ? '' : String(dish.categoryId)) === categoryId)
+        : withSel;
+      let parentTotal = 0;
+      this.parentSelection.forEach(sel => { parentTotal += sel.price * sel.quantity; });
       this.setData({
         sourceTab,
         categories,
         categoryId,
         frequent: [],
         recommend: [],
-        dishes: filterDishes(inCategory, { mildOnly: this.data.mildOnly, keyword: this.data.keyword }),
+        dishes: filterDishes(globalFilter ? withSel : inCategorySel, { mildOnly: this.data.mildOnly, keyword: this.data.keyword }),
         count: this.selectedRefs.length,
+        parentTotal: money(parentTotal),
         invalidSelectedCount
       });
       return;
     }
     const all = this.allDishes.map(dish => ({
-      ...dish, key: dishKey(dish), quantity: this.quantities[dishKey(dish)] || 0, selectable: selectable(dish),
+      ...dish, imageUrl: thumbImage(dish.imageUrl, 240), key: dishKey(dish), quantity: this.quantities[dishKey(dish)] || 0, selectable: selectable(dish),
       categoryName: dish.categoryName || '',
       safetyLabel: safetyLabel(dish),
       spiceLabel: SPICE[dish.spiceLevel],
@@ -300,9 +373,10 @@ ui.page({
     const inCategory = categoryId
       ? all.filter(dish => (dish.categoryId == null ? '' : String(dish.categoryId)) === categoryId)
       : all;
+    const globalFilter = !!(this.data.mildOnly || this.data.favoritesOnly || (this.data.keyword || '').trim());
     const selected = all.filter(d => d.quantity > 0);
     const total = selected.reduce((sum, d) => sum + cents(d.virtualPrice) * d.quantity, 0);
-    this.setData({ dishes: filterDishes(inCategory, this.data), categories, categoryId,
+    this.setData({ dishes: filterDishes(globalFilter ? all : inCategory, this.data), categories, categoryId,
       frequent: this.decorateFrequent(all), recommend: this.decorateRecommend(all),
       total: money(total), count: selected.length });
   },
@@ -342,8 +416,188 @@ ui.page({
     this.wishSelectionTouched = false;
     ui.run(this, () => this.read());
   },
-  filters(e) { this.setData({ mildOnly: e.detail.value.includes('mild'), favoritesOnly: e.detail.value.includes('favorite') }); this.render(); },
-  search(e) { this.setData({ keyword: e.detail.value }); this.render(); },
+  filters(e) { this.setData({ mildOnly: e.detail.value.includes('mild'), favoritesOnly: e.detail.value.includes('favorite'), categoryId: '' }); this.render(); },
+  search(e) { this.setData({ keyword: e.detail.value, categoryId: '' }); this.render(); },
+  // ---- 家长美团式点餐台：辣度 / 改价 / 备注 / 份数（本次编排配置，发布沿用目录价格记账）----
+  buildDetail(dish, sel) {
+    return {
+      key: dishKey(dish),
+      name: dish.name,
+      imageUrl: thumbImage(dish.imageUrl, 480),
+      price: sel.price,
+      spice: sel.spice,
+      note: sel.note,
+      quantity: sel.quantity,
+      spiceLabel: SPICE[dish.spiceLevel],
+      categoryName: dish.categoryName || '',
+      hasSpice: (dish.spiceLevel || 0) > 0
+    };
+  },
+  openDishDetail(e) {
+    if (this.data.role !== 'PARENT' || this.data.busy) return;
+    const key = e.currentTarget.dataset.key;
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish || dish.status !== 'ON_SALE') return;
+    const sel = this.parentSelection.get(key) || {
+      quantity: 1,
+      spice: Math.min(dish.spiceLevel || 0, 3),
+      price: Number(dish.virtualPrice) || 0,
+      note: ''
+    };
+    const detail = this.buildDetail(dish, sel);
+    detail.inCart = this.parentSelection.has(key);
+    this.setData({ detail });
+  },
+  closeDetail() {
+    this.setData({ detail: null });
+  },
+  noop() {},
+  patchDetail(patch) {
+    this.setData({ detail: Object.assign({}, this.data.detail, patch) });
+  },
+  detailQuantity(e) {
+    const delta = Number(e.currentTarget.dataset.delta);
+    const d = this.data.detail;
+    if (!d) return;
+    this.patchDetail({ quantity: Math.max(0, Math.min(99, d.quantity + delta)) });
+  },
+  detailSpice(e) {
+    const d = this.data.detail;
+    if (!d) return;
+    this.patchDetail({ spice: Number(e.currentTarget.dataset.index) });
+  },
+  detailPrice(e) {
+    const d = this.data.detail;
+    if (!d) return;
+    const delta = Number(e.currentTarget.dataset.delta);
+    this.patchDetail({ price: Math.min(9999.99, Math.max(0, Math.round((d.price + delta) * 100) / 100)) });
+  },
+  detailNote(e) {
+    const d = this.data.detail;
+    if (!d) return;
+    this.patchDetail({ note: e.detail.value });
+  },
+  quickNote(e) {
+    const d = this.data.detail;
+    if (!d) return;
+    this.patchDetail({ note: e.currentTarget.dataset.tag });
+  },
+  detailConfirm() {
+    const d = this.data.detail;
+    if (!d) return;
+    const dish = this.allDishes.find(item => dishKey(item) === d.key);
+    if (d.quantity > 0) {
+      if (!this.selectedRefs.some(ref => dishKey(ref) === d.key)) {
+        if (this.selectedRefs.length >= 50) {
+          this.setData({ error: '每个餐次最多选择50种餐食' });
+          return;
+        }
+        if (dish) this.selectedRefs = [...this.selectedRefs, dishRef(dish)];
+      }
+      this.parentSelection.set(d.key, { quantity: d.quantity, spice: d.spice, price: d.price, note: d.note });
+    } else {
+      this.parentSelection.delete(d.key);
+      this.selectedRefs = this.selectedRefs.filter(ref => dishKey(ref) !== d.key);
+    }
+    this.setData({ detail: null, error: '' });
+    this.render();
+  },
+  parentAdd(e) {
+    if (this.data.role !== 'PARENT' || this.data.busy) return;
+    const key = e.currentTarget.dataset.key;
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish || dish.status !== 'ON_SALE') return;
+    const sel = this.parentSelection.get(key);
+    if (!sel) {
+      if (this.selectedRefs.length >= 50) {
+        this.setData({ error: '每个餐次最多选择50种餐食' });
+        return;
+      }
+      this.selectedRefs = [...this.selectedRefs, dishRef(dish)];
+      this.parentSelection.set(key, {
+        quantity: 1,
+        spice: Math.min(dish.spiceLevel || 0, 3),
+        price: Number(dish.virtualPrice) || 0,
+        note: ''
+      });
+    } else {
+      sel.quantity = Math.min(99, sel.quantity + 1);
+    }
+    this.setData({ error: '' });
+    this.render();
+  },
+  parentSpice(e) {
+    if (this.data.role !== 'PARENT' || this.data.busy) return;
+    const key = e.currentTarget.dataset.key;
+    const index = Number(e.currentTarget.dataset.index);
+    const sel = this.parentSelection.get(key);
+    if (!sel) return;
+    sel.spice = index;
+    this.render();
+  },
+  // ---- 儿童端菜品详情 Bottom Sheet（对齐设计稿：描述 / 份数 / 加入套餐）----
+  buildKidDetail(dish) {
+    return {
+      key: dishKey(dish),
+      name: dish.name,
+      price: dish.virtualPrice,
+      spiceLabel: dish.spiceLabel,
+      safetyLabel: dish.safetyLabel,
+      categoryName: dish.categoryName || '',
+      calories: dish.calories,
+      imageUrl: thumbImage(dish.imageUrl, 480),
+      isDisliked: dish.isDisliked,
+      quantity: this.quantities[dishKey(dish)] || 0,
+      selectable: selectable(dish),
+      canSubmit: !!(this.data.menu && this.data.menu.canSubmit && this.data.sourceType === 'FAMILY')
+    };
+  },
+  openKidDetail(e) {
+    if (this.data.role !== 'CHILD' || this.data.busy) return;
+    const key = e.currentTarget.dataset.key;
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish) return;
+    this.setData({ kidDetail: this.buildKidDetail(dish) });
+  },
+  closeKidDetail() {
+    this.setData({ kidDetail: null });
+  },
+  kidQuantity(e) {
+    const key = this.data.kidDetail ? this.data.kidDetail.key : '';
+    const delta = Number(e.currentTarget.dataset.delta);
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish || !selectable(dish) || this.data.role !== 'CHILD' || !this.data.menu.canSubmit || this.data.sourceType !== 'FAMILY' || this.data.busy) return;
+    const quantity = (this.quantities[key] || 0) + delta;
+    if (quantity < 0 || quantity > 9) return;
+    if (delta > 0 && !this.quantities[key] && this.data.count >= 20) {
+      this.setData({ error: '每次最多选择20种餐食' });
+      return;
+    }
+    this.quantities[key] = quantity;
+    this.render();
+    this.setData({ kidDetail: this.buildKidDetail(dish) });
+  },
+  kidAddOne() {
+    if (!this.data.kidDetail) return;
+    const key = this.data.kidDetail.key;
+    const dish = this.allDishes.find(item => dishKey(item) === key);
+    if (!dish || !selectable(dish) || this.data.role !== 'CHILD' || !this.data.menu.canSubmit || this.data.sourceType !== 'FAMILY' || this.data.busy) return;
+    if (!this.quantities[key] && this.data.count >= 20) {
+      this.setData({ error: '每次最多选择20种餐食' });
+      return;
+    }
+    this.quantities[key] = Math.min(9, (this.quantities[key] || 0) + 1);
+    this.render();
+    this.setData({ kidDetail: null, error: '' });
+  },
+  mealSegment(e) {
+    if (this.data.busy) return;
+    const mealType = e.currentTarget.dataset.meal;
+    const index = MEALS.indexOf(mealType);
+    if (index < 0 || index === this.data.mealIndex) return;
+    this.setData({ mealIndex: index, mealType });
+    ui.run(this, () => this.read());
+  },
   toggleDish(e) {
     if (this.data.role !== 'PARENT' || this.data.busy) return;
     const key = e.currentTarget.dataset.key;
@@ -435,7 +689,7 @@ ui.page({
     return ui.openPage(this, '/pages/menu-week/index');
   },
   category(e) {
-    this.setData({ categoryId: e.currentTarget.dataset.id || '' });
+    this.setData({ categoryId: e.currentTarget.dataset.id || '', keyword: '', mildOnly: false, favoritesOnly: false });
     this.render();
   },
   quickFavorite(e) {
@@ -475,11 +729,7 @@ ui.page({
         : await api.get('/child/wish-menu', { menuDate });
       this.wishRaw = wish;
       this.renderWish();
-      if (role === 'PARENT') {
-        const setting = await api.get('/parent/wish-setting');
-        this.setData({ wishSettings: setting, wishMaxDraft: setting.maxDishes, wishEnabledDraft: setting.enabled });
-        return;
-      }
+      if (role === 'PARENT') return;
       await this.loadWishCatalog();
     } catch (error) {
       if (error.cancelled || error.status === 401 || error.code === 'E-010') throw error;
@@ -679,30 +929,13 @@ ui.page({
     this.setData({ wishPage: page });
     return ui.run(this, () => this.loadWishCatalog());
   },
-  wishMax(e) {
-    this.setData({ wishMaxDraft: this.data.wishDishRange[Number(e.detail.value)] });
-  },
-  wishEnabled(e) {
-    this.setData({ wishEnabledDraft: e.detail.value });
-  },
-  wishSettingSave() {
-    return ui.run(this, async () => {
-      const setting = this.data.wishSettings;
-      if (!setting) return;
-      await api.put('/parent/wish-setting', {
-        maxDishes: Number(this.data.wishMaxDraft),
-        enabled: this.data.wishEnabledDraft,
-        expectedVersion: setting.version
-      });
-      await this.loadWish();
-      wx.showToast({ title: '心愿菜单设置已保存', icon: 'success' });
-    });
-  },
   retry() { ui.run(this, () => this.data.role === 'PARENT' ? this.loadParent() : this.read()); },
   imageError(e) {
     const key = e.currentTarget.dataset.key;
     this.allDishes = this.allDishes.map(d => dishKey(d) === key ? { ...d, imageUrl: null } : d);
     this.catalogDishes = this.catalogDishes.map(d => dishKey(d) === key ? { ...d, imageUrl: null } : d);
+    if (this.data.detail && this.data.detail.key === key) this.patchDetail({ imageUrl: null });
+    if (this.data.kidDetail && this.data.kidDetail.key === key) this.setData({ kidDetail: Object.assign({}, this.data.kidDetail, { imageUrl: null }) });
     this.render();
   },
   onHide() {
@@ -711,13 +944,14 @@ ui.page({
     this.catalogDishes = [];
     this.selectedRefs = [];
     this.tabPinned = false;
+    this.parentSelection = new Map();
     this.frequentDishes = [];
     this.recommendDishes = [];
     this.wishRaw = null;
     this.wishSelectionTouched = false;
     this.setData({ dishes: [], menu: null, missingCount: 0, missingDishIds: [], invalidSelectedCount: 0,
       total: '0.00', count: 0, ready: false, categories: [], categoryId: '', frequent: [], recommend: [],
-      week: [], schoolBoundaryText: '', wish: null, wishSelected: [], wishDishes: [], wishTotal: 0, wishSettings: null,
+      week: [], schoolBoundaryText: '', wish: null, wishSelected: [], wishDishes: [], wishTotal: 0,
       wishKeyword: '', wishPage: 1 });
   }
 });

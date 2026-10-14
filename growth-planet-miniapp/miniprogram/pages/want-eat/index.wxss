@@ -21,7 +21,7 @@
 .day-title { margin-bottom: 8px; }
 .meal-block { margin-bottom: 16px; }
 .meal-title { font-size: 15px; font-weight: 800; }
-.item-title { min-width: 0; font-size: 16px; font-weight: 800; line-height: 1.45; overflow-wrap: anywhere; }
+.item-title { min-width: 0; font-size: 14px; font-weight: 800; line-height: 1.45; overflow-wrap: anywhere; }
 .flag-line { color: var(--danger); }
 .badge.normal { color: var(--muted); background: var(--surface-2); }
 .badge.info { color: var(--primary-ink); background: var(--primary-soft); }

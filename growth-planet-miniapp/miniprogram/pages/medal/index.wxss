@@ -10,13 +10,14 @@
   gap: 6px 12px;
   margin-bottom: 16px;
   padding: 14px 16px;
-  background: var(--primary-soft);
-  border: 1px solid var(--primary-border);
+  background: #fff;
+  border: 1px solid #eceef2;
+  border-top: 3px solid var(--primary);
   border-radius: var(--radius-md);
 }
 .medal-overview-label { color: var(--primary); font-size: 13px; font-weight: 700; }
 .medal-overview-value { color: #172033; font-size: 15px; font-weight: 800; }
-.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .medal {
   min-width: 0;
   background: var(--surface);
@@ -26,11 +27,11 @@
   text-align: center;
   box-shadow: var(--shadow-soft);
 }
-.medal.on { border-color: var(--primary-border); box-shadow: 0 8px 22px var(--primary-shadow); }
+.medal.on { border-color: var(--primary); box-shadow: none; }
 .medal.off { background: var(--surface-2); }
 .icon { font-size: 32px; line-height: 1; }
 .medal.off .icon { filter: grayscale(1); }
-.medal-name { margin-top: 12px; color: #172033; font-size: 16px; font-weight: 800; line-height: 1.4; overflow-wrap: anywhere; }
+.medal-name { margin-top: 12px; color: #172033; font-size: 14px; font-weight: 800; line-height: 1.4; overflow-wrap: anywhere; }
 .medal-description { min-height: 48px; margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.65; }
 .medal-state { margin-top: 10px; color: var(--primary); font-size: 13px; font-weight: 700; }
 .medal.off .medal-state { color: var(--muted); }
@@ -39,3 +40,18 @@
   .grid { grid-template-columns: 1fr; }
   .medal-description { min-height: 0; }
 }
+
+/* ===== 连续打卡环（设计稿：金色大圆环） ===== */
+.checkin-card {
+  margin-bottom: 14px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--line, #e3e6eb);
+  border-radius: var(--radius-lg, 16px);
+  display: flex; align-items: center; gap: 14px;
+}
+.checkin-ring { width: 92px; height: 92px; flex-shrink: 0; }
+.checkin-copy { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.checkin-title { font-size: 16px; font-weight: 800; color: var(--kid-gold, #b47c0a); }
+.checkin-subtitle { font-size: 13px; color: #344054; }
+.checkin-hint { font-size: 12px; color: #9aa1ac; }

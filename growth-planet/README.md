@@ -36,6 +36,56 @@ export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
 
 `dev/test` 的 mock code 为1至51字符，仅作合成身份。生产须显式使用 `prod`，提供独立的 `JWT_SECRET`、`WX_APPID`、`WX_SECRET`。默认不开放数据处理；Q-01 审批、正式协议、核验强度、年级与过敏原目录发布后才可配置 `compliance`。禁止把合成目录或演示密钥用于生产。
 
+## 日志
+
+### 统一写法：Lombok `@Slf4j`
+
+全后端禁止手写 `LoggerFactory.getLogger(...)`，一律在类上加 `@Slf4j`，直接用 `log.info/warn/error`：
+
+```java
+@Slf4j
+@Service
+public class SomeService { ... }
+```
+
+唯一例外是访问日志——它需要独立 logger 名才能单独调级别与单独落文件，因此用 `topic`：
+
+```java
+@Slf4j(topic = "cn.studykid.growthplanet.access")
+public class AccessLogFilter extends OncePerRequestFilter { ... }
+```
+
+`sk-growthplanet-start` 已声明 lombok（core 中为 `optional` 不传递，各模块需自行声明）。
+
+### 输出分离（logback-spring.xml）
+
+配置文件：`sk-growthplanet-start/src/main/resources/logback-spring.xml`（**文件名必须带 `-spring`**，否则 Spring Boot 的 `springProfile` 扩展不生效）。
+
+| 输出 | 内容 | 滚动策略 |
+|---|---|---|
+| 控制台 | 业务日志；`dev` 环境额外输出访问日志 | — |
+| `logs/growth-planet.log` | 业务日志（INFO 及以上） | 按天 + 50MB/个，保留 30 天，总量 2GB |
+| `logs/growth-planet-error.log` | 仅 ERROR（`LevelFilter`） | 按天 + 50MB/个，保留 60 天，总量 1GB |
+| `logs/access.log` | 访问日志（`cn.studykid.growthplanet.access`，`additivity=false`，不混入业务日志与控制台） | 按天 + 100MB/个，保留 14 天，总量 2GB |
+
+- **日志目录**：默认应用工作目录下的 `logs/`；可用 `-DLOG_DIR=/var/log/growth-planet` 或环境变量 `LOG_DIR` 覆盖。目录已在 `.gitignore` 中忽略。
+- **级别**：`application.yml` 的 `logging.level.*`；单独关访问日志用 `logging.level.cn.studykid.growthplanet.access=OFF`。
+- **测试环境**：`springProfile name="test"` 下只打控制台、不落盘，避免集成测试污染工作区。
+
+## 访问日志
+
+`AccessLogFilter`（sk-growthplanet-start）全量记录 `/api/mini/**` 与 `/api/admin/**` 请求，每个请求一行：
+
+```
+access traceId=26523769-050f-4b87-8c59-c74e92a8ffa1 spanId=eeef786ae370414f method=POST uri=/api/mini/auth/wx-login query=- status=200 durationMs=42 ip=127.0.0.1 ua=Mozilla/5.0 body={"code":"***","dishIds":[1,2]}
+```
+
+- **为什么是 Filter 不是 HandlerInterceptor**：要记录请求体，必须在 DispatcherServlet 消费输入流之前包装 request；拦截器执行时流已被 `@RequestBody` 读完。Filter 还能覆盖 401/403/404 等没进入 controller 的请求，更适合做访问审计。
+- **脱敏**：请求体与查询串按字段名脱敏（`code`、`password`、`token`、`phone`、`realName` 等，见 `AccessLogProperties`），JSON 递归脱敏，数组与嵌套对象同样生效；非 JSON/表单、超大或解析失败的请求体只记字节数，**绝不回退打印原文**。
+- **追踪标识**：traceId 复用 `RequestContextFilter` 写入 MDC 的 requestId（与响应头 `X-Request-Id`、业务日志同源，便于串联），spanId 每次请求生成；两者写入 MDC 与响应头 `X-Trace-Id` / `X-Span-Id`。
+- **慢请求**：耗时超过 `access-log.slow-threshold-ms`（默认 1000ms）以 WARN 输出。
+- **开关**：`access-log.enabled`；独立 logger 名 `cn.studykid.growthplanet.access`，可用 `logging.level.cn.studykid.growthplanet.access=OFF` 单独关闭而不影响业务日志。
+
 ## 接口
 
 统一前缀 `/api`；除 `auth/wx-login` 外均需 Bearer token。
