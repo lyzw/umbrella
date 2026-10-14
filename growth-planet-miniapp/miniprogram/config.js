@@ -50,7 +50,8 @@ const ENV_LABEL = {
 };
 
 // 编译期默认环境：改这一行即可整体切换（提交前请还原为 prod）。
-const DEFAULT_ENV = 'local';
+// 提交代码必须保持 'prod'，本地开发请用 config.local.js（已被 .gitignore 忽略）或小程序内「设置 → 后端环境」覆盖。
+const DEFAULT_ENV = 'prod';
 // 运行期覆盖的本地缓存键（与 pages/dev-env 共用）。
 const ENV_STORAGE_KEY = 'growth-planet-env-v1';
 

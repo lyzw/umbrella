@@ -1,5 +1,11 @@
 <view class="page {{role === 'PARENT' ? 'parent' : ''}}">
   <view class="header"><view class="title">家庭与绑定</view><button bindtap="refresh" disabled="{{busy}}">刷新</button></view>
+  <view wx:if="{{families.length > 1}}" class="section family-switch">
+    <view class="section-title">当前家庭：{{activeFamilyName || '未选择'}}</view>
+    <view class="family-options">
+      <button wx:for="{{families}}" wx:key="familyId" class="family-opt {{activeFamilyId === item.familyId ? 'selected' : ''}}" bindtap="switchFamily" data-id="{{item.familyId}}" disabled="{{busy || activeFamilyId === item.familyId}}">{{item.familyName}}</button>
+    </view>
+  </view>
   <view wx:if="{{role === 'CHILD'}}">
     <view class="notice">{{binding ? binding.label : '正在查询绑定状态'}}</view>
     <view wx:if="{{binding.bindStatus === 'NONE' || binding.bindStatus === 'REJECTED'}}" class="field">

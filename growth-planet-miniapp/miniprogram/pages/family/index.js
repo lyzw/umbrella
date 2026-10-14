@@ -1,5 +1,6 @@
 const api = require('../../services/api');
 const session = require('../../services/session');
+const family = require('../../services/family');
 const ui = require('../../utils/page');
 const { statusLabels } = require('../../utils/domain');
 const { childDisplayName } = require('../../services/children');
@@ -26,9 +27,38 @@ function bindingProgress(selected, consent) {
 ui.page({
   data: { role: '', busy: false, error: '', familyName: '', inviteCode: '', invite: null, binding: null, children: [],
     hasFamily: false, selected: null, consent: null, agreed: false, age: '', relationLabel: '', page: 1, total: 0,
-    bindingSteps: [], currentBindingStep: 0 },
+    bindingSteps: [], currentBindingStep: 0,
+    families: [], activeFamilyId: null, activeFamilyName: '' },
   input: ui.input,
-  onShow() { if (ui.guard(this, 'PARENT')) this.refresh(); },
+  onShow() {
+    this.loadFamilies();
+    if (ui.guard(this, 'PARENT')) this.refresh();
+  },
+  // 多家庭：加载「我的家庭」并定出当前激活家庭（缺省取首个已绑定家庭）。见 services/family.js。
+  loadFamilies() {
+    return ui.run(this, async () => {
+      const families = await api.get('/family/my');
+      const activeId = family.get()
+        || (families.find(f => f.bindStatus === 'BOUND') || families[0] || {}).familyId
+        || null;
+      family.set(activeId);
+      const active = families.find(f => String(f.familyId) === String(activeId));
+      this.setData({
+        families,
+        activeFamilyId: activeId ? Number(activeId) : null,
+        activeFamilyName: active ? active.familyName : ''
+      });
+    });
+  },
+  // 切换家庭：记住选择并 reLaunch 到首页刷新各页数据（不登出，绝不清 session）。
+  switchFamily(e) {
+    const id = Number(e.currentTarget.dataset.id);
+    if (id === this.data.activeFamilyId) return;
+    const target = this.data.families.find(f => f.familyId === id);
+    family.set(id);
+    this.setData({ activeFamilyId: id, activeFamilyName: target ? target.familyName : '' });
+    wx.reLaunch({ url: '/pages/home/index' });
+  },
   refresh() {
     return ui.run(this, async () => {
       if (this.data.role === 'CHILD') {

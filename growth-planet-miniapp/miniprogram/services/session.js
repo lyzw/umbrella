@@ -7,6 +7,7 @@ function clear() {
   wx.removeStorageSync(KEY);
   require('./context').clear();
   require('./operations').operations.clear();
+  require('./family').clear();
 }
 function get() {
   if (current && current.expiresAt <= Date.now()) clear();
