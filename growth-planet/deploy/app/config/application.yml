@@ -20,10 +20,18 @@ spring:
 
 # 微信真实凭证：appid 取自小程序主体（体验版 wx.login 的 code 由它签发）；
 # secret 经 .env 注入（WX_SECRET），从小程序后台「开发管理-开发设置」生成。
-# 注意：prod profile 恒走真实 code2session（MockWechatClient 仅 dev/test 启用），wx.mock 为死配置。
+# 真实登录前置（重要）：须以 APP_PROFILE=prod 启动（start.sh 默认 dev，会用 MockWechatClient 走假登录，
+# 即便下方真实凭证已配也不生效）。prod 下 WxWechatClient 才激活，且 ProductionConfigGuard 才会校验。
 wx:
   appid: wx706ee9c8e9e830a3
   secret: ${WX_SECRET}
+
+# JWT 真实密钥：prod 守卫要求独立、≥32 字节且非合成值（isDemonstration 命中 synthetic/test-secret/demo 即拒启）。
+# 此覆盖配置须注入真实密钥（.env 的 JWT_SECRET / JWT_ADMIN_SECRET），否则会继承 jar 内 prod yml 的合成默认值，
+# 导致 ProductionConfigGuard 在 prod 下拒绝启动。C 端与运营端密钥隔离。
+jwt:
+  secret: ${JWT_SECRET}
+  admin-secret: ${JWT_ADMIN_SECRET}
 
 # -------------------------------------------------------------------
 # Q-01 合规闸门 · 预上线联调放行值（TRIAL 编号不含禁用字样，守卫可过）。

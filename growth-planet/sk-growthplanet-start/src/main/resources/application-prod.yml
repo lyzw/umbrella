@@ -8,8 +8,11 @@ spring:
       host: localhost
       port: 6379
 
-wx:
-  mock: true
+# 微信真实凭证：appid/secret 经环境变量注入（wx.appid / wx.secret）。
+# 客户端选择由 Spring profile 驱动——prod 激活 WxWechatClient（真实 code2session），dev/test 激活 MockWechatClient；
+# 与 wx.mock 无关（该键为历史遗留死配置，已移除，请勿再加回）。
+# 真实登录前置：须以 APP_PROFILE=prod 启动，且 deploy/config/application.yml 注入真实 JWT 密钥与已签核合规引用，
+# 使 ProductionConfigGuard 通过（见 deploy/app/config/application.yml 注释）。
 
 # 七牛对象存储：本地联调时通过环境变量注入真实凭证
 # （QINIU_ACCESS_KEY / QINIU_SECRET_KEY / QINIU_BUCKET）；未注入时上传凭证接口降级 E-503，不影响启动。
